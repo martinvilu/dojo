@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaula Classroom - Unified Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; }
+        #sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
+        #main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .hidden { display: none !important; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 4px; background: #3498db; color: white; margin-top: 10px; }
+        button.secondary { background: #95a5a6; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        h1, h2 { color: #2c3e50; }
+        .nav-item { padding: 10px; cursor: pointer; border-radius: 4px; margin-bottom: 5px; }
+        .nav-item:hover { background: #34495e; }
+        .nav-item.active { background: #3498db; }
+        #user-info { margin-top: auto; padding-top: 20px; border-top: 1px solid #34495e; font-size: 0.9em; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar { width: 100%; height: auto; order: 2; padding: 10px; box-sizing: border-box; }
+            #main-content { order: 1; padding: 15px; }
+            #user-info { border-top: none; border-bottom: 1px solid #34495e; margin-bottom: 10px; margin-top: 0; }
+        }
+        #qr-container { text-align: center; padding: 20px; background: white; border-radius: 8px; margin-top: 20px; }
+        #reader { width: 100%; max-width: 400px; margin: 0 auto; }
+        .curriculum-item { border-left: 4px solid #3498db; padding-left: 15px; margin-bottom: 15px; }
+        .event-item { border-left: 4px solid #e74c3c; padding-left: 15px; margin-bottom: 15px; background: #fdf2f2; }
+    </style>
+</head>
+<body>
+    <div id="auth-overlay" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="card" style="width: 300px; text-align: center;">
+            <h2>Gaula Classroom</h2>
+            <p>Please sign in to continue</p>
+            <button id="login-btn">Sign in with GitHub</button>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <h2>Gaula</h2>
+        <div id="nav-admin" class="role-nav hidden">
+            <div class="nav-item active" onclick="showSection('admin-courses')">Courses Management</div>
+            <div class="nav-item" onclick="showSection('admin-users')">User Roles</div>
+        </div>
+        <div id="nav-teacher" class="role-nav hidden">
+            <div class="nav-item active" onclick="showSection('teacher-courses')">My Courses</div>
+            <div class="nav-item" onclick="showSection('teacher-assignments')">Assignments</div>
+            <div class="nav-item" onclick="showSection('teacher-attendance')">Attendance & Plan</div>
+            <div class="nav-item" onclick="showSection('teacher-curriculum')">Curriculum & Events</div>
+        </div>
+        <div id="nav-student" class="role-nav hidden">
+            <div class="nav-item active" onclick="showSection('student-courses')">My Enrollment</div>
+            <div class="nav-item" onclick="showSection('student-scan')">Scan Attendance</div>
+        </div>
+        
+        <div id="user-info">
+            <p id="user-display">Loading...</p>
+            <p id="user-role" style="font-weight: bold; text-transform: uppercase; color: #3498db;"></p>
+            <button class="secondary" id="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <!-- Admin Sections -->
+        <section id="admin-courses" class="content-section hidden">
+            <h1>Create New Course</h1>
+            <div class="card">
+                <input type="text" id="course-name" placeholder="Course Name">
+                <input type="text" id="course-org" placeholder="GitHub Organization">
+                <textarea id="course-desc" placeholder="Description"></textarea>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button onclick="createCourse()">Create Course</button>
+                    <span style="color: #666;">or</span>
+                    <button class="secondary" onclick="document.getElementById('import-file').click()">Import from JSON</button>
+                    <input type="file" id="import-file" class="hidden" accept=".json" onchange="importCourse(event)">
+                </div>
+            </div>
+            <h2>Existing Courses</h2>
+            <div id="admin-courses-list"></div>
+        </section>
+
+        <!-- Teacher Sections -->
+        <section id="teacher-courses" class="content-section hidden">
+            <h1>My Assigned Courses</h1>
+            <div id="teacher-courses-list"></div>
+        </section>
+
+        <section id="teacher-assignments" class="content-section hidden">
+            <h1>Manage Assignments</h1>
+            <div class="card">
+                <h3>Create New Assignment</h3>
+                <select id="assignment-course-id"><option value="">Select Course</option></select>
+                <input type="text" id="assignment-title" placeholder="Assignment Title">
+                <input type="text" id="assignment-template" placeholder="Template URL">
+                <textarea id="assignment-desc" placeholder="Instructions"></textarea>
+                <button onclick="createAssignment()">Create Assignment</button>
+            </div>
+            <div id="teacher-assignments-list"></div>
+        </section>
+
+        <section id="teacher-attendance" class="content-section hidden">
+            <h1>Attendance & Planning</h1>
+            <div class="card">
+                <h3>Add Schedule</h3>
+                <select id="schedule-course-id"></select>
+                <select id="schedule-day">
+                    <option value="1">Monday</option><option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option><option value="4">Thursday</option>
+                    <option value="5">Friday</option><option value="6">Saturday</option>
+                    <option value="0">Sunday</option>
+                </select>
+                <input type="time" id="schedule-start">
+                <input type="time" id="schedule-end">
+                <button onclick="addSchedule()">Save Plan</button>
+            </div>
+            <div class="card">
+                <h3>Start Class Session</h3>
+                <select id="session-course-id"></select>
+                <button onclick="startSession()">Generate QR</button>
+                <div id="qr-container" class="hidden">
+                    <canvas id="qr-canvas"></canvas>
+                    <p>Code resets in <span id="qr-timer">10</span>s</p>
+                    <button class="secondary" onclick="stopSession()">Close QR</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="teacher-curriculum" class="content-section hidden">
+            <h1>Curriculum & Events</h1>
+            <div class="card">
+                <h3>Add Class Topic / Recording</h3>
+                <select id="curriculum-course-id"></select>
+                <input type="date" id="curriculum-date">
+                <input type="text" id="curriculum-title" placeholder="Topic Title">
+                <textarea id="curriculum-desc" placeholder="Summary"></textarea>
+                <input type="text" id="curriculum-recording" placeholder="Recording URL">
+                <input type="text" id="curriculum-materials" placeholder="Materials URL">
+                <button onclick="addCurriculumItem()">Save Class Info</button>
+            </div>
+            <div class="card">
+                <h3>Add Special Event</h3>
+                <input type="date" id="event-date">
+                <input type="text" id="event-title" placeholder="Event Name">
+                <label><input type="checkbox" id="event-external"> External Event</label>
+                <button onclick="addCourseEvent()">Add Event</button>
+            </div>
+        </section>
+
+        <!-- Student Sections -->
+        <section id="student-courses" class="content-section hidden">
+            <h1>My Enrolled Courses</h1>
+            <div id="student-courses-list"></div>
+        </section>
+
+        <section id="student-course-detail" class="content-section hidden">
+            <button class="secondary" onclick="showSection('student-courses')">← Back to Courses</button>
+            <h1 id="st-course-title">Course Name</h1>
+            <p id="st-course-desc"></p>
+            
+            <div class="card">
+                <h3>Class Timeline</h3>
+                <div id="student-timeline-list"></div>
+            </div>
+
+            <h2>Assignments</h2>
+            <div id="student-assignments-list"></div>
+        </section>
+
+        <section id="student-scan" class="content-section hidden">
+            <h1>Scan Attendance QR</h1>
+            <div class="card"><div id="reader"></div></div>
+            <h2>History</h2><div id="attendance-log"></div>
+        </section>
+        
+        <div id="loading-indicator" class="hidden">Processing...</div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
