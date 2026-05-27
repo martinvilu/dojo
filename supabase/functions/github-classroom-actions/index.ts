@@ -90,27 +90,67 @@ export const handler = async (req: Request) => {
       return new Response(JSON.stringify({ message: 'Submitted and locked for review' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    if (action === 'CHECK_LOCKS') {
-        // This action could be called by a CRON job to lock all repos after lock_date
-        const adminClient = createClient(supabaseUrl, supabaseServiceKey)
-        const { data: expired } = await adminClient.from('submissions')
-            .select('*, assignments!inner(*), profiles!inner(user_name)')
-            .eq('is_locked', false)
-            .lt('assignments.lock_date', new Date().toISOString())
+    if (action === 'TOGGLE_REPO_ACCESS') {
+      const { submissionId, lock } = payload
+      const adminClient = createClient(supabaseUrl, supabaseServiceKey)
+      
+      const { data: sub } = await adminClient
+        .from('submissions')
+        .select('*, profiles(id, user_metadata)')
+        .eq('id', submissionId)
+        .single()
 
-        for (const sub of expired) {
-            const repoUrl = sub.student_repo_url.replace('https://github.com/', '')
-            const [owner, repo] = repoUrl.split('/')
-            const username = sub.profiles.user_name
+      if (!sub) throw new Error('Submission not found')
 
-            await fetch(`https://api.github.com/repos/${owner}/${repo}/collaborators/${username}`, {
-                method: 'PUT',
-                headers: { 'Authorization': `token ${githubToken}` },
-                body: JSON.stringify({ permission: 'pull' })
-            })
-            await adminClient.from('submissions').update({ is_locked: true }).eq('id', sub.id)
+      const repoUrl = sub.student_repo_url.replace('https://github.com/', '')
+      const [owner, repo] = repoUrl.split('/')
+      const username = sub.profiles.user_metadata.user_name
+
+      const permission = lock ? 'pull' : 'push'
+
+      const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/collaborators/${username}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${githubToken}` },
+        body: JSON.stringify({ permission })
+      })
+
+      if (!resp.ok) throw new Error('GitHub API failed to update permissions')
+
+      await adminClient.from('submissions').update({ is_locked: lock }).eq('id', sub.id)
+
+      return new Response(JSON.stringify({ message: `Access ${lock ? 'restricted' : 'restored'}` }), { headers: corsHeaders })
+    }
+
+    if (action === 'MASS_TOGGLE_ACCESS') {
+      const { assignmentId, lock } = payload
+      const adminClient = createClient(supabaseUrl, supabaseServiceKey)
+
+      const { data: subs } = await adminClient
+        .from('submissions')
+        .select('*, profiles(id, user_metadata)')
+        .eq('assignment_id', assignmentId)
+
+      const results = []
+      for (const sub of subs) {
+        try {
+          const repoUrl = sub.student_repo_url?.replace('https://github.com/', '')
+          if (!repoUrl) continue
+          const [owner, repo] = repoUrl.split('/')
+          const username = sub.profiles.user_metadata.user_name
+
+          await fetch(`https://api.github.com/repos/${owner}/${repo}/collaborators/${username}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `token ${githubToken}` },
+            body: JSON.stringify({ permission: lock ? 'pull' : 'push' })
+          })
+          await adminClient.from('submissions').update({ is_locked: lock }).eq('id', sub.id)
+          results.push({ id: sub.id, success: true })
+        } catch (e) {
+          results.push({ id: sub.id, success: false, error: e.message })
         }
-        return new Response('Locks updated', { headers: corsHeaders })
+      }
+
+      return new Response(JSON.stringify({ results }), { headers: corsHeaders })
     }
 
   } catch (error) {
