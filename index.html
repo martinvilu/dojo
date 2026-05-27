@@ -16,7 +16,7 @@
         button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 4px; background: #3498db; color: white; margin-top: 10px; }
         button.secondary { background: #95a5a6; }
         input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        h1, h2 { color: #2c3e50; }
+        h1, h2, h3 { color: #2c3e50; margin-top: 0; }
         .nav-item { padding: 10px; cursor: pointer; border-radius: 4px; margin-bottom: 5px; }
         .nav-item:hover { background: #34495e; }
         .nav-item.active { background: #3498db; }
@@ -32,6 +32,11 @@
         #reader { width: 100%; max-width: 400px; margin: 0 auto; }
         .curriculum-item { border-left: 4px solid #3498db; padding-left: 15px; margin-bottom: 15px; }
         .event-item { border-left: 4px solid #e74c3c; padding-left: 15px; margin-bottom: 15px; background: #fdf2f2; }
+        
+        .message-bubble { padding: 10px; border-radius: 8px; margin-bottom: 10px; max-width: 80%; }
+        .sent { background: #dcf8c6; margin-left: auto; }
+        .received { background: #fff; border: 1px solid #eee; }
+        .announcement-card { border-top: 5px solid #3498db; }
     </style>
 </head>
 <body>
@@ -54,9 +59,11 @@
             <div class="nav-item" onclick="showSection('teacher-assignments')">Assignments</div>
             <div class="nav-item" onclick="showSection('teacher-attendance')">Attendance & Plan</div>
             <div class="nav-item" onclick="showSection('teacher-curriculum')">Curriculum & Events</div>
+            <div class="nav-item" onclick="showSection('teacher-comms')">Communications</div>
         </div>
         <div id="nav-student" class="role-nav hidden">
             <div class="nav-item active" onclick="showSection('student-courses')">My Enrollment</div>
+            <div class="nav-item" onclick="showSection('student-comms')">Messages & News</div>
             <div class="nav-item" onclick="showSection('student-scan')">Scan Attendance</div>
         </div>
         
@@ -153,6 +160,24 @@
             </div>
         </section>
 
+        <section id="teacher-comms" class="content-section hidden">
+            <h1>Communications</h1>
+            <div class="card">
+                <h3>Post Announcement</h3>
+                <select id="ann-course-id"></select>
+                <input type="text" id="ann-title" placeholder="Announcement Title">
+                <textarea id="ann-content" placeholder="Content for all students..."></textarea>
+                <button onclick="postAnnouncement()">Post Announcement</button>
+            </div>
+            <div class="card">
+                <h3>Direct Messages</h3>
+                <select id="dm-student-id"><option value="">Select Student</option></select>
+                <div id="teacher-chat-box" style="height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px;"></div>
+                <textarea id="teacher-dm-content" placeholder="Send a private message..."></textarea>
+                <button onclick="sendDirectMessage('teacher')">Send Message</button>
+            </div>
+        </section>
+
         <!-- Student Sections -->
         <section id="student-courses" class="content-section hidden">
             <h1>My Enrolled Courses</h1>
@@ -163,14 +188,27 @@
             <button class="secondary" onclick="showSection('student-courses')">← Back to Courses</button>
             <h1 id="st-course-title">Course Name</h1>
             <p id="st-course-desc"></p>
-            
             <div class="card">
                 <h3>Class Timeline</h3>
                 <div id="student-timeline-list"></div>
             </div>
-
             <h2>Assignments</h2>
             <div id="student-assignments-list"></div>
+        </section>
+
+        <section id="student-comms" class="content-section hidden">
+            <h1>Messages & News</h1>
+            <div class="card">
+                <h3>Announcements</h3>
+                <div id="student-announcements-list"></div>
+            </div>
+            <div class="card">
+                <h3>Direct Message to Teacher</h3>
+                <select id="dm-teacher-id"><option value="">Select Course/Teacher</option></select>
+                <div id="student-chat-box" style="height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px;"></div>
+                <textarea id="student-dm-content" placeholder="Message your teacher..."></textarea>
+                <button onclick="sendDirectMessage('student')">Send Message</button>
+            </div>
         </section>
 
         <section id="student-scan" class="content-section hidden">
