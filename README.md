@@ -1,64 +1,62 @@
 # Gaula Classroom (GitHub Classroom Clone)
 
-Gaula Classroom es una alternativa ligera y auto-hospedada a GitHub Classroom, construida sobre **Supabase** y **GitHub API**. Permite a los profesores gestionar asignaturas, distribuir tareas automáticamente y supervisar las entregas de los alumnos.
+Gaula Classroom es una alternativa ligera y auto-hospedada a GitHub Classroom, construida sobre **Supabase** y **GitHub API**. Permite una gestión académica integral, desde el control de repositorios hasta la asistencia y comunicación.
 
-## 🚀 Arquitectura
+## 🚀 Arquitectura y Capacidades
 
-El sistema se basa en tres pilares:
-
-1.  **Supabase Database**: Almacenamiento persistente con políticas de seguridad (RLS).
-2.  **Supabase Edge Functions**: Lógica de servidor para interactuar de forma segura con la API de GitHub.
-3.  **Frontend Vanilla JS**: Interfaz de usuario para alumnos y profesores, desplegable en servicios estáticos.
+1.  **Multi-Dashboard**: Vistas especializadas para **Administradores**, **Profesores** y **Estudiantes**.
+2.  **Gestión de GitHub**: Creación automática de repositorios individuales desde plantillas (no forks) y control de permisos (Lectura/Escritura).
+3.  **Control de Asistencia**: Sistema de **QR dinámico** que se regenera cada 10s para evitar fraudes, con escáner móvil integrado.
+4.  **Cronograma Académico**: Calendario cuatrimestral, planificación semanal, temas de clase y repositorio de grabaciones.
+5.  **Comunicación Bidireccional**: Anuncios generales por curso y mensajería privada con confirmación de lectura (timestamp).
+6.  **Sistema de Entregas**: Ciclo de vida con estados visuales (OK, Correcciones, Rehacer, etc.) y doble fecha límite.
 
 ## 🛠️ Requisitos Previos
 
-- Una cuenta de [Supabase](https://supabase.com/).
-- Una organización en GitHub donde se alojarán los repositorios de los alumnos.
-- Un **Personal Access Token (PAT)** de GitHub con permisos `repo` y `admin:org`.
+- Cuenta de [Supabase](https://supabase.com/).
+- Organización en GitHub para los repositorios de alumnos.
+- **GitHub Personal Access Token (PAT)** con permisos `repo` y `admin:org`.
 
 ## ⚙️ Configuración
 
-### 1. Base de Datos
-Aplica las migraciones iniciales situadas en `supabase/migrations/`. Esto creará las tablas y las políticas RLS necesarias.
+### 1. Base de Datos y Auth
+- Aplica las migraciones en `supabase/migrations/`.
+- Configura el proveedor **GitHub** en Supabase Auth.
+- **Roles**: Los usuarios son `student` por defecto. Para asignar un Admin/Profesor, edita la tabla `profiles`.
 
 ### 2. Edge Functions
-Configura los secretos necesarios para la interacción con GitHub:
-
+Configura los secretos y despliega:
 ```bash
-supabase secrets set GITHUB_ACCESS_TOKEN=tu_token_de_acceso_personal
-```
-
-Despliega la función:
-
-```bash
+supabase secrets set GITHUB_ACCESS_TOKEN=tu_token
 supabase functions deploy github-classroom-actions
+supabase functions deploy attendance-handler
 ```
 
 ### 3. Frontend
-En el archivo `js/app.js`, actualiza las constantes de conexión:
+Actualiza las constantes en `js/app.js` con tu `SUPABASE_URL` y `SUPABASE_ANON_KEY`.
 
-```javascript
-const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
-const SUPABASE_ANON_KEY = 'tu-anon-key';
-```
+## 📖 Flujos de Usuario
 
-## 📖 Uso
+### 👔 Administrador
+- Crear materias y asignarles una organización de GitHub.
+- Importar/Exportar la estructura de materias vía JSON para reutilización en nuevos ciclos.
 
-### Para Profesores
-1.  Registra un curso en la tabla `courses` indicando el nombre de tu organización de GitHub.
-2.  Añade alumnos a la tabla `course_roster` usando sus correos electrónicos.
-3.  Crea tareas en la tabla `assignments` proporcionando el enlace a un repositorio template.
+### 🍎 Profesor
+- Crear tareas con `due_date` (entrega) y `lock_date` (bloqueo de repo).
+- **Control de Acceso**: Bloquear/Desbloquear repositorios individual o masivamente.
+- Gestionar el calendario, temas de clase y enlaces a grabaciones.
+- Iniciar sesiones de clase con QR dinámico.
+- Evaluar entregas y enviar mensajes privados.
 
-### Para Alumnos
-1.  Inicia sesión con GitHub en la aplicación.
-2.  Selecciona el curso y la tarea.
-3.  Haz clic en **"Accept Assignment"**. El sistema creará un repositorio privado para ti y te añadirá como colaborador.
-4.  Trabaja en tu código y haz push a GitHub.
-5.  Haz clic en **"Submit for Evaluation"** para marcar tu entrega como lista para revisión.
+### 🎓 Estudiante
+- Aceptar tareas (crea repo automático) y enviarlas a revisión.
+- Ver estados de corrección mediante iconos (✅, ⚠️, 🔆, ❌, ⭕, 🚫).
+- Escanear QR desde el móvil para marcar asistencia.
+- Acceder al cronograma y grabaciones de clase.
 
 ## 🔒 Seguridad
-- **RLS**: Los alumnos solo pueden ver los cursos en los que están inscritos y sus propias entregas.
-- **Service Role**: Las operaciones críticas (como actualizar estados de entrega) se realizan a través de la Edge Function usando la `SERVICE_ROLE_KEY` para garantizar integridad.
+- **RLS (Row Level Security)**: Aislamiento total de datos entre estudiantes.
+- **Server-side Validation**: Las fechas límite y permisos de GitHub se gestionan en Edge Functions seguras.
 
 ## 📄 Licencia
 MIT
