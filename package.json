@@ -1,0 +1,17 @@
+{
+  "name": "gaula-classroom",
+  "version": "1.0.0",
+  "description": "GitHub Classroom Clone with Supabase",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "test:db": "supabase test db",
+    "test:functions": "deno test --allow-env --allow-net supabase/functions/github-classroom-actions/index.test.ts"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
