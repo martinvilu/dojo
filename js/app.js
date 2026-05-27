@@ -50,10 +50,64 @@ function setupDashboard() {
     const role = currentProfile.role;
     document.getElementById(`nav-${role}`).classList.remove('hidden');
     showSection(role === 'admin' ? 'admin-courses' : (role === 'teacher' ? 'teacher-courses' : 'student-courses'));
+    
+    // Initial badge update and setup real-time listeners if needed
+    updateBadges();
 }
 
-function hideAllRoles() {
-    document.querySelectorAll('.role-nav, .content-section').forEach(el => el.classList.add('hidden'));
+async function updateBadges() {
+    if (!currentUser || !currentProfile) return;
+
+    if (currentProfile.role === 'student') {
+        // 1. Unread Messages for student
+        const { count: msgCount } = await supabase.from('direct_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', currentUser.id)
+            .is('read_at', null);
+        
+        updateBadgeElement('badge-student-msgs', msgCount);
+
+        // 2. Pending Assignments for student (Sin comenzar or Rehacer)
+        const { count: pendingCount } = await supabase.from('submissions')
+            .select('*', { count: 'exact', head: true })
+            .eq('student_id', currentUser.id)
+            .in('status', ['sin_comenzar', 'rehacer', 'accepted']);
+        
+        updateBadgeElement('badge-student-pending', pendingCount);
+    }
+
+    if (currentProfile.role === 'teacher') {
+        // 1. Unread Messages for teacher
+        const { count: msgCount } = await supabase.from('direct_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', currentUser.id)
+            .is('read_at', null);
+        
+        updateBadgeElement('badge-teacher-msgs', msgCount);
+
+        // 2. Submissions to grade (sin_corregir)
+        // Teachers see all submissions for their courses
+        const { data: courses } = await supabase.from('course_teachers').select('course_id').eq('teacher_id', currentUser.id);
+        const courseIds = courses.map(c => c.course_id);
+        
+        const { count: toGradeCount } = await supabase.from('submissions')
+            .select('*, assignments!inner(course_id)', { count: 'exact', head: true })
+            .in('assignments.course_id', courseIds)
+            .eq('status', 'sin_corregir');
+        
+        updateBadgeElement('badge-teacher-pending', toGradeCount);
+    }
+}
+
+function updateBadgeElement(id, count) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (count > 0) {
+        el.innerText = count;
+        el.classList.remove('hidden');
+    } else {
+        el.classList.add('hidden');
+    }
 }
 
 window.showSection = (sectionId) => {
@@ -70,6 +124,9 @@ window.showSection = (sectionId) => {
     if (sectionId === 'student-comms') loadStudentCommsData();
     if (sectionId === 'student-scan') startScanner();
     else stopScanner();
+
+    // Re-update badges when switching sections to clear counters if necessary
+    updateBadges();
 };
 
 // --- Teacher Dashboard Functions ---

@@ -37,6 +37,18 @@
         .sent { background: #dcf8c6; margin-left: auto; }
         .received { background: #fff; border: 1px solid #eee; }
         .announcement-card { border-top: 5px solid #3498db; }
+
+        .badge {
+            background: #e74c3c;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 0.75em;
+            margin-left: 5px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .nav-item { display: flex; align-items: center; justify-content: space-between; }
     </style>
 </head>
 <body>
@@ -56,14 +68,14 @@
         </div>
         <div id="nav-teacher" class="role-nav hidden">
             <div class="nav-item active" onclick="showSection('teacher-courses')">My Courses</div>
-            <div class="nav-item" onclick="showSection('teacher-assignments')">Assignments</div>
+            <div class="nav-item" onclick="showSection('teacher-assignments')">Assignments <span id="badge-teacher-pending" class="badge hidden"></span></div>
             <div class="nav-item" onclick="showSection('teacher-attendance')">Attendance & Plan</div>
             <div class="nav-item" onclick="showSection('teacher-curriculum')">Curriculum & Events</div>
-            <div class="nav-item" onclick="showSection('teacher-comms')">Communications</div>
+            <div class="nav-item" onclick="showSection('teacher-comms')">Communications <span id="badge-teacher-msgs" class="badge hidden"></span></div>
         </div>
         <div id="nav-student" class="role-nav hidden">
-            <div class="nav-item active" onclick="showSection('student-courses')">My Enrollment</div>
-            <div class="nav-item" onclick="showSection('student-comms')">Messages & News</div>
+            <div class="nav-item active" onclick="showSection('student-courses')">My Enrollment <span id="badge-student-pending" class="badge hidden"></span></div>
+            <div class="nav-item" onclick="showSection('student-comms')">Messages & News <span id="badge-student-msgs" class="badge hidden"></span></div>
             <div class="nav-item" onclick="showSection('student-scan')">Scan Attendance</div>
         </div>
         
