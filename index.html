@@ -47,7 +47,16 @@
     <div id="auth-overlay" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 1000;">
         <div class="card" style="width: 300px; text-align: center;">
             <h2>Gaula Classroom</h2>
-            <button id="login-btn">Sign in with GitHub</button>
+            <button id="login-btn" style="width: 100%; margin-bottom: 10px;">Sign in with GitHub</button>
+            
+            <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <p style="font-size: 0.8em; color: #666;">--- Developer Shortcuts ---</p>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <button class="secondary" onclick="testLogin('admin')">Login as Admin</button>
+                    <button class="secondary" onclick="testLogin('teacher')">Login as Teacher</button>
+                    <button class="secondary" onclick="testLogin('student')">Login as Student</button>
+                </div>
+            </div>
         </div>
     </div>
 

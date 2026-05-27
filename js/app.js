@@ -18,6 +18,23 @@ let activeAssignmentId = null;
 loginBtn.onclick = () => supabase.auth.signInWithOAuth({ provider: 'github' });
 logoutBtn.onclick = () => supabase.auth.signOut();
 
+window.testLogin = async (role) => {
+    const emailMap = {
+        'admin': 'admin@gaula.com',
+        'teacher': 'teacher@gaula.com',
+        'student': 'student@gaula.com'
+    };
+    
+    loadingIndicator.classList.remove('hidden');
+    const { error } = await supabase.auth.signInWithPassword({
+        email: emailMap[role],
+        password: 'password123'
+    });
+    loadingIndicator.classList.add('hidden');
+    
+    if (error) alert("Test Login Error: " + error.message);
+};
+
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (session) {
         currentUser = session.user;
