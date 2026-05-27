@@ -117,18 +117,35 @@ window.sendDirectMessage = async (role) => {
 
 async function loadChat(role, peerId) {
     if (!peerId) return;
+    
+    // 1. Mark incoming messages as read
+    await supabase.from('direct_messages')
+        .update({ read_at: new Date().toISOString(), is_read: true })
+        .eq('receiver_id', currentUser.id)
+        .eq('sender_id', peerId)
+        .is('read_at', null);
+
+    // 2. Load conversation
     const { data: messages } = await supabase.from('direct_messages')
         .select('*')
         .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${currentUser.id})`)
         .order('created_at', { ascending: true });
 
     const chatBox = document.getElementById(`${role}-chat-box`);
-    chatBox.innerHTML = messages.map(m => `
-        <div class="message-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">
-            ${m.content}
-            <div style="font-size: 0.7em; text-align: right; opacity: 0.6;">${new Date(m.created_at).toLocaleTimeString()}</div>
-        </div>
-    `).join('');
+    chatBox.innerHTML = messages.map(m => {
+        const isSent = m.sender_id === currentUser.id;
+        const readInfo = (isSent && m.read_at) ? `<div style="font-size: 0.8em; color: #27ae60;">✔ Read: ${new Date(m.read_at).toLocaleTimeString()}</div>` : '';
+        
+        return `
+            <div class="message-bubble ${isSent ? 'sent' : 'received'}">
+                ${m.content}
+                <div style="font-size: 0.7em; text-align: right; opacity: 0.6;">
+                    ${new Date(m.created_at).toLocaleTimeString()}
+                </div>
+                ${readInfo}
+            </div>
+        `;
+    }).join('');
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
