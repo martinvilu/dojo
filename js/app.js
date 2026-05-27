@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'http://127.0.0.1:54321';
+const SUPABASE_URL = 'http://localhost:54321';
 const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
 
 // Use a different name for the client instance to avoid shadowing the global 'supabase' from CDN
