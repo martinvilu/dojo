@@ -566,10 +566,18 @@ window.createAssignment = async () => {
 };
 
 async function loadTeacherAttendanceData() {
-    const { data } = await sb.from('courses').select(`*, course_teachers!inner(teacher_id)`).eq('course_teachers.teacher_id', currentUser.id);
-    const html = data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    document.getElementById('schedule-course-id').innerHTML = html;
-    document.getElementById('session-course-id').innerHTML = html;
+    try {
+        const { data: myCourses } = await sb.from('course_teachers').select('courses(*)').eq('teacher_id', currentUser.id);
+        const courses = myCourses.map(d => d.courses).filter(c => c !== null);
+        
+        const html = '<option value="">Select Course</option>' + 
+            courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            
+        document.getElementById('schedule-course-id').innerHTML = html;
+        document.getElementById('session-course-id').innerHTML = html;
+    } catch (err) {
+        console.error("Error loading attendance data:", err);
+    }
 }
 window.addSchedule = async () => {
     const course_id = document.getElementById('schedule-course-id').value;
