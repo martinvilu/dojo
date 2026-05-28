@@ -163,10 +163,15 @@
             <h1>Assignments & Access Control</h1>
             <div class="card">
                 <h3>New Assignment</h3>
-                <select id="assignment-course-id"></select>
-                <input type="text" id="assignment-title" placeholder="Title">
-                <input type="text" id="assignment-template" placeholder="Template URL">
-                <button onclick="createAssignment()">Create</button>
+                <select id="assignment-course-id"><option value="">Select Course</option></select>
+                <input type="text" id="assignment-title" placeholder="Assignment Title (e.g. Lab 1)">
+                <textarea id="assignment-desc" placeholder="Instructions / Description"></textarea>
+                <input type="text" id="assignment-template" placeholder="Template URL (e.g. org/repo)">
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <div style="flex: 1;"><label style="font-size: 0.8em; color: #666;">Due Date (Submission)</label><input type="datetime-local" id="assignment-due"></div>
+                    <div style="flex: 1;"><label style="font-size: 0.8em; color: #666;">Lock Date (Read-only)</label><input type="datetime-local" id="assignment-lock"></div>
+                </div>
+                <button onclick="createAssignment()">Create Assignment</button>
             </div>
             <div id="teacher-assignments-list"></div>
             

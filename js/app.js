@@ -367,48 +367,95 @@ async function loadTeacherCourses() {
     document.getElementById('assignment-course-id').innerHTML = data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 }
 async function loadTeacherAssignments() {
-    const { data } = await sb.from('assignments').select('*, courses!inner(course_teachers!inner(teacher_id))').eq('courses.course_teachers.teacher_id', currentUser.id);
-    document.getElementById('teacher-assignments-list').innerHTML = data.map(a => `
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-            <div><h4>${a.title}</h4><p>${a.template_repo_url}</p></div>
-            <button onclick="viewAssignmentDetails('${a.id}', '${a.title}')">Manage Access</button>
-        </div>
-    `).join('');
+    try {
+        const { data: courses } = await sb.from('courses').select(`*, course_teachers!inner(teacher_id)`).eq('course_teachers.teacher_id', currentUser.id);
+        const dropdown = document.getElementById('assignment-course-id');
+        dropdown.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+        const { data: assigns, error } = await sb.from('assignments').select('*, courses!inner(course_teachers!inner(teacher_id))').eq('courses.course_teachers.teacher_id', currentUser.id);
+        if (error) throw error;
+
+        document.getElementById('teacher-assignments-list').innerHTML = assigns.map(a => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4>${a.title}</h4>
+                    <p style="font-size: 0.8em; color: #666;">${a.template_repo_url}</p>
+                    ${a.due_date ? `<small>Due: ${new Date(a.due_date).toLocaleString()}</small>` : ''}
+                </div>
+                <button onclick="viewAssignmentDetails('${a.id}', '${a.title}')">Manage Access</button>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error("Error loading assignments:", err);
+    }
 }
+
 window.viewAssignmentDetails = async (id, title) => {
     activeAssignmentId = id;
     document.getElementById('view-assign-title').innerText = title;
     document.getElementById('assignment-detail-view').classList.remove('hidden');
     loadSubmissionsTable();
 };
+
 async function loadSubmissionsTable() {
-    const { data: subs } = await sb.from('submissions').select('*, profiles(full_name, user_metadata)').eq('assignment_id', activeAssignmentId);
+    const { data: subs } = await sb.from('submissions').select('*, profiles(full_name, avatar_url)').eq('assignment_id', activeAssignmentId);
     document.getElementById('student-submissions-table').innerHTML = subs.map(s => `
         <tr>
-            <td>${s.profiles.full_name || s.profiles.user_metadata.full_name || 'Student'}</td>
+            <td>${s.profiles.full_name || 'Student'}</td>
             <td><span class="status-pill">${s.status}</span></td>
             <td>${s.is_locked ? '🔒 Read-only' : '✍️ Write'}</td>
             <td><button class="secondary" onclick="toggleAccess('${s.id}', ${!s.is_locked})">${s.is_locked ? 'Unlock' : 'Lock'}</button></td>
         </tr>
     `).join('');
 }
+
 window.toggleAccess = async (submissionId, lock) => {
     loadingIndicator.classList.remove('hidden');
     await sb.functions.invoke('github-classroom-actions', { body: { action: 'TOGGLE_REPO_ACCESS', submissionId, lock } });
-    loadingIndicator.classList.add('hidden'); loadSubmissionsTable();
+    loadingIndicator.classList.add('hidden'); 
+    loadSubmissionsTable();
 };
+
 window.massToggleAccess = async (lock) => {
     if (!confirm(`Mass ${lock ? 'LOCK' : 'UNLOCK'}?`)) return;
     loadingIndicator.classList.remove('hidden');
     await sb.functions.invoke('github-classroom-actions', { body: { action: 'MASS_TOGGLE_ACCESS', assignmentId: activeAssignmentId, lock } });
-    loadingIndicator.classList.add('hidden'); loadSubmissionsTable();
+    loadingIndicator.classList.add('hidden'); 
+    loadSubmissionsTable();
 };
+
 window.createAssignment = async () => {
     const course_id = document.getElementById('assignment-course-id').value;
     const title = document.getElementById('assignment-title').value;
-    const template = document.getElementById('assignment-template').value;
-    await sb.from('assignments').insert([{ course_id, title, template_repo_url: template }]);
-    loadTeacherAssignments();
+    const description = document.getElementById('assignment-desc').value;
+    const template_repo_url = document.getElementById('assignment-template').value;
+    const due_date = document.getElementById('assignment-due').value;
+    const lock_date = document.getElementById('assignment-lock').value;
+
+    if (!course_id || !title || !template_repo_url) {
+        return alert("Course, Title and Template URL are required.");
+    }
+
+    loadingIndicator.classList.remove('hidden');
+    const { error } = await sb.from('assignments').insert([{ 
+        course_id, title, description, template_repo_url, 
+        due_date: due_date || null, 
+        lock_date: lock_date || null 
+    }]);
+    loadingIndicator.classList.add('hidden');
+
+    if (error) {
+        alert("Error creating assignment: " + error.message);
+    } else {
+        alert("Assignment created successfully!");
+        // Clear form
+        document.getElementById('assignment-title').value = '';
+        document.getElementById('assignment-desc').value = '';
+        document.getElementById('assignment-template').value = '';
+        document.getElementById('assignment-due').value = '';
+        document.getElementById('assignment-lock').value = '';
+        loadTeacherAssignments();
+    }
 };
 
 async function loadTeacherAttendanceData() {
