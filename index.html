@@ -79,13 +79,35 @@
             <div class="nav-item" onclick="showSection('student-scan')">Scan QR</div>
         </div>
         <div id="user-info">
-            <p id="user-display">Loading...</p>
+            <p id="user-display" class="nav-item" style="cursor: pointer; text-decoration: underline;" onclick="showSection('user-profile')">Loading...</p>
             <p id="user-role" style="font-weight: bold; text-transform: uppercase; color: #3498db;"></p>
             <button class="secondary" id="logout-btn">Logout</button>
         </div>
     </div>
 
     <div id="main-content">
+        <!-- User Profile Section (Self Service) -->
+        <section id="user-profile" class="content-section hidden">
+            <h1>My Profile</h1>
+            <div class="card">
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
+                    <img id="profile-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; background: #eee;">
+                    <div>
+                        <h2 id="profile-name-display">User Name</h2>
+                        <p id="profile-role-display"></p>
+                    </div>
+                </div>
+                <label>Full Name</label>
+                <input type="text" id="profile-full-name">
+                <label>Matrícula UNRN (UNRN-n)</label>
+                <input type="text" id="profile-matricula">
+                <label>GitHub Username</label>
+                <input type="text" id="profile-github">
+                <label>Secondary Emails (comma separated)</label>
+                <input type="text" id="profile-emails">
+                <button onclick="saveMyProfile()">Update Profile</button>
+            </div>
+        </section>
         <section id="admin-courses" class="content-section hidden">
             <h1>Courses Management</h1>
             <div class="card">

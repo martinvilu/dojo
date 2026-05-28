@@ -100,6 +100,7 @@ function hideAllRoles() {
 window.showSection = (sectionId) => {
     document.querySelectorAll('.content-section').forEach(el => el.classList.add('hidden'));
     document.getElementById(sectionId).classList.remove('hidden');
+    if (sectionId === 'user-profile') loadUserProfile();
     if (sectionId === 'admin-courses') loadAdminCourses();
     if (sectionId === 'admin-users') loadAdminUsers();
     if (sectionId === 'teacher-courses') loadTeacherCourses();
@@ -112,6 +113,69 @@ window.showSection = (sectionId) => {
     if (sectionId === 'student-scan') startScanner();
     else stopScanner();
     updateBadges();
+};
+
+// --- User Profile (Self) ---
+async function loadUserProfile() {
+    const { data: u } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+    document.getElementById('profile-avatar').src = u.avatar_url || 'https://ui-avatars.com/api/?name='+u.full_name;
+    document.getElementById('profile-name-display').innerText = u.full_name || 'User';
+    document.getElementById('profile-role-display').innerText = u.role;
+    document.getElementById('profile-full-name').value = u.full_name || '';
+    document.getElementById('profile-matricula').value = u.matricula || '';
+    document.getElementById('profile-github').value = u.github_username || '';
+    document.getElementById('profile-emails').value = (u.secondary_emails || []).join(', ');
+}
+
+window.saveMyProfile = async () => {
+    const full_name = document.getElementById('profile-full-name').value;
+    const matricula = document.getElementById('profile-matricula').value;
+    const github_username = document.getElementById('profile-github').value;
+    const emails = document.getElementById('profile-emails').value.split(',').map(e => e.trim()).filter(e => e);
+
+    if (matricula && !/^UNRN-[0-9]+$/.test(matricula)) return alert("Invalid Matricula format (UNRN-n)");
+    if (emails.length > 3) return alert("Max 3 secondary emails.");
+
+    loadingIndicator.classList.remove('hidden');
+    const { error } = await sb.from('profiles').update({ full_name, matricula, github_username, secondary_emails: emails }).eq('id', currentUser.id);
+    loadingIndicator.classList.add('hidden');
+
+    if (error) alert(error.message); else alert("Profile updated!");
+};
+
+// --- Teacher Portability ---
+window.exportCourseContent = async (courseId, name) => {
+    const { data: assignments } = await sb.from('assignments').select('title, description, template_repo_url, due_date, lock_date').eq('course_id', courseId);
+    const { data: schedules } = await sb.from('course_schedules').select('day_of_week, start_time, end_time').eq('course_id', courseId);
+    const { data: plan } = await sb.from('course_plan_items').select('title, description, topic_date, recording_url, materials_url').eq('course_id', courseId);
+    const { data: events } = await sb.from('course_events').select('title, description, event_date, is_external').eq('course_id', courseId);
+
+    const blob = new Blob([JSON.stringify({ assignments, schedules, plan, events }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name.toLowerCase().replace(/ /g, '-')}-content.json`;
+    a.click();
+};
+
+window.importCourseContent = async (event, courseId) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            loadingIndicator.classList.remove('hidden');
+            if (data.assignments?.length) await sb.from('assignments').insert(data.assignments.map(x => ({ ...x, course_id: courseId })));
+            if (data.schedules?.length) await sb.from('course_schedules').insert(data.schedules.map(x => ({ ...x, course_id: courseId })));
+            if (data.plan?.length) await sb.from('course_plan_items').insert(data.plan.map(x => ({ ...x, course_id: courseId })));
+            if (data.events?.length) await sb.from('course_events').insert(data.events.map(x => ({ ...x, course_id: courseId })));
+            loadingIndicator.classList.add('hidden');
+            alert("Content imported!");
+            loadTeacherCourses();
+        } catch (err) { alert("Import failed: " + err.message); }
+    };
+    reader.readAsText(file);
 };
 
 // --- Admin ---
@@ -381,7 +445,12 @@ async function loadTeacherCourses() {
             <div class="card">
                 <h3>${c.name}</h3>
                 <p style="font-size: 0.8em; color: #666;">${c.github_org}</p>
-                <button onclick="showSection('teacher-assignments')">Assignments</button>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button onclick="showSection('teacher-assignments')">Assignments</button>
+                    <button class="secondary" onclick="exportCourseContent('${c.id}', '${c.name}')">Export Content</button>
+                    <button class="secondary" onclick="document.getElementById('teacher-import-file-${c.id}').click()">Import Content</button>
+                    <input type="file" id="teacher-import-file-${c.id}" class="hidden" accept=".json" onchange="importCourseContent(event, '${c.id}')">
+                </div>
             </div>
         `).join('');
 
