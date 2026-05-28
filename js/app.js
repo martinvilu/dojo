@@ -231,36 +231,51 @@ function updateBadgeElement(id, count) {
 
 // --- Admin ---
 async function loadAdminCourses() {
-    const { data } = await sb.from('courses').select(`
-        *,
-        course_teachers (
-            teacher_id,
-            profiles (full_name)
-        )
-    `).order('created_at', { ascending: false });
-    
-    const container = document.getElementById('admin-courses-list');
-    container.innerHTML = data.map(c => {
-        const teachers = c.course_teachers.map(t => t.profiles.full_name).join(', ') || 'No teachers assigned';
-        return `
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <h3 id="course-title-${c.id}">${c.name}</h3>
-                    <p style="color: #666; font-size: 0.9em; margin: 5px 0;">
-                        <strong>GitHub:</strong> <a href="https://github.com/${c.github_org}" target="_blank">github.com/${c.github_org}</a>
-                    </p>
-                    <p style="color: #34495e; font-size: 0.85em;">
-                        <strong>Teachers:</strong> ${teachers}
-                    </p>
+    try {
+        const { data, error } = await sb.from('courses').select(`
+            *,
+            course_teachers (
+                teacher_id,
+                profiles (full_name)
+            )
+        `).order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const container = document.getElementById('admin-courses-list');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p>No courses found.</p>';
+            return;
+        }
+
+        container.innerHTML = data.map(c => {
+            const teachers = (c.course_teachers || [])
+                .map(t => t.profiles?.full_name || 'Unknown')
+                .join(', ') || 'No teachers assigned';
+            
+            return `
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h3 id="course-title-${c.id}">${c.name}</h3>
+                        <p style="color: #666; font-size: 0.9em; margin: 5px 0;">
+                            <strong>GitHub:</strong> <a href="https://github.com/${c.github_org}" target="_blank">github.com/${c.github_org}</a>
+                        </p>
+                        <p style="color: #34495e; font-size: 0.85em;">
+                            <strong>Teachers:</strong> ${teachers}
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="secondary" onclick="editCourseName('${c.id}', '${c.name}')">Edit</button>
+                        <button class="secondary" onclick="viewCourseTeachers('${c.id}', '${c.name}')">Teachers</button>
+                        <button class="secondary" onclick="exportCourse('${c.id}', '${c.name}')">Export</button>
+                    </div>
                 </div>
-                <div style="display:flex; gap:5px;">
-                    <button class="secondary" onclick="editCourseName('${c.id}', '${c.name}')">Edit</button>
-                    <button class="secondary" onclick="viewCourseTeachers('${c.id}', '${c.name}')">Teachers</button>
-                    <button class="secondary" onclick="exportCourse('${c.id}', '${c.name}')">Export</button>
-                </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    } catch (err) {
+        console.error("Error loading admin courses:", err);
+        document.getElementById('admin-courses-list').innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+    }
 }
 
 window.editCourseName = async (courseId, currentName) => {
