@@ -246,14 +246,47 @@
         </section>
 
         <section id="teacher-curriculum" class="content-section hidden">
-            <h1>Curriculum</h1>
-            <div class="card"><select id="curriculum-course-id"></select><button onclick="addCurriculumItem()">Save</button></div>
+            <h1>Curriculum & Events</h1>
+            <div class="card">
+                <h3>Add Class Topic / Recording</h3>
+                <select id="curriculum-course-id"><option value="">Select Course</option></select>
+                <input type="date" id="curriculum-date">
+                <input type="text" id="curriculum-title" placeholder="Topic Title">
+                <textarea id="curriculum-desc" placeholder="Details / Summary"></textarea>
+                <input type="text" id="curriculum-recording" placeholder="Recording URL (YouTube/Drive)">
+                <input type="text" id="curriculum-materials" placeholder="Materials URL">
+                <button onclick="addCurriculumItem()">Save Class Info</button>
+            </div>
+            <div id="teacher-curriculum-list"></div>
+
+            <div class="card">
+                <h3>Add Special Event (Exams, Holidays, etc.)</h3>
+                <input type="date" id="event-date">
+                <input type="text" id="event-title" placeholder="Event Name">
+                <label><input type="checkbox" id="event-external"> External Event</label>
+                <button onclick="addCourseEvent()">Add Event</button>
+            </div>
+            <div id="teacher-events-list"></div>
         </section>
 
         <section id="teacher-comms" class="content-section hidden">
             <h1>Communications</h1>
-            <div class="card"><select id="ann-course-id"></select><button onclick="postAnnouncement()">Post</button></div>
-            <div class="card"><select id="dm-student-id"></select><div id="teacher-chat-box"></div><button onclick="sendDirectMessage('teacher')">Send</button></div>
+            <div class="card">
+                <h3>Post Announcement (General)</h3>
+                <select id="ann-course-id"><option value="">Select Course</option></select>
+                <input type="text" id="ann-title" placeholder="Announcement Title">
+                <textarea id="ann-content" placeholder="Content for all students..."></textarea>
+                <button onclick="postAnnouncement()">Post Announcement</button>
+            </div>
+            <div id="teacher-announcements-list"></div>
+
+            <div class="card">
+                <h3>Direct Messages (Specific)</h3>
+                <select id="dm-student-id"><option value="">Select Student</option></select>
+                <div id="teacher-chat-box" style="height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; background: #fafafa; border-radius: 5px;"></div>
+                <textarea id="teacher-dm-content" placeholder="Send a private message..."></textarea>
+                <button onclick="sendDirectMessage('teacher')">Send Message</button>
+            </div>
         </section>
 
         <section id="student-courses" class="content-section hidden">

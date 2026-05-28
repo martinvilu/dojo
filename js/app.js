@@ -604,43 +604,119 @@ async function updateQR(sessionId) {
 window.stopSession = () => { clearInterval(qrInterval); document.getElementById('qr-container').classList.add('hidden'); };
 
 async function loadTeacherCurriculumData() {
-    const { data } = await sb.from('courses').select(`*, course_teachers!inner(teacher_id)`).eq('course_teachers.teacher_id', currentUser.id);
-    document.getElementById('curriculum-course-id').innerHTML = data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    try {
+        const { data: myCourses } = await sb.from('course_teachers').select('courses(*)').eq('teacher_id', currentUser.id);
+        const courses = myCourses.map(d => d.courses).filter(c => c !== null);
+        const html = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        document.getElementById('curriculum-course-id').innerHTML = html;
+
+        // Load existing items for these courses
+        const courseIds = courses.map(c => c.id);
+        if (courseIds.length > 0) {
+            const { data: items } = await sb.from('course_plan_items').select('*, courses(name)').in('course_id', courseIds).order('topic_date', { ascending: false });
+            document.getElementById('teacher-curriculum-list').innerHTML = '<h3>Existing Topics</h3>' + 
+                (items.map(i => `<div class="card"><strong>[${i.courses.name}] ${i.topic_date}</strong>: ${i.title}</div>`).join('') || '<p>No items yet.</p>');
+            
+            const { data: events } = await sb.from('course_events').select('*, courses(name)').in('course_id', courseIds).order('event_date', { ascending: false });
+            document.getElementById('teacher-events-list').innerHTML = '<h3>Existing Events</h3>' + 
+                (events.map(e => `<div class="card"><strong>[${e.courses.name}] ${e.event_date}</strong>: ${e.title}</div>`).join('') || '<p>No events yet.</p>');
+        }
+    } catch (err) { console.error(err); }
 }
+
 window.addCurriculumItem = async () => {
-    const cid = document.getElementById('curriculum-course-id').value;
-    await sb.from('course_plan_items').insert([{ course_id: cid, topic_date: document.getElementById('curriculum-date').value, title: document.getElementById('curriculum-title').value }]);
-    alert("Saved!");
+    const course_id = document.getElementById('curriculum-course-id').value;
+    const topic_date = document.getElementById('curriculum-date').value;
+    const title = document.getElementById('curriculum-title').value;
+    const description = document.getElementById('curriculum-desc').value;
+    const recording_url = document.getElementById('curriculum-recording').value;
+    const materials_url = document.getElementById('curriculum-materials').value;
+
+    if (!course_id || !topic_date || !title) return alert("Required fields missing.");
+
+    loadingIndicator.classList.remove('hidden');
+    const { error } = await sb.from('course_plan_items').insert([{ course_id, topic_date, title, description, recording_url, materials_url }]);
+    loadingIndicator.classList.add('hidden');
+
+    if (error) alert(error.message);
+    else {
+        alert("Saved!");
+        document.getElementById('curriculum-title').value = '';
+        document.getElementById('curriculum-desc').value = '';
+        loadTeacherCurriculumData();
+    }
 };
+
 window.addCourseEvent = async () => {
     const cid = document.getElementById('curriculum-course-id').value;
-    await sb.from('course_events').insert([{ course_id: cid, event_date: document.getElementById('event-date').value, title: document.getElementById('event-title').value }]);
-    alert("Event Added!");
+    const date = document.getElementById('event-date').value;
+    const title = document.getElementById('event-title').value;
+    const is_external = document.getElementById('event-external').checked;
+
+    if (!cid || !date || !title) return alert("Required fields missing.");
+
+    const { error } = await sb.from('course_events').insert([{ course_id: cid, event_date: date, title, is_external }]);
+    if (error) alert(error.message);
+    else {
+        alert("Event Added!");
+        document.getElementById('event-title').value = '';
+        loadTeacherCurriculumData();
+    }
 };
 
 async function loadTeacherCommsData() {
-    const { data: courses } = await sb.from('courses').select(`*, course_teachers!inner(teacher_id)`).eq('course_teachers.teacher_id', currentUser.id);
-    document.getElementById('ann-course-id').innerHTML = courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    const { data: students } = await sb.from('course_roster').select('student_id, student_email').in('course_id', courses.map(c => c.id));
-    const unique = [...new Map(students.map(s => [s.student_id, s])).values()];
-    document.getElementById('dm-student-id').innerHTML = '<option value="">Select Student</option>' + unique.map(s => `<option value="${s.student_id}">${s.student_email}</option>`).join('');
+    try {
+        const { data: myCourses } = await sb.from('course_teachers').select('courses(*)').eq('teacher_id', currentUser.id);
+        const courses = myCourses.map(d => d.courses).filter(c => c !== null);
+        document.getElementById('ann-course-id').innerHTML = courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        
+        const courseIds = courses.map(c => c.id);
+        if (courseIds.length > 0) {
+            const { data: anns } = await sb.from('course_announcements').select('*, courses(name)').in('course_id', courseIds).order('created_at', { ascending: false });
+            document.getElementById('teacher-announcements-list').innerHTML = '<h3>Past Announcements</h3>' + 
+                (anns.map(a => `<div class="card"><strong>[${a.courses.name}] ${a.title}</strong><p>${a.content}</p></div>`).join('') || '<p>None yet.</p>');
+            
+            const { data: students } = await sb.from('course_roster').select('student_id, profiles(full_name, student_email)').in('course_id', courseIds);
+            const unique = [...new Map(students.map(s => [s.student_id, s])).values()];
+            document.getElementById('dm-student-id').innerHTML = '<option value="">Select Student</option>' + 
+                unique.map(s => `<option value="${s.student_id}">${s.profiles?.full_name || 'Student'}</option>`).join('');
+        }
+    } catch (err) { console.error(err); }
 }
+
 window.postAnnouncement = async () => {
-    await sb.from('course_announcements').insert([{ course_id: document.getElementById('ann-course-id').value, author_id: currentUser.id, title: document.getElementById('ann-title').value, content: document.getElementById('ann-content').value }]);
-    alert("Posted!");
+    const course_id = document.getElementById('ann-course-id').value;
+    const title = document.getElementById('ann-title').value;
+    const content = document.getElementById('ann-content').value;
+    if (!course_id || !title || !content) return alert("Fields missing");
+
+    const { error } = await sb.from('course_announcements').insert([{ course_id, author_id: currentUser.id, title, content }]);
+    if (error) alert(error.message);
+    else {
+        alert("Posted!");
+        document.getElementById('ann-title').value = '';
+        document.getElementById('ann-content').value = '';
+        loadTeacherCommsData();
+    }
 };
-window.sendDirectMessage = async (role) => {
-    const recId = document.getElementById(role === 'teacher' ? 'dm-student-id' : 'dm-teacher-id').value;
-    const cont = document.getElementById(`${role}-dm-content`).value;
-    await sb.from('direct_messages').insert([{ sender_id: currentUser.id, receiver_id: recId, content: cont }]);
-    document.getElementById(`${role}-dm-content`).value = ''; loadChat(role, recId);
-};
+
 async function loadChat(role, peerId) {
     if (!peerId) return;
     await sb.from('direct_messages').update({ read_at: new Date().toISOString(), is_read: true }).eq('receiver_id', currentUser.id).eq('sender_id', peerId).is('read_at', null);
     const { data: messages } = await sb.from('direct_messages').select('*').or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${currentUser.id})`).order('created_at', { ascending: true });
+    
     const chatBox = document.getElementById(`${role}-chat-box`);
-    chatBox.innerHTML = messages.map(m => `<div class="message-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">${m.content} ${(m.sender_id === currentUser.id && m.read_at) ? '✔' : ''}</div>`).join('');
+    chatBox.innerHTML = messages.map(m => {
+        const isSent = m.sender_id === currentUser.id;
+        return `
+            <div class="message-bubble ${isSent ? 'sent' : 'received'}">
+                ${m.content}
+                <div style="font-size: 0.7em; text-align: right; opacity: 0.6;">
+                    ${new Date(m.created_at).toLocaleTimeString()} ${isSent && m.read_at ? '✔' : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 document.getElementById('dm-student-id')?.addEventListener('change', (e) => loadChat('teacher', e.target.value));
