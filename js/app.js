@@ -17,6 +17,7 @@ let qrInterval = null;
 let html5QrCode = null;
 let activeAssignmentId = null;
 
+// Auth Listeners
 loginBtn.onclick = () => sb.auth.signInWithOAuth({ provider: 'github' });
 logoutBtn.onclick = () => sb.auth.signOut();
 
@@ -35,29 +36,55 @@ window.testLogin = async (role) => {
     loadingIndicator.classList.add('hidden');
     
     if (error) alert("Test Login Error: " + error.message);
+    else location.reload(); // Force reload to ensure clean state
 };
 
-sb.auth.onAuthStateChange(async (event, session) => {
+// Initial session check
+async function initApp() {
+    const { data: { session } } = await sb.auth.getSession();
+    handleAuthState(session);
+    
+    sb.auth.onAuthStateChange((event, session) => {
+        handleAuthState(session);
+    });
+}
+
+async function handleAuthState(session) {
     if (session) {
         currentUser = session.user;
         authOverlay.classList.add('hidden');
-        await fetchProfile();
-        setupDashboard();
+        const success = await fetchProfile();
+        if (success) {
+            setupDashboard();
+        } else {
+            // If profile fails (e.g. DB reset while logged in), sign out
+            alert("Session error: Profile not found. Signing out.");
+            sb.auth.signOut();
+        }
     } else {
-        currentUser = null; currentProfile = null;
+        currentUser = null;
+        currentProfile = null;
         authOverlay.classList.remove('hidden');
         hideAllRoles();
     }
-});
+}
 
 async function fetchProfile() {
-    const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-    if (!error) {
+    try {
+        const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+        if (error || !data) throw error || new Error("No profile");
+        
         currentProfile = data;
-        userDisplay.innerText = currentUser.user_metadata.full_name || currentUser.email;
+        userDisplay.innerText = currentProfile.full_name || currentUser.email;
         userRoleLabel.innerText = currentProfile.role;
+        return true;
+    } catch (e) {
+        console.error("Error fetching profile:", e);
+        return false;
     }
 }
+
+initApp();
 
 function setupDashboard() {
     hideAllRoles();
