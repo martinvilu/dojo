@@ -98,6 +98,28 @@
             <div id="admin-courses-list"></div>
         </section>
 
+        <section id="admin-users" class="content-section hidden">
+            <h1>User Management & Roles</h1>
+            <div class="card">
+                <table class="table-admin">
+                    <thead><tr><th>Name</th><th>Role</th><th>Actions</th></tr></thead>
+                    <tbody id="admin-users-table"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="admin-course-teachers" class="content-section hidden">
+            <button class="secondary" onclick="showSection('admin-courses')">← Back to Courses</button>
+            <h1 id="admin-teacher-course-title">Manage Teachers</h1>
+            <div class="card">
+                <h3>Assign New Teacher</h3>
+                <select id="admin-all-teachers-list"><option value="">Select Teacher</option></select>
+                <button onclick="assignTeacherToCourse()">Assign Teacher</button>
+            </div>
+            <h2>Assigned Teachers</h2>
+            <div id="admin-assigned-teachers-list"></div>
+        </section>
+
         <section id="teacher-courses" class="content-section hidden">
             <h1>My Assigned Courses</h1>
             <div id="teacher-courses-list"></div>

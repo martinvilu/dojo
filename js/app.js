@@ -97,11 +97,11 @@ function setupDashboard() {
 function hideAllRoles() {
     document.querySelectorAll('.role-nav, .content-section').forEach(el => el.classList.add('hidden'));
 }
-
 window.showSection = (sectionId) => {
     document.querySelectorAll('.content-section').forEach(el => el.classList.add('hidden'));
     document.getElementById(sectionId).classList.remove('hidden');
     if (sectionId === 'admin-courses') loadAdminCourses();
+    if (sectionId === 'admin-users') loadAdminUsers();
     if (sectionId === 'teacher-courses') loadTeacherCourses();
     if (sectionId === 'teacher-assignments') loadTeacherAssignments();
     if (sectionId === 'teacher-attendance') loadTeacherAttendanceData();
@@ -112,6 +112,32 @@ window.showSection = (sectionId) => {
     if (sectionId === 'student-scan') startScanner();
     else stopScanner();
     updateBadges();
+};
+
+// --- Admin ---
+async function loadAdminUsers() {
+    const { data: users, error } = await sb.from('profiles').select('*').order('full_name');
+    if (error) return alert(error.message);
+
+    document.getElementById('admin-users-table').innerHTML = users.map(u => `
+        <tr>
+            <td>${u.full_name || 'No name'}</td>
+            <td>
+                <select onchange="updateUserRole('${u.id}', this.value)">
+                    <option value="student" ${u.role === 'student' ? 'selected' : ''}>Student</option>
+                    <option value="teacher" ${u.role === 'teacher' ? 'selected' : ''}>Teacher</option>
+                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                </select>
+            </td>
+            <td><button class="secondary" onclick="alert('User ID: ${u.id}')">Details</button></td>
+        </tr>
+    `).join('');
+}
+
+window.updateUserRole = async (userId, newRole) => {
+    const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', userId);
+    if (error) alert(error.message);
+    else alert("Role updated!");
 };
 
 async function updateBadges() {
@@ -139,8 +165,55 @@ function updateBadgeElement(id, count) {
 // --- Admin ---
 async function loadAdminCourses() {
     const { data } = await sb.from('courses').select('*');
-    document.getElementById('admin-courses-list').innerHTML = data.map(c => `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div><h3>${c.name}</h3><p>${c.github_org}</p></div><button class="secondary" onclick="exportCourse('${c.id}', '${c.name}')">Export</button></div>`).join('');
+    document.getElementById('admin-courses-list').innerHTML = data.map(c => `
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+            <div><h3>${c.name}</h3><p>${c.github_org}</p></div>
+            <div style="display:flex; gap:5px;">
+                <button class="secondary" onclick="viewCourseTeachers('${c.id}', '${c.name}')">Teachers</button>
+                <button class="secondary" onclick="exportCourse('${c.id}', '${c.name}')">Export</button>
+            </div>
+        </div>
+    `).join('');
 }
+
+let adminSelectedCourseId = null;
+
+window.viewCourseTeachers = async (courseId, courseName) => {
+    adminSelectedCourseId = courseId;
+    document.getElementById('admin-teacher-course-title').innerText = `Manage Teachers: ${courseName}`;
+    showSection('admin-course-teachers');
+    
+    // Load all teachers for the dropdown
+    const { data: allTeachers } = await sb.from('profiles').select('id, full_name').eq('role', 'teacher');
+    document.getElementById('admin-all-teachers-list').innerHTML = '<option value="">Select Teacher</option>' + 
+        allTeachers.map(t => `<option value="${t.id}">${t.full_name}</option>`).join('');
+
+    // Load currently assigned teachers
+    loadAssignedTeachers();
+};
+
+async function loadAssignedTeachers() {
+    const { data: assigned } = await sb.from('course_teachers').select('*, profiles(full_name)').eq('course_id', adminSelectedCourseId);
+    document.getElementById('admin-assigned-teachers-list').innerHTML = assigned.map(a => `
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <span>${a.profiles.full_name}</span>
+            <button class="danger" style="padding:5px 10px;" onclick="removeTeacherFromCourse('${a.teacher_id}')">Remove</button>
+        </div>
+    `).join('') || '<p>No teachers assigned yet.</p>';
+}
+
+window.assignTeacherToCourse = async () => {
+    const teacherId = document.getElementById('admin-all-teachers-list').value;
+    if (!teacherId) return;
+
+    const { error } = await sb.from('course_teachers').insert([{ course_id: adminSelectedCourseId, teacher_id: teacherId }]);
+    if (error) alert(error.message); else loadAssignedTeachers();
+};
+
+window.removeTeacherFromCourse = async (teacherId) => {
+    const { error } = await sb.from('course_teachers').delete().eq('course_id', adminSelectedCourseId).eq('teacher_id', teacherId);
+    if (error) alert(error.message); else loadAssignedTeachers();
+};
 window.createCourse = async () => {
     const name = document.getElementById('course-name').value;
     const org = document.getElementById('course-org').value;
