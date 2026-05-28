@@ -1,80 +1,91 @@
 -- Seed data for Gaula Classroom local testing
 
--- 1. Enable pgcrypto for password hashing if not enabled
+-- 1. Enable pgcrypto for password hashing
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 2. Create Users in auth.users
--- Password for all: 'password123'
--- We use a known password hash for 'password123' to ensure compatibility with Supabase Auth
+-- 2. Create Users in auth.users with all required fields for GoTrue scanner
+-- We also store the role in 'app_metadata' which is server-side managed and safer than 'user_metadata'
 INSERT INTO auth.users (
-    id, 
-    email, 
-    encrypted_password, 
-    email_confirmed_at, 
-    raw_app_meta_data, 
-    raw_user_meta_data, 
-    created_at, 
-    updated_at, 
-    confirmation_token, 
-    recovery_token, 
-    email_change_token_new, 
     instance_id,
-    is_sso_user,
+    id,
+    aud,
     role,
-    aud
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    recovery_sent_at,
+    last_sign_in_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    email_change,
+    email_change_token_new,
+    recovery_token,
+    is_super_admin,
+    is_sso_user,
+    is_anonymous
 )
 VALUES 
     (
+        '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000001', 
+        'authenticated',
+        'authenticated',
         'admin@gaula.com', 
         crypt('password123', gen_salt('bf')), 
-        now(), 
-        '{"provider":"email","providers":["email"]}', 
+        now(),
+        now(),
+        now(),
+        '{"provider":"email","providers":["email"],"role":"admin"}', 
         '{"full_name":"System Admin","role":"admin"}', 
         now(), 
-        now(), 
-        '', '', '', 
-        '00000000-0000-0000-0000-000000000000',
-        false,
-        'authenticated',
-        'authenticated'
+        now(),
+        '', '', '', '', 
+        false, false, false
     ),
     (
+        '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000002', 
+        'authenticated',
+        'authenticated',
         'teacher@gaula.com', 
         crypt('password123', gen_salt('bf')), 
-        now(), 
-        '{"provider":"email","providers":["email"]}', 
+        now(),
+        now(),
+        now(),
+        '{"provider":"email","providers":["email"],"role":"teacher"}', 
         '{"full_name":"Professor Oak","role":"teacher"}', 
         now(), 
-        now(), 
-        '', '', '', 
-        '00000000-0000-0000-0000-000000000000',
-        false,
-        'authenticated',
-        'authenticated'
+        now(),
+        '', '', '', '',
+        false, false, false
     ),
     (
+        '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000003', 
+        'authenticated',
+        'authenticated',
         'student@gaula.com', 
         crypt('password123', gen_salt('bf')), 
-        now(), 
-        '{"provider":"email","providers":["email"]}', 
+        now(),
+        now(),
+        now(),
+        '{"provider":"email","providers":["email"],"role":"student"}', 
         '{"full_name":"Ash Ketchum","role":"student"}', 
         now(), 
-        now(), 
-        '', '', '', 
-        '00000000-0000-0000-0000-000000000000',
-        false,
-        'authenticated',
-        'authenticated'
+        now(),
+        '', '', '', '',
+        false, false, false
     )
 ON CONFLICT (id) DO UPDATE SET 
     encrypted_password = EXCLUDED.encrypted_password,
     email_confirmed_at = now(),
+    raw_app_meta_data = EXCLUDED.raw_app_meta_data,
     raw_user_meta_data = EXCLUDED.raw_user_meta_data;
 
--- 3. Ensure Profiles are correct (trigger handles creation, but we override for seed)
+-- 3. Ensure Profiles are correct
 INSERT INTO public.profiles (id, role, full_name)
 VALUES 
     ('00000000-0000-0000-0000-000000000001', 'admin', 'System Admin'),
