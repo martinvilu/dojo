@@ -121,25 +121,92 @@ async function loadAdminUsers() {
 
     document.getElementById('admin-users-table').innerHTML = users.map(u => `
         <tr>
-            <td>${u.full_name || 'No name'}</td>
+            <td><img src="${u.avatar_url || 'https://ui-avatars.com/api/?name='+u.full_name}" style="width: 32px; height: 32px; border-radius: 50%;"></td>
+            <td>${u.full_name || 'No name'} ${u.matricula ? `<br><small style="color: #666;">${u.matricula}</small>` : ''}</td>
+            <td>${u.github_username ? `<a href="https://github.com/${u.github_username}" target="_blank">@${u.github_username}</a>` : '-'}</td>
             <td>
-                <select onchange="updateUserRole('${u.id}', this.value)">
+                <select style="width: auto; padding: 2px;" onchange="updateUserRole('${u.id}', this.value)">
                     <option value="student" ${u.role === 'student' ? 'selected' : ''}>Student</option>
                     <option value="teacher" ${u.role === 'teacher' ? 'selected' : ''}>Teacher</option>
                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                 </select>
             </td>
-            <td><button class="secondary" onclick="alert('User ID: ${u.id}')">Details</button></td>
+            <td>
+                <button class="secondary" style="padding: 5px 10px;" onclick="editUserProfile('${u.id}')">Edit</button>
+            </td>
         </tr>
     `).join('');
 }
 
-window.updateUserRole = async (userId, newRole) => {
-    const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', userId);
-    if (error) alert(error.message);
-    else alert("Role updated!");
+let editingUserId = null;
+
+window.editUserProfile = async (userId) => {
+    editingUserId = userId;
+    const { data: u } = await sb.from('profiles').select('*').eq('id', userId).single();
+
+    document.getElementById('edit-user-avatar').src = u.avatar_url || 'https://ui-avatars.com/api/?name='+u.full_name;
+    document.getElementById('edit-user-name-title').innerText = u.full_name || 'User';
+    document.getElementById('edit-user-github-display').innerText = u.github_username ? `@${u.github_username}` : 'No GitHub';
+
+    document.getElementById('edit-user-name').value = u.full_name || '';
+    document.getElementById('edit-user-matricula').value = u.matricula || '';
+    document.getElementById('edit-user-emails').value = (u.secondary_emails || []).join(', ');
+    document.getElementById('edit-user-github').value = u.github_username || '';
+
+    showSection('admin-user-edit');
 };
 
+window.saveUserProfile = async () => {
+    const full_name = document.getElementById('edit-user-name').value;
+    const matricula = document.getElementById('edit-user-matricula').value;
+    const github_username = document.getElementById('edit-user-github').value;
+    const emailsInput = document.getElementById('edit-user-emails').value;
+    const secondary_emails = emailsInput.split(',').map(e => e.trim()).filter(e => e !== '');
+
+    if (matricula && !/^UNRN-[0-9]+$/.test(matricula)) {
+        return alert("Invalid Matricula format. Must be UNRN-n");
+    }
+    if (secondary_emails.length > 3) {
+        return alert("Maximum 3 secondary emails allowed.");
+    }
+
+    const { error } = await sb.from('profiles').update({
+        full_name, matricula, github_username, secondary_emails
+    }).eq('id', editingUserId);
+
+    if (error) alert(error.message);
+    else {
+        alert("Profile updated!");
+        showSection('admin-users');
+    }
+};
+
+window.exportUsers = async () => {
+    const { data: users } = await sb.from('profiles').select('*');
+    const blob = new Blob([JSON.stringify(users, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gaula-users-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+};
+
+window.importUsers = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const users = JSON.parse(e.target.result);
+            // Bulk upsert profiles (assuming users already exist in auth.users or we only update profiles)
+            // In a real scenario, we might need a more complex import.
+            const { error } = await sb.from('profiles').upsert(users);
+            if (error) alert(error.message);
+            else { alert("Users imported!"); loadAdminUsers(); }
+        } catch (err) { alert("Invalid JSON file"); }
+    };
+    reader.readAsText(file);
+};
 async function updateBadges() {
     if (!currentUser || !currentProfile) return;
     const role = currentProfile.role;

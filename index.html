@@ -100,11 +100,45 @@
 
         <section id="admin-users" class="content-section hidden">
             <h1>User Management & Roles</h1>
+            <div class="card" style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+                <button class="secondary" onclick="exportUsers()">Export Users JSON</button>
+                <button class="secondary" onclick="document.getElementById('import-users-file').click()">Import Users</button>
+                <input type="file" id="import-users-file" class="hidden" accept=".json" onchange="importUsers(event)">
+            </div>
             <div class="card">
                 <table class="table-admin">
-                    <thead><tr><th>Name</th><th>Role</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Avatar</th><th>Name</th><th>GitHub</th><th>Role</th><th>Actions</th></tr></thead>
                     <tbody id="admin-users-table"></tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- User Edit Section -->
+        <section id="admin-user-edit" class="content-section hidden">
+            <button class="secondary" onclick="showSection('admin-users')">← Back to Users</button>
+            <h1>Edit User Profile</h1>
+            <div class="card">
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
+                    <img id="edit-user-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; background: #eee;">
+                    <div>
+                        <h2 id="edit-user-name-title">User Name</h2>
+                        <p id="edit-user-github-display">@github</p>
+                    </div>
+                </div>
+                
+                <label>Full Name</label>
+                <input type="text" id="edit-user-name">
+                
+                <label>Matrícula UNRN (UNRN-n)</label>
+                <input type="text" id="edit-user-matricula" placeholder="UNRN-123">
+                
+                <label>Secondary Emails (comma separated, max 3)</label>
+                <input type="text" id="edit-user-emails" placeholder="email1@test.com, email2@test.com">
+                
+                <label>GitHub Username</label>
+                <input type="text" id="edit-user-github">
+
+                <button onclick="saveUserProfile()">Save Changes</button>
             </div>
         </section>
 
