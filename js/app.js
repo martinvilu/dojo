@@ -362,17 +362,55 @@ window.importCourse = async (event) => {
 
 // --- Teacher ---
 async function loadTeacherCourses() {
-    const { data } = await sb.from('courses').select(`*, course_teachers!inner(teacher_id)`).eq('course_teachers.teacher_id', currentUser.id);
-    document.getElementById('teacher-courses-list').innerHTML = data.map(c => `<div class="card"><h3>${c.name}</h3><button onclick="showSection('teacher-assignments')">Assignments</button></div>`).join('');
-    document.getElementById('assignment-course-id').innerHTML = data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    try {
+        const { data, error } = await sb.from('course_teachers')
+            .select('course_id, courses(*)')
+            .eq('teacher_id', currentUser.id);
+        
+        if (error) throw error;
+
+        const courses = data.map(d => d.courses).filter(c => c !== null);
+        const container = document.getElementById('teacher-courses-list');
+        
+        if (courses.length === 0) {
+            container.innerHTML = '<p>No courses assigned to you.</p>';
+            return;
+        }
+
+        container.innerHTML = courses.map(c => `
+            <div class="card">
+                <h3>${c.name}</h3>
+                <p style="font-size: 0.8em; color: #666;">${c.github_org}</p>
+                <button onclick="showSection('teacher-assignments')">Assignments</button>
+            </div>
+        `).join('');
+
+        // Populate dropdown for assignments
+        const dropdown = document.getElementById('assignment-course-id');
+        dropdown.innerHTML = '<option value="">Select Course</option>' + 
+            courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    } catch (err) {
+        console.error("Error loading teacher courses:", err);
+    }
 }
 async function loadTeacherAssignments() {
     try {
-        const { data: courses } = await sb.from('courses').select(`*, course_teachers!inner(teacher_id)`).eq('course_teachers.teacher_id', currentUser.id);
+        // 1. Load my courses first to ensure dropdown is populated correctly
+        const { data: myCourses } = await sb.from('course_teachers').select('courses(*)').eq('teacher_id', currentUser.id);
+        const courses = myCourses.map(d => d.courses).filter(c => c !== null);
         const dropdown = document.getElementById('assignment-course-id');
         dropdown.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
-        const { data: assigns, error } = await sb.from('assignments').select('*, courses!inner(course_teachers!inner(teacher_id))').eq('courses.course_teachers.teacher_id', currentUser.id);
+        // 2. Load assignments for those courses
+        const { data: assigns, error } = await sb.from('assignments')
+            .select(`
+                *,
+                courses!inner (
+                    course_teachers!inner (teacher_id)
+                )
+            `)
+            .eq('courses.course_teachers.teacher_id', currentUser.id);
+
         if (error) throw error;
 
         document.getElementById('teacher-assignments-list').innerHTML = assigns.map(a => `
@@ -384,7 +422,7 @@ async function loadTeacherAssignments() {
                 </div>
                 <button onclick="viewAssignmentDetails('${a.id}', '${a.title}')">Manage Access</button>
             </div>
-        `).join('');
+        `).join('') || '<p>No assignments found.</p>';
     } catch (err) {
         console.error("Error loading assignments:", err);
     }
@@ -533,23 +571,82 @@ document.getElementById('dm-teacher-id')?.addEventListener('change', (e) => load
 
 // --- Student ---
 async function loadStudentCourses() {
-    const { data } = await sb.from('courses').select(`*, course_roster!inner(student_id)`).eq('course_roster.student_id', currentUser.id);
-    document.getElementById('student-courses-list').innerHTML = data.map(c => `<div class="card"><h3>${c.name}</h3><button onclick="viewCourseDetails('${c.id}', '${c.name}', '')">Open</button></div>`).join('');
+    try {
+        const { data, error } = await sb.from('course_roster')
+            .select('courses(*)')
+            .eq('student_id', currentUser.id);
+        
+        if (error) throw error;
+
+        const courses = data.map(d => d.courses).filter(c => c !== null);
+        const container = document.getElementById('student-courses-list');
+        
+        if (courses.length === 0) {
+            container.innerHTML = '<p>You are not enrolled in any courses yet.</p>';
+            return;
+        }
+
+        container.innerHTML = courses.map(c => `
+            <div class="card">
+                <h3>${c.name}</h3>
+                <p style="font-size: 0.8em; color: #666;">${c.github_org}</p>
+                <button onclick="viewCourseDetails('${c.id}', '${c.name}', '')">Open</button>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error("Error loading student courses:", err);
+    }
 }
+
 window.viewCourseDetails = async (id, name, desc) => {
-    document.getElementById('st-course-title').innerText = name; showSection('student-course-detail');
-    const { data: curr } = await sb.from('course_plan_items').select('*').eq('course_id', id).order('topic_date');
-    const { data: assign } = await sb.from('assignments').select('*, submissions(*)').eq('course_id', id);
-    document.getElementById('student-timeline-list').innerHTML = curr.map(i => `<div class="curriculum-item"><strong>${i.topic_date}</strong>: ${i.title}</div>`).join('');
-    document.getElementById('student-assignments-list').innerHTML = assign.map(a => `<div class="card"><h4>${a.title}</h4>${a.submissions?.[0] ? 'Accepted' : `<button onclick="acceptAssignment('${a.id}')">Accept</button>`}</div>`).join('');
+    document.getElementById('st-course-title').innerText = name;
+    showSection('student-course-detail');
+    
+    try {
+        const { data: curr } = await sb.from('course_plan_items').select('*').eq('course_id', id).order('topic_date');
+        const { data: assign } = await sb.from('assignments').select('*, submissions(*)').eq('course_id', id);
+        
+        document.getElementById('student-timeline-list').innerHTML = curr.map(i => `
+            <div class="curriculum-item">
+                <strong>${i.topic_date}</strong>: ${i.title}
+            </div>
+        `).join('') || '<p>No topics scheduled.</p>';
+
+        document.getElementById('student-assignments-list').innerHTML = assign.map(a => `
+            <div class="card">
+                <h4>${a.title}</h4>
+                ${a.submissions?.[0] ? 'Accepted' : `<button onclick="acceptAssignment('${a.id}')">Accept</button>`}
+            </div>
+        `).join('') || '<p>No assignments found.</p>';
+    } catch (err) {
+        console.error("Error loading course details:", err);
+    }
 };
-window.acceptAssignment = async (id) => { await sb.functions.invoke('github-classroom-actions', { body: { action: 'ACCEPT_ASSIGNMENT', assignmentId: id } }); location.reload(); };
+
 async function loadStudentCommsData() {
-    const { data: roster } = await sb.from('course_roster').select('course_id').eq('student_id', currentUser.id);
-    const { data: anns } = await sb.from('course_announcements').select('*, courses(name)').in('course_id', roster.map(r => r.course_id)).order('created_at', { ascending: false });
-    document.getElementById('student-announcements-list').innerHTML = anns.map(a => `<div class="card announcement-card"><small>${a.courses.name}</small><h4>${a.title}</h4><p>${a.content}</p></div>`).join('');
-    const { data: teachers } = await sb.from('course_teachers').select('teacher_id, courses(name)').in('course_id', roster.map(r => r.course_id));
-    document.getElementById('dm-teacher-id').innerHTML = '<option value="">Select Teacher</option>' + teachers.map(t => `<option value="${t.teacher_id}">${t.courses.name}</option>`).join('');
+    try {
+        const { data: roster } = await sb.from('course_roster').select('course_id').eq('student_id', currentUser.id);
+        const courseIds = roster.map(r => r.course_id);
+
+        if (courseIds.length === 0) {
+            document.getElementById('student-announcements-list').innerHTML = '<p>Enroll in a course to see news.</p>';
+            return;
+        }
+
+        const { data: anns } = await sb.from('course_announcements').select('*, courses(name)').in('course_id', courseIds).order('created_at', { ascending: false });
+        document.getElementById('student-announcements-list').innerHTML = anns.map(a => `
+            <div class="card announcement-card">
+                <small>${a.courses.name}</small>
+                <h4>${a.title}</h4>
+                <p>${a.content}</p>
+            </div>
+        `).join('') || '<p>No announcements yet.</p>';
+
+        const { data: teachers } = await sb.from('course_teachers').select('teacher_id, courses(name)').in('course_id', courseIds);
+        document.getElementById('dm-teacher-id').innerHTML = '<option value="">Select Teacher</option>' + teachers.map(t => `<option value="${t.teacher_id}">${t.courses.name}</option>`).join('');
+    } catch (err) {
+        console.error("Error loading student comms:", err);
+    }
 }
 function startScanner() {
     html5QrCode = new Html5Qrcode("reader");
