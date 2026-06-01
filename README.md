@@ -1,66 +1,61 @@
-# Jutsu Classroom (GitHub Classroom Clone)
+# Jutsu Classroom
 
-Jutsu Classroom es una alternativa ligera y auto-hospedada a GitHub Classroom, construida sobre **Supabase** y **GitHub API**. Permite una gestión académica integral, desde el control de repositorios hasta la asistencia y comunicación.
+Jutsu Classroom es una plataforma educativa integral para la gestión académica, diseñada para ofrecer una experiencia rápida y centralizada. Reemplaza herramientas aisladas con un sistema "todo en uno" construido sobre **Firebase**, pensado especialmente para docentes y estudiantes de habla hispana (con soporte nativo para Español Rioplatense).
 
 ## 🚀 Arquitectura y Capacidades
 
-1.  **Multi-Dashboard**: Vistas especializadas para **Administradores**, **Profesores** y **Estudiantes**.
-2.  **Gestión de GitHub**: Creación automática de repositorios individuales desde plantillas (no forks) y control de permisos (Lectura/Escritura).
-3.  **Control de Asistencia**: Sistema de **QR dinámico** que se regenera cada 10s para evitar fraudes, con escáner móvil integrado.
-4.  **Cronograma Académico**: Calendario cuatrimestral, planificación semanal, temas de clase y repositorio de grabaciones.
-5.  **Comunicación Bidireccional**: Anuncios generales por curso y mensajería privada con confirmación de lectura (timestamp).
-6.  **Sistema de Entregas**: Ciclo de vida con estados visuales (OK, Correcciones, Rehacer, etc.) y doble fecha límite.
+1.  **Backend Monolítico en la Nube**: Basado enteramente en **Firebase** (Auth, Firestore, Hosting y Cloud Functions v1) usando Node.js 24.
+2.  **Multi-Dashboard Unificado**: Vistas especializadas y control de acceso para **Administradores**, **Profesores** y **Estudiantes**.
+3.  **Múltiples Métodos de Autenticación**: Soporte activo para inicio de sesión mediante **Google**, **GitHub** y clásico **Email/Contraseña**.
+4.  **Perfil del Estudiante**: Seguimiento académico detallado con métricas locales (Matrícula UNRN, Cohorte).
+5.  **Enrolamiento por Código**: Sistema ágil para que los alumnos se sumen a las cursadas utilizando un código de invitación seguro de 6 caracteres generado aleatoriamente.
+6.  **UX Pulida y Feedback Global**: Animaciones de carga integradas e interfaces fluidas basadas en JavaScript Vanilla.
 
 ## 🛠️ Requisitos Previos
 
-- Cuenta de [Supabase](https://supabase.com/).
-- Organización en GitHub para los repositorios de alumnos.
-- **GitHub Personal Access Token (PAT)** con permisos `repo` y `admin:org`.
+- Cuenta de [Firebase](https://firebase.google.com/).
+- Herramientas locales instaladas: `Node.js` y `npm`.
+- CLI de Firebase (para despliegues): `npm install -g firebase-tools`
 
-## ⚙️ Configuración
+## ⚙️ Configuración y Despliegue
 
-### 1. Base de Datos y Auth
-- Aplica las migraciones en `supabase/migrations/`.
-- Configura el proveedor **GitHub** en Supabase Auth.
-- **Roles**: Los usuarios son `student` por defecto. Para asignar un Admin/Profesor, edita la tabla `profiles`.
-
-### 2. Edge Functions
-Configura los secretos y despliega:
+### 1. Inicializar el Proyecto
+Configura el entorno en tu terminal:
 ```bash
-supabase secrets set GITHUB_ACCESS_TOKEN=tu_token
-supabase functions deploy github-classroom-actions
-supabase functions deploy attendance-handler
+firebase login
+firebase use jutsu-classroom-mrtin
 ```
 
-### 3. Frontend
-Actualiza las constantes en `js/app.js` con tu `SUPABASE_URL` y `SUPABASE_ANON_KEY`.
+### 2. Backend y Reglas
+Aplica las reglas de seguridad de Firestore e instala las dependencias de las Cloud Functions:
+```bash
+firebase deploy --only firestore:rules
+cd functions && npm install && cd ..
+```
+
+### 3. Despliegue Completo
+```bash
+# Sube tanto las Cloud Functions como el Frontend (Hosting)
+firebase deploy
+```
 
 ## 📖 Flujos de Usuario
 
-### 👔 Administrador
-- Crear materias y asignarles una organización de GitHub.
-- Importar/Exportar la estructura de materias vía JSON para reutilización en nuevos ciclos.
+### 👔 Administrador (`admin@jutsu.com`)
+- Crear nuevas materias.
+- Visualizar todos los usuarios registrados, sus roles y sus datos académicos (Matrícula, Cohorte).
 
-### 🍎 Profesor
-- Crear tareas con `due_date` (entrega) y `lock_date` (bloqueo de repo).
-- **Control de Acceso**: Bloquear/Desbloquear repositorios individual o masivamente.
-- Gestionar el calendario, temas de clase y enlaces a grabaciones.
-- Iniciar sesiones de clase con QR dinámico.
-- Evaluar entregas y enviar mensajes privados.
+### 🍎 Profesor (`teacher@jutsu.com`)
+- Visualizar las clases asignadas junto a su **Código de Invitación** exclusivo.
+- Compartir el código con los estudiantes.
+- (En desarrollo) Crear tareas, evaluar entregas y administrar cronogramas.
 
-### 🎓 Estudiante
-- Aceptar tareas (crea repo automático) y enviarlas a revisión.
-- Ver estados de corrección mediante iconos (✅, ⚠️, 🔆, ❌, ⭕, 🚫).
-- Escanear QR desde el móvil para marcar asistencia.
-- Acceder al cronograma y grabaciones de clase.
-
-## 🔒 Seguridad
-- **RLS (Row Level Security)**: Aislamiento total de datos entre estudiantes.
-- **Server-side Validation**: Las fechas límite y permisos de GitHub se gestionan en Edge Functions seguras.
+### 🎓 Estudiante (`student@jutsu.com`)
+- Autenticarse de forma rápida (GitHub/Google).
+- Completar su **Perfil Académico** (Matrícula y Año de ingreso).
+- Sumarse a una cursada insertando el código de invitación del docente en el dashboard principal.
+- (En desarrollo) Ver tareas, subir entregas y marcar asistencia.
 
 ## 📝 Convenciones del Proyecto
 - **Commits Semánticos**: Este proyecto utiliza [Conventional Commits](https://www.conventionalcommits.org/). Todos los commits deben seguir el formato `<tipo>(<ámbito>): <descripción>` (ej. `feat(auth): login con google`, `fix(ui): botón no clickeable`).
-- Para más detalles sobre el flujo de trabajo, lee el archivo `DEVELOPMENT.md`.
-
-## 📄 Licencia
-MIT
+- Para más detalles sobre el flujo de trabajo y reglas de contribución (incluidas directivas para IAs), revisa `GEMINI.md` y `DEVELOPMENT.md`.

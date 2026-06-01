@@ -1,32 +1,44 @@
 # Guía de Pruebas y Seed Data
 
-Para validar el sistema localmente, utiliza los recursos automáticos de este repositorio.
+Para validar el sistema y trabajar de manera local con Firebase.
 
 ## 🧪 Pruebas de Desarrollo
 
-1.  **Levantar Entorno**: `npm run supabase:start` (Levanta Docker + Seed Data).
-2.  **Resetear DB**: `npm run supabase:reset` (Limpia y reaplica todo).
-3.  **Seguridad RLS**: `npm run test:db` (Verifica aislamiento de datos).
+Actualmente, el sistema está integrado con **Firebase Hosting** y **Cloud Functions v1** alojados en la nube.
+Para probar localmente, puedes usar la CLI de Firebase o apuntar tus pruebas al entorno live si estás en una rama de prueba.
+
+### Comandos Útiles
+
+1.  **Servir Localmente (Hosting)**: 
+    ```bash
+    firebase serve --only hosting
+    ```
+2.  **Desplegar Cloud Functions**: 
+    ```bash
+    firebase deploy --only functions
+    ```
+3.  **Script de Población (Seed)**: 
+    Para agregar datos de prueba iniciales a Firestore, ejecuta el script proporcionado:
+    ```bash
+    ./seed.sh
+    ```
+    *(Asegúrate de darle permisos de ejecución: `chmod +x seed.sh`)*.
 
 ## 👤 Usuarios de Prueba (Seed)
 
-El sistema incluye 3 usuarios pre-configurados. Inicia sesión con `email` y contraseña `password123`:
+Si ejecutas el script `seed.sh`, se crearán o asumirán usuarios pre-configurados. Inicia sesión con el email listado y usa tus métodos de autenticación (ej. Google Auth) si corresponde, o simplemente Email/Contraseña (si los diste de alta por allí):
 
 | Rol | Email | Propósito |
 | :--- | :--- | :--- |
-| **Admin** | `admin@jutsu.com` | Crear materias, exportar/importar. |
-| **Profesor** | `teacher@jutsu.com` | Gestionar tareas, QR de asistencia y corrección. |
-| **Estudiante** | `student@jutsu.com` | Aceptar tareas y escanear asistencia. |
+| **Admin** | `admin@jutsu.com` | Crear materias. Ver todos los usuarios. |
+| **Profesor** | `teacher@jutsu.com` | Ver cursos asignados y compartir códigos de invitación. |
+| **Estudiante** | `student@jutsu.com` | Completar perfil, enrolarse a cursos por código. |
 
-## 📡 Simulación de Asistencia QR
-Para probar el escáner:
-1. Abre el dashboard de **Profesor** y haz clic en "Generate QR" en la sección de Attendance.
-2. El QR se actualizará cada 10 segundos.
-3. Abre el dashboard de **Estudiante** (preferiblemente en un móvil o modo móvil de Chrome) y ve a "Scan QR".
-4. La cámara capturará el token dinámico y validará contra la Edge Function.
+## 📡 Simulación de Enrolamiento
 
-## 🛠️ Validación de Integración GitHub
-Para que los tests de creación de repos funcionen localmente, debes setear tu token en los secretos locales:
-```bash
-supabase secrets set --local GITHUB_ACCESS_TOKEN=tu_pat_aqui
-```
+Para probar el flujo de la plataforma:
+1. Entra como **Admin** y crea un nuevo curso llamado "Test Course".
+2. Asigna ese curso a un profesor (manualmente en base de datos o por las herramientas en progreso).
+3. Entra como **Profesor**, ve a "Mis Clases" y copia el **Código de Invitación** de 6 caracteres.
+4. Entra como **Estudiante** por primera vez. Deberías ver un campo para colocar el código. Pégalo allí y dale a "Sumarme".
+5. Verifica que ahora el curso aparece en "Mi Cursada".

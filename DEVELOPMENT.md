@@ -24,13 +24,12 @@ Toda nueva funcionalidad o cambio arquitectónico debe reflejarse en:
 2.  **TESTING.md**: Añadir instrucciones si se incorporan nuevos tipos de pruebas.
 3.  **GEMINI.md**: (Instrucciones de proyecto) Mantener actualizadas las convenciones de equipo y workflows.
 
-## 🔄 Flujo de Reutilización de Cursos
+## 🔄 Flujo de Reutilización de Cursos (En Desarrollo)
 
 El sistema permite la portabilidad de datos para facilitar el inicio de nuevos cuatrimestres:
 
-1.  **Exportación**: El Administrador puede descargar la estructura de un curso (tareas, cronograma, temas) en formato JSON.
+1.  **Exportación**: El Administrador puede descargar la estructura de un curso (tareas, cronograma, temas) en formato JSON desde Firestore.
 2.  **Importación**: Se puede crear un nuevo curso a partir de un archivo JSON exportado anteriormente, permitiendo cambiar el nombre y la organización de GitHub de destino.
-3.  **Clonación SQL**: Existe una función interna `clone_course_structure` para duplicar datos programáticamente si fuera necesario.
 
 ---
-*Mantenimiento preventivo: Ejecutar `npm run test:db` después de cualquier cambio en el esquema SQL.*
+*Mantenimiento preventivo: Ejecutar la validación de Reglas de Firestore antes de cualquier cambio masivo en la base de datos.*
