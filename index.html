@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaula Classroom - Unified Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <title>Jutsu Classroom - Unified Dashboard</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; }
         #sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
@@ -16,164 +13,85 @@
         button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 4px; background: #3498db; color: white; margin-top: 10px; }
         button.secondary { background: #95a5a6; }
         button.danger { background: #e74c3c; }
-        button.success { background: #27ae60; }
         input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         h1, h2, h3 { color: #2c3e50; margin-top: 0; }
-        .nav-item { padding: 10px; cursor: pointer; border-radius: 4px; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between; }
+        a { text-decoration: none; color: inherit; }
+        .nav-item { padding: 10px; cursor: pointer; border-radius: 4px; margin-bottom: 5px; display: block; }
         .nav-item:hover { background: #34495e; }
         .nav-item.active { background: #3498db; }
         #user-info { margin-top: auto; padding-top: 20px; border-top: 1px solid #34495e; font-size: 0.9em; }
-
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            #sidebar { width: 100%; height: auto; order: 2; padding: 10px; box-sizing: border-box; }
-            #main-content { order: 1; padding: 15px; }
-            #user-info { border-top: none; border-bottom: 1px solid #34495e; margin-bottom: 10px; margin-top: 0; }
+        
+        /* Global Loading Spinner */
+        #loading-indicator {
+            position: fixed; inset: 0; background: rgba(255, 255, 255, 0.9);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; font-size: 1.2em; font-weight: bold; color: #3498db; backdrop-filter: blur(2px);
         }
-        #qr-container { text-align: center; padding: 20px; background: white; border-radius: 8px; margin-top: 20px; }
-        #reader { width: 100%; max-width: 400px; margin: 0 auto; }
-        .curriculum-item { border-left: 4px solid #3498db; padding-left: 15px; margin-bottom: 15px; }
-        .event-item { border-left: 4px solid #e74c3c; padding-left: 15px; margin-bottom: 15px; background: #fdf2f2; }
-        .message-bubble { padding: 10px; border-radius: 8px; margin-bottom: 10px; max-width: 80%; }
-        .sent { background: #dcf8c6; margin-left: auto; }
-        .received { background: #fff; border: 1px solid #eee; }
-        .badge { background: #e74c3c; color: white; border-radius: 10px; padding: 2px 8px; font-size: 0.75em; margin-left: 5px; font-weight: bold; }
-        .status-pill { padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-        .table-admin { width: 100%; border-collapse: collapse; }
-        .table-admin th, .table-admin td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid #3498db;
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="auth-overlay" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 1000;">
         <div class="card" style="width: 300px; text-align: center;">
-            <h2>Gaula Classroom</h2>
-            <button id="login-btn" style="width: 100%; margin-bottom: 10px;">Sign in with GitHub</button>
+            <h2>Jutsu Classroom</h2>
+            <button id="login-github-btn" style="width: 100%; margin-bottom: 10px; background: #333;">Sign in with GitHub</button>
+            <button id="login-google-btn" style="width: 100%; margin-bottom: 10px; background: #db4437;">Sign in with Google</button>
             
-            <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-                <p style="font-size: 0.8em; color: #666;">--- Developer Shortcuts ---</p>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <button class="secondary" onclick="testLogin('admin')">Login as Admin</button>
-                    <button class="secondary" onclick="testLogin('teacher')">Login as Teacher</button>
-                    <button class="secondary" onclick="testLogin('student')">Login as Student</button>
+            <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; text-align: left;">
+                <input type="email" id="email-input" placeholder="Email" style="margin-bottom: 10px;">
+                <input type="password" id="password-input" placeholder="Password" style="margin-bottom: 10px;">
+                <div style="display: flex; gap: 10px;">
+                    <button id="login-email-btn" style="flex: 1; margin-top: 0;">Login</button>
+                    <button id="signup-email-btn" style="flex: 1; margin-top: 0; background: #27ae60;">Sign Up</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="sidebar">
-        <h2>Gaula</h2>
+        <h2>Jutsu</h2>
         <div id="nav-admin" class="role-nav hidden">
-            <div class="nav-item active" onclick="showSection('admin-courses')">Courses</div>
-            <div class="nav-item" onclick="showSection('admin-users')">Users</div>
+            <a href="/admin/courses" class="nav-item" data-link>Courses</a>
+            <a href="/admin/users" class="nav-item" data-link>Users</a>
         </div>
         <div id="nav-teacher" class="role-nav hidden">
-            <div class="nav-item active" onclick="showSection('teacher-courses')">My Courses</div>
-            <div class="nav-item" onclick="showSection('teacher-assignments')">Assignments <span id="badge-teacher-pending" class="badge hidden"></span></div>
-            <div class="nav-item" onclick="showSection('teacher-attendance')">Attendance</div>
-            <div class="nav-item" onclick="showSection('teacher-curriculum')">Curriculum</div>
-            <div class="nav-item" onclick="showSection('teacher-comms')">Comms <span id="badge-teacher-msgs" class="badge hidden"></span></div>
+            <a href="/teacher/courses" class="nav-item" data-link>My Courses</a>
+            <a href="/teacher/assignments" class="nav-item" data-link>Assignments</a>
         </div>
         <div id="nav-student" class="role-nav hidden">
-            <div class="nav-item active" onclick="showSection('student-courses')">My Enrollment <span id="badge-student-pending" class="badge hidden"></span></div>
-            <div class="nav-item" onclick="showSection('student-comms')">Messages <span id="badge-student-msgs" class="badge hidden"></span></div>
-            <div class="nav-item" onclick="showSection('student-scan')">Scan QR</div>
+            <a href="/student/courses" class="nav-item" data-link>My Enrollment</a>
+            <a href="/student/profile" class="nav-item" data-link>Mi Perfil</a>
         </div>
         <div id="user-info">
-            <p id="user-display" class="nav-item" style="cursor: pointer; text-decoration: underline;" onclick="showSection('user-profile')">Loading...</p>
+            <p id="user-display" class="nav-item">Loading...</p>
             <p id="user-role" style="font-weight: bold; text-transform: uppercase; color: #3498db;"></p>
             <button class="secondary" id="logout-btn">Logout</button>
         </div>
     </div>
 
     <div id="main-content">
-        <!-- User Profile Section (Self Service) -->
-        <section id="user-profile" class="content-section hidden">
-            <h1>My Profile</h1>
-            <div class="card">
-                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
-                    <img id="profile-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; background: #eee;">
-                    <div>
-                        <h2 id="profile-name-display">User Name</h2>
-                        <p id="profile-role-display"></p>
-                    </div>
-                </div>
-                <label>Full Name</label>
-                <input type="text" id="profile-full-name">
-                <label>Matrícula UNRN (UNRN-n)</label>
-                <input type="text" id="profile-matricula">
-                <label>GitHub Username</label>
-                <input type="text" id="profile-github">
-                <label>Secondary Emails (comma separated)</label>
-                <input type="text" id="profile-emails">
-                <button onclick="saveMyProfile()">Update Profile</button>
-            </div>
-        </section>
         <section id="admin-courses" class="content-section hidden">
             <h1>Courses Management</h1>
             <div class="card">
                 <input type="text" id="course-name" placeholder="Course Name">
                 <input type="text" id="course-org" placeholder="GitHub Org">
-                <button onclick="createCourse()">Create Course</button>
-                <button class="secondary" onclick="document.getElementById('import-file').click()">Import JSON</button>
-                <input type="file" id="import-file" class="hidden" onchange="importCourse(event)">
+                <button id="create-course-btn">Create Course</button>
             </div>
             <div id="admin-courses-list"></div>
         </section>
 
         <section id="admin-users" class="content-section hidden">
             <h1>User Management & Roles</h1>
-            <div class="card" style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
-                <button class="secondary" onclick="exportUsers()">Export Users JSON</button>
-                <button class="secondary" onclick="document.getElementById('import-users-file').click()">Import Users</button>
-                <input type="file" id="import-users-file" class="hidden" accept=".json" onchange="importUsers(event)">
-            </div>
             <div class="card">
-                <table class="table-admin">
-                    <thead><tr><th>Avatar</th><th>Name</th><th>GitHub</th><th>Role</th><th>Actions</th></tr></thead>
+                <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead><tr style="border-bottom: 1px solid #ddd;"><th>Name</th><th>Email</th><th>Role</th><th>Matrícula</th><th>Cohorte</th></tr></thead>
                     <tbody id="admin-users-table"></tbody>
                 </table>
             </div>
-        </section>
-
-        <!-- User Edit Section -->
-        <section id="admin-user-edit" class="content-section hidden">
-            <button class="secondary" onclick="showSection('admin-users')">← Back to Users</button>
-            <h1>Edit User Profile</h1>
-            <div class="card">
-                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
-                    <img id="edit-user-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; background: #eee;">
-                    <div>
-                        <h2 id="edit-user-name-title">User Name</h2>
-                        <p id="edit-user-github-display">@github</p>
-                    </div>
-                </div>
-                
-                <label>Full Name</label>
-                <input type="text" id="edit-user-name">
-                
-                <label>Matrícula UNRN (UNRN-n)</label>
-                <input type="text" id="edit-user-matricula" placeholder="UNRN-123">
-                
-                <label>Secondary Emails (comma separated, max 3)</label>
-                <input type="text" id="edit-user-emails" placeholder="email1@test.com, email2@test.com">
-                
-                <label>GitHub Username</label>
-                <input type="text" id="edit-user-github">
-
-                <button onclick="saveUserProfile()">Save Changes</button>
-            </div>
-        </section>
-
-        <section id="admin-course-teachers" class="content-section hidden">
-            <button class="secondary" onclick="showSection('admin-courses')">← Back to Courses</button>
-            <h1 id="admin-teacher-course-title">Manage Teachers</h1>
-            <div class="card">
-                <h3>Assign New Teacher</h3>
-                <select id="admin-all-teachers-list"><option value="">Select Teacher</option></select>
-                <button onclick="assignTeacherToCourse()">Assign Teacher</button>
-            </div>
-            <h2>Assigned Teachers</h2>
-            <div id="admin-assigned-teachers-list"></div>
         </section>
 
         <section id="teacher-courses" class="content-section hidden">
@@ -182,139 +100,44 @@
         </section>
 
         <section id="teacher-assignments" class="content-section hidden">
-            <h1>Assignments & Access Control</h1>
+            <h1>Assignments</h1>
             <div class="card">
                 <h3>New Assignment</h3>
-                <select id="assignment-course-id"><option value="">Select Course</option></select>
-                <input type="text" id="assignment-title" placeholder="Assignment Title (e.g. Lab 1)">
-                <textarea id="assignment-desc" placeholder="Instructions / Description"></textarea>
-                <input type="text" id="assignment-template" placeholder="Template URL (e.g. org/repo)">
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <div style="flex: 1;"><label style="font-size: 0.8em; color: #666;">Due Date (Submission)</label><input type="datetime-local" id="assignment-due"></div>
-                    <div style="flex: 1;"><label style="font-size: 0.8em; color: #666;">Lock Date (Read-only)</label><input type="datetime-local" id="assignment-lock"></div>
-                </div>
-                <button onclick="createAssignment()">Create Assignment</button>
+                <input type="text" id="assignment-title" placeholder="Assignment Title">
+                <button id="create-assignment-btn">Create Assignment</button>
             </div>
             <div id="teacher-assignments-list"></div>
-            
-            <div id="assignment-detail-view" class="hidden">
-                <button class="secondary" onclick="document.getElementById('assignment-detail-view').classList.add('hidden')">← Back</button>
-                <h2 id="view-assign-title"></h2>
-                <div class="card" style="display: flex; gap: 10px;">
-                    <button class="danger" onclick="massToggleAccess(true)">🔒 Lock All Repos</button>
-                    <button class="success" onclick="massToggleAccess(false)">🔓 Unlock All Repos</button>
-                </div>
-                <div class="card">
-                    <table class="table-admin">
-                        <thead><tr><th>Student</th><th>Status</th><th>Access</th><th>Actions</th></tr></thead>
-                        <tbody id="student-submissions-table"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <section id="teacher-attendance" class="content-section hidden">
-            <h1>Attendance & Planning</h1>
-            <div class="card">
-                <h3>Add Schedule (Weekly Plan)</h3>
-                <select id="schedule-course-id"><option value="">Select Course</option></select>
-                <select id="schedule-day">
-                    <option value="1">Monday</option><option value="2">Tuesday</option>
-                    <option value="3">Wednesday</option><option value="4">Thursday</option>
-                    <option value="5">Friday</option><option value="6">Saturday</option>
-                    <option value="0">Sunday</option>
-                </select>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <div style="flex: 1;"><label>Start Time</label><input type="time" id="schedule-start"></div>
-                    <div style="flex: 1;"><label>End Time</label><input type="time" id="schedule-end"></div>
-                </div>
-                <button onclick="addSchedule()">Save Plan</button>
-            </div>
-            
-            <div class="card">
-                <h3>Live Class Session</h3>
-                <p style="font-size: 0.9em; color: #666;">Start a session to show the attendance QR code to students.</p>
-                <select id="session-course-id"><option value="">Select Course</option></select>
-                <button onclick="startSession()">Generate Live QR</button>
-                
-                <div id="qr-container" class="hidden" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-                    <canvas id="qr-canvas" style="display: block; margin: 0 auto;"></canvas>
-                    <p style="font-weight: bold; color: #e74c3c;">The code resets in <span id="qr-timer">10</span>s</p>
-                    <button class="secondary" onclick="stopSession()">Stop Session / Close QR</button>
-                </div>
-            </div>
-        </section>
-
-        <section id="teacher-curriculum" class="content-section hidden">
-            <h1>Curriculum & Events</h1>
-            <div class="card">
-                <h3>Add Class Topic / Recording</h3>
-                <select id="curriculum-course-id"><option value="">Select Course</option></select>
-                <input type="date" id="curriculum-date">
-                <input type="text" id="curriculum-title" placeholder="Topic Title">
-                <textarea id="curriculum-desc" placeholder="Details / Summary"></textarea>
-                <input type="text" id="curriculum-recording" placeholder="Recording URL (YouTube/Drive)">
-                <input type="text" id="curriculum-materials" placeholder="Materials URL">
-                <button onclick="addCurriculumItem()">Save Class Info</button>
-            </div>
-            <div id="teacher-curriculum-list"></div>
-
-            <div class="card">
-                <h3>Add Special Event (Exams, Holidays, etc.)</h3>
-                <input type="date" id="event-date">
-                <input type="text" id="event-title" placeholder="Event Name">
-                <label><input type="checkbox" id="event-external"> External Event</label>
-                <button onclick="addCourseEvent()">Add Event</button>
-            </div>
-            <div id="teacher-events-list"></div>
-        </section>
-
-        <section id="teacher-comms" class="content-section hidden">
-            <h1>Communications</h1>
-            <div class="card">
-                <h3>Post Announcement (General)</h3>
-                <select id="ann-course-id"><option value="">Select Course</option></select>
-                <input type="text" id="ann-title" placeholder="Announcement Title">
-                <textarea id="ann-content" placeholder="Content for all students..."></textarea>
-                <button onclick="postAnnouncement()">Post Announcement</button>
-            </div>
-            <div id="teacher-announcements-list"></div>
-
-            <div class="card">
-                <h3>Direct Messages (Specific)</h3>
-                <select id="dm-student-id"><option value="">Select Student</option></select>
-                <div id="teacher-chat-box" style="height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; background: #fafafa; border-radius: 5px;"></div>
-                <textarea id="teacher-dm-content" placeholder="Send a private message..."></textarea>
-                <button onclick="sendDirectMessage('teacher')">Send Message</button>
-            </div>
         </section>
 
         <section id="student-courses" class="content-section hidden">
             <h1>My Enrolled Courses</h1>
             <div id="student-courses-list"></div>
         </section>
-
-        <section id="student-course-detail" class="content-section hidden">
-            <button class="secondary" onclick="showSection('student-courses')">← Back</button>
-            <h1 id="st-course-title"></h1>
-            <div id="student-timeline-list"></div>
-            <div id="student-assignments-list"></div>
-        </section>
-
-        <section id="student-comms" class="content-section hidden">
-            <h1>Messages</h1>
-            <div id="student-announcements-list"></div>
-            <div class="card"><select id="dm-teacher-id"></select><div id="student-chat-box"></div><button onclick="sendDirectMessage('student')">Send</button></div>
-        </section>
-
-        <section id="student-scan" class="content-section hidden">
-            <h1>Scan QR</h1>
-            <div id="reader"></div>
-            <div id="attendance-log"></div>
+        
+        <section id="student-profile" class="content-section hidden">
+            <h1>Mi Perfil Académico</h1>
+            <div class="card">
+                <label>Matrícula UNRN</label>
+                <input type="text" id="profile-matricula" placeholder="Ej: 12345">
+                <label>Año de Cohorte</label>
+                <input type="number" id="profile-cohorte" placeholder="Ej: 2026">
+                <button id="save-profile-btn">Guardar Perfil</button>
+                <p id="profile-save-status" style="color: #27ae60; display: none; margin-top: 10px;">¡Guardado correctamente!</p>
+            </div>
         </section>
         
-        <div id="loading-indicator" class="hidden">Processing...</div>
+        <section id="not-found" class="content-section hidden">
+            <h1>404 - Not Found</h1>
+            <p>The page you are looking for does not exist.</p>
+        </section>
+
     </div>
-    <script type="module" src="js/app.js"></script>
+
+    <div id="loading-indicator" class="hidden">
+        <div class="spinner"></div>
+        <span>Cargando...</span>
+    </div>
+
+    <script type="module" src="/js/app.js"></script>
 </body>
 </html>

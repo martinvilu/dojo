@@ -1,812 +1,209 @@
-const SUPABASE_URL = 'http://localhost:54321';
-const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithPopup, GithubAuthProvider, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
-// Use a different name for the client instance to avoid shadowing the global 'supabase' from CDN
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const firebaseConfig = {
+  projectId: "jutsu-classroom-mrtin",
+  appId: "1:913557328690:web:831831bbd35cd384a67d2b",
+  storageBucket: "jutsu-classroom-mrtin.firebasestorage.app",
+  apiKey: "REPLACED_BY_ENV_VAL",
+  authDomain: "jutsu-classroom-mrtin.firebaseapp.com",
+  messagingSenderId: "913557328690"
+};
 
-const loginBtn = document.getElementById('login-btn');
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const functions = getFunctions(app);
+
+const loadingIndicator = document.getElementById('loading-indicator');
+const withLoading = async (fn) => {
+    loadingIndicator.classList.remove('hidden');
+    try { return await fn(); }
+    finally { loadingIndicator.classList.add('hidden'); }
+};
+
+const _api = httpsCallable(functions, 'api');
+const api = async (data) => withLoading(() => _api(data));
+
+let currentUser = null;
+let currentProfile = null;
+
 const logoutBtn = document.getElementById('logout-btn');
 const authOverlay = document.getElementById('auth-overlay');
 const userDisplay = document.getElementById('user-display');
 const userRoleLabel = document.getElementById('user-role');
-const loadingIndicator = document.getElementById('loading-indicator');
 
-let currentUser = null;
-let currentProfile = null;
-let qrInterval = null;
-let html5QrCode = null;
-let activeAssignmentId = null;
+document.getElementById('login-github-btn').onclick = () => withLoading(() => signInWithPopup(auth, new GithubAuthProvider())).catch(e => alert("GitHub login failed: " + e.message));
+document.getElementById('login-google-btn').onclick = () => withLoading(() => signInWithPopup(auth, new GoogleAuthProvider())).catch(e => alert("Google login failed: " + e.message));
 
-// Auth Listeners
-loginBtn.onclick = () => sb.auth.signInWithOAuth({ provider: 'github' });
-logoutBtn.onclick = () => sb.auth.signOut();
-
-window.testLogin = async (role) => {
-    const emailMap = {
-        'admin': 'admin@gaula.com',
-        'teacher': 'teacher@gaula.com',
-        'student': 'student@gaula.com'
-    };
-    
-    loadingIndicator.classList.remove('hidden');
-    const { error } = await sb.auth.signInWithPassword({
-        email: emailMap[role],
-        password: 'password123'
-    });
-    loadingIndicator.classList.add('hidden');
-    
-    if (error) alert("Test Login Error: " + error.message);
-    else location.reload(); // Force reload to ensure clean state
+document.getElementById('login-email-btn').onclick = async () => {
+    const email = document.getElementById('email-input').value;
+    const pass = document.getElementById('password-input').value;
+    try { await withLoading(() => signInWithEmailAndPassword(auth, email, pass)); }
+    catch(e) { alert("Login failed: " + e.message); }
 };
 
-// Initial session check
-async function initApp() {
-    const { data: { session } } = await sb.auth.getSession();
-    handleAuthState(session);
-    
-    sb.auth.onAuthStateChange((event, session) => {
-        handleAuthState(session);
-    });
-}
+document.getElementById('signup-email-btn').onclick = async () => {
+    const email = document.getElementById('email-input').value;
+    const pass = document.getElementById('password-input').value;
+    try { await withLoading(() => createUserWithEmailAndPassword(auth, email, pass)); }
+    catch(e) { alert("Sign up failed: " + e.message); }
+};
+logoutBtn.onclick = () => signOut(auth);
 
-async function handleAuthState(session) {
-    if (session) {
-        currentUser = session.user;
+
+
+const routes = {
+    '/admin/courses': 'admin-courses',
+    '/admin/users': 'admin-users',
+    '/teacher/courses': 'teacher-courses',
+    '/teacher/assignments': 'teacher-assignments',
+    '/student/courses': 'student-courses',
+    '/student/profile': 'student-profile',
+};
+
+window.navigateTo = (url) => {
+    history.pushState(null, null, url);
+    router();
+};
+
+const router = () => {
+    if (!currentProfile) return; // Wait for profile before routing
+    
+    let path = window.location.pathname;
+    
+    // Redirect root to role default
+    if (path === '/') {
+        path = `/${currentProfile.role}/courses`;
+        history.replaceState(null, null, path);
+    }
+    
+    const sectionId = routes[path] || 'not-found';
+    
+    document.querySelectorAll('.content-section').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    
+    const activeSection = document.getElementById(sectionId);
+    if (activeSection) {
+        activeSection.classList.remove('hidden');
+    }
+    
+    const activeNav = document.querySelector(`.nav-item[href="${path}"]`);
+    if (activeNav) activeNav.classList.add('active');
+
+    // Load data based on path
+    if (path === '/admin/courses') loadAdminCourses();
+    if (path === '/admin/users') loadAdminUsers();
+    if (path === '/teacher/courses') loadTeacherCourses();
+    if (path === '/student/profile') loadStudentProfile();
+};
+
+window.addEventListener('popstate', router);
+
+document.body.addEventListener('click', e => {
+    if (e.target.matches('[data-link]')) {
+        e.preventDefault();
+        navigateTo(e.target.getAttribute('href'));
+    }
+});
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
         authOverlay.classList.add('hidden');
-        const success = await fetchProfile();
-        if (success) {
-            setupDashboard();
-        } else {
-            // If profile fails (e.g. DB reset while logged in), sign out
-            alert("Session error: Profile not found. Signing out.");
-            sb.auth.signOut();
-        }
+        try {
+            let res = await api({ action: 'getProfile' });
+            if (!res.data) {
+                // Wait briefly for cloud function to create the profile on first login
+                await new Promise(r => setTimeout(r, 2000));
+                res = await api({ action: 'getProfile' });
+            }
+            currentProfile = res.data || { role: 'student' };
+            userDisplay.innerText = currentProfile.full_name || user.email;
+            userRoleLabel.innerText = currentProfile.role;
+            
+            document.querySelectorAll('.role-nav').forEach(el => el.classList.add('hidden'));
+            const nav = document.getElementById(`nav-${currentProfile.role}`);
+            if (nav) nav.classList.remove('hidden');
+            
+            router();
+        } catch (e) { console.error(e); }
     } else {
         currentUser = null;
         currentProfile = null;
         authOverlay.classList.remove('hidden');
-        hideAllRoles();
+        document.querySelectorAll('.role-nav, .content-section').forEach(el => el.classList.add('hidden'));
+        history.replaceState(null, null, '/');
     }
-}
+});
 
-async function fetchProfile() {
-    try {
-        const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-        if (error || !data) throw error || new Error("No profile");
-        
-        currentProfile = data;
-        userDisplay.innerText = currentProfile.full_name || currentUser.email;
-        userRoleLabel.innerText = currentProfile.role;
-        return true;
-    } catch (e) {
-        console.error("Error fetching profile:", e);
-        return false;
-    }
-}
-
-initApp();
-
-function setupDashboard() {
-    hideAllRoles();
-    const role = currentProfile.role;
-    document.getElementById(`nav-${role}`).classList.remove('hidden');
-    showSection(role === 'admin' ? 'admin-courses' : (role === 'teacher' ? 'teacher-courses' : 'student-courses'));
-    updateBadges();
-}
-
-function hideAllRoles() {
-    document.querySelectorAll('.role-nav, .content-section').forEach(el => el.classList.add('hidden'));
-}
-window.showSection = (sectionId) => {
-    document.querySelectorAll('.content-section').forEach(el => el.classList.add('hidden'));
-    document.getElementById(sectionId).classList.remove('hidden');
-    if (sectionId === 'user-profile') loadUserProfile();
-    if (sectionId === 'admin-courses') loadAdminCourses();
-    if (sectionId === 'admin-users') loadAdminUsers();
-    if (sectionId === 'teacher-courses') loadTeacherCourses();
-    if (sectionId === 'teacher-assignments') loadTeacherAssignments();
-    if (sectionId === 'teacher-attendance') loadTeacherAttendanceData();
-    if (sectionId === 'teacher-curriculum') loadTeacherCurriculumData();
-    if (sectionId === 'teacher-comms') loadTeacherCommsData();
-    if (sectionId === 'student-courses') loadStudentCourses();
-    if (sectionId === 'student-comms') loadStudentCommsData();
-    if (sectionId === 'student-scan') startScanner();
-    else stopScanner();
-    updateBadges();
-};
-
-// --- User Profile (Self) ---
-async function loadUserProfile() {
-    const { data: u } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-    document.getElementById('profile-avatar').src = u.avatar_url || 'https://ui-avatars.com/api/?name='+u.full_name;
-    document.getElementById('profile-name-display').innerText = u.full_name || 'User';
-    document.getElementById('profile-role-display').innerText = u.role;
-    document.getElementById('profile-full-name').value = u.full_name || '';
-    document.getElementById('profile-matricula').value = u.matricula || '';
-    document.getElementById('profile-github').value = u.github_username || '';
-    document.getElementById('profile-emails').value = (u.secondary_emails || []).join(', ');
-}
-
-window.saveMyProfile = async () => {
-    const full_name = document.getElementById('profile-full-name').value;
-    const matricula = document.getElementById('profile-matricula').value;
-    const github_username = document.getElementById('profile-github').value;
-    const emails = document.getElementById('profile-emails').value.split(',').map(e => e.trim()).filter(e => e);
-
-    if (matricula && !/^UNRN-[0-9]+$/.test(matricula)) return alert("Invalid Matricula format (UNRN-n)");
-    if (emails.length > 3) return alert("Max 3 secondary emails.");
-
-    loadingIndicator.classList.remove('hidden');
-    const { error } = await sb.from('profiles').update({ full_name, matricula, github_username, secondary_emails: emails }).eq('id', currentUser.id);
-    loadingIndicator.classList.add('hidden');
-
-    if (error) alert(error.message); else alert("Profile updated!");
-};
-
-// --- Teacher Portability ---
-window.exportCourseContent = async (courseId, name) => {
-    const { data: assignments } = await sb.from('assignments').select('title, description, template_repo_url, due_date, lock_date').eq('course_id', courseId);
-    const { data: schedules } = await sb.from('course_schedules').select('day_of_week, start_time, end_time').eq('course_id', courseId);
-    const { data: plan } = await sb.from('course_plan_items').select('title, description, topic_date, recording_url, materials_url').eq('course_id', courseId);
-    const { data: events } = await sb.from('course_events').select('title, description, event_date, is_external').eq('course_id', courseId);
-
-    const blob = new Blob([JSON.stringify({ assignments, schedules, plan, events }, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${name.toLowerCase().replace(/ /g, '-')}-content.json`;
-    a.click();
-};
-
-window.importCourseContent = async (event, courseId) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            loadingIndicator.classList.remove('hidden');
-            if (data.assignments?.length) await sb.from('assignments').insert(data.assignments.map(x => ({ ...x, course_id: courseId })));
-            if (data.schedules?.length) await sb.from('course_schedules').insert(data.schedules.map(x => ({ ...x, course_id: courseId })));
-            if (data.plan?.length) await sb.from('course_plan_items').insert(data.plan.map(x => ({ ...x, course_id: courseId })));
-            if (data.events?.length) await sb.from('course_events').insert(data.events.map(x => ({ ...x, course_id: courseId })));
-            loadingIndicator.classList.add('hidden');
-            alert("Content imported!");
-            loadTeacherCourses();
-        } catch (err) { alert("Import failed: " + err.message); }
-    };
-    reader.readAsText(file);
-};
-
-// --- Admin ---
-async function loadAdminUsers() {
-    const { data: users, error } = await sb.from('profiles').select('*').order('full_name');
-    if (error) return alert(error.message);
-
-    document.getElementById('admin-users-table').innerHTML = users.map(u => `
-        <tr>
-            <td><img src="${u.avatar_url || 'https://ui-avatars.com/api/?name='+u.full_name}" style="width: 32px; height: 32px; border-radius: 50%;"></td>
-            <td>${u.full_name || 'No name'} ${u.matricula ? `<br><small style="color: #666;">${u.matricula}</small>` : ''}</td>
-            <td>${u.github_username ? `<a href="https://github.com/${u.github_username}" target="_blank">@${u.github_username}</a>` : '-'}</td>
-            <td>
-                <select style="width: auto; padding: 2px;" onchange="updateUserRole('${u.id}', this.value)">
-                    <option value="student" ${u.role === 'student' ? 'selected' : ''}>Student</option>
-                    <option value="teacher" ${u.role === 'teacher' ? 'selected' : ''}>Teacher</option>
-                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                </select>
-            </td>
-            <td>
-                <button class="secondary" style="padding: 5px 10px;" onclick="editUserProfile('${u.id}')">Edit</button>
-            </td>
-        </tr>
+async function loadAdminCourses() {
+    const res = await api({ action: 'getAdminCourses' });
+    const container = document.getElementById('admin-courses-list');
+    container.innerHTML = res.data.map(c => `
+        <div class="card">
+            <h3>${c.name}</h3>
+            <p>${c.github_org}</p>
+        </div>
     `).join('');
 }
 
-let editingUserId = null;
-
-window.editUserProfile = async (userId) => {
-    editingUserId = userId;
-    const { data: u } = await sb.from('profiles').select('*').eq('id', userId).single();
-
-    document.getElementById('edit-user-avatar').src = u.avatar_url || 'https://ui-avatars.com/api/?name='+u.full_name;
-    document.getElementById('edit-user-name-title').innerText = u.full_name || 'User';
-    document.getElementById('edit-user-github-display').innerText = u.github_username ? `@${u.github_username}` : 'No GitHub';
-
-    document.getElementById('edit-user-name').value = u.full_name || '';
-    document.getElementById('edit-user-matricula').value = u.matricula || '';
-    document.getElementById('edit-user-emails').value = (u.secondary_emails || []).join(', ');
-    document.getElementById('edit-user-github').value = u.github_username || '';
-
-    showSection('admin-user-edit');
-};
-
-window.saveUserProfile = async () => {
-    const full_name = document.getElementById('edit-user-name').value;
-    const matricula = document.getElementById('edit-user-matricula').value;
-    const github_username = document.getElementById('edit-user-github').value;
-    const emailsInput = document.getElementById('edit-user-emails').value;
-    const secondary_emails = emailsInput.split(',').map(e => e.trim()).filter(e => e !== '');
-
-    if (matricula && !/^UNRN-[0-9]+$/.test(matricula)) {
-        return alert("Invalid Matricula format. Must be UNRN-n");
-    }
-    if (secondary_emails.length > 3) {
-        return alert("Maximum 3 secondary emails allowed.");
-    }
-
-    const { error } = await sb.from('profiles').update({
-        full_name, matricula, github_username, secondary_emails
-    }).eq('id', editingUserId);
-
-    if (error) alert(error.message);
-    else {
-        alert("Profile updated!");
-        showSection('admin-users');
-    }
-};
-
-window.exportUsers = async () => {
-    const { data: users } = await sb.from('profiles').select('*');
-    const blob = new Blob([JSON.stringify(users, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `gaula-users-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-};
-
-window.importUsers = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const users = JSON.parse(e.target.result);
-            // Bulk upsert profiles (assuming users already exist in auth.users or we only update profiles)
-            // In a real scenario, we might need a more complex import.
-            const { error } = await sb.from('profiles').upsert(users);
-            if (error) alert(error.message);
-            else { alert("Users imported!"); loadAdminUsers(); }
-        } catch (err) { alert("Invalid JSON file"); }
-    };
-    reader.readAsText(file);
-};
-async function updateBadges() {
-    if (!currentUser || !currentProfile) return;
-    const role = currentProfile.role;
-    if (role === 'student') {
-        const { count: msgCount } = await sb.from('direct_messages').select('*', { count: 'exact', head: true }).eq('receiver_id', currentUser.id).is('read_at', null);
-        updateBadgeElement('badge-student-msgs', msgCount);
-        const { count: pendingCount } = await sb.from('submissions').select('*', { count: 'exact', head: true }).eq('student_id', currentUser.id).in('status', ['sin_comenzar', 'rehacer', 'accepted']);
-        updateBadgeElement('badge-student-pending', pendingCount);
-    }
-    if (role === 'teacher') {
-        const { count: msgCount } = await sb.from('direct_messages').select('*', { count: 'exact', head: true }).eq('receiver_id', currentUser.id).is('read_at', null);
-        updateBadgeElement('badge-teacher-msgs', msgCount);
-        const { data: courses } = await sb.from('course_teachers').select('course_id').eq('teacher_id', currentUser.id);
-        const { count: toGradeCount } = await sb.from('submissions').select('*, assignments!inner(course_id)', { count: 'exact', head: true }).in('assignments.course_id', courses.map(c => c.id)).eq('status', 'sin_corregir');
-        updateBadgeElement('badge-teacher-pending', toGradeCount);
-    }
-}
-function updateBadgeElement(id, count) {
-    const el = document.getElementById(id); if (!el) return;
-    if (count > 0) { el.innerText = count; el.classList.remove('hidden'); } else el.classList.add('hidden');
-}
-
-// --- Admin ---
-async function loadAdminCourses() {
-    try {
-        const { data, error } = await sb.from('courses').select(`
-            *,
-            course_teachers (
-                teacher_id,
-                profiles (full_name)
-            )
-        `).order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        const container = document.getElementById('admin-courses-list');
-        if (!data || data.length === 0) {
-            container.innerHTML = '<p>No courses found.</p>';
-            return;
-        }
-
-        container.innerHTML = data.map(c => {
-            const teachers = (c.course_teachers || [])
-                .map(t => t.profiles?.full_name || 'Unknown')
-                .join(', ') || 'No teachers assigned';
-            
-            return `
-                <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h3 id="course-title-${c.id}">${c.name}</h3>
-                        <p style="color: #666; font-size: 0.9em; margin: 5px 0;">
-                            <strong>GitHub:</strong> <a href="https://github.com/${c.github_org}" target="_blank">github.com/${c.github_org}</a>
-                        </p>
-                        <p style="color: #34495e; font-size: 0.85em;">
-                            <strong>Teachers:</strong> ${teachers}
-                        </p>
-                    </div>
-                    <div style="display:flex; gap:5px;">
-                        <button class="secondary" onclick="editCourseName('${c.id}', '${c.name}')">Edit</button>
-                        <button class="secondary" onclick="viewCourseTeachers('${c.id}', '${c.name}')">Teachers</button>
-                        <button class="secondary" onclick="exportCourse('${c.id}', '${c.name}')">Export</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (err) {
-        console.error("Error loading admin courses:", err);
-        document.getElementById('admin-courses-list').innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
-    }
-}
-
-window.editCourseName = async (courseId, currentName) => {
-    const newName = prompt("Enter new course name:", currentName);
-    if (!newName || newName === currentName) return;
-
-    const { error } = await sb.from('courses').update({ name: newName }).eq('id', courseId);
-    if (error) alert(error.message);
-    else {
-        alert("Course updated!");
-        loadAdminCourses();
-    }
-};
-
-let adminSelectedCourseId = null;
-
-window.viewCourseTeachers = async (courseId, courseName) => {
-    adminSelectedCourseId = courseId;
-    document.getElementById('admin-teacher-course-title').innerText = `Manage Teachers: ${courseName}`;
-    showSection('admin-course-teachers');
-    
-    // Load all teachers for the dropdown
-    const { data: allTeachers } = await sb.from('profiles').select('id, full_name').eq('role', 'teacher');
-    document.getElementById('admin-all-teachers-list').innerHTML = '<option value="">Select Teacher</option>' + 
-        allTeachers.map(t => `<option value="${t.id}">${t.full_name}</option>`).join('');
-
-    // Load currently assigned teachers
-    loadAssignedTeachers();
-};
-
-async function loadAssignedTeachers() {
-    const { data: assigned } = await sb.from('course_teachers').select('*, profiles(full_name)').eq('course_id', adminSelectedCourseId);
-    document.getElementById('admin-assigned-teachers-list').innerHTML = assigned.map(a => `
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <span>${a.profiles.full_name}</span>
-            <button class="danger" style="padding:5px 10px;" onclick="removeTeacherFromCourse('${a.teacher_id}')">Remove</button>
-        </div>
-    `).join('') || '<p>No teachers assigned yet.</p>';
-}
-
-window.assignTeacherToCourse = async () => {
-    const teacherId = document.getElementById('admin-all-teachers-list').value;
-    if (!teacherId) return;
-
-    const { error } = await sb.from('course_teachers').insert([{ course_id: adminSelectedCourseId, teacher_id: teacherId }]);
-    if (error) alert(error.message); else loadAssignedTeachers();
-};
-
-window.removeTeacherFromCourse = async (teacherId) => {
-    const { error } = await sb.from('course_teachers').delete().eq('course_id', adminSelectedCourseId).eq('teacher_id', teacherId);
-    if (error) alert(error.message); else loadAssignedTeachers();
-};
-window.createCourse = async () => {
+document.getElementById('create-course-btn').onclick = async () => {
     const name = document.getElementById('course-name').value;
     const org = document.getElementById('course-org').value;
-    const { error } = await sb.from('courses').insert([{ name, github_org: org, created_by: currentUser.id }]);
-    if (!error) loadAdminCourses();
-};
-window.exportCourse = async (courseId, name) => {
-    const { data: assignments } = await sb.from('assignments').select('title, description, template_repo_url').eq('course_id', courseId);
-    const { data: schedules } = await sb.from('course_schedules').select('day_of_week, start_time, end_time').eq('course_id', courseId);
-    const { data: plan } = await sb.from('course_plan_items').select('title, description, topic_date, recording_url, materials_url').eq('course_id', courseId);
-    const { data: events } = await sb.from('course_events').select('title, description, event_date, is_external').eq('course_id', courseId);
-    const blob = new Blob([JSON.stringify({ name, assignments, schedules, plan, events }, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `${name.toLowerCase().replace(/ /g, '-')}.json`; a.click();
-};
-window.importCourse = async (event) => {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const data = JSON.parse(e.target.result);
-        const name = prompt("Name:", data.name + " (Copy)"); const org = prompt("GitHub Org:"); if (!name || !org) return;
-        const { data: newCourse, error } = await sb.from('courses').insert([{ name, github_org: org, created_by: currentUser.id }]).select().single();
-        if (error) return alert(error.message);
-        if (data.assignments?.length) await sb.from('assignments').insert(data.assignments.map(x => ({ ...x, course_id: newCourse.id })));
-        if (data.schedules?.length) await sb.from('course_schedules').insert(data.schedules.map(x => ({ ...x, course_id: newCourse.id })));
-        if (data.plan?.length) await sb.from('course_plan_items').insert(data.plan.map(x => ({ ...x, course_id: newCourse.id })));
-        if (data.events?.length) await sb.from('course_events').insert(data.events.map(x => ({ ...x, course_id: newCourse.id })));
-        alert("Imported!"); loadAdminCourses();
-    };
-    reader.readAsText(file);
+    await api({ action: 'createCourse', payload: { name, github_org: org } });
+    loadAdminCourses();
 };
 
-// --- Teacher ---
-async function loadTeacherCourses() {
-    try {
-        const { data, error } = await sb.from('course_teachers')
-            .select('course_id, courses(*)')
-            .eq('teacher_id', currentUser.id);
-        
-        if (error) throw error;
-
-        const courses = data.map(d => d.courses).filter(c => c !== null);
-        const container = document.getElementById('teacher-courses-list');
-        
-        if (courses.length === 0) {
-            container.innerHTML = '<p>No courses assigned to you.</p>';
-            return;
-        }
-
-        container.innerHTML = courses.map(c => `
-            <div class="card">
-                <h3>${c.name}</h3>
-                <p style="font-size: 0.8em; color: #666;">${c.github_org}</p>
-                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                    <button onclick="showSection('teacher-assignments')">Assignments</button>
-                    <button class="secondary" onclick="exportCourseContent('${c.id}', '${c.name}')">Export Content</button>
-                    <button class="secondary" onclick="document.getElementById('teacher-import-file-${c.id}').click()">Import Content</button>
-                    <input type="file" id="teacher-import-file-${c.id}" class="hidden" accept=".json" onchange="importCourseContent(event, '${c.id}')">
-                </div>
-            </div>
-        `).join('');
-
-        // Populate dropdown for assignments
-        const dropdown = document.getElementById('assignment-course-id');
-        dropdown.innerHTML = '<option value="">Select Course</option>' + 
-            courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    } catch (err) {
-        console.error("Error loading teacher courses:", err);
-    }
-}
-async function loadTeacherAssignments() {
-    try {
-        // 1. Load my courses first to ensure dropdown is populated correctly
-        const { data: myCourses } = await sb.from('course_teachers').select('courses(*)').eq('teacher_id', currentUser.id);
-        const courses = myCourses.map(d => d.courses).filter(c => c !== null);
-        const dropdown = document.getElementById('assignment-course-id');
-        dropdown.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-
-        // 2. Load assignments for those courses
-        const { data: assigns, error } = await sb.from('assignments')
-            .select(`
-                *,
-                courses!inner (
-                    course_teachers!inner (teacher_id)
-                )
-            `)
-            .eq('courses.course_teachers.teacher_id', currentUser.id);
-
-        if (error) throw error;
-
-        document.getElementById('teacher-assignments-list').innerHTML = assigns.map(a => `
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <h4>${a.title}</h4>
-                    <p style="font-size: 0.8em; color: #666;">${a.template_repo_url}</p>
-                    ${a.due_date ? `<small>Due: ${new Date(a.due_date).toLocaleString()}</small>` : ''}
-                </div>
-                <button onclick="viewAssignmentDetails('${a.id}', '${a.title}')">Manage Access</button>
-            </div>
-        `).join('') || '<p>No assignments found.</p>';
-    } catch (err) {
-        console.error("Error loading assignments:", err);
-    }
-}
-
-window.viewAssignmentDetails = async (id, title) => {
-    activeAssignmentId = id;
-    document.getElementById('view-assign-title').innerText = title;
-    document.getElementById('assignment-detail-view').classList.remove('hidden');
-    loadSubmissionsTable();
-};
-
-async function loadSubmissionsTable() {
-    const { data: subs } = await sb.from('submissions').select('*, profiles(full_name, avatar_url)').eq('assignment_id', activeAssignmentId);
-    document.getElementById('student-submissions-table').innerHTML = subs.map(s => `
-        <tr>
-            <td>${s.profiles.full_name || 'Student'}</td>
-            <td><span class="status-pill">${s.status}</span></td>
-            <td>${s.is_locked ? '🔒 Read-only' : '✍️ Write'}</td>
-            <td><button class="secondary" onclick="toggleAccess('${s.id}', ${!s.is_locked})">${s.is_locked ? 'Unlock' : 'Lock'}</button></td>
+async function loadAdminUsers() {
+    const res = await api({ action: 'getAdminUsers' });
+    document.getElementById('admin-users-table').innerHTML = res.data.map(u => `
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px 0;">${u.full_name || '-'}</td>
+            <td>${u.email}</td>
+            <td>${u.role}</td>
+            <td>${u.matricula_unrn || '-'}</td>
+            <td>${u.cohorte || '-'}</td>
         </tr>
     `).join('');
 }
 
-window.toggleAccess = async (submissionId, lock) => {
-    loadingIndicator.classList.remove('hidden');
-    await sb.functions.invoke('github-classroom-actions', { body: { action: 'TOGGLE_REPO_ACCESS', submissionId, lock } });
-    loadingIndicator.classList.add('hidden'); 
-    loadSubmissionsTable();
-};
-
-window.massToggleAccess = async (lock) => {
-    if (!confirm(`Mass ${lock ? 'LOCK' : 'UNLOCK'}?`)) return;
-    loadingIndicator.classList.remove('hidden');
-    await sb.functions.invoke('github-classroom-actions', { body: { action: 'MASS_TOGGLE_ACCESS', assignmentId: activeAssignmentId, lock } });
-    loadingIndicator.classList.add('hidden'); 
-    loadSubmissionsTable();
-};
-
-window.createAssignment = async () => {
-    const course_id = document.getElementById('assignment-course-id').value;
-    const title = document.getElementById('assignment-title').value;
-    const description = document.getElementById('assignment-desc').value;
-    const template_repo_url = document.getElementById('assignment-template').value;
-    const due_date = document.getElementById('assignment-due').value;
-    const lock_date = document.getElementById('assignment-lock').value;
-
-    if (!course_id || !title || !template_repo_url) {
-        return alert("Course, Title and Template URL are required.");
-    }
-
-    loadingIndicator.classList.remove('hidden');
-    const { error } = await sb.from('assignments').insert([{ 
-        course_id, title, description, template_repo_url, 
-        due_date: due_date || null, 
-        lock_date: lock_date || null 
-    }]);
-    loadingIndicator.classList.add('hidden');
-
-    if (error) {
-        alert("Error creating assignment: " + error.message);
-    } else {
-        alert("Assignment created successfully!");
-        // Clear form
-        document.getElementById('assignment-title').value = '';
-        document.getElementById('assignment-desc').value = '';
-        document.getElementById('assignment-template').value = '';
-        document.getElementById('assignment-due').value = '';
-        document.getElementById('assignment-lock').value = '';
-        loadTeacherAssignments();
-    }
-};
-
-async function loadTeacherAttendanceData() {
-    try {
-        const { data: myCourses } = await sb.from('course_teachers').select('courses(*)').eq('teacher_id', currentUser.id);
-        const courses = myCourses.map(d => d.courses).filter(c => c !== null);
-        
-        const html = '<option value="">Select Course</option>' + 
-            courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            
-        document.getElementById('schedule-course-id').innerHTML = html;
-        document.getElementById('session-course-id').innerHTML = html;
-    } catch (err) {
-        console.error("Error loading attendance data:", err);
-    }
-}
-window.addSchedule = async () => {
-    const course_id = document.getElementById('schedule-course-id').value;
-    const day = parseInt(document.getElementById('schedule-day').value);
-    const start = document.getElementById('schedule-start').value;
-    const end = document.getElementById('schedule-end').value;
-    await sb.from('course_schedules').insert([{ course_id, day_of_week: day, start_time: start, end_time: end }]);
-    alert("Added!");
-};
-window.startSession = async () => {
-    const course_id = document.getElementById('session-course-id').value;
-    const { data } = await sb.from('class_sessions').insert([{ course_id, scheduled_at: new Date().toISOString(), otp_secret: Math.random().toString(36).substring(2, 15) }]).select().single();
-    document.getElementById('qr-container').classList.remove('hidden');
-    updateQR(data.id); qrInterval = setInterval(() => updateQR(data.id), 10000);
-};
-async function updateQR(sessionId) {
-    const { data } = await sb.functions.invoke('attendance-handler', { body: { action: 'GENERATE_QR_TOKEN', sessionId } });
-    if (data?.token) {
-        QRCode.toCanvas(document.getElementById('qr-canvas'), JSON.stringify({ s: sessionId, t: data.token }), { width: 300 });
-        let timeLeft = 10; const timerEl = document.getElementById('qr-timer');
-        const t = setInterval(() => { timeLeft--; timerEl.innerText = timeLeft; if (timeLeft <= 0) clearInterval(t); }, 1000);
-    }
-}
-window.stopSession = () => { clearInterval(qrInterval); document.getElementById('qr-container').classList.add('hidden'); };
-
-async function loadTeacherCurriculumData() {
-    try {
-        const { data: myCourses } = await sb.from('course_teachers').select('courses(*)').eq('teacher_id', currentUser.id);
-        const courses = myCourses.map(d => d.courses).filter(c => c !== null);
-        const html = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        document.getElementById('curriculum-course-id').innerHTML = html;
-
-        // Load existing items for these courses
-        const courseIds = courses.map(c => c.id);
-        if (courseIds.length > 0) {
-            const { data: items } = await sb.from('course_plan_items').select('*, courses(name)').in('course_id', courseIds).order('topic_date', { ascending: false });
-            document.getElementById('teacher-curriculum-list').innerHTML = '<h3>Existing Topics</h3>' + 
-                (items.map(i => `<div class="card"><strong>[${i.courses.name}] ${i.topic_date}</strong>: ${i.title}</div>`).join('') || '<p>No items yet.</p>');
-            
-            const { data: events } = await sb.from('course_events').select('*, courses(name)').in('course_id', courseIds).order('event_date', { ascending: false });
-            document.getElementById('teacher-events-list').innerHTML = '<h3>Existing Events</h3>' + 
-                (events.map(e => `<div class="card"><strong>[${e.courses.name}] ${e.event_date}</strong>: ${e.title}</div>`).join('') || '<p>No events yet.</p>');
-        }
-    } catch (err) { console.error(err); }
+async function loadTeacherCourses() {
+    const res = await api({ action: 'getTeacherCourses' });
+    document.getElementById('teacher-courses-list').innerHTML = res.data.map(c => `
+        <div class="card">
+            <h3>${c.name}</h3>
+        </div>
+    `).join('') || '<p>No courses assigned</p>';
 }
 
-window.addCurriculumItem = async () => {
-    const course_id = document.getElementById('curriculum-course-id').value;
-    const topic_date = document.getElementById('curriculum-date').value;
-    const title = document.getElementById('curriculum-title').value;
-    const description = document.getElementById('curriculum-desc').value;
-    const recording_url = document.getElementById('curriculum-recording').value;
-    const materials_url = document.getElementById('curriculum-materials').value;
-
-    if (!course_id || !topic_date || !title) return alert("Required fields missing.");
-
-    loadingIndicator.classList.remove('hidden');
-    const { error } = await sb.from('course_plan_items').insert([{ course_id, topic_date, title, description, recording_url, materials_url }]);
-    loadingIndicator.classList.add('hidden');
-
-    if (error) alert(error.message);
-    else {
-        alert("Saved!");
-        document.getElementById('curriculum-title').value = '';
-        document.getElementById('curriculum-desc').value = '';
-        loadTeacherCurriculumData();
-    }
-};
-
-window.addCourseEvent = async () => {
-    const cid = document.getElementById('curriculum-course-id').value;
-    const date = document.getElementById('event-date').value;
-    const title = document.getElementById('event-title').value;
-    const is_external = document.getElementById('event-external').checked;
-
-    if (!cid || !date || !title) return alert("Required fields missing.");
-
-    const { error } = await sb.from('course_events').insert([{ course_id: cid, event_date: date, title, is_external }]);
-    if (error) alert(error.message);
-    else {
-        alert("Event Added!");
-        document.getElementById('event-title').value = '';
-        loadTeacherCurriculumData();
-    }
-};
-
-async function loadTeacherCommsData() {
-    try {
-        const { data: myCourses } = await sb.from('course_teachers').select('courses(*)').eq('teacher_id', currentUser.id);
-        const courses = myCourses.map(d => d.courses).filter(c => c !== null);
-        document.getElementById('ann-course-id').innerHTML = courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        
-        const courseIds = courses.map(c => c.id);
-        if (courseIds.length > 0) {
-            const { data: anns } = await sb.from('course_announcements').select('*, courses(name)').in('course_id', courseIds).order('created_at', { ascending: false });
-            document.getElementById('teacher-announcements-list').innerHTML = '<h3>Past Announcements</h3>' + 
-                (anns.map(a => `<div class="card"><strong>[${a.courses.name}] ${a.title}</strong><p>${a.content}</p></div>`).join('') || '<p>None yet.</p>');
-            
-            const { data: students } = await sb.from('course_roster').select('student_id, profiles(full_name, student_email)').in('course_id', courseIds);
-            const unique = [...new Map(students.map(s => [s.student_id, s])).values()];
-            document.getElementById('dm-student-id').innerHTML = '<option value="">Select Student</option>' + 
-                unique.map(s => `<option value="${s.student_id}">${s.profiles?.full_name || 'Student'}</option>`).join('');
-        }
-    } catch (err) { console.error(err); }
+function loadStudentProfile() {
+    if (!currentProfile) return;
+    document.getElementById('profile-matricula').value = currentProfile.matricula_unrn || '';
+    document.getElementById('profile-cohorte').value = currentProfile.cohorte || '';
 }
 
-window.postAnnouncement = async () => {
-    const course_id = document.getElementById('ann-course-id').value;
-    const title = document.getElementById('ann-title').value;
-    const content = document.getElementById('ann-content').value;
-    if (!course_id || !title || !content) return alert("Fields missing");
-
-    const { error } = await sb.from('course_announcements').insert([{ course_id, author_id: currentUser.id, title, content }]);
-    if (error) alert(error.message);
-    else {
-        alert("Posted!");
-        document.getElementById('ann-title').value = '';
-        document.getElementById('ann-content').value = '';
-        loadTeacherCommsData();
-    }
-};
-
-async function loadChat(role, peerId) {
-    if (!peerId) return;
-    await sb.from('direct_messages').update({ read_at: new Date().toISOString(), is_read: true }).eq('receiver_id', currentUser.id).eq('sender_id', peerId).is('read_at', null);
-    const { data: messages } = await sb.from('direct_messages').select('*').or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${currentUser.id})`).order('created_at', { ascending: true });
+document.getElementById('save-profile-btn').onclick = async () => {
+    const btn = document.getElementById('save-profile-btn');
+    btn.disabled = true;
+    btn.innerText = "Guardando...";
     
-    const chatBox = document.getElementById(`${role}-chat-box`);
-    chatBox.innerHTML = messages.map(m => {
-        const isSent = m.sender_id === currentUser.id;
-        return `
-            <div class="message-bubble ${isSent ? 'sent' : 'received'}">
-                ${m.content}
-                <div style="font-size: 0.7em; text-align: right; opacity: 0.6;">
-                    ${new Date(m.created_at).toLocaleTimeString()} ${isSent && m.read_at ? '✔' : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-document.getElementById('dm-student-id')?.addEventListener('change', (e) => loadChat('teacher', e.target.value));
-document.getElementById('dm-teacher-id')?.addEventListener('change', (e) => loadChat('student', e.target.value));
-
-// --- Student ---
-async function loadStudentCourses() {
-    try {
-        const { data, error } = await sb.from('course_roster')
-            .select('courses(*)')
-            .eq('student_id', currentUser.id);
-        
-        if (error) throw error;
-
-        const courses = data.map(d => d.courses).filter(c => c !== null);
-        const container = document.getElementById('student-courses-list');
-        
-        if (courses.length === 0) {
-            container.innerHTML = '<p>You are not enrolled in any courses yet.</p>';
-            return;
-        }
-
-        container.innerHTML = courses.map(c => `
-            <div class="card">
-                <h3>${c.name}</h3>
-                <p style="font-size: 0.8em; color: #666;">${c.github_org}</p>
-                <button onclick="viewCourseDetails('${c.id}', '${c.name}', '')">Open</button>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error("Error loading student courses:", err);
-    }
-}
-
-window.viewCourseDetails = async (id, name, desc) => {
-    document.getElementById('st-course-title').innerText = name;
-    showSection('student-course-detail');
+    const matricula_unrn = document.getElementById('profile-matricula').value;
+    const cohorteText = document.getElementById('profile-cohorte').value;
+    const cohorte = cohorteText ? parseInt(cohorteText, 10) : null;
     
     try {
-        const { data: curr } = await sb.from('course_plan_items').select('*').eq('course_id', id).order('topic_date');
-        const { data: assign } = await sb.from('assignments').select('*, submissions(*)').eq('course_id', id);
+        await api({ action: 'updateProfile', payload: { matricula_unrn, cohorte } });
+        currentProfile.matricula_unrn = matricula_unrn;
+        currentProfile.cohorte = cohorte;
         
-        document.getElementById('student-timeline-list').innerHTML = curr.map(i => `
-            <div class="curriculum-item">
-                <strong>${i.topic_date}</strong>: ${i.title}
-            </div>
-        `).join('') || '<p>No topics scheduled.</p>';
-
-        document.getElementById('student-assignments-list').innerHTML = assign.map(a => `
-            <div class="card">
-                <h4>${a.title}</h4>
-                ${a.submissions?.[0] ? 'Accepted' : `<button onclick="acceptAssignment('${a.id}')">Accept</button>`}
-            </div>
-        `).join('') || '<p>No assignments found.</p>';
-    } catch (err) {
-        console.error("Error loading course details:", err);
+        const status = document.getElementById('profile-save-status');
+        status.style.display = 'block';
+        setTimeout(() => status.style.display = 'none', 3000);
+    } catch (e) {
+        alert("Error saving profile: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Guardar Perfil";
     }
 };
-
-async function loadStudentCommsData() {
-    try {
-        const { data: roster } = await sb.from('course_roster').select('course_id').eq('student_id', currentUser.id);
-        const courseIds = roster.map(r => r.course_id);
-
-        if (courseIds.length === 0) {
-            document.getElementById('student-announcements-list').innerHTML = '<p>Enroll in a course to see news.</p>';
-            return;
-        }
-
-        const { data: anns } = await sb.from('course_announcements').select('*, courses(name)').in('course_id', courseIds).order('created_at', { ascending: false });
-        document.getElementById('student-announcements-list').innerHTML = anns.map(a => `
-            <div class="card announcement-card">
-                <small>${a.courses.name}</small>
-                <h4>${a.title}</h4>
-                <p>${a.content}</p>
-            </div>
-        `).join('') || '<p>No announcements yet.</p>';
-
-        const { data: teachers } = await sb.from('course_teachers').select('teacher_id, courses(name)').in('course_id', courseIds);
-        document.getElementById('dm-teacher-id').innerHTML = '<option value="">Select Teacher</option>' + teachers.map(t => `<option value="${t.teacher_id}">${t.courses.name}</option>`).join('');
-    } catch (err) {
-        console.error("Error loading student comms:", err);
-    }
-}
-function startScanner() {
-    html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (txt) => {
-        const { s, t } = JSON.parse(txt);
-        await sb.functions.invoke('attendance-handler', { body: { action: 'MARK_ATTENDANCE', sessionId: s, token: t } });
-        alert("Marked!"); html5QrCode.stop(); showSection('student-courses');
-    });
-}
-function stopScanner() { if (html5QrCode?.isScanning) html5QrCode.stop(); }
