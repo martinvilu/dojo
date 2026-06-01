@@ -262,6 +262,10 @@ async function loadTeacherCourseSettings(courseId) {
         document.getElementById('settings-cover-text').value = data.cover_text || '';
         document.getElementById('settings-start-date').value = data.start_date || '';
         document.getElementById('settings-duration').value = data.duration_weeks || '';
+        document.getElementById('settings-external-calendars').value = (data.external_calendars || []).join(', ');
+        
+        document.getElementById('export-ics-link').href = `/api/calendar?id=${courseId}`;
+        
         currentCourseSchedules = data.schedules || [];
         renderSchedules();
     } catch (e) {
@@ -280,6 +284,7 @@ document.getElementById('save-course-settings-btn').onclick = async () => {
                 cover_text: document.getElementById('settings-cover-text').value,
                 start_date: document.getElementById('settings-start-date').value,
                 duration_weeks: parseInt(document.getElementById('settings-duration').value) || 0,
+                external_calendars: document.getElementById('settings-external-calendars').value.split(',').map(s => s.trim()).filter(s => s),
                 schedules: currentCourseSchedules
             }
         };
