@@ -58,6 +58,7 @@ const routes = {
     '/admin/course-detail': 'admin-course-detail',
     '/admin/users': 'admin-users',
     '/teacher/courses': 'teacher-courses',
+    '/teacher/course-settings': 'teacher-course-settings',
     '/teacher/assignments': 'teacher-assignments',
     '/student/courses': 'student-courses',
     '/profile': 'profile',
@@ -100,6 +101,10 @@ const router = () => {
     }
     if (path === '/admin/users') loadAdminUsers();
     if (path === '/teacher/courses') loadTeacherCourses();
+    if (path === '/teacher/course-settings') {
+        const urlParams = new URLSearchParams(window.location.search);
+        loadTeacherCourseSettings(urlParams.get('id'));
+    }
     if (path === '/student/courses') loadStudentCourses();
     if (path === '/profile') loadProfile();
 };
@@ -204,12 +209,91 @@ async function loadAdminUsers() {
 async function loadTeacherCourses() {
     const res = await api({ action: 'getTeacherCourses' });
     document.getElementById('teacher-courses-list').innerHTML = res.data.map(c => `
-        <div class="card">
-            <h3>${c.name}</h3>
-            <p><strong>Código de invitación:</strong> ${c.invite_code || '-'}</p>
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin-bottom: 5px;">${c.name}</h3>
+                <p style="margin: 0; color: #7f8c8d;"><strong>Código de invitación:</strong> ${c.invite_code || '-'}</p>
+            </div>
+            <button onclick="navigateTo('/teacher/course-settings?id=${c.id}')">Configurar cursada</button>
         </div>
     `).join('') || '<p>No tenés cursos asignados</p>';
 }
+
+let currentCourseSettingsId = null;
+let currentCourseSchedules = [];
+
+function renderSchedules() {
+    const list = document.getElementById('settings-schedules-list');
+    if (currentCourseSchedules.length === 0) {
+        list.innerHTML = '<p style="color: #666; font-style: italic;">No agregaste horarios todavía.</p>';
+        return;
+    }
+    list.innerHTML = currentCourseSchedules.map((s, i) => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border: 1px solid #eee; margin-bottom: 5px; border-radius: 4px;">
+            <span><strong>${s.day}</strong> a las <strong>${s.time}</strong> (${s.type})</span>
+            <button class="danger" style="margin: 0; padding: 5px 10px;" onclick="removeSchedule(${i})">X</button>
+        </div>
+    `).join('');
+}
+
+window.removeSchedule = (index) => {
+    currentCourseSchedules.splice(index, 1);
+    renderSchedules();
+};
+
+document.getElementById('add-schedule-btn').onclick = () => {
+    const day = document.getElementById('schedule-day').value;
+    const time = document.getElementById('schedule-time').value;
+    const type = document.getElementById('schedule-type').value;
+    if (!time) return alert('Poné una hora válida.');
+    currentCourseSchedules.push({ day, time, type });
+    renderSchedules();
+    document.getElementById('schedule-time').value = '';
+};
+
+async function loadTeacherCourseSettings(courseId) {
+    if (!courseId) return navigateTo('/teacher/courses');
+    currentCourseSettingsId = courseId;
+    document.getElementById('teacher-settings-title').innerText = 'Cargando configuración...';
+    try {
+        const res = await api({ action: 'getCourseSettings', payload: { courseId } });
+        const data = res.data;
+        document.getElementById('teacher-settings-title').innerText = \`Configurar: \${data.name}\`;
+        document.getElementById('settings-cover-text').value = data.cover_text || '';
+        document.getElementById('settings-start-date').value = data.start_date || '';
+        document.getElementById('settings-duration').value = data.duration_weeks || '';
+        currentCourseSchedules = data.schedules || [];
+        renderSchedules();
+    } catch (e) {
+        alert("Error cargando configuración: " + e.message);
+    }
+}
+
+document.getElementById('save-course-settings-btn').onclick = async () => {
+    const btn = document.getElementById('save-course-settings-btn');
+    btn.disabled = true;
+    btn.innerText = "Guardando...";
+    try {
+        const payload = {
+            courseId: currentCourseSettingsId,
+            data: {
+                cover_text: document.getElementById('settings-cover-text').value,
+                start_date: document.getElementById('settings-start-date').value,
+                duration_weeks: parseInt(document.getElementById('settings-duration').value) || 0,
+                schedules: currentCourseSchedules
+            }
+        };
+        await api({ action: 'updateCourseSettings', payload });
+        const status = document.getElementById('settings-save-status');
+        status.style.display = 'block';
+        setTimeout(() => status.style.display = 'none', 3000);
+    } catch (e) {
+        alert("Uy, error al guardar: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Guardar Configuración de la Cursada";
+    }
+};
 
 async function loadStudentCourses() {
     const res = await api({ action: 'getStudentCourses' });

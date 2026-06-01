@@ -163,6 +163,24 @@ exports.api = functions.https.onCall(async (data, context) => {
             return courses;
         }
 
+        if (action === 'getCourseSettings') {
+            const courseId = payload.courseId;
+            const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+            if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+            
+            const cSnap = await db.collection('courses').doc(courseId).get();
+            return { id: cSnap.id, ...cSnap.data() };
+        }
+
+        if (action === 'updateCourseSettings') {
+            const courseId = payload.courseId;
+            const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+            if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+            
+            await db.collection('courses').doc(courseId).update(payload.data);
+            return { success: true };
+        }
+
         if (action === 'getTeacherAssignments') {
             const tSnap = await db.collection('course_teachers').where('teacher_id', '==', uid).get();
             const courseIds = tSnap.docs.map(d => d.data().course_id);

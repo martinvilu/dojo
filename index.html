@@ -121,6 +121,67 @@
             <div id="teacher-courses-list"></div>
         </section>
 
+        <section id="teacher-course-settings" class="content-section hidden">
+            <button class="secondary" onclick="navigateTo('/teacher/courses')" style="margin-bottom: 20px;">&larr; Volver a Mis Clases</button>
+            <h1 id="teacher-settings-title">Configurar Cursada</h1>
+            
+            <div class="card">
+                <h3>Portada del Curso</h3>
+                <textarea id="settings-cover-text" rows="4" placeholder="Escribí una descripción o bienvenida a la cursada..."></textarea>
+            </div>
+
+            <div class="card">
+                <h3>Cronograma y Calendario</h3>
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label>Fecha de Inicio</label>
+                        <input type="date" id="settings-start-date">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Duración (Semanas)</label>
+                        <input type="number" id="settings-duration" placeholder="Ej: 16" min="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Horarios de Clase</h3>
+                <div id="settings-schedules-list" style="margin-bottom: 15px;"></div>
+                
+                <div style="display: flex; gap: 10px; align-items: end; border-top: 1px solid #eee; padding-top: 15px;">
+                    <div style="flex: 1;">
+                        <label>Día</label>
+                        <select id="schedule-day">
+                            <option value="Lunes">Lunes</option>
+                            <option value="Martes">Martes</option>
+                            <option value="Miércoles">Miércoles</option>
+                            <option value="Jueves">Jueves</option>
+                            <option value="Viernes">Viernes</option>
+                            <option value="Sábado">Sábado</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Horario</label>
+                        <input type="time" id="schedule-time">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Tipo</label>
+                        <select id="schedule-type">
+                            <option value="Teórica">Teórica</option>
+                            <option value="Práctica">Práctica</option>
+                            <option value="Teórica/Práctica">Teórica/Práctica</option>
+                            <option value="Taller">Taller</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <button id="add-schedule-btn" style="margin-bottom: 10px;">Agregar Horario</button>
+                </div>
+            </div>
+
+            <button id="save-course-settings-btn" style="width: 100%; font-size: 1.1em; padding: 15px;">Guardar Configuración de la Cursada</button>
+            <p id="settings-save-status" style="color: #27ae60; display: none; text-align: center; margin-top: 10px;">¡Configuración guardada de diez!</p>
+        </section>
+
         <section id="teacher-assignments" class="content-section hidden">
             <h1>Entregas y Tareas</h1>
             <div class="card">
