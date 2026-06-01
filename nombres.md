@@ -52,7 +52,17 @@ Si buscas algo más corto y directo, aquí tienes opciones de una sola palabra q
 8.  **NEN**: (*Hunter x Hunter*) La capacidad de utilizar la energía propia. Representa el núcleo o el motor del sistema.
 9.  **HAKI**: (*One Piece*) "Ambición" o "Fuerza de voluntad". Lo que necesita el estudiante para terminar los laboratorios antes del `lock_date`.
 10. **JUTSU**: Simplemente "Técnica". El arte de automatizar el aula.
+11. **FUIN**: (*Fuinjutsu*) "Sellado". La referencia absoluta para la función de **Bloquear Repositorios** (lock_date).
+12. **KUCHIYOSE**: "Invocación". El nombre ideal para el sistema de **Importación de Alumnos o Cursos**.
+13. **KAGE**: "Sombra" (Líder). Para el **Dashboard de Administrador** que supervisa todo desde arriba.
+14. **CHAKRA**: La fuente de energía. Representa la infraestructura de **Supabase** que alimenta el sistema.
+15. **TAIJUTSU**: Combate físico. Representa la **Presencia Física** validada por el código QR.
+16. **KINJUTSU**: "Técnica prohibida". Para las acciones de **Admin** que pueden alterar la historia del curso (borrados, reseteos).
+17. **SENJUTSU**: Técnicas sabias. Representa la **Planificación Académica** y el cronograma avanzado.
+18. **SHINOBI**: El guerrero. Para el **Dashboard del Estudiante**.
+19. **NINDO**: "El camino del ninja". La metáfora perfecta para el **Plan de Estudios** o programa de la materia.
+20. **IZANAGI**: Alterar la realidad. Para la función de **Reutilización de Cursos** anteriores.
 
 ---
-**Recomendación personal**: **EN** (por la asistencia) o **SHIKAI** (como fase previa a la entrega final) tienen una elegancia minimalista muy fuerte.
+**Recomendación personal**: **FUIN** para el bloqueo y **KUCHIYOSE** para la importación son metáforas técnicas impecables.
 
