@@ -1,6 +1,6 @@
-# Gaula Classroom (GitHub Classroom Clone)
+# Jutsu Classroom (GitHub Classroom Clone)
 
-Gaula Classroom es una alternativa ligera y auto-hospedada a GitHub Classroom, construida sobre **Supabase** y **GitHub API**. Permite una gestión académica integral, desde el control de repositorios hasta la asistencia y comunicación.
+Jutsu Classroom es una alternativa ligera y auto-hospedada a GitHub Classroom, construida sobre **Supabase** y **GitHub API**. Permite una gestión académica integral, desde el control de repositorios hasta la asistencia y comunicación.
 
 ## 🚀 Arquitectura y Capacidades
 
@@ -57,6 +57,10 @@ Actualiza las constantes en `js/app.js` con tu `SUPABASE_URL` y `SUPABASE_ANON_K
 ## 🔒 Seguridad
 - **RLS (Row Level Security)**: Aislamiento total de datos entre estudiantes.
 - **Server-side Validation**: Las fechas límite y permisos de GitHub se gestionan en Edge Functions seguras.
+
+## 📝 Convenciones del Proyecto
+- **Commits Semánticos**: Este proyecto utiliza [Conventional Commits](https://www.conventionalcommits.org/). Todos los commits deben seguir el formato `<tipo>(<ámbito>): <descripción>` (ej. `feat(auth): login con google`, `fix(ui): botón no clickeable`).
+- Para más detalles sobre el flujo de trabajo, lee el archivo `DEVELOPMENT.md`.
 
 ## 📄 Licencia
 MIT

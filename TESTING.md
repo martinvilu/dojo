@@ -14,9 +14,9 @@ El sistema incluye 3 usuarios pre-configurados. Inicia sesión con `email` y con
 
 | Rol | Email | Propósito |
 | :--- | :--- | :--- |
-| **Admin** | `admin@gaula.com` | Crear materias, exportar/importar. |
-| **Profesor** | `teacher@gaula.com` | Gestionar tareas, QR de asistencia y corrección. |
-| **Estudiante** | `student@gaula.com` | Aceptar tareas y escanear asistencia. |
+| **Admin** | `admin@jutsu.com` | Crear materias, exportar/importar. |
+| **Profesor** | `teacher@jutsu.com` | Gestionar tareas, QR de asistencia y corrección. |
+| **Estudiante** | `student@jutsu.com` | Aceptar tareas y escanear asistencia. |
 
 ## 📡 Simulación de Asistencia QR
 Para probar el escáner:

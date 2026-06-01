@@ -1,6 +1,6 @@
 # Estándares de Desarrollo y Mantenimiento
 
-Este documento describe las directrices para el mantenimiento y evolución del repositorio de Gaula Classroom.
+Este documento describe las directrices para el mantenimiento y evolución del repositorio de Jutsu Classroom.
 
 ## 📝 Commits Semánticos
 

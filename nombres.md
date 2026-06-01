@@ -1,6 +1,6 @@
 # Propuestas de Nombres (Codenames)
 
-Aquí tienes una lista de propuestas creativas para renombrar el sistema "Gaula Classroom", inspiradas en memes de anime y películas de acción icónicas.
+Aquí tienes una lista de propuestas creativas para renombrar el sistema "Jutsu Classroom", inspiradas en memes de anime y películas de acción icónicas.
 
 ## 🎌 Nombres de Anime (Meme-tier)
 
@@ -48,7 +48,7 @@ Si buscas algo más corto y directo, aquí tienes opciones de una sola palabra q
 4.  **EN**: (*Hunter x Hunter*) Un campo de detección de energía. El nombre perfecto para el radio de acción del **Asistencia por QR**.
 5.  **DOJUTSU**: (*Naruto*) "Técnica ocular". Referencia directa al **Escáner de Cámara** del estudiante.
 6.  **KIDO**: (*Bleach*) "Camino del espíritu". Hechizos basados en el orden y la estructura. Ideal para la arquitectura organizada de Supabase.
-7.  **RYU**: "Escuela" o "Estilo". Para definir "El Estilo Gaula" de enseñanza técnica.
+7.  **RYU**: "Escuela" o "Estilo". Para definir "El Estilo Jutsu" de enseñanza técnica.
 8.  **NEN**: (*Hunter x Hunter*) La capacidad de utilizar la energía propia. Representa el núcleo o el motor del sistema.
 9.  **HAKI**: (*One Piece*) "Ambición" o "Fuerza de voluntad". Lo que necesita el estudiante para terminar los laboratorios antes del `lock_date`.
 10. **JUTSU**: Simplemente "Técnica". El arte de automatizar el aula.
