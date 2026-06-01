@@ -38,5 +38,18 @@ Aquí tienes una lista de propuestas creativas para renombrar el sistema "Gaula 
     *   **Referencia**: *Duro de Matar*.
     *   **Contexto**: Para ese repositorio del estudiante que tiene 100 commits y se niega a fallar los tests automáticos.
 
+## ⚡ Nombres de una sola palabra (Concise Codenames)
+
+Si buscas algo más corto y directo, aquí tienes opciones de una sola palabra que mantienen la esencia:
+
+1.  **BANKAI**: (*Bleach*) La liberación final del poder. Representa el despliegue de una materia o la entrega final del alumno.
+2.  **MUDRA**: (*Naruto*) Los sellos manuales para ejecutar jutsus. Representa los "gestos" técnicos (commits, escaneo de QR) necesarios para avanzar.
+3.  **ZENITSU**: (*Demon Slayer*) Veloz y letal cuando "se duerme" (automatización). Ideal para un sistema que trabaja rápido en segundo plano.
+4.  **WICK**: (*John Wick*) Eficiencia, determinación y enfoque puro en una sola tarea.
+5.  **TENSAI**: (*Slam Dunk / Naruto*) "Genio". Para el dashboard que hace que todo parezca fácil para el profesor.
+6.  **KAIZEN**: Mejora continua. Un término muy usado en ingeniería y anime (ej. *Jujutsu Kaisen*), perfecto para un sistema de entregas y correcciones.
+7.  **SENSEI**: El maestro. Directo, autoritario y respetado.
+8.  **HYPERDRIVE**: (*Star Wars*) Velocidad luz para la gestión de múltiples cursos.
+
 ---
-**Recomendación personal**: **Omae wa Classroom** tiene ese toque de autoridad docente y humor de internet que encaja perfecto con un proyecto auto-hospedado.
+**Recomendación personal**: **MUDRA** o **BANKAI** tienen mucha fuerza visual y sonora para un sistema de este tipo.
