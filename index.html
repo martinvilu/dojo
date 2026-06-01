@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jutsu Classroom - Unified Dashboard</title>
+    <title>Jutsu Classroom - Panel Central</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; }
         #sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
@@ -38,15 +38,15 @@
     <div id="auth-overlay" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 1000;">
         <div class="card" style="width: 300px; text-align: center;">
             <h2>Jutsu Classroom</h2>
-            <button id="login-github-btn" style="width: 100%; margin-bottom: 10px; background: #333;">Sign in with GitHub</button>
-            <button id="login-google-btn" style="width: 100%; margin-bottom: 10px; background: #db4437;">Sign in with Google</button>
+            <button id="login-github-btn" style="width: 100%; margin-bottom: 10px; background: #333;">Entrar con GitHub</button>
+            <button id="login-google-btn" style="width: 100%; margin-bottom: 10px; background: #db4437;">Entrar con Google</button>
             
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; text-align: left;">
                 <input type="email" id="email-input" placeholder="Email" style="margin-bottom: 10px;">
-                <input type="password" id="password-input" placeholder="Password" style="margin-bottom: 10px;">
+                <input type="password" id="password-input" placeholder="Contraseña" style="margin-bottom: 10px;">
                 <div style="display: flex; gap: 10px;">
-                    <button id="login-email-btn" style="flex: 1; margin-top: 0;">Login</button>
-                    <button id="signup-email-btn" style="flex: 1; margin-top: 0; background: #27ae60;">Sign Up</button>
+                    <button id="login-email-btn" style="flex: 1; margin-top: 0;">Ingresar</button>
+                    <button id="signup-email-btn" style="flex: 1; margin-top: 0; background: #27ae60;">Registrarme</button>
                 </div>
             </div>
         </div>
@@ -55,80 +55,102 @@
     <div id="sidebar">
         <h2>Jutsu</h2>
         <div id="nav-admin" class="role-nav hidden">
-            <a href="/admin/courses" class="nav-item" data-link>Courses</a>
-            <a href="/admin/users" class="nav-item" data-link>Users</a>
+            <a href="/admin/courses" class="nav-item" data-link>Gestión de Cursos</a>
+            <a href="/admin/users" class="nav-item" data-link>Usuarios</a>
         </div>
         <div id="nav-teacher" class="role-nav hidden">
-            <a href="/teacher/courses" class="nav-item" data-link>My Courses</a>
-            <a href="/teacher/assignments" class="nav-item" data-link>Assignments</a>
+            <a href="/teacher/courses" class="nav-item" data-link>Mis Clases</a>
+            <a href="/teacher/assignments" class="nav-item" data-link>Entregas</a>
         </div>
         <div id="nav-student" class="role-nav hidden">
-            <a href="/student/courses" class="nav-item" data-link>My Enrollment</a>
-            <a href="/student/profile" class="nav-item" data-link>Mi Perfil</a>
+            <a href="/student/courses" class="nav-item" data-link>Mi Cursada</a>
         </div>
         <div id="user-info">
-            <p id="user-display" class="nav-item">Loading...</p>
-            <p id="user-role" style="font-weight: bold; text-transform: uppercase; color: #3498db;"></p>
-            <button class="secondary" id="logout-btn">Logout</button>
+            <a href="/profile" id="user-display" class="nav-item" data-link style="font-weight: bold; font-size: 1.1em;">Cargando...</a>
+            <p id="user-role" style="font-weight: bold; text-transform: uppercase; color: #3498db; margin-top: 0; padding: 0 10px;"></p>
+            <button class="secondary" id="logout-btn" style="width: calc(100% - 20px); margin: 10px;">Cerrar Sesión</button>
         </div>
     </div>
 
     <div id="main-content">
         <section id="admin-courses" class="content-section hidden">
-            <h1>Courses Management</h1>
+            <h1>Panel de Admin - Cursos</h1>
             <div class="card">
-                <input type="text" id="course-name" placeholder="Course Name">
-                <input type="text" id="course-org" placeholder="GitHub Org">
-                <button id="create-course-btn">Create Course</button>
+                <input type="text" id="course-name" placeholder="Nombre de la cursada (ej: Programación 101)">
+                <input type="text" id="course-org" placeholder="Organización de GitHub">
+                <button id="create-course-btn">Crear Curso</button>
             </div>
             <div id="admin-courses-list"></div>
         </section>
 
+        <section id="admin-course-detail" class="content-section hidden">
+            <button class="secondary" onclick="navigateTo('/admin/courses')" style="margin-bottom: 20px;">&larr; Volver a Cursos</button>
+            <h1 id="detail-course-name">Cargando...</h1>
+            <p><strong>Organización GitHub:</strong> <span id="detail-course-org"></span></p>
+            <p><strong>Código de Invitación:</strong> <span id="detail-course-code"></span></p>
+
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="card" style="flex: 1; min-width: 300px;">
+                    <h3>👨‍🏫 Profesores</h3>
+                    <ul id="detail-course-teachers" style="padding-left: 20px; color: #555;"></ul>
+                </div>
+                <div class="card" style="flex: 1; min-width: 300px;">
+                    <h3>🎓 Alumnos Enrolados (<span id="detail-course-students-count">0</span>)</h3>
+                    <ul id="detail-course-students" style="padding-left: 20px; color: #555;"></ul>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h3>📝 Tareas</h3>
+                <ul id="detail-course-assignments" style="padding-left: 20px; color: #555;"></ul>
+            </div>
+        </section>
+
         <section id="admin-users" class="content-section hidden">
-            <h1>User Management & Roles</h1>
+            <h1>Usuarios y Roles</h1>
             <div class="card">
                 <table style="width: 100%; text-align: left; border-collapse: collapse;">
-                    <thead><tr style="border-bottom: 1px solid #ddd;"><th>Name</th><th>Email</th><th>Role</th><th>Matrícula</th><th>Cohorte</th></tr></thead>
+                    <thead><tr style="border-bottom: 1px solid #ddd;"><th>Nombre</th><th>Email</th><th>Rol</th><th>Matrícula</th><th>Cohorte</th></tr></thead>
                     <tbody id="admin-users-table"></tbody>
                 </table>
             </div>
         </section>
 
         <section id="teacher-courses" class="content-section hidden">
-            <h1>My Assigned Courses</h1>
+            <h1>Mis Clases Asignadas</h1>
             <div id="teacher-courses-list"></div>
         </section>
 
         <section id="teacher-assignments" class="content-section hidden">
-            <h1>Assignments</h1>
+            <h1>Entregas y Tareas</h1>
             <div class="card">
-                <h3>New Assignment</h3>
-                <input type="text" id="assignment-title" placeholder="Assignment Title">
-                <button id="create-assignment-btn">Create Assignment</button>
+                <h3>Creá una nueva tarea</h3>
+                <input type="text" id="assignment-title" placeholder="Título de la entrega">
+                <button id="create-assignment-btn">Crear Tarea</button>
             </div>
             <div id="teacher-assignments-list"></div>
         </section>
 
         <section id="student-courses" class="content-section hidden">
-            <h1>My Enrolled Courses</h1>
+            <h1>Mi Cursada</h1>
             <div id="student-courses-list"></div>
         </section>
         
-        <section id="student-profile" class="content-section hidden">
+        <section id="profile" class="content-section hidden">
             <h1>Mi Perfil Académico</h1>
             <div class="card">
                 <label>Matrícula UNRN</label>
                 <input type="text" id="profile-matricula" placeholder="Ej: 12345">
                 <label>Año de Cohorte</label>
                 <input type="number" id="profile-cohorte" placeholder="Ej: 2026">
-                <button id="save-profile-btn">Guardar Perfil</button>
-                <p id="profile-save-status" style="color: #27ae60; display: none; margin-top: 10px;">¡Guardado correctamente!</p>
+                <button id="save-profile-btn">Guardá tu Perfil</button>
+                <p id="profile-save-status" style="color: #27ae60; display: none; margin-top: 10px;">¡Guardado de diez!</p>
             </div>
         </section>
         
         <section id="not-found" class="content-section hidden">
-            <h1>404 - Not Found</h1>
-            <p>The page you are looking for does not exist.</p>
+            <h1>404 - No Encontrado</h1>
+            <p>La página que buscás no existe, che.</p>
         </section>
 
     </div>

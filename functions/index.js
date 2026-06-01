@@ -68,10 +68,56 @@ exports.api = functions.https.onCall(async (data, context) => {
             return courses;
         }
 
+        if (action === 'getAdminCourseDetails') {
+            const courseId = payload.courseId;
+            const cSnap = await db.collection('courses').doc(courseId).get();
+            if (!cSnap.exists) throw new Error("Course not found");
+            const course = cSnap.data();
+            course.id = courseId;
+            
+            // Get teachers
+            const tSnap = await db.collection('course_teachers').where('course_id', '==', courseId).get();
+            course.teachers = [];
+            for (let doc of tSnap.docs) {
+                const tdata = doc.data();
+                const pSnap = await db.collection('profiles').doc(tdata.teacher_id).get();
+                course.teachers.push(pSnap.data());
+            }
+            
+            // Get students
+            const rSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
+            course.students = [];
+            for (let doc of rSnap.docs) {
+                const sdata = doc.data();
+                const pSnap = await db.collection('profiles').doc(sdata.student_id).get();
+                course.students.push(pSnap.data());
+            }
+
+            // Get assignments
+            const aSnap = await db.collection('assignments').where('course_id', '==', courseId).get();
+            course.assignments = aSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            return course;
+        }
+
+        if (action === 'enrollCourse') {
+            const code = payload.code.trim();
+            const snap = await db.collection('courses').where('invite_code', '==', code).get();
+            if (snap.empty) throw new Error("Course not found with that code");
+            const courseId = snap.docs[0].id;
+            await db.collection('course_roster').doc(`${courseId}_${uid}`).set({
+                course_id: courseId,
+                student_id: uid,
+                enrolled_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true };
+        }
+
         if (action === 'createCourse') {
             const ref = await db.collection('courses').add({
                 name: payload.name,
                 github_org: payload.github_org,
+                invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
                 created_by: uid,
                 created_at: admin.firestore.FieldValue.serverTimestamp()
             });

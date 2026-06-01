@@ -33,21 +33,21 @@ const authOverlay = document.getElementById('auth-overlay');
 const userDisplay = document.getElementById('user-display');
 const userRoleLabel = document.getElementById('user-role');
 
-document.getElementById('login-github-btn').onclick = () => withLoading(() => signInWithPopup(auth, new GithubAuthProvider())).catch(e => alert("GitHub login failed: " + e.message));
-document.getElementById('login-google-btn').onclick = () => withLoading(() => signInWithPopup(auth, new GoogleAuthProvider())).catch(e => alert("Google login failed: " + e.message));
+document.getElementById('login-github-btn').onclick = () => withLoading(() => signInWithPopup(auth, new GithubAuthProvider())).catch(e => alert("Falló el inicio con GitHub: " + e.message));
+document.getElementById('login-google-btn').onclick = () => withLoading(() => signInWithPopup(auth, new GoogleAuthProvider())).catch(e => alert("Falló el inicio con Google: " + e.message));
 
 document.getElementById('login-email-btn').onclick = async () => {
     const email = document.getElementById('email-input').value;
     const pass = document.getElementById('password-input').value;
     try { await withLoading(() => signInWithEmailAndPassword(auth, email, pass)); }
-    catch(e) { alert("Login failed: " + e.message); }
+    catch(e) { alert("Error al entrar: " + e.message); }
 };
 
 document.getElementById('signup-email-btn').onclick = async () => {
     const email = document.getElementById('email-input').value;
     const pass = document.getElementById('password-input').value;
     try { await withLoading(() => createUserWithEmailAndPassword(auth, email, pass)); }
-    catch(e) { alert("Sign up failed: " + e.message); }
+    catch(e) { alert("Error al registrarte: " + e.message); }
 };
 logoutBtn.onclick = () => signOut(auth);
 
@@ -55,11 +55,12 @@ logoutBtn.onclick = () => signOut(auth);
 
 const routes = {
     '/admin/courses': 'admin-courses',
+    '/admin/course-detail': 'admin-course-detail',
     '/admin/users': 'admin-users',
     '/teacher/courses': 'teacher-courses',
     '/teacher/assignments': 'teacher-assignments',
     '/student/courses': 'student-courses',
-    '/student/profile': 'student-profile',
+    '/profile': 'profile',
 };
 
 window.navigateTo = (url) => {
@@ -93,9 +94,14 @@ const router = () => {
 
     // Load data based on path
     if (path === '/admin/courses') loadAdminCourses();
+    if (path === '/admin/course-detail') {
+        const urlParams = new URLSearchParams(window.location.search);
+        loadAdminCourseDetail(urlParams.get('id'));
+    }
     if (path === '/admin/users') loadAdminUsers();
     if (path === '/teacher/courses') loadTeacherCourses();
-    if (path === '/student/profile') loadStudentProfile();
+    if (path === '/student/courses') loadStudentCourses();
+    if (path === '/profile') loadProfile();
 };
 
 window.addEventListener('popstate', router);
@@ -141,9 +147,12 @@ async function loadAdminCourses() {
     const res = await api({ action: 'getAdminCourses' });
     const container = document.getElementById('admin-courses-list');
     container.innerHTML = res.data.map(c => `
-        <div class="card">
-            <h3>${c.name}</h3>
-            <p>${c.github_org}</p>
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin-bottom: 5px;">${c.name}</h3>
+                <p style="margin: 0; color: #7f8c8d;">${c.github_org}</p>
+            </div>
+            <button class="secondary" onclick="navigateTo('/admin/course-detail?id=${c.id}')">Ver detalles</button>
         </div>
     `).join('');
 }
@@ -154,6 +163,30 @@ document.getElementById('create-course-btn').onclick = async () => {
     await api({ action: 'createCourse', payload: { name, github_org: org } });
     loadAdminCourses();
 };
+
+async function loadAdminCourseDetail(courseId) {
+    if (!courseId) return navigateTo('/admin/courses');
+    try {
+        const res = await api({ action: 'getAdminCourseDetails', payload: { courseId } });
+        const data = res.data;
+        document.getElementById('detail-course-name').innerText = data.name;
+        document.getElementById('detail-course-org').innerText = data.github_org || 'N/A';
+        document.getElementById('detail-course-code').innerText = data.invite_code || '-';
+        
+        document.getElementById('detail-course-teachers').innerHTML = data.teachers.length ? 
+            data.teachers.map(t => `<li>${t.full_name} (${t.email})</li>`).join('') : '<li>Ninguno</li>';
+            
+        document.getElementById('detail-course-students-count').innerText = data.students.length;
+        document.getElementById('detail-course-students').innerHTML = data.students.length ? 
+            data.students.map(s => `<li>${s.full_name} (${s.email}) - Matrícula: ${s.matricula_unrn || 'N/A'}</li>`).join('') : '<li>Ninguno</li>';
+            
+        document.getElementById('detail-course-assignments').innerHTML = data.assignments.length ? 
+            data.assignments.map(a => `<li><strong>${a.title}</strong> (Vence: ${new Date(a.due_date).toLocaleDateString()})</li>`).join('') : '<li>Ninguna</li>';
+            
+    } catch (e) {
+        alert("Error cargando detalles del curso: " + e.message);
+    }
+}
 
 async function loadAdminUsers() {
     const res = await api({ action: 'getAdminUsers' });
@@ -173,11 +206,47 @@ async function loadTeacherCourses() {
     document.getElementById('teacher-courses-list').innerHTML = res.data.map(c => `
         <div class="card">
             <h3>${c.name}</h3>
+            <p><strong>Código de invitación:</strong> ${c.invite_code || '-'}</p>
         </div>
-    `).join('') || '<p>No courses assigned</p>';
+    `).join('') || '<p>No tenés cursos asignados</p>';
 }
 
-function loadStudentProfile() {
+async function loadStudentCourses() {
+    const res = await api({ action: 'getStudentCourses' });
+    const container = document.getElementById('student-courses-list');
+    
+    if (!res.data || res.data.length === 0) {
+        container.innerHTML = `
+            <div class="card" style="text-align: center; padding: 40px;">
+                <h3 style="color: #2c3e50;">No estás anotado en ningún curso</h3>
+                <p style="color: #666; margin-bottom: 20px;">Ingresá el código de invitación que te pasó el profe para sumarte a la cursada.</p>
+                <div style="display: flex; justify-content: center; gap: 10px; max-width: 400px; margin: 0 auto;">
+                    <input type="text" id="enroll-code" placeholder="Código de cursada (Ej: 9A2B3C)" style="margin: 0; text-transform: uppercase;">
+                    <button id="enroll-btn" style="margin: 0;">Sumarme</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('enroll-btn').onclick = async () => {
+            const code = document.getElementById('enroll-code').value;
+            if (!code) return;
+            try {
+                await api({ action: 'enrollCourse', payload: { code: code.toUpperCase() } });
+                loadStudentCourses();
+            } catch (e) {
+                alert("Uy, error al enrolarte: " + e.message);
+            }
+        };
+    } else {
+        container.innerHTML = res.data.map(c => `
+            <div class="card">
+                <h3>${c.name}</h3>
+                <p>${c.github_org}</p>
+            </div>
+        `).join('');
+    }
+}
+
+function loadProfile() {
     if (!currentProfile) return;
     document.getElementById('profile-matricula').value = currentProfile.matricula_unrn || '';
     document.getElementById('profile-cohorte').value = currentProfile.cohorte || '';
@@ -201,9 +270,9 @@ document.getElementById('save-profile-btn').onclick = async () => {
         status.style.display = 'block';
         setTimeout(() => status.style.display = 'none', 3000);
     } catch (e) {
-        alert("Error saving profile: " + e.message);
+        alert("Error al guardar tu perfil: " + e.message);
     } finally {
         btn.disabled = false;
-        btn.innerText = "Guardar Perfil";
+        btn.innerText = "Guardá tu Perfil";
     }
 };
