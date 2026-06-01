@@ -1,0 +1,10 @@
+{
+  "projectId": "jutsu-classroom-mrtin",
+  "appId": "1:913557328690:web:831831bbd35cd384a67d2b",
+  "storageBucket": "jutsu-classroom-mrtin.firebasestorage.app",
+  "apiKey": "REPLACED_BY_ENV_VAL",
+  "authDomain": "jutsu-classroom-mrtin.firebaseapp.com",
+  "messagingSenderId": "913557328690",
+  "projectNumber": "913557328690",
+  "version": "2"
+}
