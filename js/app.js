@@ -33,21 +33,46 @@ const authOverlay = document.getElementById('auth-overlay');
 const userDisplay = document.getElementById('user-display');
 const userRoleLabel = document.getElementById('user-role');
 
-document.getElementById('login-github-btn').onclick = () => withLoading(() => signInWithPopup(auth, new GithubAuthProvider())).catch(e => alert("Falló el inicio con GitHub: " + e.message));
-document.getElementById('login-google-btn').onclick = () => withLoading(() => signInWithPopup(auth, new GoogleAuthProvider())).catch(e => alert("Falló el inicio con Google: " + e.message));
+document.getElementById('login-github-btn').onclick = () => {
+    loadingIndicator.classList.remove('hidden');
+    signInWithPopup(auth, new GithubAuthProvider())
+        .catch(e => { alert("Falló el inicio con GitHub: " + e.message); })
+        .finally(() => loadingIndicator.classList.add('hidden'));
+};
+
+document.getElementById('login-google-btn').onclick = () => {
+    loadingIndicator.classList.remove('hidden');
+    signInWithPopup(auth, new GoogleAuthProvider())
+        .catch(e => { alert("Falló el inicio con Google: " + e.message); })
+        .finally(() => loadingIndicator.classList.add('hidden'));
+};
 
 document.getElementById('login-email-btn').onclick = async () => {
     const email = document.getElementById('email-input').value;
     const pass = document.getElementById('password-input').value;
-    try { await withLoading(() => signInWithEmailAndPassword(auth, email, pass)); }
-    catch(e) { alert("Error al entrar: " + e.message); }
+    if (!email || !pass) return alert("Por favor ingresa email y contraseña.");
+    loadingIndicator.classList.remove('hidden');
+    try { 
+        await signInWithEmailAndPassword(auth, email, pass); 
+    } catch(e) { 
+        alert("Error al entrar: " + e.message); 
+    } finally {
+        loadingIndicator.classList.add('hidden');
+    }
 };
 
 document.getElementById('signup-email-btn').onclick = async () => {
     const email = document.getElementById('email-input').value;
     const pass = document.getElementById('password-input').value;
-    try { await withLoading(() => createUserWithEmailAndPassword(auth, email, pass)); }
-    catch(e) { alert("Error al registrarte: " + e.message); }
+    if (!email || !pass) return alert("Por favor ingresa email y contraseña.");
+    loadingIndicator.classList.remove('hidden');
+    try { 
+        await createUserWithEmailAndPassword(auth, email, pass); 
+    } catch(e) { 
+        alert("Error al registrarte: " + e.message); 
+    } finally {
+        loadingIndicator.classList.add('hidden');
+    }
 };
 logoutBtn.onclick = () => signOut(auth);
 
