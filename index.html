@@ -187,6 +187,27 @@
 
             <button id="save-course-settings-btn" style="width: 100%; font-size: 1.1em; padding: 15px;">Guardar Configuración de la Cursada</button>
             <p id="settings-save-status" style="color: #27ae60; display: none; text-align: center; margin-top: 10px;">¡Configuración guardada de diez!</p>
+            
+            <div style="text-align: center; margin-top: 30px; border-top: 2px dashed #eee; padding-top: 20px;">
+                <h3>Planificación Detallada</h3>
+                <p style="color: #666;">Una vez guardados los horarios, podés planificar clase por clase.</p>
+                <button class="secondary" id="manage-schedule-btn">Ver y Editar Cronograma Completo</button>
+            </div>
+        </section>
+
+        <section id="teacher-course-schedule" class="content-section hidden">
+            <button class="secondary" onclick="navigateTo('/teacher/course-settings?id=' + currentCourseSettingsId)" style="margin-bottom: 20px;">&larr; Volver a Configuración</button>
+            <h1 id="teacher-schedule-title">Cronograma de Clases</h1>
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <p>Acá ves todas las clases del cuatrimestre generadas a partir de tu configuración. Podés definir los temas, enlaces y marcar feriados o exámenes.</p>
+                <button id="generate-schedule-btn" class="danger">Regenerar Clases (¡Cuidado: borra temas actuales!)</button>
+            </div>
+
+            <div id="schedule-classes-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+
+            <button id="save-schedule-btn" style="width: 100%; font-size: 1.1em; padding: 15px; margin-top: 20px;">Guardar Cronograma Completo</button>
+            <p id="schedule-save-status" style="color: #27ae60; display: none; text-align: center; margin-top: 10px;">¡Cronograma guardado!</p>
         </section>
 
         <section id="teacher-assignments" class="content-section hidden">

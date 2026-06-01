@@ -59,6 +59,7 @@ const routes = {
     '/admin/users': 'admin-users',
     '/teacher/courses': 'teacher-courses',
     '/teacher/course-settings': 'teacher-course-settings',
+    '/teacher/course-schedule': 'teacher-course-schedule',
     '/teacher/assignments': 'teacher-assignments',
     '/student/courses': 'student-courses',
     '/profile': 'profile',
@@ -104,6 +105,10 @@ const router = () => {
     if (path === '/teacher/course-settings') {
         const urlParams = new URLSearchParams(window.location.search);
         loadTeacherCourseSettings(urlParams.get('id'));
+    }
+    if (path === '/teacher/course-schedule') {
+        const urlParams = new URLSearchParams(window.location.search);
+        loadTeacherCourseSchedule(urlParams.get('id'));
     }
     if (path === '/student/courses') loadStudentCourses();
     if (path === '/profile') loadProfile();
@@ -297,6 +302,152 @@ document.getElementById('save-course-settings-btn').onclick = async () => {
     } finally {
         btn.disabled = false;
         btn.innerText = "Guardar Configuración de la Cursada";
+    }
+};
+
+document.getElementById('manage-schedule-btn').onclick = () => {
+    navigateTo('/teacher/course-schedule?id=' + currentCourseSettingsId);
+};
+
+let currentClassInstances = [];
+let scheduleCourseData = null;
+
+async function loadTeacherCourseSchedule(courseId) {
+    if (!courseId) return navigateTo('/teacher/courses');
+    document.getElementById('teacher-schedule-title').innerText = 'Cargando...';
+    try {
+        const res = await api({ action: 'getCourseSettings', payload: { courseId } });
+        scheduleCourseData = res.data;
+        document.getElementById('teacher-schedule-title').innerText = \`Cronograma: \${scheduleCourseData.name}\`;
+        
+        currentClassInstances = scheduleCourseData.class_instances || [];
+        if (currentClassInstances.length === 0) {
+            generateClassInstances();
+        } else {
+            renderScheduleClasses();
+        }
+    } catch (e) {
+        alert("Error cargando cronograma: " + e.message);
+    }
+}
+
+function generateClassInstances() {
+    if (!scheduleCourseData.start_date || !scheduleCourseData.duration_weeks || !scheduleCourseData.schedules || scheduleCourseData.schedules.length === 0) {
+        alert("Primero tenés que configurar la fecha de inicio, duración y horarios en la vista anterior.");
+        return navigateTo('/teacher/course-settings?id=' + scheduleCourseData.id);
+    }
+    
+    currentClassInstances = [];
+    const [y, m, d] = scheduleCourseData.start_date.split('-').map(Number);
+    const baseDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+    
+    const dayMap = { 'Domingo': 0, 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6 };
+    
+    let generatedClasses = [];
+    scheduleCourseData.schedules.forEach(sch => {
+        const targetDay = dayMap[sch.day];
+        if (targetDay === undefined) return;
+        
+        let currentDay = baseDate.getUTCDay();
+        let diff = targetDay - currentDay;
+        if (diff < 0) diff += 7;
+        
+        const firstClassDate = new Date(baseDate.getTime() + diff * 86400000);
+        const [hh, mm] = (sch.time || "00:00").split(':').map(Number);
+        firstClassDate.setUTCHours(hh, mm, 0);
+        
+        for (let i = 0; i < scheduleCourseData.duration_weeks; i++) {
+            const classDate = new Date(firstClassDate.getTime() + i * 7 * 86400000);
+            generatedClasses.push({
+                date: classDate.toISOString(),
+                type: sch.type,
+                topic: "",
+                presentation_url: "",
+                recording_url: "",
+                special_status: "Normal"
+            });
+        }
+    });
+    
+    generatedClasses.sort((a, b) => new Date(a.date) - new Date(b.date));
+    currentClassInstances = generatedClasses;
+    renderScheduleClasses();
+}
+
+document.getElementById('generate-schedule-btn').onclick = () => {
+    if (confirm("¿Seguro querés regenerar? Vas a perder los temas, links y estados especiales cargados.")) {
+        generateClassInstances();
+    }
+};
+
+function renderScheduleClasses() {
+    const list = document.getElementById('schedule-classes-list');
+    if (currentClassInstances.length === 0) {
+        list.innerHTML = '<p>No hay clases generadas.</p>';
+        return;
+    }
+    
+    list.innerHTML = currentClassInstances.map((ci, idx) => {
+        const d = new Date(ci.date);
+        const dateStr = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+        const timeStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+        
+        return \`
+        <div class="card" style="display: flex; flex-direction: column; gap: 10px; \${ci.special_status === 'Feriado' ? 'opacity: 0.6; background: #eee;' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+                <h3 style="margin: 0; text-transform: capitalize;">\${dateStr} - \${timeStr} (\${ci.type})</h3>
+                <select id="ci-status-\${idx}" onchange="updateClassInstance(\${idx}, 'special_status', this.value)">
+                    <option value="Normal" \${ci.special_status === 'Normal' ? 'selected' : ''}>Normal</option>
+                    <option value="Clase Remota" \${ci.special_status === 'Clase Remota' ? 'selected' : ''}>Clase Remota</option>
+                    <option value="Examen" \${ci.special_status === 'Examen' ? 'selected' : ''}>Examen</option>
+                    <option value="Feriado" \${ci.special_status === 'Feriado' ? 'selected' : ''}>Feriado / Sin Clase</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+                <div style="flex: 2;">
+                    <label>Tema de la clase</label>
+                    <input type="text" id="ci-topic-\${idx}" value="\${ci.topic || ''}" onchange="updateClassInstance(\${idx}, 'topic', this.value)" placeholder="Ej: Unidad 1: Introducción a la materia">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+                <div style="flex: 1;">
+                    <label>Enlace a Presentación</label>
+                    <input type="url" id="ci-pres-\${idx}" value="\${ci.presentation_url || ''}" onchange="updateClassInstance(\${idx}, 'presentation_url', this.value)" placeholder="https://docs.google.com/presentation/d/... ">
+                </div>
+                <div style="flex: 1;">
+                    <label>Enlace a Grabación</label>
+                    <input type="url" id="ci-rec-\${idx}" value="\${ci.recording_url || ''}" onchange="updateClassInstance(\${idx}, 'recording_url', this.value)" placeholder="https://youtube.com/...">
+                </div>
+            </div>
+        </div>
+        \`;
+    }).join('');
+}
+
+window.updateClassInstance = (idx, field, value) => {
+    currentClassInstances[idx][field] = value;
+    if (field === 'special_status') renderScheduleClasses();
+};
+
+document.getElementById('save-schedule-btn').onclick = async () => {
+    const btn = document.getElementById('save-schedule-btn');
+    btn.disabled = true;
+    btn.innerText = "Guardando...";
+    try {
+        await api({ action: 'updateCourseSettings', payload: {
+            courseId: scheduleCourseData.id,
+            data: { class_instances: currentClassInstances }
+        }});
+        const status = document.getElementById('schedule-save-status');
+        status.style.display = 'block';
+        setTimeout(() => status.style.display = 'none', 3000);
+    } catch (e) {
+        alert("Error al guardar: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Guardar Cronograma Completo";
     }
 };
 

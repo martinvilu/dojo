@@ -250,7 +250,33 @@ exports.calendar = functions.https.onRequest(async (req, res) => {
         
         let ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Jutsu Classroom//ES\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nX-WR-CALNAME:" + (course.name || "Cursada") + "\r\n";
         
-        if (course.start_date && course.duration_weeks && course.schedules) {
+        if (course.class_instances && course.class_instances.length > 0) {
+            course.class_instances.forEach((ci, idx) => {
+                if (ci.special_status === 'Feriado') return; // Do not emit event for cancelled/holiday classes
+                
+                const formatICSDate = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                
+                const startDt = new Date(ci.date);
+                const endDt = new Date(startDt.getTime() + 2 * 3600000); // Assume 2 hours
+                
+                let title = `${course.name} - ${ci.type}`;
+                if (ci.special_status === 'Examen') title = `[EXAMEN] ${title}`;
+                if (ci.special_status === 'Clase Remota') title = `[REMOTA] ${title}`;
+                
+                let desc = ci.topic ? `Tema: ${ci.topic}\\n` : "";
+                if (ci.presentation_url) desc += `Presentación: ${ci.presentation_url}\\n`;
+                if (ci.recording_url) desc += `Grabación: ${ci.recording_url}\\n`;
+
+                ics += "BEGIN:VEVENT\r\n";
+                ics += `UID:course_${courseId}_ci_${idx}@jutsu.classroom\r\n`;
+                ics += `DTSTAMP:${formatICSDate(new Date())}\r\n`;
+                ics += `DTSTART:${formatICSDate(startDt)}\r\n`;
+                ics += `DTEND:${formatICSDate(endDt)}\r\n`;
+                ics += `SUMMARY:${title}\r\n`;
+                if (desc) ics += `DESCRIPTION:${desc}\r\n`;
+                ics += "END:VEVENT\r\n";
+            });
+        } else if (course.start_date && course.duration_weeks && course.schedules) {
             const startStr = course.start_date;
             const [y, m, d] = startStr.split('-').map(Number);
             const baseDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
