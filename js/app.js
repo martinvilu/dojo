@@ -288,7 +288,7 @@ async function loadTeacherCourseSettings(courseId) {
     try {
         const res = await api({ action: 'getCourseSettings', payload: { courseId } });
         const data = res.data;
-        document.getElementById('teacher-settings-title').innerText = \`Configurar: \${data.name}\`;
+        document.getElementById('teacher-settings-title').innerText = `Configurar: ${data.name}`;
         document.getElementById('settings-cover-text').value = data.cover_text || '';
         document.getElementById('settings-start-date').value = data.start_date || '';
         document.getElementById('settings-duration').value = data.duration_weeks || '';
@@ -343,7 +343,7 @@ async function loadTeacherCourseSchedule(courseId) {
     try {
         const res = await api({ action: 'getCourseSettings', payload: { courseId } });
         scheduleCourseData = res.data;
-        document.getElementById('teacher-schedule-title').innerText = \`Cronograma: \${scheduleCourseData.name}\`;
+        document.getElementById('teacher-schedule-title').innerText = `Cronograma: ${scheduleCourseData.name}`;
         
         currentClassInstances = scheduleCourseData.class_instances || [];
         if (currentClassInstances.length === 0) {
@@ -417,37 +417,36 @@ function renderScheduleClasses() {
         const dateStr = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
         const timeStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
         
-        return \`
-        <div class="card" style="display: flex; flex-direction: column; gap: 10px; \${ci.special_status === 'Feriado' ? 'opacity: 0.6; background: #eee;' : ''}">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
-                <h3 style="margin: 0; text-transform: capitalize;">\${dateStr} - \${timeStr} (\${ci.type})</h3>
-                <select id="ci-status-\${idx}" onchange="updateClassInstance(\${idx}, 'special_status', this.value)">
-                    <option value="Normal" \${ci.special_status === 'Normal' ? 'selected' : ''}>Normal</option>
-                    <option value="Clase Remota" \${ci.special_status === 'Clase Remota' ? 'selected' : ''}>Clase Remota</option>
-                    <option value="Examen" \${ci.special_status === 'Examen' ? 'selected' : ''}>Examen</option>
-                    <option value="Feriado" \${ci.special_status === 'Feriado' ? 'selected' : ''}>Feriado / Sin Clase</option>
+        return `
+        <div class="card" style="display: flex; flex-direction: column; gap: 10px; ${ci.special_status === 'Feriado' ? 'opacity: 0.6; background: #eee;' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin: 0; text-transform: capitalize;">${dateStr} - ${timeStr} (${ci.type})</h3>
+                <select id="ci-status-${idx}" onchange="updateClassInstance(${idx}, 'special_status', this.value)">
+                    <option value="Normal" ${ci.special_status === 'Normal' ? 'selected' : ''}>Normal</option>
+                    <option value="Clase Remota" ${ci.special_status === 'Clase Remota' ? 'selected' : ''}>Clase Remota</option>
+                    <option value="Examen" ${ci.special_status === 'Examen' ? 'selected' : ''}>Examen</option>
+                    <option value="Feriado" ${ci.special_status === 'Feriado' ? 'selected' : ''}>Feriado / Sin Clase</option>
                 </select>
             </div>
             
-            <div style="display: flex; gap: 15px;">
-                <div style="flex: 2;">
-                    <label>Tema de la clase</label>
-                    <input type="text" id="ci-topic-\${idx}" value="\${ci.topic || ''}" onchange="updateClassInstance(\${idx}, 'topic', this.value)" placeholder="Ej: Unidad 1: Introducción a la materia">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 5px;">
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="font-weight: bold; font-size: 0.9em; color: #555;">Tema de la clase</label>
+                    <input type="text" id="ci-topic-${idx}" value="${ci.topic || ''}" onchange="updateClassInstance(${idx}, 'topic', this.value)" placeholder="Ej: Unidad 1: Introducción a la materia">
                 </div>
             </div>
-            
-            <div style="display: flex; gap: 15px;">
-                <div style="flex: 1;">
-                    <label>Enlace a Presentación</label>
-                    <input type="url" id="ci-pres-\${idx}" value="\${ci.presentation_url || ''}" onchange="updateClassInstance(\${idx}, 'presentation_url', this.value)" placeholder="https://docs.google.com/presentation/d/... ">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="font-weight: bold; font-size: 0.9em; color: #555;">Enlace a Presentación / Material</label>
+                    <input type="url" id="ci-pres-${idx}" value="${ci.presentation_url || ''}" onchange="updateClassInstance(${idx}, 'presentation_url', this.value)" placeholder="https://docs.google.com/presentation/d/... ">
                 </div>
-                <div style="flex: 1;">
-                    <label>Enlace a Grabación</label>
-                    <input type="url" id="ci-rec-\${idx}" value="\${ci.recording_url || ''}" onchange="updateClassInstance(\${idx}, 'recording_url', this.value)" placeholder="https://youtube.com/...">
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="font-weight: bold; font-size: 0.9em; color: #555;">Enlace a Grabación de la clase</label>
+                    <input type="url" id="ci-rec-${idx}" value="${ci.recording_url || ''}" onchange="updateClassInstance(${idx}, 'recording_url', this.value)" placeholder="https://youtube.com/...">
                 </div>
             </div>
         </div>
-        \`;
+        `;
     }).join('');
 }
 
