@@ -294,6 +294,7 @@ async function loadTeacherCourseSettings(courseId) {
         document.getElementById('settings-start-date').value = data.start_date || '';
         document.getElementById('settings-duration').value = data.duration_weeks || '';
         document.getElementById('settings-external-calendars').value = (data.external_calendars || []).join(', ');
+        document.getElementById('settings-github-token').value = data.github_token || '';
         
         document.getElementById('export-ics-link').href = `/api/calendar?id=${courseId}`;
         
@@ -322,6 +323,7 @@ async function applyCourseTemplate(data) {
         cover_text: data.cover_text || '',
         duration_weeks: data.duration_weeks || null,
         external_calendars: data.external_calendars || [],
+        github_token: data.github_token || '',
         schedules: currentCourseSchedules
     };
     if (data.class_instances) payloadData.class_instances = data.class_instances;
@@ -393,6 +395,7 @@ document.getElementById('save-course-settings-btn').onclick = async () => {
                 start_date: document.getElementById('settings-start-date').value,
                 duration_weeks: parseInt(document.getElementById('settings-duration').value) || 0,
                 external_calendars: document.getElementById('settings-external-calendars').value.split(',').map(s => s.trim()).filter(s => s),
+                github_token: document.getElementById('settings-github-token').value,
                 schedules: currentCourseSchedules
             }
         };
@@ -401,7 +404,7 @@ document.getElementById('save-course-settings-btn').onclick = async () => {
         status.style.display = 'block';
         setTimeout(() => status.style.display = 'none', 3000);
     } catch (e) {
-        alert("Uy, error al guardar: " + e.message);
+        alert("Error al guardar: " + e.message);
     } finally {
         btn.disabled = false;
         btn.innerText = "Guardar Configuración de la Cursada";
@@ -565,10 +568,22 @@ document.getElementById('save-schedule-btn').onclick = async () => {
 };
 
 async function loadStudentCourses() {
-    const res = await api({ action: 'getStudentCourses' });
     const container = document.getElementById('student-courses-list');
+    container.innerHTML = '<p>Cargando tu cursada...</p>';
     
-    document.getElementById('enroll-btn').onclick = async () => {
+    try {
+        const res = await api({ action: 'getStudentCourses' });
+        
+        let assignments = [];
+        let submissions = [];
+        if (res.data && res.data.length > 0) {
+            const courseIds = res.data.map(c => c.id);
+            const assignRes = await api({ action: 'getStudentAssignments', payload: { courseIds } });
+            assignments = assignRes.data.assignments || [];
+            submissions = assignRes.data.submissions || [];
+        }
+        
+        document.getElementById('enroll-btn').onclick = async () => {
         const code = document.getElementById('enroll-code').value;
         if (!code) return;
         try {
@@ -577,6 +592,33 @@ async function loadStudentCourses() {
             loadStudentCourses();
         } catch (e) {
             alert("Uy, error al enrolarte: " + e.message);
+        }
+    };
+    
+    window.acceptAssignment = async (assignmentId) => {
+        const btn = document.getElementById(`btn-accept-${assignmentId}`);
+        const status = document.getElementById(`status-accept-${assignmentId}`);
+        btn.disabled = true;
+        btn.innerText = "Creando repositorio... esto tarda unos segundos";
+        status.innerText = "Conectando con GitHub...";
+        status.style.color = "#e67e22";
+        
+        try {
+            const res = await api({ action: 'acceptAssignment', payload: { assignmentId } });
+            status.innerText = "¡Repositorio creado con éxito!";
+            status.style.color = "#27ae60";
+            setTimeout(() => {
+                loadStudentCourses();
+            }, 1000);
+        } catch (e) {
+            btn.disabled = false;
+            btn.innerText = "Aceptar Tarea en GitHub";
+            status.innerText = "Error: " + e.message;
+            status.style.color = "#c0392b";
+            
+            if (e.message.includes('perfil académico')) {
+                setTimeout(() => window.location.search = '?path=/student/profile', 2000);
+            }
         }
     };
     
@@ -637,6 +679,43 @@ async function loadStudentCourses() {
                 `;
             }
             
+            const courseAssignments = assignments.filter(a => a.course_id === c.id);
+            let assignmentsHtml = '';
+            if (courseAssignments.length > 0) {
+                assignmentsHtml = `
+                    <h4 style="margin-top: 25px; margin-bottom: 10px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 5px;">Tareas y Entregas</h4>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        ${courseAssignments.map(a => {
+                            const sub = submissions.find(s => s.assignment_id === a.id);
+                            
+                            if (sub) {
+                                return `
+                                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px;">
+                                        <h5 style="margin: 0 0 5px 0; color: #166534; font-size: 1.1em;">✅ ${a.title}</h5>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                            <a href="${sub.repo_url}" target="_blank" style="color: #15803d; text-decoration: none; font-weight: bold;">Ver tu repositorio en GitHub ↗</a>
+                                            <div style="background: white; padding: 5px 10px; border-radius: 4px; border: 1px solid #dcfce7; font-size: 0.9em;">
+                                                <strong>Nota:</strong> ${sub.grade ? sub.grade : '<span style="color: #999;">Sin calificar</span>'}
+                                                ${sub.feedback ? `<br><strong>Feedback:</strong> ${sub.feedback}` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                return `
+                                    <div style="background: #fff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                                        <h5 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.1em;">⏳ ${a.title}</h5>
+                                        <p style="font-size: 0.9em; color: #64748b; margin-top: 0;">Todavía no aceptaste esta tarea. Al aceptarla se creará tu repositorio en GitHub para que empieces a trabajar.</p>
+                                        <button onclick="acceptAssignment('${a.id}')" style="margin: 0; background: #3498db; padding: 8px 15px; font-size: 0.9em; border: none; font-weight: bold;" id="btn-accept-${a.id}">Aceptar Tarea en GitHub</button>
+                                        <p id="status-accept-${a.id}" style="margin: 5px 0 0 0; font-size: 0.85em; font-weight: bold;"></p>
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
+                `;
+            }
+            
             return `
             <div class="card" style="border-top: 4px solid #8e44ad; position: relative;">
                 <h2 style="color: #8e44ad; margin-bottom: 5px;">${c.name}</h2>
@@ -651,9 +730,13 @@ async function loadStudentCourses() {
                 </div>
                 
                 ${classesHtml}
+                ${assignmentsHtml}
             </div>
             `;
         }).join('');
+    }
+    } catch(e) {
+        container.innerHTML = `<p style="color: red;">Error: ${e.message}</p>`;
     }
 }
 
@@ -736,12 +819,17 @@ async function loadTeacherAssignments() {
 document.getElementById('create-assignment-btn').onclick = async () => {
     const courseId = document.getElementById('assignment-course-select').value;
     const title = document.getElementById('assignment-title').value;
+    const template = document.getElementById('assignment-template').value;
+    const createPr = document.getElementById('assignment-pr').checked;
+    
     if (!title) return alert("Escribí un título para la tarea");
+    if (!template) return alert("Escribí el repositorio de plantilla (ej: org/repo)");
     
     document.getElementById('create-assignment-btn').disabled = true;
     try {
-        await api({ action: 'createAssignment', payload: { course_id: courseId, title } });
+        await api({ action: 'createAssignment', payload: { course_id: courseId, title, template_repo: template, create_feedback_pr: createPr } });
         document.getElementById('assignment-title').value = '';
+        document.getElementById('assignment-template').value = '';
         loadTeacherAssignments();
     } catch (e) {
         alert("Error al crear tarea: " + e.message);

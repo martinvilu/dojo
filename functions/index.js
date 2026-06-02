@@ -243,6 +243,104 @@ exports.api = functions.https.onCall(async (data, context) => {
             return students;
         }
 
+        if (action === 'getStudentAssignments') {
+            const courseIds = payload.courseIds || [];
+            if (courseIds.length === 0) return { assignments: [], submissions: [] };
+            
+            const snap = await db.collection('assignments').where('course_id', 'in', courseIds).get();
+            const assignments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            
+            const subsSnap = await db.collection('submissions').where('student_id', '==', uid).get();
+            const submissions = subsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            
+            return { assignments, submissions };
+        }
+
+        if (action === 'acceptAssignment') {
+            const assignmentId = payload.assignmentId;
+            
+            const aSnap = await db.collection('assignments').doc(assignmentId).get();
+            if (!aSnap.exists) throw new Error("La tarea no existe");
+            const assignment = aSnap.data();
+            
+            const cSnap = await db.collection('courses').doc(assignment.course_id).get();
+            const course = cSnap.data();
+            
+            const pSnap = await db.collection('profiles').doc(uid).get();
+            const profile = pSnap.data();
+            if (!profile.github_user) throw new Error("Debes configurar tu usuario de GitHub en tu perfil académico antes de aceptar la tarea.");
+            
+            if (!course.github_token) throw new Error("El profesor aún no ha configurado el token de GitHub para esta materia.");
+            if (!assignment.template_repo) throw new Error("Esta tarea no tiene un repositorio de plantilla configurado.");
+            
+            const repoName = `${assignment.title.replace(/\s+/g, '-')}-${profile.github_user}`;
+            const orgName = course.github_org;
+            
+            const githubHeaders = {
+                'Authorization': `token ${course.github_token}`,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'User-Agent': 'Jutsu-Classroom'
+            };
+            
+            const templateParts = assignment.template_repo.split('/');
+            const createRes = await fetch(`https://api.github.com/repos/${templateParts[0]}/${templateParts[1]}/generate`, {
+                method: 'POST',
+                headers: githubHeaders,
+                body: JSON.stringify({ owner: orgName, name: repoName, private: true })
+            });
+            
+            if (!createRes.ok) {
+                const errBody = await createRes.text();
+                throw new Error(`Error al crear repo en GitHub: ${errBody}`);
+            }
+            
+            await fetch(`https://api.github.com/repos/${orgName}/${repoName}/collaborators/${profile.github_user}`, {
+                method: 'PUT',
+                headers: githubHeaders,
+                body: JSON.stringify({ permission: 'push' })
+            });
+            
+            if (assignment.create_feedback_pr) {
+                await new Promise(resolve => setTimeout(resolve, 3500));
+                
+                const refRes = await fetch(`https://api.github.com/repos/${orgName}/${repoName}/git/ref/heads/main`, { headers: githubHeaders });
+                if (refRes.ok) {
+                    const refData = await refRes.json();
+                    
+                    await fetch(`https://api.github.com/repos/${orgName}/${repoName}/git/refs`, {
+                        method: 'POST',
+                        headers: githubHeaders,
+                        body: JSON.stringify({ ref: 'refs/heads/feedback', sha: refData.object.sha })
+                    });
+                    
+                    await fetch(`https://api.github.com/repos/${orgName}/${repoName}/pulls`, {
+                        method: 'POST',
+                        headers: githubHeaders,
+                        body: JSON.stringify({
+                            title: 'Feedback Automático',
+                            head: 'main',
+                            base: 'feedback',
+                            body: 'Este PR compara tus commits contra la plantilla inicial. Tus profes te dejarán comentarios acá.'
+                        })
+                    });
+                }
+            }
+            
+            const subRef = db.collection('submissions').doc();
+            await subRef.set({
+                assignment_id: assignmentId,
+                student_id: uid,
+                repo_url: `https://github.com/${orgName}/${repoName}`,
+                grade: '',
+                feedback: '',
+                is_locked: false,
+                created_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            
+            return { success: true, repoUrl: `https://github.com/${orgName}/${repoName}` };
+        }
+
         if (action === 'updateAssignment') {
             await db.collection('assignments').doc(payload.assignmentId).update(payload.data);
             return { success: true };

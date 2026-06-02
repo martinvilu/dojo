@@ -146,6 +146,10 @@
                     <label>Calendarios Externos (URLs ICS de Feriados o Univ. separados por coma)</label>
                     <input type="text" id="settings-external-calendars" placeholder="Ej: https://calendar.google.com/.../basic.ics">
                 </div>
+                <div>
+                    <label>Token de GitHub (Classic PAT con permiso 'repo' y 'admin:org') - <em>Necesario para crear repositorios a alumnos</em></label>
+                    <input type="password" id="settings-github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                </div>
                 <div style="margin-top: 15px;">
                     <a id="export-ics-link" href="#" target="_blank" style="display: inline-block; padding: 10px 15px; background: #8e44ad; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">📅 Descargar o Suscribirse al Calendario (ICS)</a>
                 </div>
@@ -236,15 +240,24 @@
         <section id="teacher-assignments" class="content-section hidden">
             <h1>Entregas y Tareas</h1>
             <div class="card" style="background: #e8f4f8; border-left: 4px solid #3498db; margin-bottom: 20px;">
-                <h3>Creá una nueva tarea</h3>
-                <div style="display: flex; gap: 10px; align-items: end;">
-                    <div style="flex: 1;">
+                <h3>Creá una nueva tarea conectada a GitHub</h3>
+                <p style="font-size: 0.9em; color: #555; margin-top: 0;">Para usar esto tenés que configurar el Token de GitHub en la configuración de la materia.</p>
+                <div style="display: flex; gap: 10px; align-items: end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
                         <label>Materia</label>
                         <select id="assignment-course-select"><option>Cargando...</option></select>
                     </div>
-                    <div style="flex: 2;">
+                    <div style="flex: 2; min-width: 200px;">
                         <label>Título de la entrega</label>
                         <input type="text" id="assignment-title" placeholder="Ej: Trabajo Práctico 1" style="margin: 0;">
+                    </div>
+                    <div style="flex: 2; min-width: 200px;">
+                        <label>Repo Plantilla (dueño/repo)</label>
+                        <input type="text" id="assignment-template" placeholder="Ej: org/repo-plantilla" style="margin: 0;">
+                    </div>
+                    <div style="flex: 1; min-width: 150px; display: flex; align-items: center; gap: 5px; padding-bottom: 10px;">
+                        <input type="checkbox" id="assignment-pr" checked style="margin: 0;">
+                        <label for="assignment-pr" style="margin: 0; font-size: 0.9em; line-height: 1.1;">Crear PR de Feedback</label>
                     </div>
                     <button id="create-assignment-btn" style="margin: 0; margin-bottom: 2px;">Crear Tarea</button>
                 </div>
