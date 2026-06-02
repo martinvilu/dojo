@@ -235,10 +235,19 @@
 
         <section id="teacher-assignments" class="content-section hidden">
             <h1>Entregas y Tareas</h1>
-            <div class="card">
+            <div class="card" style="background: #e8f4f8; border-left: 4px solid #3498db; margin-bottom: 20px;">
                 <h3>Creá una nueva tarea</h3>
-                <input type="text" id="assignment-title" placeholder="Título de la entrega">
-                <button id="create-assignment-btn">Crear Tarea</button>
+                <div style="display: flex; gap: 10px; align-items: end;">
+                    <div style="flex: 1;">
+                        <label>Materia</label>
+                        <select id="assignment-course-select"><option>Cargando...</option></select>
+                    </div>
+                    <div style="flex: 2;">
+                        <label>Título de la entrega</label>
+                        <input type="text" id="assignment-title" placeholder="Ej: Trabajo Práctico 1" style="margin: 0;">
+                    </div>
+                    <button id="create-assignment-btn" style="margin: 0; margin-bottom: 2px;">Crear Tarea</button>
+                </div>
             </div>
             <div id="teacher-assignments-list"></div>
         </section>

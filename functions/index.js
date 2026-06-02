@@ -233,6 +233,97 @@ exports.api = functions.https.onCall(async (data, context) => {
             return courses;
         }
 
+        if (action === 'getCourseRoster') {
+            const snap = await db.collection('course_roster').where('course_id', '==', payload.courseId).get();
+            const students = [];
+            for (let doc of snap.docs) {
+                const pSnap = await db.collection('profiles').doc(doc.data().student_id).get();
+                if(pSnap.exists) students.push(pSnap.data());
+            }
+            return students;
+        }
+
+        if (action === 'updateAssignment') {
+            await db.collection('assignments').doc(payload.assignmentId).update(payload.data);
+            return { success: true };
+        }
+
+        if (action === 'syncGradesFromSpreadsheet') {
+            const assignmentId = payload.assignmentId;
+            const sheetUrl = payload.sheetUrl;
+            
+            const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (!match) throw new Error("URL de Google Sheets inválida. Asegurate de copiar el enlace completo.");
+            const docId = match[1];
+            
+            let gid = "0";
+            const gidMatch = sheetUrl.match(/gid=([0-9]+)/);
+            if (gidMatch) gid = gidMatch[1];
+            
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
+            
+            const response = await fetch(csvUrl);
+            if (!response.ok) throw new Error("No se pudo acceder a la planilla. ¿Está configurada como 'Cualquier persona con el enlace puede leer'?");
+            
+            const csvText = await response.text();
+            const rows = csvText.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+            if (rows.length < 2) throw new Error("La planilla está vacía o no tiene el formato correcto.");
+            
+            const headers = rows[0].map(h => h.toLowerCase());
+            const matriculaIdx = headers.findIndex(h => h.includes('matricula') || h.includes('matrícula'));
+            const notaIdx = headers.findIndex(h => h.includes('nota') || h.includes('calificacion'));
+            const feedbackIdx = headers.findIndex(h => h.includes('feedback') || h.includes('devolucion') || h.includes('comentario'));
+            
+            if (matriculaIdx === -1 || notaIdx === -1) {
+                throw new Error("La planilla debe tener al menos las columnas 'Matricula' y 'Nota'. Podés descargar la plantilla sugerida.");
+            }
+            
+            let updatedCount = 0;
+            const batch = db.batch();
+            
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row[matriculaIdx]) continue;
+                
+                const matricula = row[matriculaIdx];
+                const nota = row[notaIdx] || '';
+                const feedback = feedbackIdx !== -1 ? (row[feedbackIdx] || '') : '';
+                
+                if (!nota && !feedback) continue;
+                
+                const pSnap = await db.collection('profiles').where('matricula_unrn', '==', matricula).get();
+                if (pSnap.empty) continue;
+                
+                const studentId = pSnap.docs[0].id;
+                
+                const sSnap = await db.collection('submissions')
+                    .where('assignment_id', '==', assignmentId)
+                    .where('student_id', '==', studentId)
+                    .get();
+                    
+                if (!sSnap.empty) {
+                    batch.update(sSnap.docs[0].ref, { grade: nota, feedback: feedback, graded_at: admin.firestore.FieldValue.serverTimestamp() });
+                } else {
+                    const newSubRef = db.collection('submissions').doc();
+                    batch.set(newSubRef, {
+                        assignment_id: assignmentId,
+                        student_id: studentId,
+                        repo_url: '',
+                        grade: nota,
+                        feedback: feedback,
+                        is_locked: false,
+                        graded_at: admin.firestore.FieldValue.serverTimestamp(),
+                        created_at: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                updatedCount++;
+            }
+            
+            await batch.commit();
+            return { success: true, updatedCount };
+        }
+
+
     } catch (e) {
         throw new functions.https.HttpsError('internal', e.message);
     }

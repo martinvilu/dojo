@@ -127,6 +127,7 @@ const router = () => {
     }
     if (path === '/admin/users') loadAdminUsers();
     if (path === '/teacher/courses') loadTeacherCourses();
+    if (path === '/teacher/assignments') loadTeacherAssignments();
     if (path === '/teacher/course-settings') {
         const urlParams = new URLSearchParams(window.location.search);
         loadTeacherCourseSettings(urlParams.get('id'));
@@ -686,3 +687,116 @@ document.getElementById('save-profile-btn').onclick = async () => {
         btn.innerText = "Guardá tu Perfil";
     }
 };
+
+async function loadTeacherAssignments() {
+    const list = document.getElementById('teacher-assignments-list');
+    list.innerHTML = '<p>Cargando tareas...</p>';
+    
+    try {
+        const cRes = await api({ action: 'getTeacherCourses' });
+        const select = document.getElementById('assignment-course-select');
+        select.innerHTML = cRes.data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        
+        const res = await api({ action: 'getTeacherAssignments' });
+        
+        if (res.data.length === 0) {
+            list.innerHTML = '<p style="color: #666; font-style: italic;">Todavía no creaste ninguna tarea.</p>';
+            return;
+        }
+        
+        list.innerHTML = res.data.map(a => {
+            const cName = cRes.data.find(c => c.id === a.course_id)?.name || 'Materia Desconocida';
+            return `
+                <div class="card" style="border-left: 4px solid #8e44ad; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; color: #8e44ad;">${a.title} <span style="font-size: 0.7em; color: #7f8c8d; font-weight: normal;">en ${cName}</span></h3>
+                    
+                    <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; margin-top: 15px;">
+                        <h4 style="margin-top: 0; color: #2c3e50;">📊 Carga de Notas Automática (desde Google Sheets)</h4>
+                        <p style="font-size: 0.9em; color: #555;">Pegá acá el link de tu planilla de corrección. Asegurate de que el permiso esté en "Cualquier persona con el enlace puede leer".</p>
+                        
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                            <input type="url" id="sheet-url-${a.id}" value="${a.grades_spreadsheet_url || ''}" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex: 1; margin: 0; font-size: 0.9em;">
+                            <button class="secondary" onclick="saveSheetUrl('${a.id}')" style="margin: 0; padding: 10px;">Guardar Link</button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="downloadTemplate('${a.id}', '${a.course_id}', '${a.title}')" style="margin: 0; background: #27ae60; border: none;">⬇️ Descargar Plantilla de Alumnos (CSV)</button>
+                            <button onclick="syncGrades('${a.id}')" style="margin: 0; background: #2980b9; border: none;">🔄 Sincronizar Notas Ahora</button>
+                        </div>
+                        <p id="sync-status-${a.id}" style="margin-top: 10px; font-weight: bold; font-size: 0.9em; margin-bottom: 0;"></p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        list.innerHTML = `<p style="color: red;">Error: ${e.message}</p>`;
+    }
+}
+
+document.getElementById('create-assignment-btn').onclick = async () => {
+    const courseId = document.getElementById('assignment-course-select').value;
+    const title = document.getElementById('assignment-title').value;
+    if (!title) return alert("Escribí un título para la tarea");
+    
+    document.getElementById('create-assignment-btn').disabled = true;
+    try {
+        await api({ action: 'createAssignment', payload: { course_id: courseId, title } });
+        document.getElementById('assignment-title').value = '';
+        loadTeacherAssignments();
+    } catch (e) {
+        alert("Error al crear tarea: " + e.message);
+    } finally {
+        document.getElementById('create-assignment-btn').disabled = false;
+    }
+};
+
+window.saveSheetUrl = async (assignmentId) => {
+    const url = document.getElementById(`sheet-url-${assignmentId}`).value;
+    try {
+        await api({ action: 'updateAssignment', payload: { assignmentId, data: { grades_spreadsheet_url: url } } });
+        alert("¡Link guardado exitosamente!");
+    } catch (e) {
+        alert("Error al guardar: " + e.message);
+    }
+};
+
+window.syncGrades = async (assignmentId) => {
+    const url = document.getElementById(`sheet-url-${assignmentId}`).value;
+    if (!url) return alert("Primero pegá el link de la planilla y guardalo.");
+    
+    const status = document.getElementById(`sync-status-${assignmentId}`);
+    status.style.color = '#e67e22';
+    status.innerText = "Sincronizando notas... (esto puede tardar unos segundos)";
+    
+    try {
+        const res = await api({ action: 'syncGradesFromSpreadsheet', payload: { assignmentId, sheetUrl: url } });
+        status.style.color = '#27ae60';
+        status.innerText = `¡Éxito! Se actualizaron o cargaron las notas de ${res.data.updatedCount} alumnos.`;
+    } catch (e) {
+        status.style.color = '#c0392b';
+        status.innerText = "Error: " + e.message;
+    }
+};
+
+window.downloadTemplate = async (assignmentId, courseId, title) => {
+    try {
+        const res = await api({ action: 'getCourseRoster', payload: { courseId } });
+        if (res.data.length === 0) return alert("No hay alumnos inscriptos en esta materia todavía.");
+        
+        let csv = "Matricula,Email,Usuario_Github,Nota,Feedback\n";
+        res.data.forEach(p => {
+            csv += `"${p.matricula_unrn || ''}","${p.email || ''}","${p.github_user || ''}","",""\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `plantilla_notas_${title.replace(/\\s+/g, '_')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert("Error al generar plantilla: " + e.message);
+    }
+};
+
