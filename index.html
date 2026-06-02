@@ -151,6 +151,29 @@
                 </div>
             </div>
 
+            <div class="card" style="background: #e8f4f8; border-left: 4px solid #3498db; margin-bottom: 20px;">
+                <h3>♻️ Reutilizar o Exportar Planificación</h3>
+                <p style="font-size: 0.9em; color: #555;">Podés copiar la planificación completa de otra materia (días, temas de clase, material) o exportarla para guardar una copia local.</p>
+                
+                <div style="display: flex; gap: 10px; align-items: end; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label>Copiar desde otra cursada tuya</label>
+                        <select id="settings-clone-course-select">
+                            <option value="">Cargando materias...</option>
+                        </select>
+                    </div>
+                    <button class="secondary" id="clone-course-btn" style="margin-bottom: 10px;">Clonar Datos</button>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center; border-top: 1px solid #dcdcdc; padding-top: 15px;">
+                    <button id="export-json-btn" style="background: #27ae60; margin-top: 0;">⬇️ Exportar Planificación (JSON)</button>
+                    <label style="cursor: pointer; background: #e67e22; color: white; padding: 10px 15px; border-radius: 4px; font-weight: bold; font-size: 0.9em; text-align: center;">
+                        ⬆️ Importar JSON
+                        <input type="file" id="import-json-input" accept=".json" style="display: none;">
+                    </label>
+                </div>
+            </div>
+
             <div class="card">
                 <h3>Horarios de Clase</h3>
                 <div id="settings-schedules-list" style="margin-bottom: 15px;"></div>

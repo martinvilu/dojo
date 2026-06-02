@@ -298,10 +298,87 @@ async function loadTeacherCourseSettings(courseId) {
         
         currentCourseSchedules = data.schedules || [];
         renderSchedules();
+        
+        // Fetch other courses for cloning
+        const tcRes = await api({ action: 'getTeacherCourses' });
+        const cloneSelect = document.getElementById('settings-clone-course-select');
+        cloneSelect.innerHTML = '<option value="">Seleccioná una materia...</option>' + 
+            tcRes.data.filter(c => c.id !== courseId).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            
     } catch (e) {
         alert("Error cargando configuración: " + e.message);
     }
 }
+
+async function applyCourseTemplate(data) {
+    document.getElementById('settings-cover-text').value = data.cover_text || '';
+    if (data.duration_weeks) document.getElementById('settings-duration').value = data.duration_weeks;
+    if (data.external_calendars) document.getElementById('settings-external-calendars').value = data.external_calendars.join(', ');
+    currentCourseSchedules = data.schedules || [];
+    renderSchedules();
+    
+    const payloadData = {
+        cover_text: data.cover_text || '',
+        duration_weeks: data.duration_weeks || null,
+        external_calendars: data.external_calendars || [],
+        schedules: currentCourseSchedules
+    };
+    if (data.class_instances) payloadData.class_instances = data.class_instances;
+    
+    await api({ action: 'updateCourseSettings', payload: { courseId: currentCourseSettingsId, data: payloadData } });
+    alert("¡Planificación importada y guardada con éxito! Podés regenerar las clases para ajustar las fechas.");
+}
+
+document.getElementById('clone-course-btn').onclick = async () => {
+    const cid = document.getElementById('settings-clone-course-select').value;
+    if (!cid) return alert("Seleccioná una materia para clonar.");
+    if (!confirm("¿Seguro que querés sobreescribir la configuración actual con la materia seleccionada?")) return;
+    try {
+        const res = await api({ action: 'getCourseSettings', payload: { courseId: cid } });
+        await applyCourseTemplate(res.data);
+    } catch (e) { alert("Error al clonar: " + e.message); }
+};
+
+document.getElementById('export-json-btn').onclick = async () => {
+    try {
+        const res = await api({ action: 'getCourseSettings', payload: { courseId: currentCourseSettingsId } });
+        const data = {
+            cover_text: res.data.cover_text,
+            duration_weeks: res.data.duration_weeks,
+            external_calendars: res.data.external_calendars,
+            schedules: res.data.schedules,
+            class_instances: res.data.class_instances
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `planificacion_${res.data.name.replace(/\s+/g, '_')}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) { alert("Error al exportar: " + e.message); }
+};
+
+document.getElementById('import-json-input').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!confirm("Esto va a sobreescribir tu planificación actual. ¿Continuar?")) {
+        e.target.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+        try {
+            const data = JSON.parse(ev.target.result);
+            await applyCourseTemplate(data);
+        } catch (err) {
+            alert("Error al leer el archivo JSON: " + err.message);
+        }
+        e.target.value = '';
+    };
+    reader.readAsText(file);
+};
+
 
 document.getElementById('save-course-settings-btn').onclick = async () => {
     const btn = document.getElementById('save-course-settings-btn');
@@ -395,6 +472,17 @@ function generateClassInstances() {
     });
     
     generatedClasses.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const oldInstances = currentClassInstances || [];
+    generatedClasses.forEach((ci, idx) => {
+        if (oldInstances[idx]) {
+            ci.topic = oldInstances[idx].topic || "";
+            ci.presentation_url = oldInstances[idx].presentation_url || "";
+            ci.recording_url = oldInstances[idx].recording_url || "";
+            ci.special_status = oldInstances[idx].special_status || "Normal";
+        }
+    });
+    
     currentClassInstances = generatedClasses;
     renderScheduleClasses();
 }
