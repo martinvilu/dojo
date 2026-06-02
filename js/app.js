@@ -567,34 +567,92 @@ async function loadStudentCourses() {
     const res = await api({ action: 'getStudentCourses' });
     const container = document.getElementById('student-courses-list');
     
+    document.getElementById('enroll-btn').onclick = async () => {
+        const code = document.getElementById('enroll-code').value;
+        if (!code) return;
+        try {
+            await api({ action: 'enrollCourse', payload: { code: code.toUpperCase() } });
+            document.getElementById('enroll-code').value = '';
+            loadStudentCourses();
+        } catch (e) {
+            alert("Uy, error al enrolarte: " + e.message);
+        }
+    };
+    
     if (!res.data || res.data.length === 0) {
         container.innerHTML = `
-            <div class="card" style="text-align: center; padding: 40px;">
-                <h3 style="color: #2c3e50;">No estás anotado en ningún curso</h3>
-                <p style="color: #666; margin-bottom: 20px;">Ingresá el código de invitación que te pasó el profe para sumarte a la cursada.</p>
-                <div style="display: flex; justify-content: center; gap: 10px; max-width: 400px; margin: 0 auto;">
-                    <input type="text" id="enroll-code" placeholder="Código de cursada (Ej: 9A2B3C)" style="margin: 0; text-transform: uppercase;">
-                    <button id="enroll-btn" style="margin: 0;">Sumarme</button>
-                </div>
+            <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                <h2>No estás anotado en ninguna cursada todavía</h2>
+                <p>Usá el recuadro de arriba para ingresar el código de tu materia.</p>
             </div>
         `;
-        document.getElementById('enroll-btn').onclick = async () => {
-            const code = document.getElementById('enroll-code').value;
-            if (!code) return;
-            try {
-                await api({ action: 'enrollCourse', payload: { code: code.toUpperCase() } });
-                loadStudentCourses();
-            } catch (e) {
-                alert("Uy, error al enrolarte: " + e.message);
-            }
-        };
     } else {
-        container.innerHTML = res.data.map(c => `
-            <div class="card">
-                <h3>${c.name}</h3>
-                <p>${c.github_org}</p>
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        
+        container.innerHTML = res.data.map(c => {
+            const classInstances = c.class_instances || [];
+            const upcoming = classInstances.filter(ci => new Date(ci.date) >= now).slice(0, 3);
+            
+            let classesHtml = '<p style="color: #666; font-style: italic;">Todavía no hay clases planificadas en el cronograma.</p>';
+            
+            if (classInstances.length > 0) {
+                classesHtml = `
+                    <h4 style="margin-top: 15px; margin-bottom: 5px; color: #2c3e50;">Próximas Clases:</h4>
+                    <ul style="padding-left: 20px; color: #444;">
+                        ${upcoming.length ? upcoming.map(ci => {
+                            const d = new Date(ci.date);
+                            const ds = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+                            const ts = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+                            
+                            let tags = '';
+                            if (ci.special_status === 'Examen') tags += '<span style="background: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">EXAMEN</span>';
+                            if (ci.special_status === 'Clase Remota') tags += '<span style="background: #f39c12; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">REMOTA</span>';
+                            if (ci.special_status === 'Feriado') tags += '<span style="background: #95a5a6; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">FERIADO / CANCELADA</span>';
+                            
+                            let links = [];
+                            if (ci.presentation_url) links.push(`<a href="${ci.presentation_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Material</a>`);
+                            if (ci.recording_url) links.push(`<a href="${ci.recording_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Grabación</a>`);
+                            const linksStr = links.length ? ` - [ ${links.join(' | ')} ]` : '';
+                            
+                            return `<li style="margin-bottom: 5px; ${ci.special_status === 'Feriado' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
+                                <strong>${ds} ${ts}</strong>: ${ci.topic || ci.type} ${tags} ${linksStr}
+                            </li>`;
+                        }).join('') : '<li>No hay clases futuras planificadas.</li>'}
+                    </ul>
+                    <details style="margin-top: 10px;">
+                        <summary style="cursor: pointer; color: #3498db; font-weight: bold;">Ver todo el cronograma (${classInstances.length} clases)</summary>
+                        <div style="padding: 10px; background: #f9f9f9; border: 1px solid #eee; border-radius: 4px; margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                            <ul style="padding-left: 20px; font-size: 0.9em; color: #555; margin: 0;">
+                                ${classInstances.map(ci => {
+                                    const d = new Date(ci.date);
+                                    const ds = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+                                    let tags = ci.special_status !== 'Normal' ? ` <em>(${ci.special_status})</em>` : '';
+                                    return `<li>${ds}: ${ci.topic || ci.type}${tags}</li>`;
+                                }).join('')}
+                            </ul>
+                        </div>
+                    </details>
+                `;
+            }
+            
+            return `
+            <div class="card" style="border-top: 4px solid #8e44ad; position: relative;">
+                <h2 style="color: #8e44ad; margin-bottom: 5px;">${c.name}</h2>
+                <p style="color: #7f8c8d; margin-top: 0;">${c.github_org || ''}</p>
+                
+                ${c.cover_text ? `<p style="background: #fdfbf7; padding: 15px; border-left: 3px solid #f1c40f; font-style: italic; white-space: pre-line;">${c.cover_text}</p>` : ''}
+                
+                <div style="margin-top: 15px; margin-bottom: 15px;">
+                    <a href="/api/calendar?id=${c.id}" target="_blank" style="display: inline-block; padding: 8px 12px; background: #9b59b6; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em; font-weight: bold;">
+                        📅 Suscribirse al Calendario (Google/Apple)
+                    </a>
+                </div>
+                
+                ${classesHtml}
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 }
 
