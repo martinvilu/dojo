@@ -1441,6 +1441,76 @@ async function loadStudentAssignments() {
 
 
 
+
+window.renderWeeklyScheduleHtml = (instances) => {
+    if (!instances || instances.length === 0) return '<p>No hay clases generadas.</p>';
+    
+    const weeks = {};
+    const firstClassDate = new Date(instances[0].date);
+    const dayOfWeek = firstClassDate.getUTCDay(); // 0 is Sunday, 1 is Monday
+    const offsetToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const baseMonday = new Date(firstClassDate);
+    baseMonday.setUTCDate(baseMonday.getUTCDate() - offsetToMonday);
+    
+    instances.forEach(ci => {
+        const d = new Date(ci.date);
+        const diffTime = Math.abs(d - baseMonday);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const weekNumber = Math.floor(diffDays / 7) + 1;
+        
+        if (!weeks[weekNumber]) weeks[weekNumber] = [];
+        weeks[weekNumber].push(ci);
+    });
+    
+    let html = '';
+    const maxWeek = Math.max(...Object.keys(weeks).map(Number));
+    if (maxWeek < 1) return '<p>Error calculando semanas.</p>';
+    
+    for (let w = 1; w <= maxWeek; w++) {
+        if (!weeks[w]) continue;
+        
+        const weekClasses = weeks[w];
+        
+        html += `<div class="card" style="margin-bottom: 20px; border-left: 4px solid #3498db;">`;
+        html += `<h2 style="margin-top: 0; color: #2c3e50;">Semana ${w}</h2>`;
+        html += `<div style="display: flex; flex-direction: column; gap: 10px;">`;
+        
+        weekClasses.forEach(ci => {
+            const d = new Date(ci.date);
+            const ds = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' });
+            
+            let tags = '';
+            if (ci.special_status === 'Clase Remota') tags += '<span style="background: #f39c12; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">REMOTA</span>';
+            if (ci.special_status === 'Feriado') tags += '<span style="background: #95a5a6; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">FERIADO / CANCELADA</span>';
+            if (ci.special_status === 'Examen') tags += '<span style="background: #9b59b6; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">EXAMEN</span>';
+            
+            let links = [];
+            if (ci.presentation_url) links.push(`<a href="${ci.presentation_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Material</a>`);
+            if (ci.recording_url) links.push(`<a href="${ci.recording_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Grabación</a>`);
+            const linksStr = links.length ? ` - [ ${links.join(' | ')} ]` : '';
+            
+            const topicHtml = typeof marked !== 'undefined' ? marked.parseInline(ci.topic || ci.type) : (ci.topic || ci.type);
+            const descHtml = (ci.description && typeof marked !== 'undefined') ? `<div style="font-size: 0.9em; color: #555; background: #fff; padding: 10px; margin-top: 5px; border-left: 3px solid #ccc; border-radius: 4px;" class="markdown-body">${marked.parse(ci.description)}</div>` : '';
+            
+            html += `
+            <div style="background: #fdfdfd; border: 1px solid #eee; padding: 15px; border-radius: 4px; ${ci.special_status === 'Feriado' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
+                <div style="font-size: 0.85em; color: #888; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">
+                    ${ds} - Clase ${ci.classNumber || ''} ${tags}
+                </div>
+                <div style="font-size: 1.1em; color: #333;">
+                    <strong>Tema:</strong> ${topicHtml} ${linksStr}
+                </div>
+                ${descHtml}
+            </div>
+            `;
+        });
+        
+        html += `</div></div>`;
+    }
+    
+    return html;
+};
+
 // Setup Teacher Visual Calendar
 async function setupTeacherVisualCalendar() {
     try {
@@ -1463,9 +1533,13 @@ async function setupTeacherVisualCalendar() {
 
     let teacherCalendar = null;
     const listBtn = document.getElementById('toggle-teacher-view-list-btn');
+    const weekBtn = document.getElementById('toggle-teacher-view-weekly-btn');
     const gridBtn = document.getElementById('toggle-teacher-view-grid-btn');
+    
     const listView = document.getElementById('schedule-classes-list');
+    const weekView = document.getElementById('teacher-schedule-weeks-list');
     const gridView = document.getElementById('teacher-schedule-visual-calendar');
+    
     const instructionsView = document.getElementById('teacher-schedule-instructions');
     const saveBtn = document.getElementById('save-schedule-btn');
 
@@ -1473,9 +1547,30 @@ async function setupTeacherVisualCalendar() {
         listView.style.display = 'flex';
         instructionsView.style.display = 'block';
         saveBtn.style.display = 'block';
+        weekView.style.display = 'none';
         gridView.style.display = 'none';
+        
         listBtn.style.background = '#34495e';
         listBtn.classList.remove('secondary');
+        weekBtn.style.background = '';
+        weekBtn.classList.add('secondary');
+        gridBtn.style.background = '';
+        gridBtn.classList.add('secondary');
+    };
+
+    weekBtn.onclick = () => {
+        listView.style.display = 'none';
+        instructionsView.style.display = 'none';
+        saveBtn.style.display = 'none';
+        gridView.style.display = 'none';
+        weekView.style.display = 'block';
+        
+        weekView.innerHTML = renderWeeklyScheduleHtml(currentClassInstances);
+        
+        weekBtn.style.background = '#34495e';
+        weekBtn.classList.remove('secondary');
+        listBtn.style.background = '';
+        listBtn.classList.add('secondary');
         gridBtn.style.background = '';
         gridBtn.classList.add('secondary');
     };
@@ -1484,11 +1579,15 @@ async function setupTeacherVisualCalendar() {
         listView.style.display = 'none';
         instructionsView.style.display = 'none';
         saveBtn.style.display = 'none';
+        weekView.style.display = 'none';
         gridView.style.display = 'block';
+        
         gridBtn.style.background = '#34495e';
         gridBtn.classList.remove('secondary');
         listBtn.style.background = '';
         listBtn.classList.add('secondary');
+        weekBtn.style.background = '';
+        weekBtn.classList.add('secondary');
         
         // Re-init calendar every time to catch new edits in currentClassInstances
         gridView.innerHTML = '';
@@ -1518,7 +1617,8 @@ async function setupTeacherVisualCalendar() {
             firstDay: 1,
             buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
             eventClick: function(info) {
-                alert(info.event.title + "\n" + (info.event.extendedProps.desc || ""));
+                alert(info.event.title + "
+" + (info.event.extendedProps.desc || ""));
             }
         });
         
@@ -1528,3 +1628,4 @@ async function setupTeacherVisualCalendar() {
         }
     };
 }
+

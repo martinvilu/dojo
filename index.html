@@ -259,7 +259,9 @@
             <div id="teacher-global-calendar-subscribe-container" style="margin-bottom: 20px; display: none;"></div>
             
             <div style="margin-bottom: 20px; background: white; padding: 10px; border-radius: 8px; display: flex; gap: 10px;">
-                <button id="toggle-teacher-view-list-btn" style="flex: 1; margin: 0; background: #34495e;">Modo Edición (Lista)</button>
+                                <button id="toggle-teacher-view-list-btn" style="flex: 1; margin: 0; background: #34495e;">Modo Edición (Lista)</button>
+                <button id="toggle-teacher-view-weekly-btn" class="secondary" style="flex: 1; margin: 0;">Vista por Semanas</button>
+
                 <button id="toggle-teacher-view-grid-btn" class="secondary" style="flex: 1; margin: 0;">Vista Calendario Visual</button>
                 <button id="teacher-subscribe-course-gcal-btn" class="secondary" style="flex: 1; margin: 0; background: #e74c3c;">➕ Agregar a Google Calendar</button>
             </div>
@@ -270,7 +272,9 @@
                 <button id="generate-schedule-btn" class="danger">Regenerar Clases (¡Cuidado: borra temas actuales!)</button>
             </div>
 
-            <div id="schedule-classes-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                        <div id="schedule-classes-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+            <div id="teacher-schedule-weeks-list" style="display: none; flex-direction: column; gap: 15px;"></div>
+
 
             <div id="teacher-schedule-visual-calendar" style="display: none; background: white; padding: 20px; border-radius: 8px;"></div>
 
