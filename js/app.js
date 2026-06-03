@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithPopup, GithubAuthProvider, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithPopup, GithubAuthProvider, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 const firebaseConfig = {
@@ -33,19 +33,71 @@ const authOverlay = document.getElementById('auth-overlay');
 const userDisplay = document.getElementById('user-display');
 const userRoleLabel = document.getElementById('user-role');
 
+
+async function handleAuthError(e, pendingProvider) {
+    if (e.code === 'auth/account-exists-with-different-credential') {
+        const email = e.customData.email;
+        let pendingCred;
+        if (pendingProvider === 'github.com') {
+            pendingCred = GithubAuthProvider.credentialFromError(e);
+        } else if (pendingProvider === 'google.com') {
+            pendingCred = GoogleAuthProvider.credentialFromError(e);
+        }
+        
+        try {
+            let methods = await fetchSignInMethodsForEmail(auth, email);
+            
+            // If email enumeration protection is on, methods might be empty. Fallback to trying Google first, then Github.
+            if (!methods || methods.length === 0) {
+                const isGoogle = confirm(`El email ${email} ya está registrado con otro método (seguramente Google). ¿Querés iniciar sesión con Google para vincular tu cuenta?`);
+                if (isGoogle) methods = ['google.com'];
+                else methods = ['github.com'];
+            }
+
+            if (methods.length > 0) {
+                const providerToUse = methods[0];
+                let providerObj;
+                let providerName = '';
+                
+                if (providerToUse === 'google.com') {
+                    providerObj = new GoogleAuthProvider();
+                    providerName = 'Google';
+                } else if (providerToUse === 'github.com') {
+                    providerObj = new GithubAuthProvider();
+                    providerName = 'GitHub';
+                } else {
+                    alert('El email ya está registrado con contraseña. Iniciá sesión con email y contraseña, y luego vinculá la cuenta.');
+                    return;
+                }
+                
+                alert(`Iniciá sesión con ${providerName} ahora para confirmar que sos el dueño y vincular la cuenta.`);
+                
+                const result = await signInWithPopup(auth, providerObj);
+                await linkWithCredential(result.user, pendingCred);
+                alert("¡Cuentas vinculadas exitosamente! Ya podés usar cualquiera de las dos para entrar.");
+            }
+        } catch (linkError) {
+            alert("Error al vincular cuentas: " + linkError.message);
+        }
+    } else {
+        alert("Falló el inicio de sesión: " + e.message);
+    }
+}
+
 document.getElementById('login-github-btn').onclick = () => {
     loadingIndicator.classList.remove('hidden');
     signInWithPopup(auth, new GithubAuthProvider())
-        .catch(e => { alert("Falló el inicio con GitHub: " + e.message); })
+        .catch(e => handleAuthError(e, 'github.com'))
         .finally(() => loadingIndicator.classList.add('hidden'));
 };
 
 document.getElementById('login-google-btn').onclick = () => {
     loadingIndicator.classList.remove('hidden');
     signInWithPopup(auth, new GoogleAuthProvider())
-        .catch(e => { alert("Falló el inicio con Google: " + e.message); })
+        .catch(e => handleAuthError(e, 'google.com'))
         .finally(() => loadingIndicator.classList.add('hidden'));
 };
+
 
 document.getElementById('login-email-btn').onclick = async () => {
     const email = document.getElementById('email-input').value;
