@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithPopup, GithubAuthProvider, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithPopup, GithubAuthProvider, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, linkWithCredential, linkWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 const firebaseConfig = {
@@ -862,11 +862,44 @@ window.acceptAssignment = async (assignmentId, isGroup) => {
     }
 }
 
+
+document.getElementById('sidebar-toggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+});
+
 function loadProfile() {
     if (!currentProfile) return;
     document.getElementById('profile-matricula').value = currentProfile.matricula_unrn || '';
     document.getElementById('profile-cohorte').value = currentProfile.cohorte || '';
+    
+    // Check GitHub status
+    const isGithubLinked = auth.currentUser.providerData.some(p => p.providerId === 'github.com');
+    const ghContainer = document.getElementById('github-link-status');
+    if (isGithubLinked) {
+        ghContainer.innerHTML = '<span style="color: #27ae60; font-weight: bold;">✅ Cuenta de GitHub vinculada correctamente.</span>';
+        ghContainer.style.background = '#e8f8f5';
+    } else {
+        ghContainer.innerHTML = `
+            <span style="color: #c0392b; font-weight: bold;">❌ No tenés cuenta de GitHub vinculada.</span>
+            <br><button id="link-github-btn" style="background: #333; margin-top: 10px;">Vincular cuenta de GitHub ahora</button>
+        `;
+        document.getElementById('link-github-btn').onclick = async () => {
+            const btn = document.getElementById('link-github-btn');
+            btn.disabled = true;
+            btn.innerText = "Vinculando...";
+            try {
+                await linkWithPopup(auth.currentUser, new GithubAuthProvider());
+                alert("¡Cuenta de GitHub vinculada con éxito!");
+                loadProfile();
+            } catch (e) {
+                alert("Error al vincular GitHub: " + e.message);
+                btn.disabled = false;
+                btn.innerText = "Reintentar vincular GitHub";
+            }
+        };
+    }
 }
+
 
 document.getElementById('save-profile-btn').onclick = async () => {
     const btn = document.getElementById('save-profile-btn');

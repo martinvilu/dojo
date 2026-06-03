@@ -7,6 +7,15 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; }
         #sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
+
+        #sidebar { transition: width 0.3s; position: relative; overflow-x: hidden; white-space: nowrap; }
+        #sidebar.collapsed { width: 60px; padding-left: 10px; padding-right: 10px; }
+        #sidebar.collapsed h2 { opacity: 0; }
+        #sidebar.collapsed .nav-text { display: none; }
+        #sidebar.collapsed #user-role { display: none; }
+        #sidebar-toggle { cursor: pointer; position: absolute; top: 20px; right: 15px; font-size: 1.2em; background: transparent; border: none; color: white; padding: 0; }
+        .nav-item { display: flex; align-items: center; gap: 10px; }
+
         #main-content { flex: 1; padding: 30px; overflow-y: auto; }
         .hidden { display: none !important; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
@@ -53,25 +62,29 @@
         </div>
     </div>
 
+    
     <div id="sidebar">
         <h2>Jutsu</h2>
+        <button id="sidebar-toggle">☰</button>
         <div id="nav-admin" class="role-nav hidden">
-            <a href="/admin/courses" class="nav-item" data-link>Gestión de Cursos</a>
-            <a href="/admin/users" class="nav-item" data-link>Usuarios</a>
+            <a href="/admin/courses" class="nav-item" data-link><span>🏢</span> <span class="nav-text">Gestión de Cursos</span></a>
+            <a href="/admin/users" class="nav-item" data-link><span>👥</span> <span class="nav-text">Usuarios</span></a>
         </div>
         <div id="nav-teacher" class="role-nav hidden">
-            <a href="/teacher/courses" class="nav-item" data-link>Mis Clases</a>
-            <a href="/teacher/assignments" class="nav-item" data-link>Entregas</a>
+            <a href="/teacher/courses" class="nav-item" data-link><span>🏫</span> <span class="nav-text">Mis Clases</span></a>
+            <a href="/teacher/assignments" class="nav-item" data-link><span>📥</span> <span class="nav-text">Entregas</span></a>
+            <a href="/teacher/announcements" class="nav-item" data-link><span>📢</span> <span class="nav-text">Avisos</span></a>
         </div>
         <div id="nav-student" class="role-nav hidden">
-            <a href="/student/courses" class="nav-item" data-link>Mi Cursada</a>
+            <a href="/student/courses" class="nav-item" data-link><span>🎓</span> <span class="nav-text">Mi Cursada</span></a>
         </div>
         <div id="user-info">
-            <a href="/profile" id="user-display" class="nav-item" data-link style="font-weight: bold; font-size: 1.1em;">Cargando...</a>
+            <a href="/profile" id="user-display" class="nav-item" data-link style="font-weight: bold; font-size: 1.1em;"><span>👤</span> <span class="nav-text">Cargando...</span></a>
             <p id="user-role" style="font-weight: bold; text-transform: uppercase; color: #3498db; margin-top: 0; padding: 0 10px;"></p>
-            <button class="secondary" id="logout-btn" style="width: calc(100% - 20px); margin: 10px;">Cerrar Sesión</button>
+            <button class="secondary" id="logout-btn" style="width: calc(100% - 20px); margin: 10px;" title="Cerrar Sesión"><span>🚪</span> <span class="nav-text">Salir</span></button>
         </div>
     </div>
+
 
     <div id="main-content">
         <section id="admin-courses" class="content-section hidden">
@@ -322,9 +335,19 @@
             <div id="student-courses-list"></div>
         </section>
         
+        
         <section id="profile" class="content-section hidden">
             <h1>Mi Perfil Académico</h1>
+            <div class="card" style="margin-bottom: 20px; border-left: 4px solid #e74c3c; background: #fffcfc;">
+                <h3 style="margin-top: 0; color: #c0392b;">Cuenta de GitHub (Obligatorio)</h3>
+                <p style="font-size: 0.9em; color: #555;">Es fundamental que vincules tu cuenta de GitHub para poder aceptar tareas y acceder a los repositorios de las entregas.</p>
+                <div id="github-link-status" style="margin-top: 15px; padding: 10px; background: #eee; border-radius: 4px; display: inline-block;">
+                    Cargando estado...
+                </div>
+            </div>
+
             <div class="card">
+                <h3 style="margin-top: 0;">Datos de la Universidad</h3>
                 <label>Matrícula UNRN</label>
                 <input type="text" id="profile-matricula" placeholder="Ej: 12345">
                 <label>Año de Cohorte</label>
@@ -333,6 +356,7 @@
                 <p id="profile-save-status" style="color: #27ae60; display: none; margin-top: 10px;">¡Guardado de diez!</p>
             </div>
         </section>
+
         
         <section id="not-found" class="content-section hidden">
             <h1>404 - No Encontrado</h1>
