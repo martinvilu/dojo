@@ -69,6 +69,18 @@ exports.api = functions.https.onCall(async (data, context) => {
             return courses;
         }
 
+        
+        if (action === 'getGlobalSettings') {
+            const snap = await db.collection('globals').doc('settings').get();
+            return snap.exists ? snap.data() : {};
+        }
+
+        if (action === 'saveGlobalSettings') {
+            if (role !== 'admin') throw new functions.https.HttpsError('permission-denied', 'Only admin can save global settings');
+            await db.collection('globals').doc('settings').set(payload, { merge: true });
+            return { success: true };
+        }
+
         if (action === 'getAdminCourseDetails') {
             const courseId = payload.courseId;
             const cSnap = await db.collection('courses').doc(courseId).get();

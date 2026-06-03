@@ -1234,8 +1234,123 @@ async function loadStudentCourseSchedule(urlParams) {
         }
         
         document.getElementById('student-schedule-weeks-list').innerHTML = html;
+
+        // Inject global calendar if available
+        try {
+            const gRes = await api({ action: 'getGlobalSettings', payload: {} });
+            const gContainer = document.getElementById('global-calendar-subscribe-container');
+            if (gRes.globalCalendarIcsUrl) {
+                const encodedGlobalUrl = encodeURIComponent(gRes.globalCalendarIcsUrl);
+                gContainer.style.display = 'block';
+                gContainer.innerHTML = `<a href="https://calendar.google.com/calendar/r?cid=${encodedGlobalUrl}" target="_blank" style="display: block; padding: 15px; background: #8e44ad; color: white; text-align: center; border-radius: 8px; font-weight: bold; text-decoration: none;">📅 Suscribirse al Calendario Global de Eventos (Google Calendar)</a>`;
+            } else {
+                gContainer.style.display = 'none';
+            }
+        } catch (e) { console.error(e); }
+
+        // Set course calendar subscribe link
+        const courseIcsUrl = `${window.location.origin}/api/calendar?id=${course.id}`;
+        const encodedCourseUrl = encodeURIComponent(courseIcsUrl);
+        document.getElementById('subscribe-course-gcal-btn').onclick = () => {
+            window.open(`https://calendar.google.com/calendar/r?cid=${encodedCourseUrl}`, '_blank');
+        };
+
+        // Render visual calendar
+        const calendarEl = document.getElementById('student-schedule-visual-calendar');
+        calendarEl.innerHTML = "";
+        
+        const events = instances.map(ci => {
+            let color = '#3498db'; // normal
+            if (ci.special_status === 'Feriado') color = '#e74c3c';
+            if (ci.special_status === 'Clase Remota') color = '#f39c12';
+            if (ci.special_status === 'Examen') color = '#9b59b6';
+            
+            return {
+                title: `Clase ${ci.classNumber}: ${ci.topic || ci.type}`,
+                start: ci.date,
+                allDay: true,
+                backgroundColor: color,
+                borderColor: color,
+                extendedProps: {
+                    desc: ci.description,
+                    status: ci.special_status
+                }
+            };
+        });
+        
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            events: events,
+            firstDay: 1,
+            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
+            eventClick: function(info) {
+                alert(info.event.title + "\n" + (info.event.extendedProps.desc || ""));
+            }
+        });
+        
+        // Go to start date
+        if (instances.length > 0) {
+            calendar.gotoDate(instances[0].date);
+        }
+
+        // Toggle logic
+        const weekBtn = document.getElementById('toggle-view-weekly-btn');
+        const gridBtn = document.getElementById('toggle-view-grid-btn');
+        const weekView = document.getElementById('student-schedule-weeks-list');
+        const gridView = document.getElementById('student-schedule-visual-calendar');
+        
+        weekBtn.onclick = () => {
+            weekView.style.display = 'block';
+            gridView.style.display = 'none';
+            weekBtn.style.background = '#34495e';
+            weekBtn.classList.remove('secondary');
+            gridBtn.style.background = '';
+            gridBtn.classList.add('secondary');
+        };
+        
+        gridBtn.onclick = () => {
+            weekView.style.display = 'none';
+            gridView.style.display = 'block';
+            gridBtn.style.background = '#34495e';
+            gridBtn.classList.remove('secondary');
+            weekBtn.style.background = '';
+            weekBtn.classList.add('secondary');
+            calendar.render(); // required to fix sizing
+        };
+
         
     } catch (e) {
         document.getElementById('student-schedule-weeks-list').innerHTML = `<p style="color: red;">Error: ${e.message}</p>`;
     }
 }
+
+
+
+async function loadAdminSettings() {
+    try {
+        const res = await api({ action: 'getGlobalSettings', payload: {} });
+        if (res.globalCalendarIcsUrl) {
+            document.getElementById('admin-global-calendar-url').value = res.globalCalendarIcsUrl;
+        }
+    } catch (e) {
+        console.error("Error cargando configuracion global:", e);
+    }
+}
+
+document.getElementById('save-global-settings-btn').onclick = async () => {
+    const btn = document.getElementById('save-global-settings-btn');
+    const status = document.getElementById('global-settings-save-status');
+    const url = document.getElementById('admin-global-calendar-url').value;
+    
+    btn.disabled = true;
+    try {
+        await api({ action: 'saveGlobalSettings', payload: { globalCalendarIcsUrl: url } });
+        status.style.display = 'block';
+        setTimeout(() => status.style.display = 'none', 3000);
+    } catch (e) {
+        alert("Error al guardar: " + e.message);
+    } finally {
+        btn.disabled = false;
+    }
+};

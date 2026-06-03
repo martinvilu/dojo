@@ -42,7 +42,8 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 </head>
 <body>
     <div id="auth-overlay" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 1000;">
@@ -69,6 +70,7 @@
         <div id="nav-admin" class="role-nav hidden">
             <a href="/admin/courses" class="nav-item" data-link><span>🏢</span> <span class="nav-text">Gestión de Cursos</span></a>
             <a href="/admin/users" class="nav-item" data-link><span>👥</span> <span class="nav-text">Usuarios</span></a>
+            <a href="/admin/settings" class="nav-item" data-link><span>⚙️</span> <span class="nav-text">Configuración</span></a>
         </div>
         <div id="nav-teacher" class="role-nav hidden">
             <a href="/teacher/courses" class="nav-item" data-link><span>🏫</span> <span class="nav-text">Mis Clases</span></a>
@@ -127,6 +129,17 @@
                     <thead><tr style="border-bottom: 1px solid #ddd;"><th>Nombre</th><th>Email</th><th>Rol</th><th>Matrícula</th><th>Cohorte</th></tr></thead>
                     <tbody id="admin-users-table"></tbody>
                 </table>
+            </div>
+        </section>
+
+        <section id="admin-settings" class="content-section hidden">
+            <h1>Configuración Global</h1>
+            <div class="card">
+                <h3>Calendario Institucional (Eventos Globales)</h3>
+                <p style="font-size: 0.9em; color: #555;">Pegá acá la URL pública (.ics) del calendario global (ej. feriados, fechas de examen). Este link estará disponible para que alumnos y docentes lo agreguen a su Google Calendar con un clic.</p>
+                <input type="url" id="admin-global-calendar-url" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics">
+                <button id="save-global-settings-btn">Guardar Configuración</button>
+                <p id="global-settings-save-status" style="color: #27ae60; display: none; margin-top: 10px;">¡Guardado con éxito!</p>
             </div>
         </section>
 
@@ -339,8 +352,21 @@
         
         <section id="student-course-schedule-view" class="content-section hidden">
             <button class="secondary" onclick="navigateTo('/student/courses')" style="margin-bottom: 20px;">&larr; Volver a Mi Cursada</button>
+            
             <h1 id="student-schedule-title">Cronograma de la Materia</h1>
+            
+            <!-- Global Calendar Subscribe Button (Injected if available) -->
+            <div id="global-calendar-subscribe-container" style="margin-bottom: 20px; display: none;"></div>
+
+            <div style="margin-bottom: 20px; background: white; padding: 10px; border-radius: 8px; display: flex; gap: 10px;">
+                <button id="toggle-view-weekly-btn" style="flex: 1; margin: 0; background: #34495e;">Vista por Semanas</button>
+                <button id="toggle-view-grid-btn" class="secondary" style="flex: 1; margin: 0;">Vista Calendario Visual</button>
+                <button id="subscribe-course-gcal-btn" class="secondary" style="flex: 1; margin: 0; background: #e74c3c;">➕ Agregar a Google Calendar</button>
+            </div>
+
             <div id="student-schedule-weeks-list"></div>
+            <div id="student-schedule-visual-calendar" style="display: none; background: white; padding: 20px; border-radius: 8px;"></div>
+
         </section>
 
         <section id="profile" class="content-section hidden">
