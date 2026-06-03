@@ -134,12 +134,15 @@ const routes = {
     '/admin/courses': 'admin-courses',
     '/admin/course-detail': 'admin-course-detail',
     '/admin/users': 'admin-users',
+    '/admin/settings': 'admin-settings',
     '/teacher/courses': 'teacher-courses',
     '/teacher/course-settings': 'teacher-course-settings',
     '/teacher/course-schedule': 'teacher-course-schedule',
     '/teacher/assignments': 'teacher-assignments',
     '/teacher/announcements': 'teacher-announcements',
     '/student/courses': 'student-courses',
+    '/student/schedule': 'student-course-schedule-view',
+    '/student/assignments': 'student-assignments',
     '/profile': 'profile',
 };
 
@@ -179,9 +182,8 @@ const router = () => {
         loadAdminCourseDetail(urlParams.get('id'));
     }
     if (path === '/admin/users') loadAdminUsers();
+    if (path === '/admin/settings') loadAdminSettings();
     if (path === '/teacher/courses') loadTeacherCourses();
-    if (path === '/teacher/assignments') loadTeacherAssignments();
-    if (path === '/teacher/announcements') loadTeacherAnnouncements();
     if (path === '/teacher/course-settings') {
         const urlParams = new URLSearchParams(window.location.search);
         loadTeacherCourseSettings(urlParams.get('id'));
@@ -190,7 +192,16 @@ const router = () => {
         const urlParams = new URLSearchParams(window.location.search);
         loadTeacherCourseSchedule(urlParams.get('id'));
     }
+    if (path === '/teacher/assignments') loadTeacherAssignments();
+    if (path === '/teacher/announcements') loadTeacherAnnouncements();
+    
     if (path === '/student/courses') loadStudentCourses();
+    if (path === '/student/schedule') {
+        const urlParams = new URLSearchParams(window.location.search);
+        loadStudentCourseSchedule(urlParams.get('id'));
+    }
+    if (path === '/student/assignments') loadStudentAssignments();
+    
     if (path === '/profile') loadProfile();
 };
 
