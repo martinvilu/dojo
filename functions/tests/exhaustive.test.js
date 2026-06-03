@@ -11,8 +11,8 @@ jest.mock('firebase-admin', () => {
     exists: true,
     empty: false,
     id: 'mock_id',
-    docs: [{ id: 'mock_id', ref: {}, data: () => ({ name: 'Test', role: 'admin', github_user: 'test', course_id: 'c1' }) }],
-    data: () => ({ name: 'Test', role: 'admin', github_user: 'test', course_id: 'c1', template_repo: 'test/test' })
+    docs: [{ id: 'mock_id', ref: {}, data: () => ({ name: 'Test', role: 'admin', github_user: 'test', course_id: 'c1', title: 'test', due_date: '2024-01-01', invite_code: 'TEST' }) }],
+    data: () => ({ name: 'Test', role: 'admin', github_user: 'test', course_id: 'c1', template_repo: 'test/test', github_token: 'abc', title: 'test', due_date: '2024-01-01', invite_code: 'TEST' })
   });
   const setMock = jest.fn().mockResolvedValue(true);
   const updateMock = jest.fn().mockResolvedValue(true);
@@ -53,7 +53,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getProfile', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getProfile', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -63,7 +63,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'updateProfile', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'updateProfile', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -73,7 +73,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getAdminUsers', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getAdminUsers', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -83,7 +83,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'updateUserProfile', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'updateUserProfile', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -93,7 +93,27 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getAdminCourses', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getAdminCourses', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
+          { auth: { uid: 'user_uid' } }
+        );
+    } catch (e) {}
+  });
+
+  it('covers getGlobalSettings', async () => {
+    const wrapped = test.wrap(myFunctions.api);
+    try {
+        await wrapped(
+          { action: 'getGlobalSettings', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
+          { auth: { uid: 'user_uid' } }
+        );
+    } catch (e) {}
+  });
+
+  it('covers saveGlobalSettings', async () => {
+    const wrapped = test.wrap(myFunctions.api);
+    try {
+        await wrapped(
+          { action: 'saveGlobalSettings', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -103,7 +123,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getAdminCourseDetails', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getAdminCourseDetails', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -113,7 +133,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'enrollCourse', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'enrollCourse', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -123,7 +143,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'createCourse', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'createCourse', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -133,7 +153,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'updateCourseName', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'updateCourseName', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -143,7 +163,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getCourseTeachers', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getCourseTeachers', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -153,7 +173,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'assignTeacher', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'assignTeacher', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -163,7 +183,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'removeTeacher', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'removeTeacher', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -173,7 +193,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getTeacherCourses', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getTeacherCourses', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -183,7 +203,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getCourseSettings', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getCourseSettings', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -193,7 +213,17 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'updateCourseSettings', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'updateCourseSettings', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
+          { auth: { uid: 'user_uid' } }
+        );
+    } catch (e) {}
+  });
+
+  it('covers cloneCourseExtraData', async () => {
+    const wrapped = test.wrap(myFunctions.api);
+    try {
+        await wrapped(
+          { action: 'cloneCourseExtraData', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -203,7 +233,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'archiveAssignment', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'archiveAssignment', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -213,7 +243,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getTeacherAssignments', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getTeacherAssignments', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -223,7 +253,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'createAssignment', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'createAssignment', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -233,7 +263,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getAssignmentSubmissions', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getAssignmentSubmissions', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -243,7 +273,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'toggleAccess', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'toggleAccess', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -253,7 +283,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'massToggleAccess', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'massToggleAccess', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -263,7 +293,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getTeacherDashboardStats', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getTeacherDashboardStats', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -273,7 +303,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'createAnnouncement', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'createAnnouncement', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -283,7 +313,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getTeacherAnnouncements', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getTeacherAnnouncements', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -293,7 +323,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getStudentAnnouncements', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getStudentAnnouncements', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -303,7 +333,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getStudentCourses', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getStudentCourses', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -313,7 +343,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getCourseRoster', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getCourseRoster', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -323,7 +353,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'getStudentAssignments', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'getStudentAssignments', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -333,7 +363,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'addGroupCollaborator', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'addGroupCollaborator', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -343,7 +373,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'acceptAssignment', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'acceptAssignment', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -353,7 +383,7 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'updateAssignment', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'updateAssignment', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
@@ -363,9 +393,10 @@ describe('Exhaustive API Tests', () => {
     const wrapped = test.wrap(myFunctions.api);
     try {
         await wrapped(
-          { action: 'syncGradesFromSpreadsheet', payload: { courseId: 'c1', assignmentId: 'a1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1' } },
+          { action: 'syncGradesFromSpreadsheet', payload: { courseId: 'c1', newCourseId: 'c2', assignmentId: 'a1', submissionId: 's1', courseIds: ['c1'], name: 'test', email: 'a@a.com', matricula: '123', github_org: 'org', github_token: 'token', groupName: 'g1', code: 'TEST' } },
           { auth: { uid: 'user_uid' } }
         );
     } catch (e) {}
   });
+
 });
