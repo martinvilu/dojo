@@ -253,14 +253,27 @@
 
         <section id="teacher-course-schedule" class="content-section hidden">
             <button class="secondary" onclick="navigateTo('/teacher/course-settings?id=' + currentCourseSettingsId)" style="margin-bottom: 20px;">&larr; Volver a Configuración</button>
+            
             <h1 id="teacher-schedule-title">Cronograma de Clases</h1>
             
-            <div class="card" style="margin-bottom: 20px;">
+            <div id="teacher-global-calendar-subscribe-container" style="margin-bottom: 20px; display: none;"></div>
+            
+            <div style="margin-bottom: 20px; background: white; padding: 10px; border-radius: 8px; display: flex; gap: 10px;">
+                <button id="toggle-teacher-view-list-btn" style="flex: 1; margin: 0; background: #34495e;">Modo Edición (Lista)</button>
+                <button id="toggle-teacher-view-grid-btn" class="secondary" style="flex: 1; margin: 0;">Vista Calendario Visual</button>
+                <button id="teacher-subscribe-course-gcal-btn" class="secondary" style="flex: 1; margin: 0; background: #e74c3c;">➕ Agregar a Google Calendar</button>
+            </div>
+            
+            <div class="card" style="margin-bottom: 20px;" id="teacher-schedule-instructions">
+
                 <p>Acá ves todas las clases del cuatrimestre generadas a partir de tu configuración. Podés definir los temas, enlaces y marcar feriados o exámenes.</p>
                 <button id="generate-schedule-btn" class="danger">Regenerar Clases (¡Cuidado: borra temas actuales!)</button>
             </div>
 
             <div id="schedule-classes-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+
+            <div id="teacher-schedule-visual-calendar" style="display: none; background: white; padding: 20px; border-radius: 8px;"></div>
+
 
             <button id="save-schedule-btn" style="width: 100%; font-size: 1.1em; padding: 15px; margin-top: 20px;">Guardar Cronograma Completo</button>
             <p id="schedule-save-status" style="color: #27ae60; display: none; text-align: center; margin-top: 10px;">¡Cronograma guardado!</p>

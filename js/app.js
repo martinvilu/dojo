@@ -569,6 +569,7 @@ function generateClassInstances() {
     
     currentClassInstances = generatedClasses;
     renderScheduleClasses();
+    setupTeacherVisualCalendar();
 }
 
 document.getElementById('generate-schedule-btn').onclick = () => {
@@ -1436,4 +1437,94 @@ async function loadStudentAssignments() {
     } catch (e) {
         container.innerHTML = `<p style="color: red;">Error cargando entregas: ${e.message}</p>`;
     }
+}
+
+
+
+// Setup Teacher Visual Calendar
+async function setupTeacherVisualCalendar() {
+    try {
+        const gRes = await api({ action: 'getGlobalSettings', payload: {} });
+        const gContainer = document.getElementById('teacher-global-calendar-subscribe-container');
+        if (gRes.globalCalendarIcsUrl) {
+            const encodedGlobalUrl = encodeURIComponent(gRes.globalCalendarIcsUrl);
+            gContainer.style.display = 'block';
+            gContainer.innerHTML = `<a href="https://calendar.google.com/calendar/r?cid=${encodedGlobalUrl}" target="_blank" style="display: block; padding: 15px; background: #8e44ad; color: white; text-align: center; border-radius: 8px; font-weight: bold; text-decoration: none;">📅 Suscribirse al Calendario Global de Eventos (Google Calendar)</a>`;
+        } else {
+            gContainer.style.display = 'none';
+        }
+    } catch (e) { console.error(e); }
+
+    const courseIcsUrl = `${window.location.origin}/api/calendar?id=${scheduleCourseData.id}`;
+    const encodedCourseUrl = encodeURIComponent(courseIcsUrl);
+    document.getElementById('teacher-subscribe-course-gcal-btn').onclick = () => {
+        window.open(`https://calendar.google.com/calendar/r?cid=${encodedCourseUrl}`, '_blank');
+    };
+
+    let teacherCalendar = null;
+    const listBtn = document.getElementById('toggle-teacher-view-list-btn');
+    const gridBtn = document.getElementById('toggle-teacher-view-grid-btn');
+    const listView = document.getElementById('schedule-classes-list');
+    const gridView = document.getElementById('teacher-schedule-visual-calendar');
+    const instructionsView = document.getElementById('teacher-schedule-instructions');
+    const saveBtn = document.getElementById('save-schedule-btn');
+
+    listBtn.onclick = () => {
+        listView.style.display = 'flex';
+        instructionsView.style.display = 'block';
+        saveBtn.style.display = 'block';
+        gridView.style.display = 'none';
+        listBtn.style.background = '#34495e';
+        listBtn.classList.remove('secondary');
+        gridBtn.style.background = '';
+        gridBtn.classList.add('secondary');
+    };
+
+    gridBtn.onclick = () => {
+        listView.style.display = 'none';
+        instructionsView.style.display = 'none';
+        saveBtn.style.display = 'none';
+        gridView.style.display = 'block';
+        gridBtn.style.background = '#34495e';
+        gridBtn.classList.remove('secondary');
+        listBtn.style.background = '';
+        listBtn.classList.add('secondary');
+        
+        // Re-init calendar every time to catch new edits in currentClassInstances
+        gridView.innerHTML = '';
+        const events = currentClassInstances.map(ci => {
+            let color = '#3498db'; // normal
+            if (ci.special_status === 'Feriado') color = '#e74c3c';
+            if (ci.special_status === 'Clase Remota') color = '#f39c12';
+            if (ci.special_status === 'Examen') color = '#9b59b6';
+            
+            return {
+                title: `Clase ${ci.classNumber || ''}: ${ci.topic || ci.type}`,
+                start: ci.date,
+                allDay: true,
+                backgroundColor: color,
+                borderColor: color,
+                extendedProps: {
+                    desc: ci.description,
+                    status: ci.special_status
+                }
+            };
+        });
+        
+        teacherCalendar = new FullCalendar.Calendar(gridView, {
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            events: events,
+            firstDay: 1,
+            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
+            eventClick: function(info) {
+                alert(info.event.title + "\n" + (info.event.extendedProps.desc || ""));
+            }
+        });
+        
+        teacherCalendar.render();
+        if (currentClassInstances.length > 0) {
+            teacherCalendar.gotoDate(currentClassInstances[0].date);
+        }
+    };
 }
