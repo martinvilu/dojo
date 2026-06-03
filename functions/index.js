@@ -181,6 +181,59 @@ exports.api = functions.https.onCall(async (data, context) => {
             return { success: true };
         }
 
+        
+        if (action === 'archiveAssignment') {
+            const assignmentSnap = await db.collection('assignments').doc(payload.assignmentId).get();
+            if (!assignmentSnap.exists) throw new Error("Tarea no encontrada");
+            const assignment = assignmentSnap.data();
+            
+            const courseSnap = await db.collection('courses').doc(assignment.course_id).get();
+            const course = courseSnap.data();
+            if (!course.github_org || !course.github_token) throw new Error("Falta la configuración de GitHub en la materia");
+            
+            const submissionsSnap = await db.collection('submissions').where('assignment_id', '==', payload.assignmentId).get();
+            
+            let count = 0;
+            for (let doc of submissionsSnap.docs) {
+                const sub = doc.data();
+                if (!sub.github_url) continue;
+                
+                // Extract repo name from https://github.com/org/repo
+                const parts = sub.github_url.split('/');
+                const orgName = parts[parts.length - 2];
+                const repoName = parts[parts.length - 1];
+                
+                // Get collaborators
+                const listResp = await fetch(`https://api.github.com/repos/${orgName}/${repoName}/collaborators`, {
+                    headers: {
+                        'Authorization': `token ${course.github_token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (listResp.ok) {
+                    const collabs = await listResp.json();
+                    for (let c of collabs) {
+                        // Skip admin/org owners which usually have admin rights by default
+                        // We set individual students to 'push', so we downgrade to 'pull'
+                        if (c.permissions && !c.permissions.admin) {
+                            await fetch(`https://api.github.com/repos/${orgName}/${repoName}/collaborators/${c.login}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `token ${course.github_token}`,
+                                    'Accept': 'application/vnd.github.v3+json',
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ permission: 'pull' })
+                            });
+                        }
+                    }
+                    count++;
+                }
+            }
+            return { success: true, count };
+        }
+
         if (action === 'getTeacherAssignments') {
             const tSnap = await db.collection('course_teachers').where('teacher_id', '==', uid).get();
             const courseIds = tSnap.docs.map(d => d.data().course_id);
@@ -223,6 +276,40 @@ exports.api = functions.https.onCall(async (data, context) => {
             return { success: true };
         }
         
+        
+        if (action === 'getTeacherDashboardStats') {
+            const cSnap = await db.collection('course_teachers').where('teacher_id', '==', uid).get();
+            const courseIds = cSnap.docs.map(d => d.data().course_id);
+            if (courseIds.length === 0) return { pendingCorrections: 0 };
+            
+            // Note: Since Firestore "in" queries are limited to 10 elements, if a teacher has many courses we chunk it
+            // For now, let's just get ALL submissions where grade == '' and see if they belong to our courses.
+            // Wait, getting ALL ungraded submissions in the system is bad.
+            // Better to fetch assignments for our courses, then fetch submissions for those assignments.
+            let pendingCorrections = 0;
+            const chunks = [];
+            for (let i = 0; i < courseIds.length; i += 10) {
+                chunks.push(courseIds.slice(i, i + 10));
+            }
+            
+            for (const chunk of chunks) {
+                const aSnap = await db.collection('assignments').where('course_id', 'in', chunk).get();
+                const assignmentIds = aSnap.docs.map(d => d.id);
+                if (assignmentIds.length === 0) continue;
+                
+                const aChunks = [];
+                for (let j = 0; j < assignmentIds.length; j += 10) {
+                    aChunks.push(assignmentIds.slice(j, j + 10));
+                }
+                
+                for (const achunk of aChunks) {
+                    const sSnap = await db.collection('submissions').where('assignment_id', 'in', achunk).where('grade', '==', '').get();
+                    pendingCorrections += sSnap.size;
+                }
+            }
+            return { pendingCorrections };
+        }
+
         if (action === 'getStudentCourses') {
             const snap = await db.collection('course_roster').where('student_id', '==', uid).get();
             const courses = [];
@@ -254,6 +341,58 @@ exports.api = functions.https.onCall(async (data, context) => {
             const submissions = subsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             
             return { assignments, submissions };
+        }
+
+        
+        if (action === 'addGroupCollaborator') {
+            const subSnap = await db.collection('submissions').doc(payload.submissionId).get();
+            if (!subSnap.exists) throw new Error("Entrega no encontrada");
+            const sub = subSnap.data();
+            
+            const pSnap = await db.collection('profiles').where('email', '==', payload.email).get();
+            if (pSnap.empty) throw new Error("No se encontró ningún estudiante registrado con ese correo");
+            const newStudent = pSnap.docs[0].data();
+            const newStudentId = pSnap.docs[0].id;
+            
+            if (!newStudent.github_user) throw new Error("El estudiante no configuró su usuario de GitHub en el perfil");
+            
+            const assignmentSnap = await db.collection('assignments').doc(payload.assignmentId).get();
+            const assignment = assignmentSnap.data();
+            
+            const courseSnap = await db.collection('courses').doc(assignment.course_id).get();
+            const course = courseSnap.data();
+            
+            // Add collaborator via GitHub API
+            const parts = sub.github_url.split('/');
+            const orgName = parts[parts.length - 2];
+            const repoName = parts[parts.length - 1];
+            
+            const addRes = await fetch(`https://api.github.com/repos/${orgName}/${repoName}/collaborators/${newStudent.github_user}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${course.github_token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ permission: 'push' })
+            });
+            
+            if (!addRes.ok) {
+                const err = await addRes.json();
+                throw new Error(`Error de GitHub: ${err.message}`);
+            }
+            
+            // Also add a submission record for the new student so they see it in their dashboard
+            await db.collection('submissions').doc(`${payload.assignmentId}_${newStudentId}`).set({
+                assignment_id: payload.assignmentId,
+                student_id: newStudentId,
+                github_url: sub.github_url,
+                grade: '',
+                feedback: '',
+                accepted_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            
+            return { success: true };
         }
 
         if (action === 'acceptAssignment') {

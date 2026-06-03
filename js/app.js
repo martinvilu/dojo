@@ -238,6 +238,20 @@ async function loadAdminUsers() {
 }
 
 async function loadTeacherCourses() {
+    document.getElementById('teacher-courses-list').innerHTML = '<p>Cargando tus materias...</p>';
+    
+    // Fetch stats
+    let statsHtml = '';
+    try {
+        const stats = await api({ action: 'getTeacherDashboardStats' });
+        if (stats.data.pendingCorrections > 0) {
+            statsHtml = `<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                <h4 style="margin: 0; color: #856404;">⚠️ Tenés ${stats.data.pendingCorrections} correcciones pendientes</h4>
+                <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #856404;">Revisá la pestaña "Entregas" para sincronizar las notas desde Sheets.</p>
+            </div>`;
+        }
+    } catch(e) { console.error(e); }
+    
     const res = await api({ action: 'getTeacherCourses' });
     document.getElementById('teacher-courses-list').innerHTML = res.data.map(c => `
         <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
@@ -484,6 +498,7 @@ function generateClassInstances() {
             ci.presentation_url = oldInstances[idx].presentation_url || "";
             ci.recording_url = oldInstances[idx].recording_url || "";
             ci.special_status = oldInstances[idx].special_status || "Normal";
+            ci.description = oldInstances[idx].description || "";
         }
     });
     
@@ -512,7 +527,7 @@ function renderScheduleClasses() {
         return `
         <div class="card" style="display: flex; flex-direction: column; gap: 10px; ${ci.special_status === 'Feriado' ? 'opacity: 0.6; background: #eee;' : ''}">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                <h3 style="margin: 0; text-transform: capitalize;">${dateStr} - ${timeStr} (${ci.type})</h3>
+                <h3 style="margin: 0; text-transform: capitalize;">Clase ${idx + 1}: ${dateStr} - ${timeStr} (${ci.type})</h3>
                 <select id="ci-status-${idx}" onchange="updateClassInstance(${idx}, 'special_status', this.value)">
                     <option value="Normal" ${ci.special_status === 'Normal' ? 'selected' : ''}>Normal</option>
                     <option value="Clase Remota" ${ci.special_status === 'Clase Remota' ? 'selected' : ''}>Clase Remota</option>
@@ -525,6 +540,10 @@ function renderScheduleClasses() {
                 <div style="flex: 1; min-width: 250px;">
                     <label style="font-weight: bold; font-size: 0.9em; color: #555;">Tema de la clase</label>
                     <input type="text" id="ci-topic-${idx}" value="${ci.topic || ''}" onchange="updateClassInstance(${idx}, 'topic', this.value)" placeholder="Ej: Unidad 1: Introducción a la materia">
+                </div>
+                <div style="flex: 2; min-width: 100%; margin-top: 10px;">
+                    <label style="font-weight: bold; font-size: 0.9em; color: #555;">Descripción / Temario (Soporta Markdown)</label>
+                    <textarea id="ci-desc-${idx}" onchange="updateClassInstance(${idx}, 'description', this.value)" placeholder="Ej: - Variables\n- Funciones\n- Bucles" style="width: 100%; height: 60px; margin-top: 5px; font-family: monospace;">${ci.description || ''}</textarea>
                 </div>
             </div>
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
@@ -595,7 +614,25 @@ async function loadStudentCourses() {
         }
     };
     
-    window.acceptAssignment = async (assignmentId) => {
+    
+window.addCollaborator = async (submissionId, assignmentId) => {
+    const email = prompt("Ingresá el correo electrónico del compañero que querés agregar al repositorio de este grupo:");
+    if (!email) return;
+    
+    try {
+        await api({ action: 'addGroupCollaborator', payload: { submissionId, assignmentId, email } });
+        alert("¡Compañero agregado con éxito al repositorio!");
+    } catch(e) {
+        alert("Error: " + e.message);
+    }
+};
+
+window.acceptAssignment = async (assignmentId, isGroup) => {
+        let groupName = '';
+        if (isGroup) {
+            groupName = prompt('Esta es una tarea grupal. Ingresá el nombre de tu equipo (se usará para el nombre del repositorio, no uses espacios ni caracteres raros):');
+            if (!groupName) return; // Cancelled
+        }
         const btn = document.getElementById(`btn-accept-${assignmentId}`);
         const status = document.getElementById(`status-accept-${assignmentId}`);
         btn.disabled = true;
@@ -604,7 +641,7 @@ async function loadStudentCourses() {
         status.style.color = "#e67e22";
         
         try {
-            const res = await api({ action: 'acceptAssignment', payload: { assignmentId } });
+            const res = await api({ action: 'acceptAssignment', payload: { assignmentId, groupName } });
             status.innerText = "¡Repositorio creado con éxito!";
             status.style.color = "#27ae60";
             setTimeout(() => {
@@ -634,7 +671,7 @@ async function loadStudentCourses() {
         now.setHours(0,0,0,0);
         
         container.innerHTML = res.data.map(c => {
-            const classInstances = c.class_instances || [];
+            const classInstances = (c.class_instances || []).map((ci, idx) => ({ ...ci, classNumber: idx + 1 }));
             const upcoming = classInstances.filter(ci => new Date(ci.date) >= now).slice(0, 3);
             
             let classesHtml = '<p style="color: #666; font-style: italic;">Todavía no hay clases planificadas en el cronograma.</p>';
@@ -642,7 +679,7 @@ async function loadStudentCourses() {
             if (classInstances.length > 0) {
                 classesHtml = `
                     <h4 style="margin-top: 15px; margin-bottom: 5px; color: #2c3e50;">Próximas Clases:</h4>
-                    <ul style="padding-left: 20px; color: #444;">
+                    <ul style="padding-left: 20px; color: #444; list-style-type: none;">
                         ${upcoming.length ? upcoming.map(ci => {
                             const d = new Date(ci.date);
                             const ds = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -658,20 +695,25 @@ async function loadStudentCourses() {
                             if (ci.recording_url) links.push(`<a href="${ci.recording_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Grabación</a>`);
                             const linksStr = links.length ? ` - [ ${links.join(' | ')} ]` : '';
                             
-                            return `<li style="margin-bottom: 5px; ${ci.special_status === 'Feriado' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
-                                <strong>${ds} ${ts}</strong>: ${ci.topic || ci.type} ${tags} ${linksStr}
+                            const topicHtml = typeof marked !== 'undefined' ? marked.parseInline(ci.topic || ci.type) : (ci.topic || ci.type);
+                            const descHtml = (ci.description && typeof marked !== 'undefined') ? `<div style="font-size: 0.9em; color: #555; background: #fff; padding: 10px; margin-top: 5px; border-left: 3px solid #ccc; border-radius: 4px;" class="markdown-body">${marked.parse(ci.description)}</div>` : '';
+                            
+                            return `<li style="margin-bottom: 15px; background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 4px; ${ci.special_status === 'Feriado' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
+                                <strong>Clase ${ci.classNumber} (${ds} ${ts})</strong>: ${topicHtml} ${tags} ${linksStr}
+                                ${descHtml}
                             </li>`;
                         }).join('') : '<li>No hay clases futuras planificadas.</li>'}
                     </ul>
                     <details style="margin-top: 10px;">
                         <summary style="cursor: pointer; color: #3498db; font-weight: bold;">Ver todo el cronograma (${classInstances.length} clases)</summary>
-                        <div style="padding: 10px; background: #f9f9f9; border: 1px solid #eee; border-radius: 4px; margin-top: 10px; max-height: 200px; overflow-y: auto;">
-                            <ul style="padding-left: 20px; font-size: 0.9em; color: #555; margin: 0;">
+                        <div style="padding: 10px; background: #f9f9f9; border: 1px solid #eee; border-radius: 4px; margin-top: 10px; max-height: 250px; overflow-y: auto;">
+                            <ul style="padding-left: 20px; font-size: 0.9em; color: #555; margin: 0; list-style-type: none;">
                                 ${classInstances.map(ci => {
                                     const d = new Date(ci.date);
                                     const ds = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
                                     let tags = ci.special_status !== 'Normal' ? ` <em>(${ci.special_status})</em>` : '';
-                                    return `<li>${ds}: ${ci.topic || ci.type}${tags}</li>`;
+                                    const topicHtml = typeof marked !== 'undefined' ? marked.parseInline(ci.topic || ci.type) : (ci.topic || ci.type);
+                                    return `<li style="margin-bottom: 5px;"><strong>Clase ${ci.classNumber} (${ds}):</strong> ${topicHtml} ${tags}</li>`;
                                 }).join('')}
                             </ul>
                         </div>
@@ -791,7 +833,12 @@ async function loadTeacherAssignments() {
             const cName = cRes.data.find(c => c.id === a.course_id)?.name || 'Materia Desconocida';
             return `
                 <div class="card" style="border-left: 4px solid #8e44ad; margin-bottom: 20px;">
-                    <h3 style="margin-top: 0; color: #8e44ad;">${a.title} <span style="font-size: 0.7em; color: #7f8c8d; font-weight: normal;">en ${cName}</span></h3>
+                    <h3 style="margin-top: 0; color: #8e44ad;">${a.title} <span style="font-size: 0.7em; color: #7f8c8d; font-weight: normal;">en ${cName}</span>${a.is_group ? ' <span style="font-size: 0.7em; background: #3498db; color: white; padding: 2px 5px; border-radius: 4px;">GRUPAL</span>' : ''}</h3>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button onclick="editAssignment('${a.id}', '${a.title.replace(/'/g, "\'")}', '${a.template_repo}', ${a.create_feedback_pr || false}, ${a.is_group || false})" style="background: #f39c12; border: none; padding: 5px 10px; font-size: 0.8em; margin: 0;">✏️ Editar Tarea</button>
+                        <button onclick="archiveAssignment('${a.id}')" style="background: #c0392b; border: none; padding: 5px 10px; font-size: 0.8em; margin: 0;" id="btn-archive-${a.id}">🔒 Archivar (Solo Lectura)</button>
+                    </div>
+                    
                     
                     <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; margin-top: 15px;">
                         <h4 style="margin-top: 0; color: #2c3e50;">📊 Carga de Notas Automática (desde Google Sheets)</h4>
@@ -821,24 +868,68 @@ document.getElementById('create-assignment-btn').onclick = async () => {
     const title = document.getElementById('assignment-title').value;
     const template = document.getElementById('assignment-template').value;
     const createPr = document.getElementById('assignment-pr').checked;
+    const isGroup = document.getElementById('assignment-group') ? document.getElementById('assignment-group').checked : false;
     
     if (!title) return alert("Escribí un título para la tarea");
     if (!template) return alert("Escribí el repositorio de plantilla (ej: org/repo)");
     
     document.getElementById('create-assignment-btn').disabled = true;
+    
+    if (window.editingAssignmentId) {
+        try {
+            await api({ action: 'updateAssignment', payload: { assignmentId: window.editingAssignmentId, data: { title, template_repo: template, create_feedback_pr: createPr, is_group: isGroup } } });
+            window.editingAssignmentId = null;
+            document.getElementById('create-assignment-btn').innerText = 'Crear Tarea';
+        } catch(e) {
+            alert("Error al editar tarea: " + e.message);
+        }
+    } else {
+        try {
+            await api({ action: 'createAssignment', payload: { course_id: courseId, title, template_repo: template, create_feedback_pr: createPr, is_group: isGroup } });
+        } catch (e) {
+            alert("Error al crear tarea: " + e.message);
+        }
+    }
+    
+    document.getElementById('assignment-title').value = '';
+    document.getElementById('assignment-template').value = '';
+    loadTeacherAssignments();
+    document.getElementById('create-assignment-btn').disabled = false;
+};
+
+
+
+window.editAssignment = (id, title, template, createPr, isGroup) => {
+    window.editingAssignmentId = id;
+    document.getElementById('assignment-title').value = title;
+    document.getElementById('assignment-template').value = template;
+    document.getElementById('assignment-pr').checked = createPr;
+    if(document.getElementById('assignment-group')) document.getElementById('assignment-group').checked = isGroup;
+    
+    document.getElementById('create-assignment-btn').innerText = 'Guardar Cambios';
+    document.getElementById('assignment-title').focus();
+};
+
+window.archiveAssignment = async (id) => {
+    if (!confirm("¿Seguro que querés archivar esta tarea? Esto cambiará los permisos de todos los alumnos en GitHub a SOLO LECTURA. No podrán subir más código.")) return;
+    
+    const btn = document.getElementById(`btn-archive-${id}`);
+    btn.disabled = true;
+    btn.innerText = "Archivando...";
+    
     try {
-        await api({ action: 'createAssignment', payload: { course_id: courseId, title, template_repo: template, create_feedback_pr: createPr } });
-        document.getElementById('assignment-title').value = '';
-        document.getElementById('assignment-template').value = '';
-        loadTeacherAssignments();
-    } catch (e) {
-        alert("Error al crear tarea: " + e.message);
-    } finally {
-        document.getElementById('create-assignment-btn').disabled = false;
+        const res = await api({ action: 'archiveAssignment', payload: { assignmentId: id } });
+        alert(`¡Tarea archivada! Se cambiaron los permisos en ${res.data.count} repositorios.`);
+        btn.innerText = "🔒 Archivada";
+    } catch(e) {
+        alert("Error al archivar: " + e.message);
+        btn.disabled = false;
+        btn.innerText = "🔒 Archivar (Solo Lectura)";
     }
 };
 
 window.saveSheetUrl = async (assignmentId) => {
+
     const url = document.getElementById(`sheet-url-${assignmentId}`).value;
     try {
         await api({ action: 'updateAssignment', payload: { assignmentId, data: { grades_spreadsheet_url: url } } });
