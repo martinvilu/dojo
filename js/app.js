@@ -604,7 +604,8 @@ async function loadStudentCourses() {
             submissions = assignRes.data.submissions || [];
         }
         
-        document.getElementById('enroll-btn').onclick = async () => {
+        const enrollBtn = document.getElementById('enroll-btn');
+        if (enrollBtn) enrollBtn.onclick = async () => {
         const code = document.getElementById('enroll-code').value;
         if (!code) return;
         try {

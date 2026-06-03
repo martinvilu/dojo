@@ -312,7 +312,13 @@
         </section>
 
         <section id="student-courses" class="content-section hidden">
-            <h1>Mi Cursada</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 style="margin: 0;">Mi Cursada</h1>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="enroll-code" placeholder="Código (Ej: 9A2B3C)" style="margin: 0; text-transform: uppercase;">
+                    <button id="enroll-btn" style="margin: 0; background: #27ae60;">Sumarme a Materia</button>
+                </div>
+            </div>
             <div id="student-courses-list"></div>
         </section>
         
