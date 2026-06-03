@@ -792,43 +792,6 @@ window.acceptAssignment = async (assignmentId, isGroup) => {
 
             }
             
-            const courseAssignments = assignments.filter(a => a.course_id === c.id);
-            let assignmentsHtml = '';
-            if (courseAssignments.length > 0) {
-                assignmentsHtml = `
-                    <h4 style="margin-top: 25px; margin-bottom: 10px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 5px;">Tareas y Entregas</h4>
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        ${courseAssignments.map(a => {
-                            const sub = submissions.find(s => s.assignment_id === a.id);
-                            
-                            if (sub) {
-                                return `
-                                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px;">
-                                        <h5 style="margin: 0 0 5px 0; color: #166534; font-size: 1.1em;">✅ ${a.title}</h5>
-                                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                                            <a href="${sub.repo_url}" target="_blank" style="color: #15803d; text-decoration: none; font-weight: bold;">Ver tu repositorio en GitHub ↗</a>
-                                            <div style="background: white; padding: 5px 10px; border-radius: 4px; border: 1px solid #dcfce7; font-size: 0.9em;">
-                                                <strong>Nota:</strong> ${sub.grade ? sub.grade : '<span style="color: #999;">Sin calificar</span>'}
-                                                ${sub.feedback ? `<br><strong>Feedback:</strong> ${sub.feedback}` : ''}
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            } else {
-                                return `
-                                    <div style="background: #fff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                                        <h5 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.1em;">⏳ ${a.title}</h5>
-                                        <p style="font-size: 0.9em; color: #64748b; margin-top: 0;">Todavía no aceptaste esta tarea. Al aceptarla se creará tu repositorio en GitHub para que empieces a trabajar.</p>
-                                        <button onclick="acceptAssignment('${a.id}')" style="margin: 0; background: #3498db; padding: 8px 15px; font-size: 0.9em; border: none; font-weight: bold;" id="btn-accept-${a.id}">Aceptar Tarea en GitHub</button>
-                                        <p id="status-accept-${a.id}" style="margin: 5px 0 0 0; font-size: 0.85em; font-weight: bold;"></p>
-                                    </div>
-                                `;
-                            }
-                        }).join('')}
-                    </div>
-                `;
-            }
-            
             return `
             <div class="card" style="border-top: 4px solid #8e44ad; position: relative;">
                 <h2 style="color: #8e44ad; margin-bottom: 5px;">${c.name}</h2>
@@ -843,7 +806,7 @@ window.acceptAssignment = async (assignmentId, isGroup) => {
                 </div>
                 
                 ${classesHtml}
-                ${assignmentsHtml}
+                
             </div>
             `;
         }).join('');
@@ -1392,3 +1355,74 @@ document.getElementById('save-global-settings-btn').onclick = async () => {
         btn.disabled = false;
     }
 };
+
+
+
+async function loadStudentAssignments() {
+    const container = document.getElementById('student-assignments-list');
+    container.innerHTML = 'Cargando tus entregas...';
+    
+    try {
+        const res = await api({ action: 'getStudentCourses' });
+        if (!res || res.length === 0) {
+            container.innerHTML = '<p>No estás anotado en ninguna cursada.</p>';
+            return;
+        }
+        
+        const courseIds = res.map(c => c.id);
+        const aRes = await api({ action: 'getStudentAssignments', payload: { courseIds } });
+        const assignments = aRes.assignments || [];
+        const submissions = aRes.submissions || [];
+        
+        if (assignments.length === 0) {
+            container.innerHTML = '<p>No tenés tareas asignadas por el momento.</p>';
+            return;
+        }
+        
+        // Group by course
+        let html = '';
+        res.forEach(c => {
+            const courseAssignments = assignments.filter(a => a.course_id === c.id);
+            if (courseAssignments.length === 0) return;
+            
+            html += `<div class="card" style="margin-bottom: 25px; border-left: 4px solid #8e44ad;">`;
+            html += `<h2 style="margin-top: 0; color: #8e44ad; border-bottom: 1px solid #eee; padding-bottom: 10px;">${c.name}</h2>`;
+            
+            html += `<div style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">`;
+            
+            courseAssignments.forEach(a => {
+                const sub = submissions.find(s => s.assignment_id === a.id);
+                if (sub) {
+                    html += `
+                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px;">
+                            <h5 style="margin: 0 0 5px 0; color: #166534; font-size: 1.1em;">✅ ${a.title}</h5>
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <a href="${sub.repo_url}" target="_blank" style="color: #15803d; text-decoration: none; font-weight: bold;">Ver tu repositorio en GitHub ↗</a>
+                                <div style="background: white; padding: 5px 10px; border-radius: 4px; border: 1px solid #dcfce7; font-size: 0.9em;">
+                                    <strong>Nota:</strong> ${sub.grade ? sub.grade : '<span style="color: #999;">Sin calificar</span>'}
+                                    ${sub.feedback ? `<br><strong>Feedback:</strong> ${sub.feedback}` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div style="background: #fff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <h5 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.1em;">⏳ ${a.title}</h5>
+                            <p style="font-size: 0.9em; color: #64748b; margin-top: 0;">Todavía no aceptaste esta tarea. Al aceptarla se creará tu repositorio en GitHub para que empieces a trabajar.</p>
+                            <button onclick="acceptAssignment('${a.id}')" style="margin: 0; background: #3498db; padding: 8px 15px; font-size: 0.9em; border: none; font-weight: bold;" id="btn-accept-${a.id}">Aceptar Tarea en GitHub</button>
+                            <p id="status-accept-${a.id}" style="margin: 5px 0 0 0; font-size: 0.85em; font-weight: bold;"></p>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += `</div></div>`;
+        });
+        
+        container.innerHTML = html;
+        
+    } catch (e) {
+        container.innerHTML = `<p style="color: red;">Error cargando entregas: ${e.message}</p>`;
+    }
+}
