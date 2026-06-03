@@ -1043,7 +1043,9 @@ async function loadTeacherAnnouncements() {
     }
 }
 
-document.getElementById('send-announcement-btn').onclick = async () => {
+
+const annBtn = document.getElementById('send-announcement-btn');
+if (annBtn) annBtn.onclick = async () => {
     const course_id = document.getElementById('announcement-course-select').value;
     const message = document.getElementById('announcement-message').value;
     if (!message) return alert("Escribí un mensaje");
