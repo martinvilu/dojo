@@ -14,6 +14,7 @@ Este archivo contiene las directrices principales para las inteligencias artific
 
 2. **Idioma**: Los mensajes de commit pueden estar en inglés o español, pero deben ser descriptivos y concisos.
 
+3. **Frecuencia de Commits**: Se debe realizar un commit (y un push/deploy si aplica) inmediatamente después de completar cada solicitud o cambio requerido por el usuario, sin esperar a acumular múltiples cambios.
 ## Tecnologías Principales
 - **Frontend**: HTML5, CSS3, Vanilla JS (Módulos ES6).
 - **Backend/Auth**: Firebase Auth, Cloud Functions (Node.js 24), Firestore Database.
