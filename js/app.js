@@ -867,14 +867,39 @@ async function loadTeacherAssignments() {
                     </div>
                     
                     
+                    
                     <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; margin-top: 15px;">
-                        <h4 style="margin-top: 0; color: #2c3e50;">📊 Carga de Notas Automática (desde Google Sheets)</h4>
-                        <p style="font-size: 0.9em; color: #555;">Pegá acá el link de tu planilla de corrección. Asegurate de que el permiso esté en "Cualquier persona con el enlace puede leer".</p>
-                        
-                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
-                            <input type="url" id="sheet-url-${a.id}" value="${a.grades_spreadsheet_url || ''}" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex: 1; margin: 0; font-size: 0.9em;">
-                            <button class="secondary" onclick="saveSheetUrl('${a.id}')" style="margin: 0; padding: 10px;">Guardar Link</button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0; color: #2c3e50;">📊 Sincronización Inversa (Google Sheets)</h4>
+                            <button onclick="downloadTemplate('${a.id}', '${a.course_id}', '${a.title.replace(/'/g, "\'")}')" style="margin: 0; background: #27ae60; border: none; font-size: 0.8em; padding: 5px 10px;">⬇️ Descargar Plantilla</button>
                         </div>
+                        <p style="font-size: 0.9em; color: #555;">Ahora la sincronización se dispara <strong>directamente desde tu planilla</strong>. En Google Sheets, andá a <em>Extensiones > Apps Script</em> y pegá este código:</p>
+                        
+                        <div style="position: relative;">
+                            <textarea readonly style="width: 100%; height: 120px; font-family: monospace; font-size: 0.8em; background: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 4px; border: none;">function SincronizarNotas() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => h.toString().toLowerCase().trim());
+  const matriculaIdx = headers.findIndex(h => h.includes('matricula') || h.includes('matrícula'));
+  const notaIdx = headers.findIndex(h => h.includes('nota') || h.includes('calificacion'));
+  const feedbackIdx = headers.findIndex(h => h.includes('feedback') || h.includes('devolucion'));
+  
+  if (matriculaIdx === -1 || notaIdx === -1) return SpreadsheetApp.getUi().alert('Faltan columnas de Matricula o Nota');
+  
+  const grades = [];
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][matriculaIdx]) grades.push({ matricula: data[i][matriculaIdx], grade: data[i][notaIdx], feedback: feedbackIdx !== -1 ? data[i][feedbackIdx] : '' });
+  }
+  
+  const payload = { assignmentId: "${a.id}", sync_secret: "${a.sync_secret || 'NO_GENERADO_AUN_EDITA_LA_TAREA_PARA_GENERAR'}", grades: grades };
+  const res = UrlFetchApp.fetch("https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/webhook", {
+    method: "post", contentType: "application/json", payload: JSON.stringify(payload)
+  });
+  SpreadsheetApp.getUi().alert('Resultado: ' + JSON.parse(res.getContentText()).updatedCount + ' alumnos actualizados.');
+}</textarea>
+                        </div>
+                    </div>
+
                         
                         <div style="display: flex; gap: 10px;">
                             <button onclick="downloadTemplate('${a.id}', '${a.course_id}', '${a.title}')" style="margin: 0; background: #27ae60; border: none;">⬇️ Descargar Plantilla de Alumnos (CSV)</button>
@@ -955,34 +980,9 @@ window.archiveAssignment = async (id) => {
     }
 };
 
-window.saveSheetUrl = async (assignmentId) => {
 
-    const url = document.getElementById(`sheet-url-${assignmentId}`).value;
-    try {
-        await api({ action: 'updateAssignment', payload: { assignmentId, data: { grades_spreadsheet_url: url } } });
-        alert("¡Link guardado exitosamente!");
-    } catch (e) {
-        alert("Error al guardar: " + e.message);
-    }
-};
 
-window.syncGrades = async (assignmentId) => {
-    const url = document.getElementById(`sheet-url-${assignmentId}`).value;
-    if (!url) return alert("Primero pegá el link de la planilla y guardalo.");
-    
-    const status = document.getElementById(`sync-status-${assignmentId}`);
-    status.style.color = '#e67e22';
-    status.innerText = "Sincronizando notas... (esto puede tardar unos segundos)";
-    
-    try {
-        const res = await api({ action: 'syncGradesFromSpreadsheet', payload: { assignmentId, sheetUrl: url } });
-        status.style.color = '#27ae60';
-        status.innerText = `¡Éxito! Se actualizaron o cargaron las notas de ${res.data.updatedCount} alumnos.`;
-    } catch (e) {
-        status.style.color = '#c0392b';
-        status.innerText = "Error: " + e.message;
-    }
-};
+
 
 window.downloadTemplate = async (assignmentId, courseId, title) => {
     try {
