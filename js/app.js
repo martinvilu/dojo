@@ -862,6 +862,44 @@ function loadProfile() {
     if (!currentProfile) return;
     document.getElementById('profile-matricula').value = currentProfile.matricula_unrn || '';
     document.getElementById('profile-cohorte').value = currentProfile.cohorte || '';
+
+    // Emails
+    document.getElementById('profile-primary-email').innerText = auth.currentUser.email || 'No disponible';
+    
+    window.renderAltEmails = () => {
+        const list = document.getElementById('profile-alt-emails-list');
+        if (!currentProfile.alternative_emails || currentProfile.alternative_emails.length === 0) {
+            list.innerHTML = '<li>No tenés correos alternativos cargados.</li>';
+            return;
+        }
+        list.innerHTML = currentProfile.alternative_emails.map((em, i) => `
+            <li style="margin-bottom: 5px;">
+                ${em} 
+                <span onclick="removeAltEmail(${i})" style="color: #e74c3c; cursor: pointer; font-weight: bold; margin-left: 10px;" title="Eliminar">❌</span>
+            </li>
+        `).join('');
+    };
+    
+    window.removeAltEmail = (index) => {
+        currentProfile.alternative_emails.splice(index, 1);
+        renderAltEmails();
+    };
+    
+    document.getElementById('add-alt-email-btn').onclick = () => {
+        const input = document.getElementById('new-alt-email');
+        const val = input.value.trim();
+        if (!val || !val.includes('@')) return alert('Ingresá un correo válido.');
+        if (!currentProfile.alternative_emails) currentProfile.alternative_emails = [];
+        if (currentProfile.alternative_emails.includes(val) || val === auth.currentUser.email) {
+            return alert('Este correo ya está en tu lista.');
+        }
+        currentProfile.alternative_emails.push(val);
+        input.value = '';
+        renderAltEmails();
+    };
+    
+    renderAltEmails();
+
     
     // Check GitHub status
     const isGithubLinked = auth.currentUser.providerData.some(p => p.providerId === 'github.com');
