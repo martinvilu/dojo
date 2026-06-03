@@ -414,10 +414,12 @@ async function applyCourseTemplate(data) {
 document.getElementById('clone-course-btn').onclick = async () => {
     const cid = document.getElementById('settings-clone-course-select').value;
     if (!cid) return alert("Seleccioná una materia para clonar.");
-    if (!confirm("¿Seguro que querés sobreescribir la configuración actual con la materia seleccionada?")) return;
+    if (!confirm("¿Seguro que querés sobreescribir la configuración actual con la materia seleccionada? También se copiarán los avisos y tareas.")) return;
     try {
         const res = await api({ action: 'getCourseSettings', payload: { courseId: cid } });
         await applyCourseTemplate(res.data);
+        await api({ action: 'cloneCourseExtraData', payload: { sourceCourseId: cid, targetCourseId: currentCourseSettingsId } });
+        alert("¡Avisos y Tareas copiados exitosamente!");
     } catch (e) { alert("Error al clonar: " + e.message); }
 };
 

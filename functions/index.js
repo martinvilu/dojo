@@ -194,6 +194,28 @@ exports.api = functions.https.onCall(async (data, context) => {
             return { success: true };
         }
 
+        if (action === 'cloneCourseExtraData') {
+            const { sourceCourseId, targetCourseId } = payload;
+            const accessSource = await db.collection('course_teachers').doc(`${sourceCourseId}_${uid}`).get();
+            const accessTarget = await db.collection('course_teachers').doc(`${targetCourseId}_${uid}`).get();
+            if (!accessSource.exists || !accessTarget.exists) throw new Error("No tienes acceso a las materias para clonar");
+            
+            const aSnap = await db.collection('assignments').where('course_id', '==', sourceCourseId).get();
+            for (let doc of aSnap.docs) {
+                const data = doc.data();
+                data.course_id = targetCourseId;
+                await db.collection('assignments').add(data);
+            }
+            
+            const anSnap = await db.collection('announcements').where('course_id', '==', sourceCourseId).get();
+            for (let doc of anSnap.docs) {
+                const data = doc.data();
+                data.course_id = targetCourseId;
+                await db.collection('announcements').add(data);
+            }
+            return { success: true };
+        }
+
         
         if (action === 'archiveAssignment') {
             const assignmentSnap = await db.collection('assignments').doc(payload.assignmentId).get();
