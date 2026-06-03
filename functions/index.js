@@ -310,6 +310,46 @@ exports.api = functions.https.onCall(async (data, context) => {
             return { pendingCorrections };
         }
 
+        
+        if (action === 'createAnnouncement') {
+            await db.collection('announcements').add({
+                course_id: payload.course_id,
+                message: payload.message,
+                teacher_id: uid,
+                created_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true };
+        }
+        
+        if (action === 'getTeacherAnnouncements') {
+            const snap = await db.collection('announcements').where('teacher_id', '==', uid).orderBy('created_at', 'desc').limit(20).get();
+            const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            return arr;
+        }
+        
+        if (action === 'getStudentAnnouncements') {
+            const courseIds = payload.courseIds || [];
+            if (courseIds.length === 0) return [];
+            
+            const arr = [];
+            const chunks = [];
+            for (let i = 0; i < courseIds.length; i += 10) {
+                chunks.push(courseIds.slice(i, i + 10));
+            }
+            
+            for (const chunk of chunks) {
+                const snap = await db.collection('announcements').where('course_id', 'in', chunk).orderBy('created_at', 'desc').limit(10).get();
+                snap.docs.forEach(d => arr.push({ id: d.id, ...d.data() }));
+            }
+            // Sort by created_at descending
+            arr.sort((a, b) => {
+                const da = a.created_at ? a.created_at.toMillis() : 0;
+                const db2 = b.created_at ? b.created_at.toMillis() : 0;
+                return db2 - da;
+            });
+            return arr;
+        }
+
         if (action === 'getStudentCourses') {
             const snap = await db.collection('course_roster').where('student_id', '==', uid).get();
             const courses = [];
