@@ -784,21 +784,12 @@ window.acceptAssignment = async (assignmentId, isGroup) => {
                             </li>`;
                         }).join('') : '<li>No hay clases futuras planificadas.</li>'}
                     </ul>
-                    <details style="margin-top: 10px;">
-                        <summary style="cursor: pointer; color: #3498db; font-weight: bold;">Ver todo el cronograma (${classInstances.length} clases)</summary>
-                        <div style="padding: 10px; background: #f9f9f9; border: 1px solid #eee; border-radius: 4px; margin-top: 10px; max-height: 250px; overflow-y: auto;">
-                            <ul style="padding-left: 20px; font-size: 0.9em; color: #555; margin: 0; list-style-type: none;">
-                                ${classInstances.map(ci => {
-                                    const d = new Date(ci.date);
-                                    const ds = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-                                    let tags = ci.special_status !== 'Normal' ? ` <em>(${ci.special_status})</em>` : '';
-                                    const topicHtml = typeof marked !== 'undefined' ? marked.parseInline(ci.topic || ci.type) : (ci.topic || ci.type);
-                                    return `<li style="margin-bottom: 5px;"><strong>Clase ${ci.classNumber} (${ds}):</strong> ${topicHtml} ${tags}</li>`;
-                                }).join('')}
-                            </ul>
-                        </div>
-                    </details>
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="secondary" onclick="navigateTo('/student/schedule?id=${c.id}')" style="width: 100%; font-size: 1.1em; padding: 10px; background: #ecf0f1; color: #2c3e50; border: 1px solid #bdc3c7;">📅 Ver Cronograma Completo (Por Semana)</button>
+                    </div>
                 `;
+
             }
             
             const courseAssignments = assignments.filter(a => a.course_id === c.id);
@@ -1151,3 +1142,100 @@ if (annBtn) annBtn.onclick = async () => {
     }
 };
 
+
+
+
+async function loadStudentCourseSchedule(urlParams) {
+    const courseId = urlParams.get('id');
+    if (!courseId) return navigateTo('/student/courses');
+    
+    document.getElementById('student-schedule-title').innerText = "Cargando cronograma...";
+    document.getElementById('student-schedule-weeks-list').innerHTML = "";
+    
+    try {
+        const res = await api({ action: 'getCourseDetails', payload: { courseId } });
+        const course = res.course;
+        const instances = res.class_instances || [];
+        
+        document.getElementById('student-schedule-title').innerText = `Cronograma: ${course.name}`;
+        
+        if (instances.length === 0) {
+            document.getElementById('student-schedule-weeks-list').innerHTML = "<p>El profesor todavía no publicó el cronograma.</p>";
+            return;
+        }
+        
+        // Find start of week 1
+        function getMonday(d) {
+            const date = new Date(d);
+            const day = date.getUTCDay();
+            const diff = date.getUTCDate() - day + (day === 0 ? -6 : 1);
+            return new Date(date.setUTCDate(diff));
+        }
+        
+        const firstClassDate = new Date(instances[0].date);
+        firstClassDate.setUTCHours(0,0,0,0);
+        const week1Monday = getMonday(firstClassDate);
+        
+        const weeks = {};
+        instances.forEach(ci => {
+            const cd = new Date(ci.date);
+            cd.setUTCHours(0,0,0,0);
+            const m = getMonday(cd);
+            
+            const diffTime = Math.abs(m - week1Monday);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            const weekNumber = Math.floor(diffDays / 7) + 1;
+            
+            if (!weeks[weekNumber]) weeks[weekNumber] = [];
+            weeks[weekNumber].push(ci);
+        });
+        
+        let html = '';
+        for (let w = 1; w <= Math.max(...Object.keys(weeks).map(Number)); w++) {
+            if (!weeks[w]) continue;
+            
+            const weekClasses = weeks[w];
+            
+            html += `
+                <div class="card" style="margin-bottom: 20px; border-left: 4px solid #3498db;">
+                    <h2 style="margin-top: 0; color: #2c3e50;">Semana ${w}</h2>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        ${weekClasses.map(ci => {
+                            const d = new Date(ci.date);
+                            const ds = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' });
+                            
+                            let tags = '';
+                            if (ci.special_status === 'Clase Remota') tags += '<span style="background: #f39c12; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">REMOTA</span>';
+                            if (ci.special_status === 'Feriado') tags += '<span style="background: #95a5a6; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">FERIADO / CANCELADA</span>';
+                            
+                            let links = [];
+                            if (ci.presentation_url) links.push(`<a href="${ci.presentation_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Material</a>`);
+                            if (ci.recording_url) links.push(`<a href="${ci.recording_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Grabación</a>`);
+                            const linksStr = links.length ? ` - [ ${links.join(' | ')} ]` : '';
+                            
+                            const topicHtml = typeof marked !== 'undefined' ? marked.parseInline(ci.topic || ci.type) : (ci.topic || ci.type);
+                            const descHtml = (ci.description && typeof marked !== 'undefined') ? `<div style="font-size: 0.9em; color: #555; background: #fff; padding: 10px; margin-top: 5px; border-left: 3px solid #ccc; border-radius: 4px;" class="markdown-body">${marked.parse(ci.description)}</div>` : '';
+                            
+                            return `
+                            <div style="background: #fdfdfd; border: 1px solid #eee; padding: 15px; border-radius: 4px; ${ci.special_status === 'Feriado' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
+                                <div style="font-size: 0.85em; color: #888; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">
+                                    ${ds} - Clase ${ci.classNumber} ${tags}
+                                </div>
+                                <div style="font-size: 1.1em; color: #333;">
+                                    <strong>Tema:</strong> ${topicHtml} ${linksStr}
+                                </div>
+                                ${descHtml}
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        document.getElementById('student-schedule-weeks-list').innerHTML = html;
+        
+    } catch (e) {
+        document.getElementById('student-schedule-weeks-list').innerHTML = `<p style="color: red;">Error: ${e.message}</p>`;
+    }
+}
