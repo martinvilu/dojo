@@ -100,8 +100,8 @@ document.getElementById('login-google-btn').onclick = () => {
 
 
 document.getElementById('login-email-btn').onclick = async () => {
-    const email = document.getElementById('email-input').value;
-    const pass = document.getElementById('password-input').value;
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-pass').value;
     if (!email || !pass) return alert("Por favor ingresa email y contraseña.");
     loadingIndicator.classList.remove('hidden');
     try { 
@@ -114,8 +114,8 @@ document.getElementById('login-email-btn').onclick = async () => {
 };
 
 document.getElementById('signup-email-btn').onclick = async () => {
-    const email = document.getElementById('email-input').value;
-    const pass = document.getElementById('password-input').value;
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-pass').value;
     if (!email || !pass) return alert("Por favor ingresa email y contraseña.");
     loadingIndicator.classList.remove('hidden');
     try { 
