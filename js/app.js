@@ -1076,6 +1076,33 @@ window.archiveAssignment = async (id) => {
 
 
 
+window.syncGrades = async (assignmentId) => {
+    const sheetUrl = prompt("Por favor ingresá la URL completa de la planilla de Google Sheets con las notas (Asegurate de que tenga acceso 'Cualquier persona con el enlace'):");
+    if (!sheetUrl) return;
+    
+    const statusEl = document.getElementById(`sync-status-${assignmentId}`);
+    if (statusEl) {
+        statusEl.innerText = "⏳ Sincronizando notas...";
+        statusEl.style.color = "#f39c12";
+    }
+    
+    try {
+        const res = await api({ action: 'syncGradesFromSpreadsheet', payload: { assignmentId, sheetUrl } });
+        if (statusEl) {
+            statusEl.innerText = `✅ Notas sincronizadas con éxito. ${res.updatedCount || ''} registros actualizados.`;
+            statusEl.style.color = "#27ae60";
+        }
+        setTimeout(() => loadTeacherAssignments(), 2500);
+    } catch (e) {
+        if (statusEl) {
+            statusEl.innerText = "❌ Error: " + e.message;
+            statusEl.style.color = "#c0392b";
+        } else {
+            alert("Error al sincronizar: " + e.message);
+        }
+    }
+};
+
 window.downloadTemplate = async (assignmentId, courseId, title) => {
     try {
         const res = await api({ action: 'getCourseRoster', payload: { courseId } });
