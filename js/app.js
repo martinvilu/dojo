@@ -324,7 +324,10 @@ async function loadTeacherCourses() {
                 <h3 style="margin-bottom: 5px;">${c.name}</h3>
                 <p style="margin: 0; color: #7f8c8d;"><strong>Código de invitación:</strong> ${c.invite_code || '-'}</p>
             </div>
-            <button onclick="navigateTo('/teacher/course-settings?id=${c.id}')">Configurar cursada</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="secondary" onclick="navigateTo('/teacher/schedule?id=${c.id}')" style="background: #e8f4f8; color: #2980b9; border: 1px solid #3498db;">📅 Cronograma</button>
+                <button onclick="navigateTo('/teacher/course-settings?id=${c.id}')">⚙️ Configurar cursada</button>
+            </div>
         </div>
     `).join('') || '<p>No tenés cursos asignados</p>';
 }
