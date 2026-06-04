@@ -374,6 +374,38 @@ async function loadTeacherCourseSettings(courseId) {
         document.getElementById('settings-duration').value = data.duration_weeks || '';
         document.getElementById('settings-external-calendars').value = (data.external_calendars || []).join(', ');
         document.getElementById('settings-github-token').value = data.github_token || '';
+
+        const syncSecret = data.sync_secret || 'FALTA_TOKEN';
+        document.getElementById('settings-export-grades-url').value = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${courseId}&token=${syncSecret}`;
+
+        document.getElementById('settings-import-csv-btn').onclick = async () => {
+            const fileInput = document.getElementById('settings-import-csv-input');
+            if (!fileInput.files.length) return alert("Por favor selecciona un archivo CSV primero.");
+            
+            const file = fileInput.files[0];
+            const statusEl = document.getElementById('settings-sync-grades-status');
+            statusEl.innerText = "⏳ Subiendo e importando notas...";
+            statusEl.style.color = "#f39c12";
+
+            try {
+                const text = await file.text();
+                const res = await fetch(`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/importGrades?courseId=${courseId}&token=${syncSecret}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/csv' },
+                    body: text
+                });
+                
+                if (!res.ok) throw new Error(await res.text());
+                const dataRes = await res.json();
+                
+                statusEl.innerText = `✅ Notas importadas con éxito. ${dataRes.updatedCount || 0} registros actualizados.`;
+                statusEl.style.color = "#27ae60";
+                setTimeout(() => statusEl.innerText = "", 5000);
+            } catch (e) {
+                statusEl.innerText = "❌ Error: " + e.message;
+                statusEl.style.color = "#c0392b";
+            }
+        };
         
         document.getElementById('export-ics-link').href = `/api/calendar?id=${courseId}`;
         
@@ -960,19 +992,7 @@ async function loadTeacherAssignments() {
                     
                     
                     
-                    <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; margin-top: 15px;">
-                        <h4 style="margin: 0 0 10px 0; color: #2c3e50;">📊 Exportar e Importar Notas (Google Sheets)</h4>
-                        
-                        <p style="font-size: 0.9em; color: #555; margin-bottom: 5px;"><strong>1. Exportar (Obtener datos):</strong> Copiá esta URL y pegala en la celda A1 de Google Sheets usando <code>=IMPORTDATA("url")</code></p>
-                        <input type="text" readonly value="https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?assignmentId=${a.id}&token=${a.sync_secret || 'FALTA_TOKEN'}" style="width: 100%; font-family: monospace; font-size: 0.8em; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 15px; background: #f4f6f7;" onclick="this.select()">
-                        
-                        <p style="font-size: 0.9em; color: #555; margin-bottom: 5px;"><strong>2. Importar (Subir notas):</strong> Descargá la planilla como CSV desde Google Sheets y subila acá.</p>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="file" id="csv-upload-${a.id}" accept=".csv" style="font-size: 0.8em; padding: 5px;">
-                            <button onclick="importGradesCsv('${a.id}', '${a.sync_secret || ''}')" style="margin: 0; background: #27ae60; border: none; font-size: 0.8em; padding: 5px 10px;">⬆️ Subir Notas</button>
-                        </div>
-                        <p id="sync-status-${a.id}" style="margin-top: 10px; font-weight: bold; font-size: 0.9em; margin-bottom: 0;"></p>
-                    </div>
+                    
                 </div>
             `;
         }).join('');
@@ -1421,12 +1441,20 @@ async function loadStudentAssignments() {
                     html += `
                         <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px;">
                             <h5 style="margin: 0 0 5px 0; color: #166534; font-size: 1.1em;">✅ ${a.title}</h5>
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
                                 <a href="${sub.repo_url}" target="_blank" style="color: #15803d; text-decoration: none; font-weight: bold;">Ver tu repositorio en GitHub ↗</a>
                                 <div style="background: white; padding: 5px 10px; border-radius: 4px; border: 1px solid #dcfce7; font-size: 0.9em;">
                                     <strong>Nota:</strong> ${sub.grade ? sub.grade : '<span style="color: #999;">Sin calificar</span>'}
                                     ${sub.feedback ? `<br><strong>Feedback:</strong> ${sub.feedback}` : ''}
                                 </div>
+                            </div>
+                            
+                            <div style="border-top: 1px solid #dcfce7; padding-top: 10px; margin-top: 10px;">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <button onclick="viewCommits('${sub.id}')" style="background: #10b981; border: none; font-size: 0.8em; padding: 5px 10px; border-radius: 4px;">🔍 Ver Últimos Commits</button>
+                                    ${sub.status !== 'submitted' ? `<button onclick="submitAssignmentPrompt('${sub.id}')" style="background: #3b82f6; border: none; font-size: 0.8em; padding: 5px 10px; border-radius: 4px;">✅ Marcar como Entregado</button>` : `<span style="color: #2563eb; font-weight: bold; font-size: 0.9em;">🚀 Entregado</span>`}
+                                </div>
+                                <div id="commits-${sub.id}" style="margin-top: 10px; font-size: 0.85em; display: none; background: white; padding: 10px; border-radius: 4px; border: 1px solid #dcfce7;"></div>
                             </div>
                         </div>
                     `;
@@ -1640,4 +1668,45 @@ async function setupTeacherVisualCalendar() {
         }
     };
 }
+
+
+window.viewCommits = async (submissionId) => {
+    const div = document.getElementById(`commits-${submissionId}`);
+    if (div.style.display === 'block') {
+        div.style.display = 'none';
+        return;
+    }
+    
+    div.style.display = 'block';
+    div.innerHTML = 'Cargando commits...';
+    try {
+        const res = await api({ action: 'getStudentCommits', payload: { submissionId } });
+        if (res.length === 0) {
+            div.innerHTML = 'No hay commits en este repositorio todavía.';
+            return;
+        }
+        let html = '<ul style="margin: 0; padding-left: 20px;">';
+        res.forEach(c => {
+            const date = new Date(c.date).toLocaleString('es-AR');
+            html += `<li><a href="${c.url}" target="_blank" style="color: #2563eb; font-family: monospace;">${c.sha.substring(0,7)}</a>: ${c.message} <span style="color: #666;">(${date})</span></li>`;
+        });
+        html += '</ul>';
+        div.innerHTML = html;
+    } catch (e) {
+        div.innerHTML = `<span style="color: red;">Error: ${e.message}</span>`;
+    }
+};
+
+window.submitAssignmentPrompt = async (submissionId) => {
+    const msg = prompt("¿Querés dejarle algún mensaje o comentario al profesor sobre esta entrega? (Opcional)");
+    if (msg === null) return; // cancelled
+    
+    try {
+        await api({ action: 'submitAssignment', payload: { submissionId, message: msg } });
+        alert("¡Entrega marcada exitosamente!");
+        loadStudentAssignments();
+    } catch (e) {
+        alert("Error al enviar la entrega: " + e.message);
+    }
+};
 

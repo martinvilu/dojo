@@ -585,6 +585,54 @@ exports.api = functions.https.onCall(async (data, context) => {
             return { success: true, repoUrl: `https://github.com/${orgName}/${repoName}` };
         }
 
+        if (action === 'getStudentCommits') {
+            const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
+            if (!sSnap.exists || sSnap.data().student_id !== uid) throw new Error("Entrega no encontrada o no autorizada");
+            const sub = sSnap.data();
+
+            const aSnap = await db.collection('assignments').doc(sub.assignment_id).get();
+            const cSnap = await db.collection('courses').doc(aSnap.data().course_id).get();
+            const token = cSnap.data().github_token;
+            if (!token) throw new Error("El profesor no configuró el token de GitHub.");
+
+            const repoParts = sub.repo_url.replace('https://github.com/', '').split('/');
+            
+            const githubHeaders = {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'User-Agent': 'Jutsu-Classroom'
+            };
+
+            const res = await fetch(`https://api.github.com/repos/${repoParts[0]}/${repoParts[1]}/commits?per_page=5`, {
+                method: 'GET',
+                headers: githubHeaders
+            });
+
+            if (!res.ok) throw new Error("Error obteniendo commits: " + await res.text());
+            const commits = await res.json();
+            
+            return commits.map(c => ({
+                sha: c.sha,
+                message: c.commit.message,
+                date: c.commit.author.date,
+                url: c.html_url
+            }));
+        }
+
+        if (action === 'submitAssignment') {
+            const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
+            if (!sSnap.exists || sSnap.data().student_id !== uid) throw new Error("Entrega no encontrada o no autorizada");
+            
+            await sSnap.ref.update({
+                status: 'submitted',
+                student_message: payload.message || '',
+                submitted_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            
+            return { success: true };
+        }
+
         if (action === 'updateAssignment') {
             await db.collection('assignments').doc(payload.assignmentId).update(payload.data);
             return { success: true };
@@ -850,55 +898,58 @@ exports.webhook = functions.https.onRequest(async (req, res) => {
 
 
 exports.exportGradesCsv = functions.https.onRequest(async (req, res) => {
-    // Para resolver CORS
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     if (req.method === 'OPTIONS') return res.status(204).send('');
     
     try {
-        const { assignmentId, token } = req.query;
-        if (!assignmentId || !token) return res.status(400).send("Falta assignmentId o token");
+        const { courseId, token } = req.query;
+        if (!courseId || !token) return res.status(400).send("Falta courseId o token");
 
-        const aSnap = await db.collection('assignments').doc(assignmentId).get();
-        if (!aSnap.exists) return res.status(404).send("Práctica no encontrada");
-        const assignment = aSnap.data();
+        const cSnap = await db.collection('courses').doc(courseId).get();
+        if (!cSnap.exists) return res.status(404).send("Materia no encontrada");
+        const course = cSnap.data();
 
-        if (assignment.sync_secret !== token) return res.status(401).send("Token inválido");
+        if (course.sync_secret !== token) return res.status(401).send("Token inválido");
 
-        const cSnap = await db.collection('courses').doc(assignment.course_id).get();
-        const course = cSnap.exists ? cSnap.data() : { name: '' };
-
-        const sSnap = await db.collection('submissions').where('assignment_id', '==', assignmentId).get();
+        const aSnap = await db.collection('assignments').where('course_id', '==', courseId).get();
+        const assignmentsMap = {};
+        aSnap.docs.forEach(d => assignmentsMap[d.id] = d.data());
         
         let csv = "timestamp;id_entrega;email;practica-usuario;url_repositorio;comentarios_entrega;materia;practica;usuario_github\n";
         
-        for (const doc of sSnap.docs) {
-            const sub = doc.data();
-            const pSnap = await db.collection('profiles').doc(sub.student_id).get();
-            const profile = pSnap.exists ? pSnap.data() : {};
+        for (const aId of Object.keys(assignmentsMap)) {
+            const assignment = assignmentsMap[aId];
+            const sSnap = await db.collection('submissions').where('assignment_id', '==', aId).get();
             
-            const timestamp = sub.created_at ? sub.created_at.toDate().toISOString() : '';
-            const email = profile.contact_email || profile.email || '';
-            const practicaUsuario = `${assignment.title} - ${profile.full_name || ''}`;
-            const urlRepo = sub.repo_url || '';
-            const comentarios = sub.feedback || '';
-            const materia = course.name;
-            const practica = assignment.title;
-            const usuarioGithub = profile.github_username || '';
+            for (const doc of sSnap.docs) {
+                const sub = doc.data();
+                const pSnap = await db.collection('profiles').doc(sub.student_id).get();
+                const profile = pSnap.exists ? pSnap.data() : {};
+                
+                const timestamp = sub.created_at ? sub.created_at.toDate().toISOString() : '';
+                const email = profile.contact_email || profile.email || '';
+                const practicaUsuario = `${assignment.title} - ${profile.full_name || ''}`;
+                const urlRepo = sub.repo_url || '';
+                const comentarios = sub.feedback || '';
+                const materia = course.name;
+                const practica = assignment.title;
+                const usuarioGithub = profile.github_username || '';
 
-            const escapeCsv = (str) => {
-                if (typeof str !== 'string') return '';
-                if (str.includes(';') || str.includes('"') || str.includes('\n')) {
-                    return `"${str.replace(/"/g, '""')}"`;
-                }
-                return str;
-            };
+                const escapeCsv = (str) => {
+                    if (typeof str !== 'string') return '';
+                    if (str.includes(';') || str.includes('"') || str.includes('\n')) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                };
 
-            csv += `${timestamp};${doc.id};${escapeCsv(email)};${escapeCsv(practicaUsuario)};${escapeCsv(urlRepo)};${escapeCsv(comentarios)};${escapeCsv(materia)};${escapeCsv(practica)};${escapeCsv(usuarioGithub)}\n`;
+                csv += `${timestamp};${doc.id};${escapeCsv(email)};${escapeCsv(practicaUsuario)};${escapeCsv(urlRepo)};${escapeCsv(comentarios)};${escapeCsv(materia)};${escapeCsv(practica)};${escapeCsv(usuarioGithub)}\n`;
+            }
         }
 
         res.set('Content-Type', 'text/csv; charset=utf-8');
-        res.set('Content-Disposition', `attachment; filename="export_${assignmentId}.csv"`);
+        res.set('Content-Disposition', `attachment; filename="export_${courseId}.csv"`);
         res.status(200).send(csv);
 
     } catch (e) {
@@ -908,26 +959,23 @@ exports.exportGradesCsv = functions.https.onRequest(async (req, res) => {
 });
 
 exports.importGrades = functions.https.onRequest(async (req, res) => {
-    // Para resolver CORS
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-
     if (req.method === 'OPTIONS') {
         res.set('Access-Control-Allow-Headers', 'Content-Type');
         return res.status(204).send('');
     }
-
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
-        const { assignmentId, token } = req.query;
-        if (!assignmentId || !token) return res.status(400).send("Falta assignmentId o token");
+        const { courseId, token } = req.query;
+        if (!courseId || !token) return res.status(400).send("Falta courseId o token");
 
-        const aSnap = await db.collection('assignments').doc(assignmentId).get();
-        if (!aSnap.exists) return res.status(404).send("Práctica no encontrada");
-        const assignment = aSnap.data();
+        const cSnap = await db.collection('courses').doc(courseId).get();
+        if (!cSnap.exists) return res.status(404).send("Materia no encontrada");
+        const course = cSnap.data();
 
-        if (assignment.sync_secret !== token) return res.status(401).send("Token inválido");
+        if (course.sync_secret !== token) return res.status(401).send("Token inválido");
 
         let rows = [];
         const contentType = req.headers['content-type'] || '';

@@ -207,6 +207,20 @@
                 </div>
             </div>
 
+            <div class="card" style="background: #fdfdfd; border-left: 4px solid #27ae60; margin-bottom: 20px;">
+                <h3 style="margin-top: 0;">📊 Sincronizar Notas con Google Sheets</h3>
+                
+                <p style="font-size: 0.9em; color: #555; margin-bottom: 5px;"><strong>1. Exportar (Obtener datos):</strong> Copiá esta URL y pegala en la celda A1 de Google Sheets usando <code>=IMPORTDATA("url")</code>. Esto traerá <strong>todas las entregas de todas las prácticas</strong> de la cursada.</p>
+                <input type="text" readonly id="settings-export-grades-url" value="" style="width: 100%; font-family: monospace; font-size: 0.8em; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 15px; background: #f4f6f7;" onclick="this.select()">
+                
+                <p style="font-size: 0.9em; color: #555; margin-bottom: 5px;"><strong>2. Importar (Subir notas):</strong> Descargá la planilla como CSV desde Google Sheets y subila acá.</p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="file" id="settings-import-csv-input" accept=".csv" style="font-size: 0.8em; padding: 5px;">
+                    <button id="settings-import-csv-btn" style="margin: 0; background: #27ae60; border: none; font-size: 0.8em; padding: 5px 10px;">⬆️ Subir Notas</button>
+                </div>
+                <p id="settings-sync-grades-status" style="margin-top: 10px; font-weight: bold; font-size: 0.9em; margin-bottom: 0;"></p>
+            </div>
+
             <div class="card">
                 <h3>Horarios de Clase</h3>
                 <div id="settings-schedules-list" style="margin-bottom: 15px;"></div>
