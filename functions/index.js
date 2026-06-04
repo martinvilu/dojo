@@ -276,7 +276,17 @@ exports.api = functions.https.onCall(async (data, context) => {
             
             // Cannot 'in' with > 10, but assuming few courses for demo
             const aSnap = await db.collection('assignments').where('course_id', 'in', courseIds).get();
-            return aSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            
+            const results = [];
+            for (let d of aSnap.docs) {
+                let data = d.data();
+                if (!data.sync_secret) {
+                    data.sync_secret = crypto.randomBytes(16).toString('hex');
+                    await d.ref.update({ sync_secret: data.sync_secret });
+                }
+                results.push({ id: d.id, ...data });
+            }
+            return results;
         }
         
         if (action === 'createAssignment') {
