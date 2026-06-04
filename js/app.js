@@ -1646,8 +1646,7 @@ async function setupTeacherVisualCalendar() {
             firstDay: 1,
             buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
             eventClick: function(info) {
-                alert(info.event.title + "
-" + (info.event.extendedProps.desc || ""));
+                alert(info.event.title + "\\n" + (info.event.extendedProps.desc || ""));
             }
         });
         
