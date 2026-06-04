@@ -837,3 +837,144 @@ exports.webhook = functions.https.onRequest(async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+
+
+exports.exportGradesCsv = functions.https.onRequest(async (req, res) => {
+    // Para resolver CORS
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') return res.status(204).send('');
+    
+    try {
+        const { assignmentId, token } = req.query;
+        if (!assignmentId || !token) return res.status(400).send("Falta assignmentId o token");
+
+        const aSnap = await db.collection('assignments').doc(assignmentId).get();
+        if (!aSnap.exists) return res.status(404).send("Práctica no encontrada");
+        const assignment = aSnap.data();
+
+        if (assignment.sync_secret !== token) return res.status(401).send("Token inválido");
+
+        const cSnap = await db.collection('courses').doc(assignment.course_id).get();
+        const course = cSnap.exists ? cSnap.data() : { name: '' };
+
+        const sSnap = await db.collection('submissions').where('assignment_id', '==', assignmentId).get();
+        
+        let csv = "timestamp;id_entrega;email;practica-usuario;url_repositorio;comentarios_entrega;materia;practica;usuario_github\n";
+        
+        for (const doc of sSnap.docs) {
+            const sub = doc.data();
+            const pSnap = await db.collection('profiles').doc(sub.student_id).get();
+            const profile = pSnap.exists ? pSnap.data() : {};
+            
+            const timestamp = sub.created_at ? sub.created_at.toDate().toISOString() : '';
+            const email = profile.contact_email || profile.email || '';
+            const practicaUsuario = `${assignment.title} - ${profile.full_name || ''}`;
+            const urlRepo = sub.repo_url || '';
+            const comentarios = sub.feedback || '';
+            const materia = course.name;
+            const practica = assignment.title;
+            const usuarioGithub = profile.github_username || '';
+
+            const escapeCsv = (str) => {
+                if (typeof str !== 'string') return '';
+                if (str.includes(';') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            };
+
+            csv += `${timestamp};${doc.id};${escapeCsv(email)};${escapeCsv(practicaUsuario)};${escapeCsv(urlRepo)};${escapeCsv(comentarios)};${escapeCsv(materia)};${escapeCsv(practica)};${escapeCsv(usuarioGithub)}\n`;
+        }
+
+        res.set('Content-Type', 'text/csv; charset=utf-8');
+        res.set('Content-Disposition', `attachment; filename="export_${assignmentId}.csv"`);
+        res.status(200).send(csv);
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).send("Error interno: " + e.message);
+    }
+});
+
+exports.importGrades = functions.https.onRequest(async (req, res) => {
+    // Para resolver CORS
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
+    if (req.method === 'OPTIONS') {
+        res.set('Access-Control-Allow-Headers', 'Content-Type');
+        return res.status(204).send('');
+    }
+
+    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+
+    try {
+        const { assignmentId, token } = req.query;
+        if (!assignmentId || !token) return res.status(400).send("Falta assignmentId o token");
+
+        const aSnap = await db.collection('assignments').doc(assignmentId).get();
+        if (!aSnap.exists) return res.status(404).send("Práctica no encontrada");
+        const assignment = aSnap.data();
+
+        if (assignment.sync_secret !== token) return res.status(401).send("Token inválido");
+
+        let rows = [];
+        const contentType = req.headers['content-type'] || '';
+        
+        if (contentType.includes('application/json')) {
+            rows = req.body;
+            if (!Array.isArray(rows)) return res.status(400).send("JSON debe ser un array");
+        } else if (contentType.includes('text/csv')) {
+            const csvText = req.body.toString('utf8');
+            const lines = csvText.split('\n').filter(l => l.trim().length > 0);
+            if (lines.length < 2) return res.status(400).send("CSV vacío o sin encabezados");
+            
+            const headerLine = lines[0];
+            const separator = headerLine.includes(';') ? ';' : ',';
+            
+            const headers = headerLine.split(separator).map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+            
+            const idIdx = headers.findIndex(h => h.includes('id_entrega'));
+            const resIdx = headers.findIndex(h => h.includes('resultado') || h.includes('nota'));
+            const comIdx = headers.findIndex(h => h.includes('comentario'));
+            
+            if (idIdx === -1) return res.status(400).send("El CSV debe tener columna 'id_entrega'");
+            
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(separator).map(c => c.trim().replace(/^"|"$/g, ''));
+                rows.push({
+                    id_entrega: cols[idIdx],
+                    resultado: resIdx !== -1 ? cols[resIdx] : '',
+                    comentario_general: comIdx !== -1 ? cols[comIdx] : ''
+                });
+            }
+        } else {
+            return res.status(400).send("Content-Type debe ser application/json o text/csv");
+        }
+
+        const batch = db.batch();
+        let updatedCount = 0;
+
+        for (const row of rows) {
+            const { id_entrega, resultado, comentario_general } = row;
+            if (!id_entrega) continue;
+            if (!resultado && !comentario_general) continue;
+
+            const subRef = db.collection('submissions').doc(id_entrega);
+            batch.update(subRef, {
+                grade: String(resultado || ''),
+                feedback: String(comentario_general || ''),
+                graded_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            updatedCount++;
+        }
+
+        await batch.commit();
+        res.status(200).send({ success: true, updatedCount });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).send("Error interno: " + e.message);
+    }
+});

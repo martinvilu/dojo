@@ -961,41 +961,15 @@ async function loadTeacherAssignments() {
                     
                     
                     <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; margin-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h4 style="margin: 0; color: #2c3e50;">📊 Sincronización Inversa (Google Sheets)</h4>
-                            <button onclick="downloadTemplate('${a.id}', '${a.course_id}', '${a.title.replace(/'/g, "\'")}')" style="margin: 0; background: #27ae60; border: none; font-size: 0.8em; padding: 5px 10px;">⬇️ Descargar Plantilla</button>
-                        </div>
-                        <p style="font-size: 0.9em; color: #555;">Ahora la sincronización se dispara <strong>directamente desde tu planilla</strong>. En Google Sheets, andá a <em>Extensiones > Apps Script</em> y pegá este código:</p>
+                        <h4 style="margin: 0 0 10px 0; color: #2c3e50;">📊 Exportar e Importar Notas (Google Sheets)</h4>
                         
-                        <div style="position: relative;">
-                            <textarea readonly style="width: 100%; height: 120px; font-family: monospace; font-size: 0.8em; background: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 4px; border: none;">function SincronizarNotas() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(h => h.toString().toLowerCase().trim());
-  const matriculaIdx = headers.findIndex(h => h.includes('matricula') || h.includes('matrícula'));
-  const notaIdx = headers.findIndex(h => h.includes('nota') || h.includes('calificacion'));
-  const feedbackIdx = headers.findIndex(h => h.includes('feedback') || h.includes('devolucion'));
-  
-  if (matriculaIdx === -1 || notaIdx === -1) return SpreadsheetApp.getUi().alert('Faltan columnas de Matricula o Nota');
-  
-  const grades = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][matriculaIdx]) grades.push({ matricula: data[i][matriculaIdx], grade: data[i][notaIdx], feedback: feedbackIdx !== -1 ? data[i][feedbackIdx] : '' });
-  }
-  
-  const payload = { assignmentId: "${a.id}", sync_secret: "${a.sync_secret || 'NO_GENERADO_AUN_EDITA_LA_TAREA_PARA_GENERAR'}", grades: grades };
-  const res = UrlFetchApp.fetch("https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/webhook", {
-    method: "post", contentType: "application/json", payload: JSON.stringify(payload)
-  });
-  SpreadsheetApp.getUi().alert('Resultado: ' + JSON.parse(res.getContentText()).updatedCount + ' alumnos actualizados.');
-}</textarea>
-                        </div>
-                    </div>
-
+                        <p style="font-size: 0.9em; color: #555; margin-bottom: 5px;"><strong>1. Exportar (Obtener datos):</strong> Copiá esta URL y pegala en la celda A1 de Google Sheets usando <code>=IMPORTDATA("url")</code></p>
+                        <input type="text" readonly value="https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?assignmentId=${a.id}&token=${a.sync_secret || 'FALTA_TOKEN'}" style="width: 100%; font-family: monospace; font-size: 0.8em; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 15px; background: #f4f6f7;" onclick="this.select()">
                         
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="downloadTemplate('${a.id}', '${a.course_id}', '${a.title}')" style="margin: 0; background: #27ae60; border: none;">⬇️ Descargar Plantilla de Alumnos (CSV)</button>
-                            <button onclick="syncGrades('${a.id}')" style="margin: 0; background: #2980b9; border: none;">🔄 Sincronizar Notas Ahora</button>
+                        <p style="font-size: 0.9em; color: #555; margin-bottom: 5px;"><strong>2. Importar (Subir notas):</strong> Descargá la planilla como CSV desde Google Sheets y subila acá.</p>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="file" id="csv-upload-${a.id}" accept=".csv" style="font-size: 0.8em; padding: 5px;">
+                            <button onclick="importGradesCsv('${a.id}', '${a.sync_secret || ''}')" style="margin: 0; background: #27ae60; border: none; font-size: 0.8em; padding: 5px 10px;">⬆️ Subir Notas</button>
                         </div>
                         <p id="sync-status-${a.id}" style="margin-top: 10px; font-weight: bold; font-size: 0.9em; margin-bottom: 0;"></p>
                     </div>
@@ -1076,20 +1050,30 @@ window.archiveAssignment = async (id) => {
 
 
 
-window.syncGrades = async (assignmentId) => {
-    const sheetUrl = prompt("Por favor ingresá la URL completa de la planilla de Google Sheets con las notas (Asegurate de que tenga acceso 'Cualquier persona con el enlace'):");
-    if (!sheetUrl) return;
-    
+window.importGradesCsv = async (assignmentId, token) => {
+    const fileInput = document.getElementById(`csv-upload-${assignmentId}`);
+    if (!fileInput.files.length) return alert("Por favor selecciona un archivo CSV primero.");
+
+    const file = fileInput.files[0];
     const statusEl = document.getElementById(`sync-status-${assignmentId}`);
     if (statusEl) {
-        statusEl.innerText = "⏳ Sincronizando notas...";
+        statusEl.innerText = "⏳ Subiendo e importando notas...";
         statusEl.style.color = "#f39c12";
     }
-    
+
     try {
-        const res = await api({ action: 'syncGradesFromSpreadsheet', payload: { assignmentId, sheetUrl } });
+        const text = await file.text();
+        const res = await fetch(`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/importGrades?assignmentId=${assignmentId}&token=${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/csv' },
+            body: text
+        });
+        
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        
         if (statusEl) {
-            statusEl.innerText = `✅ Notas sincronizadas con éxito. ${res.updatedCount || ''} registros actualizados.`;
+            statusEl.innerText = `✅ Notas importadas con éxito. ${data.updatedCount || 0} registros actualizados.`;
             statusEl.style.color = "#27ae60";
         }
         setTimeout(() => loadTeacherAssignments(), 2500);
@@ -1098,7 +1082,7 @@ window.syncGrades = async (assignmentId) => {
             statusEl.innerText = "❌ Error: " + e.message;
             statusEl.style.color = "#c0392b";
         } else {
-            alert("Error al sincronizar: " + e.message);
+            alert("Error al importar: " + e.message);
         }
     }
 };
