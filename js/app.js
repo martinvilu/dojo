@@ -131,19 +131,19 @@ logoutBtn.onclick = () => signOut(auth);
 
 
 const routes = {
-    '/admin/courses': 'admin-courses',
-    '/admin/course-detail': 'admin-course-detail',
-    '/admin/users': 'admin-users',
-    '/admin/settings': 'admin-settings',
-    '/teacher/courses': 'teacher-courses',
-    '/teacher/course-settings': 'teacher-course-settings',
-    '/teacher/course-schedule': 'teacher-course-schedule',
-    '/teacher/assignments': 'teacher-assignments',
-    '/teacher/announcements': 'teacher-announcements',
-    '/student/courses': 'student-courses',
-    '/student/schedule': 'student-course-schedule-view',
-    '/student/assignments': 'student-assignments',
-    '/profile': 'profile',
+    '/admin/catedras': 'admin-courses',
+    '/admin/catedras/detalle': 'admin-course-detail',
+    '/admin/usuarios': 'admin-users',
+    '/admin/configuracion': 'admin-settings',
+    '/docente/catedras': 'teacher-courses',
+    '/docente/catedras/configuracion': 'teacher-course-settings',
+    '/docente/catedras/clases': 'teacher-course-schedule',
+    '/docente/tareas': 'teacher-assignments',
+    '/docente/avisos': 'teacher-announcements',
+    '/estudiante/catedras': 'student-courses',
+    '/estudiante/catedras/clases': 'student-course-schedule-view',
+    '/estudiante/tareas': 'student-assignments',
+    '/perfil': 'profile',
 };
 
 window.navigateTo = (url) => {
@@ -176,33 +176,33 @@ const router = () => {
     if (activeNav) activeNav.classList.add('active');
 
     // Load data based on path
-    if (path === '/admin/courses') loadAdminCourses();
-    if (path === '/admin/course-detail') {
+    if (path === '/admin/catedras') loadAdminCourses();
+    if (path === '/admin/catedras/detalle') {
         const urlParams = new URLSearchParams(window.location.search);
         loadAdminCourseDetail(urlParams.get('id'));
     }
-    if (path === '/admin/users') loadAdminUsers();
-    if (path === '/admin/settings') loadAdminSettings();
-    if (path === '/teacher/courses') loadTeacherCourses();
-    if (path === '/teacher/course-settings') {
+    if (path === '/admin/usuarios') loadAdminUsers();
+    if (path === '/admin/configuracion') loadAdminSettings();
+    if (path === '/docente/catedras') loadTeacherCourses();
+    if (path === '/docente/catedras/configuracion') {
         const urlParams = new URLSearchParams(window.location.search);
         loadTeacherCourseSettings(urlParams.get('id'));
     }
-    if (path === '/teacher/course-schedule') {
+    if (path === '/docente/catedras/clases') {
         const urlParams = new URLSearchParams(window.location.search);
         loadTeacherCourseSchedule(urlParams.get('id'));
     }
-    if (path === '/teacher/assignments') loadTeacherAssignments();
-    if (path === '/teacher/announcements') loadTeacherAnnouncements();
+    if (path === '/docente/tareas') loadTeacherAssignments();
+    if (path === '/docente/avisos') loadTeacherAnnouncements();
     
-    if (path === '/student/courses') loadStudentCourses();
-    if (path === '/student/schedule') {
+    if (path === '/estudiante/catedras') loadStudentCourses();
+    if (path === '/estudiante/catedras/clases') {
         const urlParams = new URLSearchParams(window.location.search);
         loadStudentCourseSchedule(urlParams.get('id'));
     }
-    if (path === '/student/assignments') loadStudentAssignments();
+    if (path === '/estudiante/tareas') loadStudentAssignments();
     
-    if (path === '/profile') loadProfile();
+    if (path === '/perfil') loadProfile();
 };
 
 window.addEventListener('popstate', router);
@@ -253,7 +253,7 @@ async function loadAdminCourses() {
                 <h3 style="margin-bottom: 5px;">${c.name}</h3>
                 <p style="margin: 0; color: #7f8c8d;">${c.github_org}</p>
             </div>
-            <button class="secondary" onclick="navigateTo('/admin/course-detail?id=${c.id}')">Ver detalles</button>
+            <button class="secondary" onclick="navigateTo('/admin/catedras/detalle?id=${c.id}')">Ver detalles</button>
         </div>
     `).join('');
 }
@@ -266,7 +266,7 @@ document.getElementById('create-course-btn').onclick = async () => {
 };
 
 async function loadAdminCourseDetail(courseId) {
-    if (!courseId) return navigateTo('/admin/courses');
+    if (!courseId) return navigateTo('/admin/catedras');
     try {
         const res = await api({ action: 'getAdminCourseDetails', payload: { courseId } });
         const data = res.data;
@@ -325,8 +325,8 @@ async function loadTeacherCourses() {
                 <p style="margin: 0; color: #7f8c8d;"><strong>Código de invitación:</strong> ${c.invite_code || '-'}</p>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button class="secondary" onclick="navigateTo('/teacher/course-schedule?id=${c.id}')" style="background: #e8f4f8; color: #2980b9; border: 1px solid #3498db;">📅 Cronograma</button>
-                <button onclick="navigateTo('/teacher/course-settings?id=${c.id}')">⚙️ Configurar cursada</button>
+                <button class="secondary" onclick="navigateTo('/docente/catedras/clases?id=${c.id}')" style="background: #e8f4f8; color: #2980b9; border: 1px solid #3498db;">📅 Cronograma</button>
+                <button onclick="navigateTo('/docente/catedras/configuracion?id=${c.id}')">⚙️ Configurar cursada</button>
             </div>
         </div>
     `).join('') || '<p>No tenés cursos asignados</p>';
@@ -365,7 +365,7 @@ document.getElementById('add-schedule-btn').onclick = () => {
 };
 
 async function loadTeacherCourseSettings(courseId) {
-    if (!courseId) return navigateTo('/teacher/courses');
+    if (!courseId) return navigateTo('/docente/catedras');
     currentCourseSettingsId = courseId;
     document.getElementById('teacher-settings-title').innerText = 'Cargando configuración...';
     try {
@@ -528,14 +528,14 @@ document.getElementById('save-course-settings-btn').onclick = async () => {
 };
 
 document.getElementById('manage-schedule-btn').onclick = () => {
-    navigateTo('/teacher/course-schedule?id=' + currentCourseSettingsId);
+    navigateTo('/docente/catedras/clases?id=' + currentCourseSettingsId);
 };
 
 let currentClassInstances = [];
 let scheduleCourseData = null;
 
 async function loadTeacherCourseSchedule(courseId) {
-    if (!courseId) return navigateTo('/teacher/courses');
+    if (!courseId) return navigateTo('/docente/catedras');
     document.getElementById('teacher-schedule-title').innerText = 'Cargando...';
     try {
         const res = await api({ action: 'getCourseSettings', payload: { courseId } });
@@ -557,7 +557,7 @@ async function loadTeacherCourseSchedule(courseId) {
 function generateClassInstances() {
     if (!scheduleCourseData.start_date || !scheduleCourseData.duration_weeks || !scheduleCourseData.schedules || scheduleCourseData.schedules.length === 0) {
         alert("Primero tenés que configurar la fecha de inicio, duración y horarios en la vista anterior.");
-        return navigateTo('/teacher/course-settings?id=' + scheduleCourseData.id);
+        return navigateTo('/docente/catedras/configuracion?id=' + scheduleCourseData.id);
     }
     
     currentClassInstances = [];
@@ -759,7 +759,7 @@ window.acceptAssignment = async (assignmentId, isGroup) => {
             status.style.color = "#c0392b";
             
             if (e.message.includes('perfil académico')) {
-                setTimeout(() => window.location.search = '?path=/student/profile', 2000);
+                setTimeout(() => window.location.search = '?path=/student/perfil', 2000);
             }
         }
     };
@@ -836,7 +836,7 @@ window.acceptAssignment = async (assignmentId, isGroup) => {
                     </ul>
                     
                     <div style="margin-top: 20px; text-align: center;">
-                        <button class="secondary" onclick="navigateTo('/student/schedule?id=${c.id}')" style="width: 100%; font-size: 1.1em; padding: 10px; background: #ecf0f1; color: #2c3e50; border: 1px solid #bdc3c7;">📅 Ver Cronograma Completo (Por Semana)</button>
+                        <button class="secondary" onclick="navigateTo('/estudiante/catedras/clases?id=${c.id}')" style="width: 100%; font-size: 1.1em; padding: 10px; background: #ecf0f1; color: #2c3e50; border: 1px solid #bdc3c7;">📅 Ver Cronograma Completo (Por Semana)</button>
                     </div>
                 `;
 
@@ -1197,7 +1197,7 @@ if (annBtn) annBtn.onclick = async () => {
 
 async function loadStudentCourseSchedule(urlParams) {
     const courseId = urlParams.get('id');
-    if (!courseId) return navigateTo('/student/courses');
+    if (!courseId) return navigateTo('/estudiante/catedras');
     
     document.getElementById('student-schedule-title').innerText = "Cargando cronograma...";
     document.getElementById('student-schedule-weeks-list').innerHTML = "";

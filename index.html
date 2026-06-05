@@ -68,21 +68,21 @@
         <h2>Jutsu</h2>
         <button id="sidebar-toggle">☰</button>
         <div id="nav-admin" class="role-nav hidden">
-            <a href="/admin/courses" class="nav-item" data-link><span>🏢</span> <span class="nav-text">Gestión de Cursos</span></a>
-            <a href="/admin/users" class="nav-item" data-link><span>👥</span> <span class="nav-text">Usuarios</span></a>
-            <a href="/admin/settings" class="nav-item" data-link><span>⚙️</span> <span class="nav-text">Configuración</span></a>
+            <a href="/admin/catedras" class="nav-item" data-link><span>🏢</span> <span class="nav-text">Gestión de Cursos</span></a>
+            <a href="/admin/usuarios" class="nav-item" data-link><span>👥</span> <span class="nav-text">Usuarios</span></a>
+            <a href="/admin/configuracion" class="nav-item" data-link><span>⚙️</span> <span class="nav-text">Configuración</span></a>
         </div>
         <div id="nav-teacher" class="role-nav hidden">
-            <a href="/teacher/courses" class="nav-item" data-link><span>🏫</span> <span class="nav-text">Mis Clases</span></a>
-            <a href="/teacher/assignments" class="nav-item" data-link><span>📥</span> <span class="nav-text">Entregas</span></a>
-            <a href="/teacher/announcements" class="nav-item" data-link><span>📢</span> <span class="nav-text">Avisos</span></a>
+            <a href="/docente/catedras" class="nav-item" data-link><span>🏫</span> <span class="nav-text">Mis Clases</span></a>
+            <a href="/docente/tareas" class="nav-item" data-link><span>📥</span> <span class="nav-text">Entregas</span></a>
+            <a href="/docente/avisos" class="nav-item" data-link><span>📢</span> <span class="nav-text">Avisos</span></a>
         </div>
         <div id="nav-student" class="role-nav hidden">
-                        <a href="/student/courses" class="nav-item" data-link><span>🎓</span> <span class="nav-text">Mi Cursada</span></a>
-            <a href="/student/assignments" class="nav-item" data-link><span>📥</span> <span class="nav-text">Mis Entregas</span></a>
+                        <a href="/estudiante/catedras" class="nav-item" data-link><span>🎓</span> <span class="nav-text">Mi Cursada</span></a>
+            <a href="/estudiante/tareas" class="nav-item" data-link><span>📥</span> <span class="nav-text">Mis Entregas</span></a>
         </div>
         <div id="user-info">
-            <a href="/profile" id="user-display" class="nav-item" data-link style="font-weight: bold; font-size: 1.1em;"><span>👤</span> <span class="nav-text">Cargando...</span></a>
+            <a href="/perfil" id="user-display" class="nav-item" data-link style="font-weight: bold; font-size: 1.1em;"><span>👤</span> <span class="nav-text">Cargando...</span></a>
             <p id="user-role" style="font-weight: bold; text-transform: uppercase; color: #3498db; margin-top: 0; padding: 0 10px;"></p>
             <button class="secondary" id="logout-btn" style="width: calc(100% - 20px); margin: 10px;" title="Cerrar Sesión"><span>🚪</span> <span class="nav-text">Salir</span></button>
         </div>
@@ -101,7 +101,7 @@
         </section>
 
         <section id="admin-course-detail" class="content-section hidden">
-            <button class="secondary" onclick="navigateTo('/admin/courses')" style="margin-bottom: 20px;">&larr; Volver a Cursos</button>
+            <button class="secondary" onclick="navigateTo('/admin/catedras')" style="margin-bottom: 20px;">&larr; Volver a Cursos</button>
             <h1 id="detail-course-name">Cargando...</h1>
             <p><strong>Organización GitHub:</strong> <span id="detail-course-org"></span></p>
             <p><strong>Código de Invitación:</strong> <span id="detail-course-code"></span></p>
@@ -150,7 +150,7 @@
         </section>
 
         <section id="teacher-course-settings" class="content-section hidden">
-            <button class="secondary" onclick="navigateTo('/teacher/courses')" style="margin-bottom: 20px;">&larr; Volver a Mis Clases</button>
+            <button class="secondary" onclick="navigateTo('/docente/catedras')" style="margin-bottom: 20px;">&larr; Volver a Mis Clases</button>
             <h1 id="teacher-settings-title">Configurar Cursada</h1>
             
             <div class="card">
@@ -266,7 +266,7 @@
         </section>
 
         <section id="teacher-course-schedule" class="content-section hidden">
-            <button class="secondary" onclick="navigateTo('/teacher/course-settings?id=' + currentCourseSettingsId)" style="margin-bottom: 20px;">&larr; Volver a Configuración</button>
+            <button class="secondary" onclick="navigateTo('/docente/catedras/configuracion?id=' + currentCourseSettingsId)" style="margin-bottom: 20px;">&larr; Volver a Configuración</button>
             
             <h1 id="teacher-schedule-title">Cronograma de Clases</h1>
             
@@ -383,7 +383,7 @@
         
         
         <section id="student-course-schedule-view" class="content-section hidden">
-            <button class="secondary" onclick="navigateTo('/student/courses')" style="margin-bottom: 20px;">&larr; Volver a Mi Cursada</button>
+            <button class="secondary" onclick="navigateTo('/estudiante/catedras')" style="margin-bottom: 20px;">&larr; Volver a Mi Cursada</button>
             
             <h1 id="student-schedule-title">Cronograma de la Materia</h1>
             
