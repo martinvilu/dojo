@@ -16,6 +16,7 @@ exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
         email: user.email,
         role: role,
         avatar_url: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}`,
+        account_status: role === 'student' ? 'pending' : 'approved',
         created_at: admin.firestore.FieldValue.serverTimestamp()
     };
     await db.collection('profiles').doc(user.uid).set(profileData);

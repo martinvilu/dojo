@@ -127,6 +127,37 @@ document.getElementById('signup-email-btn').onclick = async () => {
     }
 };
 logoutBtn.onclick = () => signOut(auth);
+document.getElementById('logout-pending-btn').onclick = () => signOut(auth);
+
+document.getElementById('submit-matricula-btn').onclick = async () => {
+    const matricula = document.getElementById('matricula-input').value.trim();
+    const errorEl = document.getElementById('matricula-error');
+    if (!/^UNRN-\d{5,}$/.test(matricula)) {
+        errorEl.style.display = 'block';
+        return;
+    }
+    errorEl.style.display = 'none';
+    
+    try {
+        await api({ action: 'submitMatricula', payload: { matricula } });
+        alert("¡Matrícula guardada! Tu cuenta ha sido aprobada.");
+        window.location.reload();
+    } catch(e) {
+        alert("Error: " + e.message);
+    }
+};
+
+window.approveUser = async (uid) => {
+    if (!confirm("¿Aprobar manualmente a este usuario?")) return;
+    try {
+        await api({ action: 'approveUser', payload: { targetUid: uid } });
+        alert("Usuario aprobado.");
+        loadAdminUsers();
+    } catch(e) {
+        alert("Error: " + e.message);
+    }
+};
+
 
 
 
@@ -298,6 +329,8 @@ async function loadAdminUsers() {
             <td>${u.role}</td>
             <td>${u.matricula_unrn || '-'}</td>
             <td>${u.cohorte || '-'}</td>
+            <td>${u.account_status === 'pending' ? '<span style="color: #f39c12; font-weight: bold;">Pendiente</span>' : '<span style="color: #27ae60;">Aprobado</span>'}</td>
+            <td>${u.account_status === 'pending' ? `<button onclick="approveUser('${u.id}')" style="background: #2ecc71; border: none; font-size: 0.8em; padding: 5px;">Aprobar</button>` : ''}</td>
         </tr>
     `).join('');
 }
