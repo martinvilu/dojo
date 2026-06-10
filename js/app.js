@@ -189,7 +189,12 @@ const router = () => {
     
     // Redirect root to role default
     if (path === '/') {
-        path = `/${currentProfile.role}/courses`;
+        const rolePaths = {
+            'student': '/estudiante/catedras',
+            'teacher': '/docente/catedras',
+            'admin': '/admin/catedras'
+        };
+        path = rolePaths[currentProfile.role] || '/estudiante/catedras';
         history.replaceState(null, null, path);
     }
     
@@ -257,7 +262,7 @@ onAuthStateChanged(auth, async (user) => {
                 res = await api({ action: 'getProfile' });
             }
             currentProfile = res.data || { role: 'student' };
-            userDisplay.innerText = currentProfile.full_name || user.email;
+            userDisplay.querySelector('.nav-text').innerText = currentProfile.full_name || user.email;
             userRoleLabel.innerText = currentProfile.role;
             
             document.querySelectorAll('.role-nav').forEach(el => el.classList.add('hidden'));
