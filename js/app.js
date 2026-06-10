@@ -159,6 +159,37 @@ window.approveUser = async (uid) => {
     }
 };
 
+document.getElementById('logout-pending-btn').onclick = () => signOut(auth);
+
+document.getElementById('submit-matricula-btn').onclick = async () => {
+    const matricula = document.getElementById('matricula-input').value.trim();
+    const errorEl = document.getElementById('matricula-error');
+    if (!/^UNRN-\d{5,}$/.test(matricula)) {
+        errorEl.style.display = 'block';
+        return;
+    }
+    errorEl.style.display = 'none';
+    
+    try {
+        await api({ action: 'submitMatricula', payload: { matricula } });
+        alert("¡Matrícula guardada! Tu cuenta ha sido aprobada.");
+        window.location.reload();
+    } catch(e) {
+        alert("Error: " + e.message);
+    }
+};
+
+window.approveUser = async (uid) => {
+    if (!confirm("¿Aprobar manualmente a este usuario?")) return;
+    try {
+        await api({ action: 'approveUser', payload: { targetUid: uid } });
+        alert("Usuario aprobado.");
+        loadAdminUsers();
+    } catch(e) {
+        alert("Error: " + e.message);
+    }
+};
+
 
 
 
@@ -265,6 +296,15 @@ onAuthStateChanged(auth, async (user) => {
             currentProfile = res.data || { role: 'student' };
             userDisplay.querySelector('.nav-text').innerText = currentProfile.full_name || user.email;
             userRoleLabel.innerText = currentProfile.role;
+            
+            const pendingOverlay = document.getElementById('pending-approval-overlay');
+            if (currentProfile.account_status === 'pending') {
+                pendingOverlay.classList.remove('hidden');
+                document.querySelectorAll('.role-nav, .content-section').forEach(el => el.classList.add('hidden'));
+                return;
+            } else {
+                if (pendingOverlay) pendingOverlay.classList.add('hidden');
+            }
             
             document.querySelectorAll('.role-nav').forEach(el => el.classList.add('hidden'));
             const nav = document.getElementById(`nav-${currentProfile.role}`);

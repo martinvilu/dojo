@@ -63,6 +63,19 @@
         </div>
     </div>
 
+    <div id="pending-approval-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; justify-content: center; align-items: center; text-align: center; color: white; padding: 20px; box-sizing: border-box;">
+        <div style="background: white; color: #333; padding: 40px; border-radius: 8px; max-width: 500px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <h2 style="margin-top: 0; color: #2c3e50;">Completa tu Registro</h2>
+            <p>Para acceder, necesitamos que ingreses tu número de matrícula de la UNRN (formato <strong>UNRN-######</strong>).</p>
+            <input type="text" id="matricula-input" placeholder="Ej: UNRN-12345" style="width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 1.1em; text-align: center;">
+            <p id="matricula-error" style="color: #e74c3c; font-size: 0.9em; margin-top: -5px; margin-bottom: 15px; display: none;">Formato inválido. Debe ser UNRN- seguido de al menos 5 números.</p>
+            <button id="submit-matricula-btn" style="width: 100%; padding: 10px; background: #27ae60; border: none; color: white; font-weight: bold; border-radius: 4px; font-size: 1.1em;">Guardar y Continuar</button>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+            <p style="font-size: 0.9em; color: #7f8c8d;">¿No sos estudiante o no tenés matrícula?<br>Contactá a un docente para que apruebe tu cuenta manualmente.</p>
+            <p id="pending-manual-msg" style="color: #f39c12; font-weight: bold; display: none;">Tu cuenta está a la espera de aprobación manual por parte de un profesor/admin.</p>
+            <button id="logout-pending-btn" class="danger" style="margin-top: 15px;">Cerrar sesión</button>
+        </div>
+    </div>
     
     <div id="sidebar">
         <h2>Jutsu</h2>

@@ -34,6 +34,29 @@ exports.api = functions.https.onCall(async (data, context) => {
         if (action === 'getProfile') {
             return await getMyProfile();
         }
+
+        if (action === 'approveUser') {
+        const { targetUid } = payload;
+        const myProfile = await getMyProfile();
+        if (myProfile.role !== 'admin') throw new Error("Solo admins pueden aprobar usuarios");
+        
+        await db.collection('profiles').doc(targetUid).update({
+            account_status: 'approved'
+        });
+        return { success: true };
+    }
+
+    if (action === 'submitMatricula') {
+            const { matricula } = payload;
+            if (!matricula || !/^UNRN-\d{5,}$/.test(matricula)) {
+                throw new Error("Formato de matrícula inválido. Debe ser UNRN- seguido de al menos 5 dígitos.");
+            }
+            await db.collection('profiles').doc(uid).update({
+                matricula_unrn: matricula,
+                account_status: 'approved'
+            });
+            return { success: true };
+        }
         
         if (action === 'updateProfile') {
             await db.collection('profiles').doc(uid).update(payload);
