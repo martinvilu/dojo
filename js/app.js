@@ -99,15 +99,16 @@ document.getElementById('login-google-btn').onclick = () => {
 };
 
 
-document.getElementById('login-email-btn').onclick = async () => {
+document.getElementById('login-email-btn').onclick = async (e) => {
+    e.preventDefault();
     const email = document.getElementById('email-input').value;
     const pass = document.getElementById('password-input').value;
     if (!email || !pass) return alert("Por favor ingresa email y contraseña.");
     loadingIndicator.classList.remove('hidden');
     try { 
         await signInWithEmailAndPassword(auth, email, pass); 
-    } catch(e) { 
-        alert("Error al entrar: " + e.message); 
+    } catch(err) { 
+        alert("Error al entrar: " + err.message); 
     } finally {
         loadingIndicator.classList.add('hidden');
     }
@@ -270,7 +271,11 @@ onAuthStateChanged(auth, async (user) => {
             if (nav) nav.classList.remove('hidden');
             
             router();
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e); 
+            alert("Error al cargar perfil: " + e.message);
+            signOut(auth);
+        }
     } else {
         currentUser = null;
         currentProfile = null;
