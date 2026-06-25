@@ -16,6 +16,6 @@ Este archivo contiene las directrices principales para las inteligencias artific
 
 3. **Frecuencia de Commits**: Se debe realizar un commit (y un push/deploy si aplica) inmediatamente después de completar cada solicitud o cambio requerido por el usuario, sin esperar a acumular múltiples cambios.
 ## Tecnologías Principales
-- **Frontend**: HTML5, CSS3, Vanilla JS (Módulos ES6).
-- **Backend/Auth**: Firebase Auth, Cloud Functions (Node.js 24), Firestore Database.
-- **Hosting**: Firebase Hosting.
+- **Frontend**: Next.js (React), TypeScript, Tailwind CSS.
+- **Backend/Auth**: Firebase Auth, Firestore Database, Firebase App Hosting.
+- **Hosting**: Firebase App Hosting (Server-Side Rendering).
