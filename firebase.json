@@ -1,20 +1,12 @@
 {
-  "hosting": {
-    "public": ".",
+  "apphosting": {
+    "rootDir": ".",
     "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "/api/calendar",
-        "function": "calendar"
-      },
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "functions"
     ]
   },
   "firestore": {

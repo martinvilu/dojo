@@ -1,0 +1,16 @@
+import { initializeApp, getApps } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+
+const firebaseConfig = {
+  projectId: "jutsu-classroom-mrtin",
+  appId: "1:913557328690:web:831831bbd35cd384a67d2b",
+  storageBucket: "jutsu-classroom-mrtin.firebasestorage.app",
+  apiKey: "REPLACED_BY_ENV_VAL",
+  authDomain: "jutsu-classroom-mrtin.firebaseapp.com",
+  messagingSenderId: "913557328690",
+};
+
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+export const auth = getAuth(app);
+export const db = getFirestore(app);
