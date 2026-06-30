@@ -310,6 +310,21 @@ onAuthStateChanged(auth, async (user) => {
             const nav = document.getElementById(`nav-${currentProfile.role}`);
             if (nav) nav.classList.remove('hidden');
             
+            const urlParams = new URLSearchParams(window.location.search);
+            const enrollCode = urlParams.get('enroll');
+            if (enrollCode) {
+                try {
+                    await api({ action: 'enrollCourse', payload: { code: enrollCode } });
+                    alert('Te has inscripto al curso exitosamente.');
+                    window.history.replaceState({}, document.title, window.location.pathname + (window.location.hash || ''));
+                    window.location.reload();
+                    return;
+                } catch(e) {
+                    alert('Error al inscribirse con enlace: ' + e.message);
+                    window.history.replaceState({}, document.title, window.location.pathname + (window.location.hash || ''));
+                }
+            }
+            
             router();
         } catch (e) { 
             console.error(e); 
@@ -460,6 +475,23 @@ async function loadTeacherCourseSettings(courseId) {
         document.getElementById('settings-duration').value = data.duration_weeks || '';
         document.getElementById('settings-external-calendars').value = (data.external_calendars || []).join(', ');
         document.getElementById('settings-github-token').value = data.github_token || '';
+
+        if (document.getElementById('settings-invite-student-link')) {
+            const inviteStudentLink = `${window.location.origin}/?enroll=${data.invite_code}`;
+            const inviteTeacherLink = `${window.location.origin}/?enroll=${data.teacher_invite_code}`;
+            
+            document.getElementById('settings-invite-student-link').value = inviteStudentLink;
+            document.getElementById('settings-invite-teacher-link').value = inviteTeacherLink;
+            
+            document.getElementById('btn-copy-student-link').onclick = () => {
+                navigator.clipboard.writeText(inviteStudentLink);
+                alert('¡Enlace copiado para estudiantes!');
+            };
+            document.getElementById('btn-copy-teacher-link').onclick = () => {
+                navigator.clipboard.writeText(inviteTeacherLink);
+                alert('¡Enlace copiado para docentes!');
+            };
+        }
 
         const syncSecret = data.sync_secret || 'FALTA_TOKEN';
         document.getElementById('settings-export-grades-url').value = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${courseId}&token=${syncSecret}`;
@@ -1496,15 +1528,16 @@ async function loadStudentAssignments() {
     
     try {
         const res = await api({ action: 'getStudentCourses' });
-        if (!res || res.length === 0) {
+        const courses = res.data || [];
+        if (courses.length === 0) {
             container.innerHTML = '<p>No estás anotado en ninguna cursada.</p>';
             return;
         }
         
-        const courseIds = res.map(c => c.id);
+        const courseIds = courses.map(c => c.id);
         const aRes = await api({ action: 'getStudentAssignments', payload: { courseIds } });
-        const assignments = aRes.assignments || [];
-        const submissions = aRes.submissions || [];
+        const assignments = (aRes.data && aRes.data.assignments) || [];
+        const submissions = (aRes.data && aRes.data.submissions) || [];
         
         if (assignments.length === 0) {
             container.innerHTML = '<p>No tenés tareas asignadas por el momento.</p>';
@@ -1513,7 +1546,7 @@ async function loadStudentAssignments() {
         
         // Group by course
         let html = '';
-        res.forEach(c => {
+        courses.forEach(c => {
             const courseAssignments = assignments.filter(a => a.course_id === c.id);
             if (courseAssignments.length === 0) return;
             

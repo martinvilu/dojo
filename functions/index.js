@@ -140,14 +140,28 @@ exports.api = functions.https.onCall(async (data, context) => {
         if (action === 'enrollCourse') {
             const code = payload.code.trim();
             const snap = await db.collection('courses').where('invite_code', '==', code).get();
-            if (snap.empty) throw new Error("Course not found with that code");
-            const courseId = snap.docs[0].id;
-            await db.collection('course_roster').doc(`${courseId}_${uid}`).set({
-                course_id: courseId,
-                student_id: uid,
-                enrolled_at: admin.firestore.FieldValue.serverTimestamp()
-            });
-            return { success: true };
+            if (!snap.empty) {
+                const courseId = snap.docs[0].id;
+                await db.collection('course_roster').doc(`${courseId}_${uid}`).set({
+                    course_id: courseId,
+                    student_id: uid,
+                    enrolled_at: admin.firestore.FieldValue.serverTimestamp()
+                });
+                return { success: true };
+            }
+
+            const tSnap = await db.collection('courses').where('teacher_invite_code', '==', code).get();
+            if (!tSnap.empty) {
+                const courseId = tSnap.docs[0].id;
+                await db.collection('course_teachers').doc(`${courseId}_${uid}`).set({
+                    course_id: courseId,
+                    teacher_id: uid
+                });
+                await db.collection('profiles').doc(uid).update({ role: 'teacher', account_status: 'approved' });
+                return { success: true };
+            }
+            
+            throw new Error("Course not found with that code");
         }
 
         if (action === 'createCourse') {
@@ -155,6 +169,7 @@ exports.api = functions.https.onCall(async (data, context) => {
                 name: payload.name,
                 github_org: payload.github_org,
                 invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                teacher_invite_code: 'T-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
                 created_by: uid,
                 created_at: admin.firestore.FieldValue.serverTimestamp()
             });
@@ -206,7 +221,26 @@ exports.api = functions.https.onCall(async (data, context) => {
             if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
             
             const cSnap = await db.collection('courses').doc(courseId).get();
-            return { id: cSnap.id, ...cSnap.data() };
+            let data = cSnap.data();
+            let needsUpdate = false;
+            
+            if (!data.invite_code) {
+                data.invite_code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                needsUpdate = true;
+            }
+            if (!data.teacher_invite_code) {
+                data.teacher_invite_code = 'T-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                needsUpdate = true;
+            }
+            
+            if (needsUpdate) {
+                await db.collection('courses').doc(courseId).update({
+                    invite_code: data.invite_code,
+                    teacher_invite_code: data.teacher_invite_code
+                });
+            }
+            
+            return { id: cSnap.id, ...data };
         }
 
         if (action === 'updateCourseSettings') {
