@@ -1278,6 +1278,7 @@ function loadProfile() {
     if (!currentProfile) return;
     document.getElementById('profile-matricula').value = currentProfile.matricula_unrn || '';
     document.getElementById('profile-cohorte').value = currentProfile.cohorte || '';
+    document.getElementById('profile-notif-pref').value = currentProfile.notification_pref || 'immediate';
 
     // Emails
     document.getElementById('profile-primary-email').innerText = auth.currentUser.email || 'No disponible';
@@ -1354,11 +1355,13 @@ document.getElementById('save-profile-btn').onclick = async () => {
     const matricula_unrn = document.getElementById('profile-matricula').value;
     const cohorteText = document.getElementById('profile-cohorte').value;
     const cohorte = cohorteText ? parseInt(cohorteText, 10) : null;
+    const notification_pref = document.getElementById('profile-notif-pref').value;
     
     try {
-        await api({ action: 'updateProfile', payload: { matricula_unrn, cohorte } });
+        await api({ action: 'updateProfile', payload: { matricula_unrn, cohorte, notification_pref } });
         currentProfile.matricula_unrn = matricula_unrn;
         currentProfile.cohorte = cohorte;
+        currentProfile.notification_pref = notification_pref;
         
         const status = document.getElementById('profile-save-status');
         status.style.display = 'block';

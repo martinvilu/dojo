@@ -288,12 +288,21 @@ exports.api = functions.https.onCall(async (data, context) => {
             
             for (let doc of studentsSnap.docs) {
                 const sData = doc.data();
+                const studentId = sData.student_id;
+                
+                let is_daily_pending = false;
+                const pSnap = await db.collection('profiles').doc(studentId).get();
+                if (pSnap.exists && pSnap.data().notification_pref === 'daily_summary') {
+                    is_daily_pending = true;
+                }
+                
                 const ref = db.collection('notifications').doc();
                 currentBatch.set(ref, {
-                    student_id: sData.student_id,
+                    student_id: studentId,
                     message,
                     link: link || null,
                     read: false,
+                    is_daily_pending,
                     created_at: admin.firestore.FieldValue.serverTimestamp()
                 });
                 count++;
@@ -312,9 +321,11 @@ exports.api = functions.https.onCall(async (data, context) => {
             const snap = await db.collection('notifications')
                 .where('student_id', '==', uid)
                 .orderBy('created_at', 'desc')
-                .limit(20)
+                .limit(50)
                 .get();
-            return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            // Filter out pending daily summaries
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(n => !n.is_daily_pending);
+            return list.slice(0, 20);
         }
 
         if (action === 'markNotificationsRead') {
@@ -1217,12 +1228,20 @@ exports.importGrades = functions.https.onRequest(async (req, res) => {
                     graded_at: admin.firestore.FieldValue.serverTimestamp()
                 });
                 
+                const studentId = subSnap.data().student_id;
+                let is_daily_pending = false;
+                const pSnap = await db.collection('profiles').doc(studentId).get();
+                if (pSnap.exists && pSnap.data().notification_pref === 'daily_summary') {
+                    is_daily_pending = true;
+                }
+                
                 const notifRef = db.collection('notifications').doc();
                 batch.set(notifRef, {
-                    student_id: subSnap.data().student_id,
+                    student_id: studentId,
                     message: `Tu entrega ha sido corregida. ${resultado ? 'Nota: ' + resultado : ''}`,
                     link: '/estudiante/tareas',
                     read: false,
+                    is_daily_pending,
                     created_at: admin.firestore.FieldValue.serverTimestamp()
                 });
                 updatedCount++;
@@ -1236,4 +1255,45 @@ exports.importGrades = functions.https.onRequest(async (req, res) => {
         console.error(e);
         res.status(500).send("Error interno: " + e.message);
     }
+});
+
+exports.sendDailySummaries = functions.pubsub.schedule('every day 20:00').timeZone('America/Argentina/Buenos_Aires').onRun(async (context) => {
+    try {
+        const snap = await db.collection('notifications').where('is_daily_pending', '==', true).get();
+        if (snap.empty) return null;
+        
+        const byStudent = {};
+        for (let doc of snap.docs) {
+            const data = doc.data();
+            const studentId = data.student_id;
+            if (!byStudent[studentId]) byStudent[studentId] = [];
+            byStudent[studentId].push({ id: doc.id, ...data });
+        }
+        
+        const promises = [];
+        for (const [studentId, notifs] of Object.entries(byStudent)) {
+            const batch = db.batch();
+            
+            for (const n of notifs) {
+                batch.delete(db.collection('notifications').doc(n.id));
+            }
+            
+            const summaryRef = db.collection('notifications').doc();
+            batch.set(summaryRef, {
+                student_id: studentId,
+                message: `Resumen Diario: Tenés ${notifs.length} nuevas actualizaciones (calificaciones, cambios de clase, etc.)`,
+                link: '/estudiante/notificaciones',
+                read: false,
+                created_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            
+            promises.push(batch.commit());
+        }
+        
+        await Promise.all(promises);
+        console.log(`Sent daily summaries to ${Object.keys(byStudent).length} students.`);
+    } catch (e) {
+        console.error('Error sending daily summaries:', e);
+    }
+    return null;
 });

@@ -536,7 +536,15 @@
                 <input type="text" id="profile-matricula" placeholder="Ej: 12345">
                 <label>Año de Cohorte</label>
                 <input type="number" id="profile-cohorte" placeholder="Ej: 2026">
-                <button id="save-profile-btn">Guardá tu Perfil</button>
+                
+                <h3 style="margin-top: 20px;">Preferencias de Notificación</h3>
+                <label>¿Cómo querés recibir tus notificaciones en la plataforma?</label>
+                <select id="profile-notif-pref">
+                    <option value="immediate">Inmediatamente por evento</option>
+                    <option value="daily_summary">Resumen diario (una sola notificación al día)</option>
+                </select>
+
+                <button id="save-profile-btn" style="margin-top: 15px;">Guardá tu Perfil</button>
                 <p id="profile-save-status" style="color: #27ae60; display: none; margin-top: 10px;">¡Guardado de diez!</p>
             </div>
         </section>
