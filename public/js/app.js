@@ -441,7 +441,7 @@ function renderSchedules() {
     }
     list.innerHTML = currentCourseSchedules.map((s, i) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border: 1px solid #eee; margin-bottom: 5px; border-radius: 4px;">
-            <span><strong>${s.day}</strong> a las <strong>${s.time}</strong> (${s.type})</span>
+            <span><strong>${s.day}</strong> a las <strong>${s.time}</strong> (${(s.duration || 2) * 30} min, ${s.type})</span>
             <button class="danger" style="margin: 0; padding: 5px 10px;" onclick="removeSchedule(${i})">X</button>
         </div>
     `).join('');
@@ -456,8 +456,9 @@ document.getElementById('add-schedule-btn').onclick = () => {
     const day = document.getElementById('schedule-day').value;
     const time = document.getElementById('schedule-time').value;
     const type = document.getElementById('schedule-type').value;
+    const duration = document.getElementById('schedule-duration').value || 2;
     if (!time) return alert('Poné una hora válida.');
-    currentCourseSchedules.push({ day, time, type });
+    currentCourseSchedules.push({ day, time, type, duration: parseInt(duration) });
     renderSchedules();
     document.getElementById('schedule-time').value = '';
 };
@@ -475,6 +476,7 @@ async function loadTeacherCourseSettings(courseId) {
         document.getElementById('settings-duration').value = data.duration_weeks || '';
         document.getElementById('settings-external-calendars').value = (data.external_calendars || []).join(', ');
         document.getElementById('settings-github-token').value = data.github_token || '';
+        document.getElementById('settings-meet-url').value = data.meet_url || '';
 
         if (document.getElementById('settings-invite-student-link')) {
             const inviteStudentLink = `${window.location.origin}/?enroll=${data.invite_code}`;
@@ -553,6 +555,7 @@ async function applyCourseTemplate(data) {
         duration_weeks: data.duration_weeks || null,
         external_calendars: data.external_calendars || [],
         github_token: data.github_token || '',
+        meet_url: data.meet_url || '',
         schedules: currentCourseSchedules
     };
     if (data.class_instances) payloadData.class_instances = data.class_instances;
@@ -627,6 +630,7 @@ document.getElementById('save-course-settings-btn').onclick = async () => {
                 duration_weeks: parseInt(document.getElementById('settings-duration').value) || 0,
                 external_calendars: document.getElementById('settings-external-calendars').value.split(',').map(s => s.trim()).filter(s => s),
                 github_token: document.getElementById('settings-github-token').value,
+                meet_url: document.getElementById('settings-meet-url').value,
                 schedules: currentCourseSchedules
             }
         };
@@ -702,6 +706,7 @@ function generateClassInstances() {
                 topic: "",
                 presentation_url: "",
                 recording_url: "",
+                meet_url: scheduleCourseData.meet_url || "",
                 special_status: "Normal"
             });
         }
@@ -715,6 +720,7 @@ function generateClassInstances() {
             ci.topic = oldInstances[idx].topic || "";
             ci.presentation_url = oldInstances[idx].presentation_url || "";
             ci.recording_url = oldInstances[idx].recording_url || "";
+            ci.meet_url = oldInstances[idx].meet_url || ci.meet_url;
             ci.special_status = oldInstances[idx].special_status || "Normal";
             ci.description = oldInstances[idx].description || "";
         }
@@ -740,19 +746,23 @@ function renderScheduleClasses() {
     
     list.innerHTML = currentClassInstances.map((ci, idx) => {
         const d = new Date(ci.date);
-        const dateStr = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-        const timeStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+        const dateVal = d.toISOString().split('T')[0];
+        const timeVal = d.toISOString().split('T')[1].substring(0, 5);
         
         return `
         <div class="card" style="display: flex; flex-direction: column; gap: 10px; ${ci.special_status === 'Feriado' ? 'opacity: 0.6; background: #eee;' : ''}">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                <h3 style="margin: 0; text-transform: capitalize;">Clase ${idx + 1}: ${dateStr} - ${timeStr} (${ci.type})</h3>
-                <select id="ci-status-${idx}" onchange="updateClassInstance(${idx}, 'special_status', this.value)">
-                    <option value="Normal" ${ci.special_status === 'Normal' ? 'selected' : ''}>Normal</option>
-                    <option value="Clase Remota" ${ci.special_status === 'Clase Remota' ? 'selected' : ''}>Clase Remota</option>
-                    <option value="Examen" ${ci.special_status === 'Examen' ? 'selected' : ''}>Examen</option>
-                    <option value="Feriado" ${ci.special_status === 'Feriado' ? 'selected' : ''}>Feriado / Sin Clase</option>
-                </select>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin: 0; text-transform: capitalize; flex: 1; min-width: 200px;">Clase ${idx + 1} (${ci.type})</h3>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="date" value="${dateVal}" onchange="updateClassDate(${idx}, this.value, null)" style="padding: 5px;">
+                    <input type="time" value="${timeVal}" onchange="updateClassDate(${idx}, null, this.value)" style="padding: 5px;">
+                    <select id="ci-status-${idx}" onchange="updateClassInstance(${idx}, 'special_status', this.value)" style="padding: 5px;">
+                        <option value="Normal" ${ci.special_status === 'Normal' ? 'selected' : ''}>Normal</option>
+                        <option value="Clase Remota" ${ci.special_status === 'Clase Remota' ? 'selected' : ''}>Clase Remota</option>
+                        <option value="Examen" ${ci.special_status === 'Examen' ? 'selected' : ''}>Examen</option>
+                        <option value="Feriado" ${ci.special_status === 'Feriado' ? 'selected' : ''}>Feriado / Sin Clase</option>
+                    </select>
+                </div>
             </div>
             
             <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 5px;">
@@ -771,8 +781,15 @@ function renderScheduleClasses() {
                     <input type="url" id="ci-pres-${idx}" value="${ci.presentation_url || ''}" onchange="updateClassInstance(${idx}, 'presentation_url', this.value)" placeholder="https://docs.google.com/presentation/d/... ">
                 </div>
                 <div style="flex: 1; min-width: 250px;">
+                    <label style="font-weight: bold; font-size: 0.9em; color: #555;">Enlace a Videollamada</label>
+                    <input type="url" id="ci-meet-${idx}" value="${ci.meet_url || ''}" onchange="updateClassInstance(${idx}, 'meet_url', this.value)" placeholder="https://meet.google.com/xxx-xxxx-xxx">
+                </div>
+                <div style="flex: 1; min-width: 250px;">
                     <label style="font-weight: bold; font-size: 0.9em; color: #555;">Enlace a Grabación de la clase</label>
-                    <input type="url" id="ci-rec-${idx}" value="${ci.recording_url || ''}" onchange="updateClassInstance(${idx}, 'recording_url', this.value)" placeholder="https://youtube.com/...">
+                    <div style="display: flex; gap: 5px;">
+                        <input type="url" id="ci-rec-${idx}" value="${ci.recording_url || ''}" onchange="updateClassInstance(${idx}, 'recording_url', this.value)" placeholder="https://youtube.com/..." style="flex: 1;">
+                        <button class="secondary" style="margin: 0;" onclick="linkYoutubeVideo(${idx})" title="Vincular con YouTube">YT</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -780,9 +797,115 @@ function renderScheduleClasses() {
     }).join('');
 }
 
+window.updateClassDate = (idx, dateVal, timeVal) => {
+    const d = new Date(currentClassInstances[idx].date);
+    let y = d.getUTCFullYear();
+    let m = d.getUTCMonth();
+    let day = d.getUTCDate();
+    let h = d.getUTCHours();
+    let min = d.getUTCMinutes();
+    
+    if (dateVal) {
+        [y, m, day] = dateVal.split('-').map(Number);
+        m--; // 0-indexed month
+    }
+    if (timeVal) {
+        [h, min] = timeVal.split(':').map(Number);
+    }
+    currentClassInstances[idx].date = new Date(Date.UTC(y, m, day, h, min, 0)).toISOString();
+    // Do not re-render immediately to avoid losing focus if they are just typing,
+    // but date inputs usually blur on selection. Let's re-render to update the visual calendar if needed, or leave it.
+    // Let's re-render the visual calendar but not the whole list so input focus isn't lost.
+    setupTeacherVisualCalendar();
+};
+
 window.updateClassInstance = (idx, field, value) => {
     currentClassInstances[idx][field] = value;
     if (field === 'special_status') renderScheduleClasses();
+};
+
+window.linkYoutubeVideo = async (idx) => {
+    const ci = currentClassInstances[idx];
+    const className = `Clase ${idx + 1}: ${ci.topic || ci.type}`;
+    
+    let token = currentProfile.youtube_token;
+    if (!token) {
+        if (!confirm("Para vincular videos, necesitás conectar tu cuenta de YouTube. ¿Conectar ahora?")) return;
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/youtube.force-ssl');
+        try {
+            const res = await signInWithPopup(auth, provider);
+            const credential = GoogleAuthProvider.credentialFromResult(res);
+            token = credential.accessToken;
+            await api({ action: 'updateUserProfile', payload: { userId: currentProfile.id, data: { youtube_token: token } } });
+            currentProfile.youtube_token = token;
+        } catch(e) {
+            return alert("Error al conectar YouTube: " + e.message);
+        }
+    }
+    
+    try {
+        const chanRes = await fetch('https://www.googleapis.com/youtube/v3/channels?part=contentDetails&mine=true', {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(r => r.json());
+        
+        if (!chanRes.items || chanRes.items.length === 0) throw new Error("No se encontró el canal de YouTube");
+        const uploadsId = chanRes.items[0].contentDetails.relatedPlaylists.uploads;
+        
+        const vidsRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=10`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(r => r.json());
+        
+        if (!vidsRes.items || vidsRes.items.length === 0) throw new Error("No hay videos subidos recientes");
+        
+        let promptText = "Ingresá el número del video a vincular:\\n\\n";
+        vidsRes.items.forEach((item, i) => {
+            promptText += `${i + 1}. ${item.snippet.title}\\n`;
+        });
+        
+        const selectedStr = prompt(promptText);
+        if (!selectedStr) return;
+        const selectedIdx = parseInt(selectedStr) - 1;
+        if (isNaN(selectedIdx) || !vidsRes.items[selectedIdx]) return alert("Selección inválida");
+        
+        const videoId = vidsRes.items[selectedIdx].snippet.resourceId.videoId;
+        const videoUrl = `https://youtu.be/${videoId}`;
+        
+        document.getElementById(`ci-rec-${idx}`).value = videoUrl;
+        updateClassInstance(idx, 'recording_url', videoUrl);
+        
+        if (confirm(`¿Querés actualizar el título del video en YouTube a "${className}"?`)) {
+            const vidDetail = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(r => r.json());
+            
+            const snippet = vidDetail.items[0].snippet;
+            snippet.title = className;
+            
+            const updateRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet`, {
+                method: 'PUT',
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: videoId, snippet: snippet })
+            });
+            if (updateRes.ok) {
+                alert("¡Video vinculado y título actualizado en YouTube!");
+            } else {
+                const err = await updateRes.json();
+                console.error(err);
+                alert("El video se vinculó pero falló la actualización del título. " + (err.error?.message || 'Error desconocido'));
+            }
+        }
+        
+    } catch(e) {
+        alert("Error de YouTube: " + e.message);
+        if (e.message && e.message.includes('401')) {
+            currentProfile.youtube_token = null;
+            api({ action: 'updateUserProfile', payload: { userId: currentProfile.id, data: { youtube_token: null } } });
+        }
+    }
 };
 
 document.getElementById('save-schedule-btn').onclick = async () => {
@@ -1374,6 +1497,7 @@ async function loadStudentCourseSchedule(urlParams) {
                             if (ci.special_status === 'Feriado') tags += '<span style="background: #95a5a6; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; margin-left: 5px;">FERIADO / CANCELADA</span>';
                             
                             let links = [];
+                            if (ci.meet_url) links.push(`<a href="${ci.meet_url}" target="_blank" style="color: #e74c3c; text-decoration: underline; font-weight: bold;">Videollamada</a>`);
                             if (ci.presentation_url) links.push(`<a href="${ci.presentation_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Material</a>`);
                             if (ci.recording_url) links.push(`<a href="${ci.recording_url}" target="_blank" style="color: #3498db; text-decoration: underline;">Grabación</a>`);
                             const linksStr = links.length ? ` - [ ${links.join(' | ')} ]` : '';

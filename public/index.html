@@ -275,6 +275,18 @@
                         <input type="time" id="schedule-time">
                     </div>
                     <div style="flex: 1;">
+                        <label>Duración</label>
+                        <select id="schedule-duration">
+                            <option value="1">30 min (1 bloque)</option>
+                            <option value="2" selected>1 hora (2 bloques)</option>
+                            <option value="3">1h 30m (3 bloques)</option>
+                            <option value="4">2 horas (4 bloques)</option>
+                            <option value="5">2h 30m (5 bloques)</option>
+                            <option value="6">3 horas (6 bloques)</option>
+                            <option value="8">4 horas (8 bloques)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
                         <label>Tipo</label>
                         <select id="schedule-type">
                             <option value="Teórica">Teórica</option>
@@ -285,6 +297,10 @@
                         </select>
                     </div>
                     <button id="add-schedule-btn" style="margin-bottom: 10px;">Agregar Horario</button>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label>Enlace de Videollamada Global del Curso (opcional)</label>
+                    <input type="url" id="settings-meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx">
                 </div>
             </div>
 

@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Jutsu Classroom
 
-## Getting Started
+Jutsu Classroom es una plataforma híbrida de gestión educativa que integra un frontend moderno con **Next.js** y lógica en el cliente con **Vanilla JS**, respaldado por **Firebase**. La aplicación permite la creación de cursos, inscripción mediante enlaces/códigos, planificación detallada con bloques de tiempo, integración con GitHub para entregas y conexión con YouTube para grabaciones.
 
-First, run the development server:
+## Requisitos Previos
+
+- Node.js (v18+)
+- Firebase CLI (`npm install -g firebase-tools`)
+- Cuenta de Google para autenticación y despliegue
+
+## Instalación y Desarrollo Local
+
+1. Instalar las dependencias de la aplicación (Next.js):
+   ```bash
+   npm install
+   ```
+
+2. Instalar las dependencias de Cloud Functions:
+   ```bash
+   cd functions
+   npm install
+   cd ..
+   ```
+
+3. Ejecutar el servidor de desarrollo local:
+   ```bash
+   npm run dev
+   ```
+   Abre [http://localhost:3000](http://localhost:3000) en el navegador para ver la aplicación.
+
+## Despliegue en Firebase
+
+El proyecto utiliza varios servicios de Firebase: Authentication, Firestore, Cloud Functions y App Hosting.
+
+### 1. Despliegue de Reglas de Firestore y Cloud Functions
+
+Antes de desplegar el front-end o si haces cambios en el back-end (`/functions`) o base de datos:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Iniciar sesión en Firebase (si no lo has hecho)
+firebase login
+
+# Asegúrate de usar el proyecto correcto
+firebase use tu-proyecto-id
+
+# Desplegar Funciones y reglas de Firestore
+firebase deploy --only functions,firestore
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Despliegue de la Aplicación Web (Firebase App Hosting)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+La aplicación Next.js está configurada para desplegarse mediante **Firebase App Hosting**. 
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Opción A: Despliegue Automatizado (Recomendado)**
+App Hosting funciona conectándose directamente a tu repositorio de GitHub. 
+1. Ve a la consola de Firebase > App Hosting.
+2. Conecta tu repositorio de GitHub.
+3. Cada vez que hagas `git push` a la rama principal (`main` o `master`), Firebase construirá y desplegará automáticamente la nueva versión.
 
-## Learn More
+**Opción B: Creación manual del backend de App Hosting**
+Si aún no has creado el entorno de App Hosting en la consola, puedes hacerlo vía CLI:
+```bash
+firebase apphosting:backends:create
+```
+Sigue las instrucciones interactivas para vincular tu repositorio de GitHub y rama de despliegue.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Arquitectura Híbrida
+- **Next.js** (`src/app/`): Proveedor del enrutamiento estático y esqueleto de la UI.
+- **Vanilla JS** (`public/js/app.js`): Controla la lógica de autenticación, hidratación y manipulación del DOM en el lado del cliente sin fricciones de re-renderizado reactivo complejo.
+- **Firebase Functions** (`functions/index.js`): Lógica de servidor y operaciones que requieren permisos elevados (ej. validaciones, roles, invitaciones).
