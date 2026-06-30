@@ -23,6 +23,10 @@ const withLoading = async (fn) => {
 };
 
 const _api = httpsCallable(functions, 'api');
+// Dark Mode Init
+if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark-mode');
+}
 const apiCache = {};
 const api = async (data) => {
     const isGet = data.action && data.action.startsWith('get');
@@ -1279,6 +1283,21 @@ window.acceptAssignment = async (assignmentId, isGroup) => {
 document.getElementById('sidebar-toggle').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('collapsed');
 });
+
+// Dark Mode Toggle
+const initDarkModeUI = () => {
+    const isDark = document.body.classList.contains('dark-mode');
+    document.getElementById('dark-mode-icon').innerText = isDark ? '☀️' : '🌙';
+    document.querySelector('#dark-mode-toggle .nav-text').innerText = isDark ? 'Modo Claro' : 'Modo Oscuro';
+};
+document.getElementById('dark-mode-toggle').addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    initDarkModeUI();
+});
+// Initial UI sync when DOM is loaded
+window.addEventListener('DOMContentLoaded', initDarkModeUI);
 
 function loadProfile() {
     if (!currentProfile) return;
