@@ -42,6 +42,39 @@ const api = async (data) => {
     });
 };
 
+window.downloadIcsFile = (courseName, instances) => {
+    let ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Jutsu Classroom//ES',
+        'CALSCALE:GREGORIAN',
+        `X-WR-CALNAME:${courseName}`
+    ];
+    instances.forEach((ci, idx) => {
+        if (ci.special_status === 'Feriado') return;
+        const d = new Date(ci.date);
+        const dEnd = new Date(d.getTime() + 2 * 60 * 60 * 1000);
+        const formatDate = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        ics.push('BEGIN:VEVENT');
+        ics.push(`UID:${ci.id || idx}@jutsu.com`);
+        ics.push(`DTSTAMP:${formatDate(new Date())}`);
+        ics.push(`DTSTART:${formatDate(d)}`);
+        ics.push(`DTEND:${formatDate(dEnd)}`);
+        ics.push(`SUMMARY:${ci.topic || ci.type}`);
+        ics.push(`DESCRIPTION:Clase ${idx+1}. ${ci.description ? ci.description.replace(/\\n/g, '\\\\n') : ''}`);
+        if (ci.meet_url) ics.push(`LOCATION:${ci.meet_url}`);
+        ics.push('END:VEVENT');
+    });
+    ics.push('END:VCALENDAR');
+    const blob = new Blob([ics.join('\\r\\n')], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `calendario-${courseName.replace(/\\s+/g, '_')}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
 let currentUser = null;
 let currentProfile = null;
 
@@ -224,6 +257,7 @@ const routes = {
     '/estudiante/catedras': 'student-courses',
     '/estudiante/catedras/clases': 'student-course-schedule-view',
     '/estudiante/tareas': 'student-assignments',
+    '/estudiante/notificaciones': 'student-notifications',
     '/perfil': 'profile',
 };
 
@@ -291,6 +325,7 @@ const router = () => {
         loadStudentCourseSchedule(urlParams.get('id'));
     }
     if (path === '/estudiante/tareas') loadStudentAssignments();
+    if (path === '/estudiante/notificaciones') loadStudentNotifications();
     
     if (path === '/perfil') loadProfile();
 };
@@ -331,6 +366,10 @@ onAuthStateChanged(auth, async (user) => {
             document.querySelectorAll('.role-nav').forEach(el => el.classList.add('hidden'));
             const nav = document.getElementById(`nav-${currentProfile.role}`);
             if (nav) nav.classList.remove('hidden');
+            
+            if (currentProfile.role === 'student') {
+                checkStudentNotifications();
+            }
             
             const urlParams = new URLSearchParams(window.location.search);
             const enrollCode = urlParams.get('enroll');
@@ -1035,6 +1074,14 @@ document.getElementById('save-schedule-btn').onclick = async () => {
             courseId: scheduleCourseData.id,
             data: { class_instances: currentClassInstances }
         }});
+        
+        // Notify students about the updated schedule
+        api({ action: 'notifyCourseStudents', payload: {
+            courseId: scheduleCourseData.id,
+            message: `El profesor ha actualizado el cronograma de la materia ${scheduleCourseData.name}.`,
+            link: '/estudiante/catedras/clases?id=' + scheduleCourseData.id
+        }}).catch(e => console.error("Error sending notification:", e));
+
         const status = document.getElementById('schedule-save-status');
         status.style.display = 'block';
         setTimeout(() => status.style.display = 'none', 3000);
@@ -1656,10 +1703,8 @@ async function loadStudentCourseSchedule(urlParams) {
         } catch (e) { console.error(e); }
 
         // Set course calendar subscribe link
-        const courseIcsUrl = `${window.location.origin}/api/calendar?id=${course.id}`;
-        const encodedCourseUrl = encodeURIComponent(courseIcsUrl);
         document.getElementById('subscribe-course-gcal-btn').onclick = () => {
-            window.open(`https://calendar.google.com/calendar/r?cid=${encodedCourseUrl}`, '_blank');
+            downloadIcsFile(course.name, instances);
         };
 
         // Render visual calendar
@@ -1841,7 +1886,64 @@ async function loadStudentAssignments() {
         container.innerHTML = `<p style="color: red;">Error cargando entregas: ${e.message}</p>`;
     }
 }
+window.checkStudentNotifications = async () => {
+    try {
+        const res = await api({ action: 'getStudentNotifications' });
+        const unreadCount = res.data.filter(n => !n.read).length;
+        const badge = document.getElementById('student-notif-badge');
+        if (unreadCount > 0) {
+            badge.innerText = unreadCount;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch (e) {
+        console.error("Error checking notifications:", e);
+    }
+};
 
+window.loadStudentNotifications = async () => {
+    const container = document.getElementById('student-notifications-list');
+    container.innerHTML = '<p>Cargando notificaciones...</p>';
+    
+    try {
+        const res = await api({ action: 'getStudentNotifications' });
+        const notifs = res.data || [];
+        
+        if (notifs.length === 0) {
+            container.innerHTML = '<p>No tienes notificaciones por el momento.</p>';
+            return;
+        }
+        
+        let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+        notifs.forEach(n => {
+            const d = new Date(n.created_at._seconds * 1000 || n.created_at);
+            const isRead = n.read;
+            html += `
+                <div class="card" style="border-left: 4px solid ${isRead ? '#95a5a6' : '#e74c3c'}; background: ${isRead ? '#fafafa' : '#fff'}; cursor: ${n.link ? 'pointer' : 'default'};" ${n.link ? `onclick="navigateTo('${n.link}')"` : ''}>
+                    <div style="font-size: 0.85em; color: #888; margin-bottom: 5px;">${d.toLocaleString()} ${!isRead ? '<span style="color: #e74c3c; font-weight: bold;">(Nueva)</span>' : ''}</div>
+                    <div style="font-size: 1.1em; color: #333;">${n.message}</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+        
+        document.getElementById('mark-all-read-btn').onclick = async () => {
+            try {
+                await api({ action: 'markNotificationsRead' });
+                checkStudentNotifications();
+                loadStudentNotifications();
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        };
+        
+    } catch (e) {
+        container.innerHTML = `<p style="color: red;">Error cargando notificaciones: ${e.message}</p>`;
+    }
+};
 
 
 
@@ -1928,10 +2030,8 @@ async function setupTeacherVisualCalendar() {
         }
     } catch (e) { console.error(e); }
 
-    const courseIcsUrl = `${window.location.origin}/api/calendar?id=${scheduleCourseData.id}`;
-    const encodedCourseUrl = encodeURIComponent(courseIcsUrl);
     document.getElementById('teacher-subscribe-course-gcal-btn').onclick = () => {
-        window.open(`https://calendar.google.com/calendar/r?cid=${encodedCourseUrl}`, '_blank');
+        downloadIcsFile(scheduleCourseData.name, currentClassInstances);
     };
 
     let teacherCalendar = null;

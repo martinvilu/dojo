@@ -272,6 +272,62 @@ exports.api = functions.https.onCall(async (data, context) => {
             return { success: true };
         }
 
+        if (action === 'notifyCourseStudents') {
+            const { courseId, message, link } = payload;
+            // Check teacher auth
+            const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+            if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+            
+            const studentsSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
+            
+            // Batch writes are limited to 500, but courses shouldn't have more than 500 for now. 
+            // If they do, we'd need chunks, but let's keep it simple.
+            const chunks = [];
+            let currentBatch = db.batch();
+            let count = 0;
+            
+            for (let doc of studentsSnap.docs) {
+                const sData = doc.data();
+                const ref = db.collection('notifications').doc();
+                currentBatch.set(ref, {
+                    student_id: sData.student_id,
+                    message,
+                    link: link || null,
+                    read: false,
+                    created_at: admin.firestore.FieldValue.serverTimestamp()
+                });
+                count++;
+                if (count === 490) {
+                    chunks.push(currentBatch.commit());
+                    currentBatch = db.batch();
+                    count = 0;
+                }
+            }
+            if (count > 0) chunks.push(currentBatch.commit());
+            await Promise.all(chunks);
+            return { success: true };
+        }
+
+        if (action === 'getStudentNotifications') {
+            const snap = await db.collection('notifications')
+                .where('student_id', '==', uid)
+                .orderBy('created_at', 'desc')
+                .limit(20)
+                .get();
+            return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        if (action === 'markNotificationsRead') {
+            const snap = await db.collection('notifications')
+                .where('student_id', '==', uid)
+                .where('read', '==', false)
+                .get();
+            const batch = db.batch();
+            snap.docs.forEach(doc => batch.update(doc.ref, { read: true }));
+            await batch.commit();
+            return { success: true };
+        }
+
         if (action === 'cloneCourseExtraData') {
             const { sourceCourseId, targetCourseId } = payload;
             const accessSource = await db.collection('course_teachers').doc(`${sourceCourseId}_${uid}`).get();
@@ -1153,12 +1209,24 @@ exports.importGrades = functions.https.onRequest(async (req, res) => {
             if (!resultado && !comentario_general) continue;
 
             const subRef = db.collection('submissions').doc(id_entrega);
-            batch.update(subRef, {
-                grade: String(resultado || ''),
-                feedback: String(comentario_general || ''),
-                graded_at: admin.firestore.FieldValue.serverTimestamp()
-            });
-            updatedCount++;
+            const subSnap = await subRef.get();
+            if (subSnap.exists) {
+                batch.update(subRef, {
+                    grade: String(resultado || ''),
+                    feedback: String(comentario_general || ''),
+                    graded_at: admin.firestore.FieldValue.serverTimestamp()
+                });
+                
+                const notifRef = db.collection('notifications').doc();
+                batch.set(notifRef, {
+                    student_id: subSnap.data().student_id,
+                    message: `Tu entrega ha sido corregida. ${resultado ? 'Nota: ' + resultado : ''}`,
+                    link: '/estudiante/tareas',
+                    read: false,
+                    created_at: admin.firestore.FieldValue.serverTimestamp()
+                });
+                updatedCount++;
+            }
         }
 
         await batch.commit();
