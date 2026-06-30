@@ -218,6 +218,7 @@ const routes = {
     '/docente/catedras': 'teacher-courses',
     '/docente/catedras/configuracion': 'teacher-course-settings',
     '/docente/catedras/clases': 'teacher-course-schedule',
+    '/docente/catedras/dashboard': 'teacher-course-dashboard',
     '/docente/tareas': 'teacher-assignments',
     '/docente/avisos': 'teacher-announcements',
     '/estudiante/catedras': 'student-courses',
@@ -276,6 +277,10 @@ const router = () => {
     if (path === '/docente/catedras/clases') {
         const urlParams = new URLSearchParams(window.location.search);
         loadTeacherCourseSchedule(urlParams.get('id'));
+    }
+    if (path === '/docente/catedras/dashboard') {
+        const urlParams = new URLSearchParams(window.location.search);
+        loadTeacherCourseDashboard(urlParams.get('id'));
     }
     if (path === '/docente/tareas') loadTeacherAssignments();
     if (path === '/docente/avisos') loadTeacherAnnouncements();
@@ -453,11 +458,68 @@ async function loadTeacherCourses() {
                 <p style="margin: 0; color: #7f8c8d;"><strong>Código de invitación:</strong> ${c.invite_code || '-'}</p>
             </div>
             <div style="display: flex; gap: 10px;">
+                <button class="secondary" onclick="navigateTo('/docente/catedras/dashboard?id=${c.id}')" style="background: #f1f2f6; border: 1px solid #dfe4ea; color: #2f3542;">📊 Dashboard</button>
                 <button class="secondary" onclick="navigateTo('/docente/catedras/clases?id=${c.id}')" style="background: #e8f4f8; color: #2980b9; border: 1px solid #3498db;">📅 Cronograma</button>
                 <button onclick="navigateTo('/docente/catedras/configuracion?id=${c.id}')">⚙️ Configurar cursada</button>
             </div>
         </div>
     `).join('') || '<p>No tenés cursos asignados</p>';
+}
+
+window.loadTeacherCourseDashboard = async (courseId) => {
+    if (!courseId) return navigateTo('/docente/catedras');
+    const grid = document.getElementById('dashboard-stats-grid');
+    const alerts = document.getElementById('dashboard-alerts-list');
+    
+    grid.innerHTML = '<p>Cargando métricas...</p>';
+    alerts.innerHTML = '<li>Cargando alertas...</li>';
+    
+    try {
+        const res = await api({ action: 'getCourseDashboardStats', payload: { courseId } });
+        const data = res.data;
+        document.getElementById('dashboard-course-name').innerText = data.name;
+        
+        grid.innerHTML = `
+            <div class="card" style="background: #e8f4f8; text-align: center;">
+                <h3 style="margin: 0; font-size: 2em; color: #2980b9;">${data.totalStudents}</h3>
+                <p style="margin: 5px 0 0; color: #555;">Alumnos inscriptos</p>
+            </div>
+            <div class="card" style="background: #fdf2e9; text-align: center;">
+                <h3 style="margin: 0; font-size: 2em; color: #d35400;">${data.totalClasses}</h3>
+                <p style="margin: 5px 0 0; color: #555;">Clases planificadas</p>
+            </div>
+            <div class="card" style="background: #eaeded; text-align: center;">
+                <h3 style="margin: 0; font-size: 2em; color: #7f8c8d;">${data.totalAssignments}</h3>
+                <p style="margin: 5px 0 0; color: #555;">Tareas / Entregas</p>
+            </div>
+            <div class="card" style="background: #eafaf1; text-align: center;">
+                <h3 style="margin: 0; font-size: 2em; color: #27ae60;">${data.totalSubmissions}</h3>
+                <p style="margin: 5px 0 0; color: #555;">Entregas recibidas</p>
+            </div>
+        `;
+        
+        const alertItems = [];
+        if (data.pendingCorrections > 0) {
+            alertItems.push(`<li style="color: #c0392b; margin-bottom: 10px;"><strong>¡Atención!</strong> Tienes ${data.pendingCorrections} entregas pendientes de corrección. Revisá el Google Sheet y luego andá a la pestaña "Entregas" para sincronizar.</li>`);
+        }
+        if (data.totalStudents === 0) {
+            alertItems.push(`<li style="color: #f39c12; margin-bottom: 10px;"><strong>Sin alumnos:</strong> Nadie se ha inscripto aún. Recordá compartir el Código de Invitación o el Enlace Mágico.</li>`);
+        }
+        if (data.totalClasses === 0) {
+            alertItems.push(`<li style="color: #f39c12; margin-bottom: 10px;"><strong>Sin cronograma:</strong> Aún no generaste el cronograma de clases. Usá la opción "Configurar cursada".</li>`);
+        }
+        if (data.totalAssignments > 0 && data.totalSubmissions > 0) {
+            const onTimePct = Math.round((data.onTimeSubmissions / data.totalSubmissions) * 100);
+            alertItems.push(`<li style="color: #2980b9; margin-bottom: 10px;"><strong>Rendimiento:</strong> El ${onTimePct}% de las entregas fueron enviadas a término.</li>`);
+        }
+        
+        if (alertItems.length === 0) alertItems.push('<li style="color: #27ae60;">Todo está al día. ¡Buen trabajo!</li>');
+        alerts.innerHTML = alertItems.join('');
+        
+    } catch(e) {
+        grid.innerHTML = `<p style="color: red;">Error: ${e.message}</p>`;
+        alerts.innerHTML = '<li>Error al cargar alertas</li>';
+    }
 }
 
 let currentCourseSettingsId = null;
