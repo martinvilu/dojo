@@ -57,7 +57,27 @@ exports.api = functions.https.onCall(async (data, context) => {
             });
             return { success: true };
         }
-        
+
+        if (action === 'markAttendance') {
+            const { courseId, classId } = payload;
+            if (!courseId || !classId) throw new Error("Faltan datos de la clase");
+            
+            // Check enrollment
+            const enrollmentRef = db.collection('enrollments').doc(`${uid}_${courseId}`);
+            const doc = await enrollmentRef.get();
+            if (!doc.exists) throw new Error("No estás inscripto en este curso");
+            
+            // Mark attendance
+            const attendanceRef = db.collection('attendance').doc(`${courseId}_${classId}_${uid}`);
+            await attendanceRef.set({
+                course_id: courseId,
+                class_id: classId,
+                student_id: uid,
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
+            });
+            
+            return { success: true };
+        }
         if (action === 'updateProfile') {
             await db.collection('profiles').doc(uid).update(payload);
             return { success: true };

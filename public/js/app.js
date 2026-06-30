@@ -23,7 +23,24 @@ const withLoading = async (fn) => {
 };
 
 const _api = httpsCallable(functions, 'api');
-const api = async (data) => withLoading(() => _api(data));
+const apiCache = {};
+const api = async (data) => {
+    const isGet = data.action && data.action.startsWith('get');
+    const cacheKey = isGet ? JSON.stringify(data) : null;
+    
+    if (!isGet) {
+        // Invalidate cache on mutations
+        Object.keys(apiCache).forEach(k => delete apiCache[k]);
+    } else if (apiCache[cacheKey]) {
+        return apiCache[cacheKey];
+    }
+    
+    return withLoading(async () => {
+        const result = await _api(data);
+        if (cacheKey) apiCache[cacheKey] = result;
+        return result;
+    });
+};
 
 let currentUser = null;
 let currentProfile = null;
@@ -321,6 +338,19 @@ onAuthStateChanged(auth, async (user) => {
                     return;
                 } catch(e) {
                     alert('Error al inscribirse con enlace: ' + e.message);
+                    window.history.replaceState({}, document.title, window.location.pathname + (window.location.hash || ''));
+                }
+            }
+
+            const attendanceCode = urlParams.get('attendance');
+            if (attendanceCode) {
+                try {
+                    const [courseId, classId] = attendanceCode.split('_');
+                    await api({ action: 'markAttendance', payload: { courseId, classId } });
+                    alert('Asistencia registrada exitosamente para la clase.');
+                    window.history.replaceState({}, document.title, window.location.pathname + (window.location.hash || ''));
+                } catch(e) {
+                    alert('Error al registrar asistencia: ' + e.message);
                     window.history.replaceState({}, document.title, window.location.pathname + (window.location.hash || ''));
                 }
             }
@@ -701,6 +731,7 @@ function generateClassInstances() {
         for (let i = 0; i < scheduleCourseData.duration_weeks; i++) {
             const classDate = new Date(firstClassDate.getTime() + i * 7 * 86400000);
             generatedClasses.push({
+                id: crypto.randomUUID(),
                 date: classDate.toISOString(),
                 type: sch.type,
                 topic: "",
@@ -717,6 +748,7 @@ function generateClassInstances() {
     const oldInstances = currentClassInstances || [];
     generatedClasses.forEach((ci, idx) => {
         if (oldInstances[idx]) {
+            ci.id = oldInstances[idx].id || ci.id;
             ci.topic = oldInstances[idx].topic || "";
             ci.presentation_url = oldInstances[idx].presentation_url || "";
             ci.recording_url = oldInstances[idx].recording_url || "";
@@ -754,6 +786,7 @@ function renderScheduleClasses() {
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="margin: 0; text-transform: capitalize; flex: 1; min-width: 200px;">Clase ${idx + 1} (${ci.type})</h3>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button class="secondary" style="margin: 0; padding: 5px 10px;" onclick="showAttendanceQR(${idx})" title="Código QR de Asistencia">📷 QR Asistencia</button>
                     <input type="date" value="${dateVal}" onchange="updateClassDate(${idx}, this.value, null)" style="padding: 5px;">
                     <input type="time" value="${timeVal}" onchange="updateClassDate(${idx}, null, this.value)" style="padding: 5px;">
                     <select id="ci-status-${idx}" onchange="updateClassInstance(${idx}, 'special_status', this.value)" style="padding: 5px;">
@@ -796,6 +829,29 @@ function renderScheduleClasses() {
         `;
     }).join('');
 }
+
+window.showAttendanceQR = (idx) => {
+    const ci = currentClassInstances[idx];
+    if (!ci.id) return alert("Por favor guardá la configuración primero para generar IDs de clase.");
+    
+    const url = `${window.location.origin}/?attendance=${currentCourseSettingsId}_${ci.id}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 9999;';
+    modal.onclick = () => document.body.removeChild(modal);
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 90vw;" onclick="event.stopPropagation()">
+            <h2 style="margin-top: 0;">Asistencia: Clase ${idx + 1}</h2>
+            <p style="color: #666; margin-bottom: 20px;">Los estudiantes pueden escanear este código para dar el presente.</p>
+            <img src="${qrUrl}" alt="QR Asistencia" style="width: 300px; height: 300px; border: 1px solid #eee; border-radius: 8px;">
+            <p style="margin-top: 20px; font-size: 0.9em; word-break: break-all;"><a href="${url}" target="_blank">${url}</a></p>
+            <button onclick="document.body.removeChild(this.parentElement.parentElement)" style="margin-top: 10px;">Cerrar</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
 
 window.updateClassDate = (idx, dateVal, timeVal) => {
     const d = new Date(currentClassInstances[idx].date);
