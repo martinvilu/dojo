@@ -493,13 +493,13 @@ async function loadTeacherCourses() {
     document.getElementById('teacher-courses-list').innerHTML = res.data.map(c => `
         <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h3 style="margin-bottom: 5px;">${c.name}</h3>
+                <h3 style="margin-bottom: 5px;">${c.name} ${c.course_role === 'ayudante' ? '<span style="font-size:0.6em; background:#f39c12; color:#fff; padding:2px 5px; border-radius:3px; vertical-align:middle;">Ayudante</span>' : ''}</h3>
                 <p style="margin: 0; color: #7f8c8d;"><strong>Código de invitación:</strong> ${c.invite_code || '-'}</p>
             </div>
             <div style="display: flex; gap: 10px;">
                 <button class="secondary" onclick="navigateTo('/docente/catedras/dashboard?id=${c.id}')" style="background: #f1f2f6; border: 1px solid #dfe4ea; color: #2f3542;">📊 Dashboard</button>
-                <button class="secondary" onclick="navigateTo('/docente/catedras/clases?id=${c.id}')" style="background: #e8f4f8; color: #2980b9; border: 1px solid #3498db;">📅 Cronograma</button>
-                <button onclick="navigateTo('/docente/catedras/configuracion?id=${c.id}')">⚙️ Configurar cursada</button>
+                ${c.course_role !== 'ayudante' ? `<button class="secondary" onclick="navigateTo('/docente/catedras/clases?id=${c.id}')" style="background: #e8f4f8; color: #2980b9; border: 1px solid #3498db;">📅 Cronograma</button>
+                <button onclick="navigateTo('/docente/catedras/configuracion?id=${c.id}')">⚙️ Configurar cursada</button>` : ''}
             </div>
         </div>
     `).join('') || '<p>No tenés cursos asignados</p>';
@@ -612,9 +612,11 @@ async function loadTeacherCourseSettings(courseId) {
         if (document.getElementById('settings-invite-student-link')) {
             const inviteStudentLink = `${window.location.origin}/?enroll=${data.invite_code}`;
             const inviteTeacherLink = `${window.location.origin}/?enroll=${data.teacher_invite_code}`;
+            const inviteAssistantLink = `${window.location.origin}/?enroll=${data.assistant_invite_code || ''}`;
             
             document.getElementById('settings-invite-student-link').value = inviteStudentLink;
             document.getElementById('settings-invite-teacher-link').value = inviteTeacherLink;
+            document.getElementById('settings-invite-assistant-link').value = inviteAssistantLink;
             
             document.getElementById('btn-copy-student-link').onclick = () => {
                 navigator.clipboard.writeText(inviteStudentLink);
@@ -623,6 +625,10 @@ async function loadTeacherCourseSettings(courseId) {
             document.getElementById('btn-copy-teacher-link').onclick = () => {
                 navigator.clipboard.writeText(inviteTeacherLink);
                 alert('¡Enlace copiado para docentes!');
+            };
+            document.getElementById('btn-copy-assistant-link').onclick = () => {
+                navigator.clipboard.writeText(inviteAssistantLink);
+                alert('¡Enlace copiado para ayudantes!');
             };
         }
 

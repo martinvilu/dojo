@@ -175,8 +175,22 @@ exports.api = functions.https.onCall(async (data, context) => {
                 const courseId = tSnap.docs[0].id;
                 await db.collection('course_teachers').doc(`${courseId}_${uid}`).set({
                     course_id: courseId,
-                    teacher_id: uid
+                    teacher_id: uid,
+                    role: 'titular'
                 });
+                await db.collection('profiles').doc(uid).update({ role: 'teacher', account_status: 'approved' });
+                return { success: true };
+            }
+            
+            const aSnap = await db.collection('courses').where('assistant_invite_code', '==', code).get();
+            if (!aSnap.empty) {
+                const courseId = aSnap.docs[0].id;
+                await db.collection('course_teachers').doc(`${courseId}_${uid}`).set({
+                    course_id: courseId,
+                    teacher_id: uid,
+                    role: 'ayudante'
+                });
+                // Assign teacher profile globally but course role is ayudante
                 await db.collection('profiles').doc(uid).update({ role: 'teacher', account_status: 'approved' });
                 return { success: true };
             }
@@ -190,6 +204,7 @@ exports.api = functions.https.onCall(async (data, context) => {
                 github_org: payload.github_org,
                 invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
                 teacher_invite_code: 'T-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+                assistant_invite_code: 'A-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
                 created_by: uid,
                 created_at: admin.firestore.FieldValue.serverTimestamp()
             });
@@ -230,7 +245,7 @@ exports.api = functions.https.onCall(async (data, context) => {
             const courses = [];
             for (let doc of snap.docs) {
                 const cSnap = await db.collection('courses').doc(doc.data().course_id).get();
-                if(cSnap.exists) courses.push({ id: cSnap.id, ...cSnap.data() });
+                if(cSnap.exists) courses.push({ id: cSnap.id, course_role: doc.data().role || 'titular', ...cSnap.data() });
             }
             return courses;
         }
@@ -252,11 +267,16 @@ exports.api = functions.https.onCall(async (data, context) => {
                 data.teacher_invite_code = 'T-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                 needsUpdate = true;
             }
+            if (!data.assistant_invite_code) {
+                data.assistant_invite_code = 'A-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                needsUpdate = true;
+            }
             
             if (needsUpdate) {
                 await db.collection('courses').doc(courseId).update({
                     invite_code: data.invite_code,
-                    teacher_invite_code: data.teacher_invite_code
+                    teacher_invite_code: data.teacher_invite_code,
+                    assistant_invite_code: data.assistant_invite_code
                 });
             }
             
@@ -267,6 +287,7 @@ exports.api = functions.https.onCall(async (data, context) => {
             const courseId = payload.courseId;
             const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
             if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+            if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
             
             await db.collection('courses').doc(courseId).update(payload.data);
             return { success: true };
@@ -344,6 +365,7 @@ exports.api = functions.https.onCall(async (data, context) => {
             const accessSource = await db.collection('course_teachers').doc(`${sourceCourseId}_${uid}`).get();
             const accessTarget = await db.collection('course_teachers').doc(`${targetCourseId}_${uid}`).get();
             if (!accessSource.exists || !accessTarget.exists) throw new Error("No tienes acceso a las materias para clonar");
+            if (accessTarget.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden clonar material hacia esta materia.");
             
             const aSnap = await db.collection('assignments').where('course_id', '==', sourceCourseId).get();
             for (let doc of aSnap.docs) {
