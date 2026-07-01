@@ -46,6 +46,18 @@ exports.api = functions.https.onCall(async (data, context) => {
         return { success: true };
     }
 
+    if (action === 'updateUserRole') {
+        const { targetUid, newRole } = payload;
+        const myProfile = await getMyProfile();
+        if (myProfile.role !== 'admin') throw new Error("Solo admins pueden cambiar roles de usuario");
+        if (!['admin', 'teacher', 'student'].includes(newRole)) throw new Error("Rol inválido");
+        
+        await db.collection('profiles').doc(targetUid).update({
+            role: newRole
+        });
+        return { success: true };
+    }
+
     if (action === 'submitMatricula') {
             const { matricula } = payload;
             if (!matricula || !/^UNRN-\d{5,}$/.test(matricula)) {

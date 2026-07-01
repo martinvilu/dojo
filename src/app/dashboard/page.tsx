@@ -289,6 +289,20 @@ export default function DashboardPage() {
     }
   };
 
+  const handleUpdateUserRole = async (uid: string, newRole: "admin" | "teacher" | "student") => {
+    if (!confirm(`¿Estás seguro de que deseas cambiar el rol del usuario a ${newRole === "admin" ? "Administrador" : newRole === "teacher" ? "Profesor" : "Estudiante"}?`)) return;
+    setApiLoading(true);
+    try {
+      await api("updateUserRole", { targetUid: uid, newRole });
+      const res = await api("getAdminUsers");
+      setUsers(res || []);
+    } catch (err: any) {
+      setError("Error al cambiar rol: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseName) return;
@@ -982,7 +996,17 @@ export default function DashboardPage() {
                     <tr key={u.id}>
                       <td className="p-4 font-medium text-white">{u.full_name || "-"}</td>
                       <td className="p-4">{u.email}</td>
-                      <td className="p-4 capitalize">{u.role}</td>
+                      <td className="p-4">
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleUpdateUserRole(u.id, e.target.value as any)}
+                          className="bg-neutral-950/80 border border-neutral-800 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-blue-500 text-white"
+                        >
+                          <option value="admin">Administrador</option>
+                          <option value="teacher">Profesor</option>
+                          <option value="student">Estudiante</option>
+                        </select>
+                      </td>
                       <td className="p-4 font-mono">{u.matricula_unrn || "-"}</td>
                       <td className="p-4">{u.cohorte || "-"}</td>
                       <td className="p-4">
