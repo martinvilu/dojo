@@ -61,6 +61,14 @@ async function seed() {
         enrolled_at: admin.firestore.FieldValue.serverTimestamp()
     });
 
+    console.log("Creating course teacher relationship...");
+    const courseTeacherRef = db.collection('course_teachers').doc('course123_teacher123');
+    await courseTeacherRef.set({
+        course_id: "course123",
+        teacher_id: "teacher123",
+        role: "titular"
+    });
+
     console.log("Seed complete!");
 }
 
