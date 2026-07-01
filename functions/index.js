@@ -176,6 +176,23 @@ exports.api = functions.https.onCall(async (data, context) => {
             return course;
         }
 
+        if (action === 'getCourseDetails') {
+            const courseId = payload.courseId;
+            const rosterSnap = await db.collection('course_roster').doc(`${courseId}_${uid}`).get();
+            const teacherSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+            const enrollSnap = await db.collection('enrollments').where('course_id', '==', courseId).where('student_id', '==', uid).get();
+            const myProfile = await getMyProfile();
+            
+            if (!rosterSnap.exists && !teacherSnap.exists && enrollSnap.empty && myProfile.role !== 'admin') {
+                throw new Error("No tienes acceso a este curso");
+            }
+            
+            const cSnap = await db.collection('courses').doc(courseId).get();
+            if (!cSnap.exists) throw new Error("Curso no encontrado");
+            
+            return { id: cSnap.id, ...cSnap.data() };
+        }
+
         if (action === 'enrollCourse') {
             const code = payload.code.trim();
             const snap = await db.collection('courses').where('invite_code', '==', code).get();
