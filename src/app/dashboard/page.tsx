@@ -204,7 +204,7 @@ export default function DashboardPage() {
         if (profile?.role === "teacher") {
           if (courseSubTab === "settings") {
             const res = await api("getCourseSettings", { courseId: cid });
-            const data = res.data;
+            const data = res?.data || {};
             setTeacherStartDate(data.start_date || "");
             setTeacherDuration(data.duration_weeks?.toString() || "");
             setTeacherCoverText(data.cover_text || "");
@@ -217,14 +217,14 @@ export default function DashboardPage() {
             setOtherTeacherCourses(otherCoursesRes.filter((c: any) => c.id !== cid));
           } else if (courseSubTab === "schedules") {
             const res = await api("getCourseSettings", { courseId: cid });
-            setTeacherClasses(res.data.class_instances || []);
+            setTeacherClasses(res?.data?.class_instances || []);
           } else if (courseSubTab === "assignments") {
             const res = await api("getTeacherAssignments");
-            const courseAssignments = (res.data || []).filter((a: any) => a.course_id === cid);
+            const courseAssignments = (res?.data || []).filter((a: any) => a.course_id === cid);
             setAssignments(courseAssignments);
           } else if (courseSubTab === "announcements") {
             const res = await api("getTeacherAnnouncements");
-            const courseAnnouncements = (res.data || []).filter((a: any) => a.course_id === cid);
+            const courseAnnouncements = (res?.data || []).filter((a: any) => a.course_id === cid);
             setAnnouncements(courseAnnouncements);
           }
         } else if (profile?.role === "admin") {
