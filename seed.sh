@@ -7,7 +7,8 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/profiles/admin123"
   "fields": {
     "full_name": { "stringValue": "Tsunade Senju" },
     "email": { "stringValue": "admin@jutsu.com" },
-    "role": { "stringValue": "admin" }
+    "role": { "stringValue": "admin" },
+    "account_status": { "stringValue": "approved" }
   }
 }'
 
@@ -16,7 +17,8 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/profiles/student12
   "fields": {
     "full_name": { "stringValue": "Naruto Uzumaki" },
     "email": { "stringValue": "student@jutsu.com" },
-    "role": { "stringValue": "student" }
+    "role": { "stringValue": "student" },
+    "account_status": { "stringValue": "pending" }
   }
 }'
 
@@ -25,7 +27,8 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/profiles/teacher12
   "fields": {
     "full_name": { "stringValue": "Kakashi Hatake" },
     "email": { "stringValue": "kakashi@jutsu.com" },
-    "role": { "stringValue": "teacher" }
+    "role": { "stringValue": "teacher" },
+    "account_status": { "stringValue": "approved" }
   }
 }'
 

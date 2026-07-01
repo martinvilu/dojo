@@ -128,7 +128,7 @@ export default function DashboardPage() {
         const userProfile = profileRes as UserProfile;
         setProfile(userProfile);
 
-        if (userProfile.account_status === "approved") {
+        if (userProfile.account_status === "approved" || userProfile.role === "admin" || userProfile.role === "teacher") {
           if (userProfile.role === "admin") {
             setActiveTab("admin-courses");
           } else if (userProfile.role === "teacher") {
@@ -151,7 +151,7 @@ export default function DashboardPage() {
   // Load data when tab changes
   useEffect(() => {
     setSelectedCourse(null);
-    if (!profile || profile.account_status !== "approved") return;
+    if (!profile || (profile.account_status !== "approved" && profile.role !== "admin" && profile.role !== "teacher")) return;
 
     const loadData = async () => {
       setApiLoading(true);

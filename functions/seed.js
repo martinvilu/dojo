@@ -15,7 +15,8 @@ async function seed() {
     await teacherRef.set({
         full_name: "Kakashi Hatake",
         email: "kakashi@jutsu.com",
-        role: "teacher"
+        role: "teacher",
+        account_status: "approved"
     });
 
     console.log("Creating student profile...");
@@ -23,7 +24,8 @@ async function seed() {
     await studentRef.set({
         full_name: "Naruto Uzumaki",
         email: "naruto@jutsu.com",
-        role: "student"
+        role: "student",
+        account_status: "pending"
     });
 
     console.log("Creating admin profile...");
@@ -31,7 +33,8 @@ async function seed() {
     await adminRef.set({
         full_name: "Tsunade Senju",
         email: "admin@jutsu.com",
-        role: "admin"
+        role: "admin",
+        account_status: "approved"
     });
 
     console.log("Creating a course...");
