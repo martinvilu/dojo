@@ -225,7 +225,7 @@ export default function DashboardPage() {
         } else if (profile?.role === "student") {
           // Student details load
           const detailRes = await api("getCourseDetails", { courseId: cid });
-          setTeacherClasses(detailRes.class_instances || []);
+          setTeacherClasses(detailRes?.class_instances || []);
 
           if (courseSubTab === "assignments") {
             const aRes = await api("getStudentAssignments", { courseIds: [cid] });
