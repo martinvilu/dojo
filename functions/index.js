@@ -108,7 +108,7 @@ exports.api = functions.https.onCall(async (data, context) => {
         }
 
         if (action === 'getAdminCourses') {
-            const coursesSnap = await db.collection('courses').orderBy('created_at', 'desc').get();
+            const coursesSnap = await db.collection('courses').get();
             const courses = [];
             for (let doc of coursesSnap.docs) {
                 const c = { id: doc.id, ...doc.data() };
@@ -124,6 +124,11 @@ exports.api = functions.https.onCall(async (data, context) => {
                 }
                 courses.push(c);
             }
+            courses.sort((a, b) => {
+                const tA = a.created_at ? (a.created_at.toDate ? a.created_at.toDate().getTime() : new Date(a.created_at).getTime()) : 0;
+                const tB = b.created_at ? (b.created_at.toDate ? b.created_at.toDate().getTime() : new Date(b.created_at).getTime()) : 0;
+                return tB - tA;
+            });
             return courses;
         }
 
