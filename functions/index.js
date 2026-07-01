@@ -644,7 +644,16 @@ exports.api = functions.https.onCall(async (data, context) => {
             
             for (const chunk of chunks) {
                 const snap = await db.collection('announcements').where('course_id', 'in', chunk).orderBy('created_at', 'desc').limit(10).get();
-                snap.docs.forEach(d => arr.push({ id: d.id, ...d.data() }));
+                for (let doc of snap.docs) {
+                    const data = doc.data();
+                    const ackRef = db.collection('announcement_acknowledgments').doc(`${doc.id}_${uid}`);
+                    const ackDoc = await ackRef.get();
+                    arr.push({
+                        id: doc.id,
+                        ...data,
+                        acknowledged: ackDoc.exists
+                    });
+                }
             }
             // Sort by created_at descending
             arr.sort((a, b) => {
@@ -656,13 +665,44 @@ exports.api = functions.https.onCall(async (data, context) => {
         }
 
         if (action === 'getStudentCourses') {
-            const snap = await db.collection('course_roster').where('student_id', '==', uid).get();
+            const rosterSnap = await db.collection('course_roster').where('student_id', '==', uid).get();
+            const enrollSnap = await db.collection('enrollments').where('student_id', '==', uid).get();
+            const courseIds = new Set();
+            rosterSnap.docs.forEach(d => courseIds.add(d.data().course_id));
+            enrollSnap.docs.forEach(d => courseIds.add(d.data().course_id));
+            
             const courses = [];
-            for (let doc of snap.docs) {
-                const cSnap = await db.collection('courses').doc(doc.data().course_id).get();
-                if(cSnap.exists) courses.push({ id: cSnap.id, ...cSnap.data() });
+            for (const courseId of courseIds) {
+                const cSnap = await db.collection('courses').doc(courseId).get();
+                if (cSnap.exists) courses.push({ id: cSnap.id, ...cSnap.data() });
             }
             return courses;
+        }
+
+        if (action === 'acknowledgeAnnouncement') {
+            const { announcementId } = payload;
+            await db.collection('announcement_acknowledgments').doc(`${announcementId}_${uid}`).set({
+                announcement_id: announcementId,
+                student_id: uid,
+                acknowledged_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true };
+        }
+
+        if (action === 'getAnnouncementAcknowledgements') {
+            const { announcementId } = payload;
+            const snap = await db.collection('announcement_acknowledgments').where('announcement_id', '==', announcementId).get();
+            const acknowledgments = [];
+            for (let doc of snap.docs) {
+                const data = doc.data();
+                const pSnap = await db.collection('profiles').doc(data.student_id).get();
+                acknowledgments.push({
+                    student_id: data.student_id,
+                    acknowledged_at: data.acknowledged_at,
+                    profile: pSnap.data()
+                });
+            }
+            return acknowledgments;
         }
 
         if (action === 'getCourseRoster') {

@@ -115,6 +115,10 @@ export default function DashboardPage() {
   const [allTeachersList, setAllTeachersList] = useState<any[]>([]);
   const [selectedNewTeacherId, setSelectedNewTeacherId] = useState("");
 
+  // Announcement Acknowledgement states
+  const [visibleAcksId, setVisibleAcksId] = useState<string | null>(null);
+  const [announcementAcks, setAnnouncementAcks] = useState<any[]>([]);
+
   // Fetch profiles and manage auth status
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -220,11 +224,11 @@ export default function DashboardPage() {
             setTeacherClasses(res?.data?.class_instances || []);
           } else if (courseSubTab === "assignments") {
             const res = await api("getTeacherAssignments");
-            const courseAssignments = (res?.data || []).filter((a: any) => a.course_id === cid);
+            const courseAssignments = (res || []).filter((a: any) => a.course_id === cid);
             setAssignments(courseAssignments);
           } else if (courseSubTab === "announcements") {
             const res = await api("getTeacherAnnouncements");
-            const courseAnnouncements = (res?.data || []).filter((a: any) => a.course_id === cid);
+            const courseAnnouncements = (res || []).filter((a: any) => a.course_id === cid);
             setAnnouncements(courseAnnouncements);
           }
         } else if (profile?.role === "admin") {
@@ -255,7 +259,7 @@ export default function DashboardPage() {
             setSubmissions(aRes.submissions || []);
           } else if (courseSubTab === "announcements") {
             const annRes = await api("getStudentAnnouncements", { courseIds: [cid] });
-            setAnnouncements(annRes.data || []);
+            setAnnouncements(annRes || []);
           }
         }
       } catch (err: any) {
@@ -354,6 +358,38 @@ export default function DashboardPage() {
       setError("Error al desasignar profesor: " + err.message);
     } finally {
       setApiLoading(false);
+    }
+  };
+
+  const handleAcknowledgeAnnouncement = async (announcementId: string) => {
+    setApiLoading(true);
+    try {
+      await api("acknowledgeAnnouncement", { announcementId });
+      const cid = selectedCourse.id || selectedCourse.course?.id;
+      const annRes = await api("getStudentAnnouncements", { courseIds: [cid] });
+      setAnnouncements(annRes || []);
+    } catch (err: any) {
+      setError("Error al confirmar recepción: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleToggleAcks = async (announcementId: string) => {
+    if (visibleAcksId === announcementId) {
+      setVisibleAcksId(null);
+      setAnnouncementAcks([]);
+    } else {
+      setApiLoading(true);
+      try {
+        const res = await api("getAnnouncementAcknowledgements", { announcementId });
+        setAnnouncementAcks(res || []);
+        setVisibleAcksId(announcementId);
+      } catch (err: any) {
+        setError("Error al cargar acuses de recibo: " + err.message);
+      } finally {
+        setApiLoading(false);
+      }
     }
   };
 
@@ -709,7 +745,7 @@ export default function DashboardPage() {
       await api("createAnnouncement", { course_id: cid, message: newAnnouncementMessage });
       setNewAnnouncementMessage("");
       const res = await api("getTeacherAnnouncements");
-      setAnnouncements((res.data || []).filter((a: any) => a.course_id === cid));
+      setAnnouncements((res || []).filter((a: any) => a.course_id === cid));
       alert("Aviso enviado a la cátedra.");
     } catch (err: any) {
       alert("Error al enviar aviso: " + err.message);
@@ -1782,7 +1818,7 @@ export default function DashboardPage() {
                       ? new Date(a.created_at._seconds * 1000).toLocaleString("es-AR")
                       : "Reciente";
                     return (
-                      <div key={a.id} className="p-6 bg-neutral-900/40 border border-neutral-800 rounded-2xl space-y-3">
+                      <div key={a.id} className="p-6 bg-neutral-900/40 border border-neutral-800 rounded-2xl space-y-4">
                         <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
                           <span className="text-xs font-bold text-blue-400">Aviso General</span>
                           <span className="text-[10px] text-gray-500 font-mono">{dateStr}</span>
@@ -1791,6 +1827,57 @@ export default function DashboardPage() {
                           className="text-xs text-gray-300 leading-relaxed font-sans markdown-body"
                           dangerouslySetInnerHTML={{ __html: marked.parse(a.message || "") }}
                         />
+                        
+                        {profile?.role === "student" && (
+                          <div className="flex justify-end pt-3 border-t border-neutral-850">
+                            {a.acknowledged ? (
+                              <span className="text-[11px] text-green-400 font-semibold flex items-center space-x-1">
+                                <span>Acuse de recepción confirmado ✓</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleAcknowledgeAnnouncement(a.id)}
+                                className="px-3.5 py-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-lg text-[10px] font-bold text-gray-300 transition cursor-pointer"
+                              >
+                                Confirmar Recepción
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {(profile?.role === "teacher" || profile?.role === "admin") && (
+                          <div className="pt-3 border-t border-neutral-850 space-y-3">
+                            <div className="flex justify-between items-center">
+                              <button
+                                onClick={() => handleToggleAcks(a.id)}
+                                className="text-[10px] text-blue-400 hover:text-blue-300 font-bold underline transition"
+                              >
+                                {visibleAcksId === a.id ? "Ocultar Acuses" : "Ver Acuses de Recepción"}
+                              </button>
+                            </div>
+                            {visibleAcksId === a.id && (
+                              <div className="bg-neutral-950/60 p-4 rounded-xl border border-neutral-850 space-y-2">
+                                <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Leído por:</h5>
+                                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                  {announcementAcks.map((ack) => {
+                                    const ackDate = ack.acknowledged_at
+                                      ? new Date(ack.acknowledged_at._seconds * 1000).toLocaleString("es-AR")
+                                      : "Reciente";
+                                    return (
+                                      <div key={ack.student_id} className="text-xs flex justify-between text-gray-300">
+                                        <span>{ack.profile?.full_name || "Estudiante"} ({ack.profile?.email || "-"})</span>
+                                        <span className="text-gray-500 font-mono text-[10px]">{ackDate}</span>
+                                      </div>
+                                    );
+                                  })}
+                                  {announcementAcks.length === 0 && (
+                                    <p className="text-[11px] text-gray-500 italic">Nadie ha confirmado recepción aún.</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
