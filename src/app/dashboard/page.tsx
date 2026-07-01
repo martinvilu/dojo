@@ -150,6 +150,7 @@ export default function DashboardPage() {
 
   // Load data when tab changes
   useEffect(() => {
+    setSelectedCourse(null);
     if (!profile || profile.account_status !== "approved") return;
 
     const loadData = async () => {
@@ -184,7 +185,6 @@ export default function DashboardPage() {
     };
 
     loadData();
-    setSelectedCourse(null);
   }, [activeTab, profile]);
 
   // Load course details subtabs
@@ -1195,7 +1195,7 @@ export default function DashboardPage() {
         )}
 
         {/* DETALLADA VISTA DE CÁTEDRA */}
-        {selectedCourse && (
+        {selectedCourse && ["admin-courses", "teacher-courses", "student-courses"].includes(activeTab) && (
           <div className="space-y-6">
             {/* Header Detail */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-neutral-800 pb-4 gap-4">
