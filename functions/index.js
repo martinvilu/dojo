@@ -96,8 +96,10 @@ exports.api = functions.https.onCall(async (data, context) => {
         }
         
         if (action === 'getAdminUsers') {
-            const snap = await db.collection('profiles').orderBy('full_name').get();
-            return snap.docs.map(d => d.data());
+            const snap = await db.collection('profiles').get();
+            const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            users.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
+            return users;
         }
         
         if (action === 'updateUserProfile') {
