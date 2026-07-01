@@ -220,8 +220,8 @@ export default function DashboardPage() {
             const otherCoursesRes = await api("getTeacherCourses");
             setOtherTeacherCourses(otherCoursesRes.filter((c: any) => c.id !== cid));
           } else if (courseSubTab === "schedules") {
-            const res = await api("getCourseSettings", { courseId: cid });
-            setTeacherClasses(res?.data?.class_instances || []);
+            const res = await api("getCourseDetails", { courseId: cid });
+            setTeacherClasses(res?.class_instances || []);
           } else if (courseSubTab === "assignments") {
             const res = await api("getTeacherAssignments");
             const courseAssignments = (res || []).filter((a: any) => a.course_id === cid);
@@ -230,6 +230,9 @@ export default function DashboardPage() {
             const res = await api("getTeacherAnnouncements");
             const courseAnnouncements = (res || []).filter((a: any) => a.course_id === cid);
             setAnnouncements(courseAnnouncements);
+          } else if (courseSubTab === "teachers") {
+            const tRes = await api("getCourseTeachers", { courseId: cid });
+            setCourseTeachers(tRes || []);
           }
         } else if (profile?.role === "admin") {
           const detailRes = await api("getAdminCourseDetails", { courseId: cid });
@@ -242,11 +245,6 @@ export default function DashboardPage() {
             setCourseTeachers(tRes || []);
             const uRes = await api("getAdminUsers");
             setAllTeachersList((uRes || []).filter((u: any) => u.role === "teacher"));
-          }
-        } else if (profile?.role === "teacher") {
-          if (courseSubTab === "teachers") {
-            const tRes = await api("getCourseTeachers", { courseId: cid });
-            setCourseTeachers(tRes || []);
           }
         } else if (profile?.role === "student") {
           // Student details load
