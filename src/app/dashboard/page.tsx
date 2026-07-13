@@ -72,6 +72,32 @@ export default function DashboardPage() {
   const [courseSubTab, setCourseSubTab] = useState("schedules"); // schedules, settings, assignments, announcements
 
   // Form states
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+  useEffect(() => {
+    const savedTheme = typeof window !== "undefined" ? localStorage.getItem("theme") as "light" | "dark" : null;
+    const initialTheme = savedTheme || "dark";
+    setTheme(initialTheme);
+    if (initialTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", newTheme);
+    }
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
   const [newCourseName, setNewCourseName] = useState("");
   const [newCourseOrg, setNewCourseOrg] = useState("");
   const [enrollCode, setEnrollCode] = useState("");
@@ -1008,20 +1034,20 @@ export default function DashboardPage() {
   const weeklyClassesGrouped = getWeeklyClasses(teacherClasses);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col md:flex-row">
+    <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col md:flex-row transition-colors duration-200">
       {/* SIDEBAR */}
-      <aside className="w-full md:w-64 bg-neutral-900 border-b md:border-b-0 md:border-r border-neutral-800 flex flex-col p-6 space-y-6">
+      <aside className="w-full md:w-64 bg-bg-secondary border-b md:border-b-0 md:border-r border-border-custom flex flex-col p-6 space-y-6">
         <div>
           <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
             Gaula Classroom
           </h1>
-          <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-semibold">
+          <p className="text-xs text-text-secondary mt-1 uppercase tracking-wider font-semibold">
             {profile?.role === "admin" ? "Administrador" : profile?.role === "teacher" ? "Profesor" : "Estudiante"}
           </p>
         </div>
 
         {/* User Badge */}
-        <div className="flex items-center space-x-3 bg-neutral-950/50 p-3 rounded-xl border border-neutral-800">
+        <div className="flex items-center space-x-3 bg-bg-primary/50 p-3 rounded-xl border border-border-custom">
           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white uppercase overflow-hidden text-sm">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
@@ -1102,7 +1128,13 @@ export default function DashboardPage() {
           </button>
         </nav>
 
-        <div className="border-t border-neutral-800 pt-4">
+        <div className="border-t border-border-custom pt-4 space-y-2">
+          <button
+            onClick={toggleTheme}
+            className="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer flex items-center justify-center space-x-2 border border-border-custom"
+          >
+            <span>{theme === "light" ? "🌙 Modo Oscuro" : "☀️ Modo Claro"}</span>
+          </button>
           <button
             onClick={handleLogout}
             className="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-red-950/30 text-red-400 hover:bg-red-900/40 hover:text-red-300 transition cursor-pointer"
