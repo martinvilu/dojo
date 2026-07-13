@@ -50,3 +50,14 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Backups Incrementales y Recuperación Granular**: Respaldos continuos en la nube para las colecciones críticas con posibilidad de restaurar documentos individuales de Firestore en caso de errores de usuario.
 * **Restricción de Acceso por Rango de IPs (IP Whitelisting)**: Habilitar a los administradores para forzar que ciertas entregas de tareas o exámenes solo puedan completarse desde conexiones físicas dentro del campus o laboratorios de la universidad.
 * **Compresión y Optimización Multimedia**: Compresor de archivos en background para optimizar automáticamente materiales didácticos, grabaciones y lecturas de cátedra, reduciendo ancho de banda en accesos de estudiantes con conexiones lentas.
+
+## 4. Mejoras Enfocadas por Tipo de Cátedra
+* **Cátedras de Programación e Ingeniería de Software**:
+  - **Pruebas Automatizadas Integradas (Autograding)**: Vinculación directa con GitHub Actions para ejecutar tests unitarios automáticos (ej. JUnit, Jest, PyTest) en cada entrega y actualizar el estado en el panel docente con el porcentaje de cobertura.
+  - **Playground de Código Interactivo (Web Sandbox)**: Un sandbox web incrustado en el cronograma de clases que permita a los estudiantes realizar pequeños experimentos de código HTML/JS/Python directamente en el navegador sin instalar herramientas locales.
+* **Cátedras de Diseño Gráfico, Multimedial y UX/UI**:
+  - **Muro de Trabajo Visual (Pinboard)**: Panel estilo tablón donde los alumnos puedan subir capturas, mockups de Figma o esquemas, facilitando la crítica constructiva visual con comentarios marcados sobre zonas de la imagen.
+* **Cátedras de Matemáticas, Física y Ciencias Exactas**:
+  - **Soporte LaTeX y Modelos Geométricos Interactivos**: Integración de KaTeX para redactar fórmulas y Geogebra en las clases para permitir visualizaciones tridimensionales y de fórmulas físicas interactivas en tiempo real.
+* **Cátedras de Idiomas o Expresión Oral**:
+  - **Grabador y Visor de Ondas de Audio**: Soporte nativo para grabaciones directas desde el micrófono del navegador para entregas de pronunciación o exposiciones, con soporte de reproducción y marcado de feedback de audio en puntos concretos de la onda de sonido.
