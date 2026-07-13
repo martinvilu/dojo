@@ -14,6 +14,8 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Grupos de Cursada Auto-organizados**: Herramienta de emparejamiento inteligente que permita a los estudiantes formar grupos de estudio para tareas grupales o resolver dudas de forma autónoma con compañeros de horarios afines.
 * **Módulo de Tutorías Académicas**: Espacio para conectar a alumnos avanzados (tutores) con estudiantes que requieren ayuda, facilitando la reserva de horarios de mentoría y videollamadas de consulta.
 * **Visualizador de Avance y Correlatividades (Mapa Curricular)**: Gráfico interactivo que muestra las materias del plan de estudios, cuáles están aprobadas, cuáles están en curso, y qué materias futuras se habilitarán en función de los prerrequisitos.
+* **Showcase de Proyectos de Cátedra**: Espacio público o semipúblico para exponer los mejores proyectos de los equipos estudiantiles, fomentando una comunidad de desarrollo activa e interactiva.
+* **Portal de Bienestar y Salud Mental**: Acceso rápido a recursos estudiantiles, recordatorios automáticos de pausas activas durante largas sesiones de estudio y un botón de contacto con el área de orientación universitaria.
 
 ## 2. Experiencia Docente
 * **Analíticas Avanzadas**: Integrar gráficos e indicadores de participación (ej: visualización de asistencia inferida, qué alumnos vieron los videos de clases grabadas, curva de progreso de calificaciones).
@@ -27,6 +29,8 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Alertas Tempranas de Desempeño**: Sistema automático que notifique al docente sobre estudiantes que presenten inasistencias reiteradas o encadenen múltiples entregas de tareas ausentes, identificando casos de riesgo académico de manera proactiva.
 * **Editor Visual de Rúbricas Ponderadas**: Herramienta interactiva para estructurar la calificación de tareas según múltiples criterios y ponderaciones (ej. "Código Limpio: 20%", "Pruebas Unitarias: 40%"), permitiendo calificar con clicks y calcular promedios de forma automática.
 * **Espacio de Co-Docencia Coordinada**: Funcionalidades específicas para cursos compartidos con múltiples ayudantes de cátedra, permitiendo asignar entregas para corregir según comisiones o distribuir tareas de soporte en foros.
+* **Grabación de Feedback en Audio**: Permitir a los docentes adjuntar una devolución de voz corta directamente en la corrección de tareas para agilizar el proceso y personalizar la retroalimentación.
+* **Tablero Kanban para Planificación Curricular**: Vista ágil tipo Kanban para que el docente organice las clases del cronograma base arrastrando temas y recursos de manera interactiva.
 
 ## 3. Infraestructura y Plataforma
 * **Soporte Offline Completo (IndexedDB)**: Ampliar el alcance actual del PWA y Service Worker para almacenar localmente el contenido de las clases y avisos en caché estructurada. De esta manera, el estudiante puede visualizar el material sin conexión a internet.
@@ -38,3 +42,5 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Bitácora de Auditoría de Notas (Audit Logs)**: Registro histórico inmutable de modificaciones sobre calificaciones y entregas, con detalle del usuario responsable y fecha, garantizando transparencia académica y control de cambios.
 * **Exportador Estándar de Contenidos (SCORM / Common Cartridge)**: Permitir la exportación completa de cronogramas, materiales y tareas en formatos universales para facilitar la migración de datos hacia otros sistemas LMS (como Moodle o Canvas).
 * **Monitoreo de Consumos de Base de Datos y APM**: Integración de tableros de traza del consumo de lectura/escritura en Firestore por endpoint de Cloud Function para auditar y controlar costos operativos de la plataforma de manera proactiva.
+* **Control de Versiones y Comparación de Cronogramas**: Historial de versiones del cronograma de cada cátedra con herramientas visuales para restaurar cambios o comparar variaciones curriculares interanuales.
+* **Backups Incrementales y Recuperación Granular**: Respaldos continuos en la nube para las colecciones críticas con posibilidad de restaurar documentos individuales de Firestore en caso de errores de usuario.
