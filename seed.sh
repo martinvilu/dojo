@@ -71,6 +71,29 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/enrollments/enroll
   }
 }'
 
+# Course Roster for Student
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/course_roster/course123_student123" -H "Content-Type: application/json" -d '{
+  "fields": {
+    "course_id": { "stringValue": "course123" },
+    "student_id": { "stringValue": "student123" },
+    "enrolled_at": { "timestampValue": "2026-06-01T00:00:00Z" }
+  }
+}'
+
+# Student Submission
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/submissions/assignment123_student123" -H "Content-Type: application/json" -d '{
+  "fields": {
+    "assignment_id": { "stringValue": "assignment123" },
+    "student_id": { "stringValue": "student123" },
+    "repo_url": { "stringValue": "https://github.com/jutsu-ninjutsu-101/tp-clon-de-sombra-naruto" },
+    "status": { "stringValue": "submitted" },
+    "grade": { "stringValue": "" },
+    "feedback": { "stringValue": "" },
+    "submitted_at": { "timestampValue": "2026-06-05T12:00:00Z" }
+  }
+}'
+
+
 # Extra Students
 names=(
   "Sasuke Uchiha" "Sakura Haruno" "Shikamaru Nara" "Choji Akimichi" 
