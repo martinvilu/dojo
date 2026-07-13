@@ -92,3 +92,17 @@ El proyecto se encuentra en un estado funcional avanzado con las siguientes cara
 - **Backend Firebase Cloud Functions (`functions/index.js`)**: Encapsula las operaciones privilegiadas en un controlador de llamadas de API (`api`), asegurando las verificaciones de rol y la seguridad de los datos de Firestore.
 - **Firestore (`firestore.rules` / `firestore.indexes.json`)**: Base de datos de documentos flexible orientada a materias, alumnos, entregas y asistencia.
 
+## 📚 Documentación del Sistema
+
+Toda la documentación técnica y funcional del proyecto se encuentra organizada en la carpeta `docs/`:
+
+- **[Arquitectura y Diseño de Datos](file:///home/mrtin/dev/gaula/docs/ARCHITECTURE.md)**: Detalle del modelo de seguridad (RBAC), colecciones de base de datos (Firestore) y la estructura de archivos.
+- **[Casos de Uso del Sistema](file:///home/mrtin/dev/gaula/docs/CASOS_DE_USO.md)**: Escenarios detallados por rol (profesor, estudiante, administrador).
+- **[Diagramas UML (Mermaid)](file:///home/mrtin/dev/gaula/docs/UML.md)**: Diagrama de Casos de Uso, Modelo Entidad-Relación y Diagrama de Secuencias de flujos críticos.
+- **[Guía de Pruebas y Semillas (Testing)](file:///home/mrtin/dev/gaula/docs/TESTING.md)**: Comandos de consola y flujos para simular el comportamiento de la plataforma localmente con la semilla de base de datos.
+- **[Roadmap y Plan de Mejoras](file:///home/mrtin/dev/gaula/docs/ROADMAP.md)**: Ideas de evolución técnica y pedagógica adaptadas para diferentes tipos de cátedra.
+- **[Estándares de Desarrollo](file:///home/mrtin/dev/gaula/docs/DEVELOPMENT.md)**: Estilo de commits y pautas para el mantenimiento del repositorio.
+- **[Estilo de Interfaz (Design Tokens)](file:///home/mrtin/dev/gaula/docs/DESIGN.md)**: Configuración CSS y paletas de colores del sistema.
+- **[Propuestas de Codenames](file:///home/mrtin/dev/gaula/docs/NOMBRES.md)**: Sugerencias creativas e informales para nombrar el proyecto.
+
+
