@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { auth, db, functions } from "@/lib/firebase/clientApp";
 import { httpsCallable } from "firebase/functions";
 import { marked } from "marked";
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import AdminPanel from "@/components/dashboard/AdminPanel";
 import StudentPanel from "@/components/dashboard/StudentPanel";
 import ProfilePanel from "@/components/dashboard/ProfilePanel";
@@ -128,6 +128,75 @@ export default function DashboardPage() {
   const [courseComments, setCourseComments] = useState<any[]>([]);
   const [expandedComments, setExpandedComments] = useState<Record<number, boolean>>({});
   const [newCommentTexts, setNewCommentTexts] = useState<Record<number, string>>({});
+
+  // Attendance states
+  const [courseAttendance, setCourseAttendance] = useState<any[]>([]);
+  const [roster, setRoster] = useState<any[]>([]);
+  const [activeAttendanceClass, setActiveAttendanceClass] = useState<number | null>(null);
+  const [editingAttendanceRecords, setEditingAttendanceRecords] = useState<Record<string, "present" | "absent" | "late">>({});
+
+  useEffect(() => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) {
+      setRoster([]);
+      return;
+    }
+    api("getCourseRoster", { courseId: cid })
+      .then((res) => {
+        setRoster(res || []);
+      })
+      .catch((err) => {
+        console.error("Error loading roster:", err);
+      });
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) {
+      setCourseAttendance([]);
+      return;
+    }
+    const q = collection(db, "courses", cid, "attendance");
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const att = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setCourseAttendance(att);
+    }, (err) => {
+      console.error("Error loading attendance:", err);
+    });
+    return () => unsubscribe();
+  }, [selectedCourse]);
+
+  const handleSaveAttendance = async (classNumber: number) => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid || !profile) return;
+    try {
+      const docRef = doc(db, "courses", cid, "attendance", `class_${classNumber}`);
+      await setDoc(docRef, {
+        classNumber,
+        records: editingAttendanceRecords,
+        updated_at: serverTimestamp(),
+        updated_by: profile.id
+      });
+      alert("Asistencia guardada con éxito.");
+      setActiveAttendanceClass(null);
+    } catch (err: any) {
+      alert("Error al guardar asistencia: " + err.message);
+    }
+  };
+
+  const startTakingAttendance = (classNumber: number) => {
+    const docId = `class_${classNumber}`;
+    const existing = courseAttendance.find(a => a.id === docId);
+    const initialRecords: Record<string, "present" | "absent" | "late"> = {};
+    roster.forEach(student => {
+      initialRecords[student.id] = existing?.records?.[student.id] || "present";
+    });
+    setEditingAttendanceRecords(initialRecords);
+    setActiveAttendanceClass(classNumber);
+  };
 
   const toggleComments = (idx: number) => {
     setExpandedComments(prev => ({ ...prev, [idx]: !prev[idx] }));
@@ -751,12 +820,12 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       const res = await api("getCourseRoster", { courseId: cid });
-      if (!res.data || res.data.length === 0) {
+      if (!res || res.length === 0) {
         alert("No hay alumnos inscriptos en esta materia todavía.");
         return;
       }
       let csv = "Matricula,Email,Usuario_Github,Nota,Feedback\n";
-      res.data.forEach((p: any) => {
+      res.forEach((p: any) => {
         csv += `"${p.matricula_unrn || ""}","${p.email || ""}","${p.github_user || ""}","",""\n`;
       });
       const blob = new Blob([csv], { type: "text/csv" });
@@ -1274,7 +1343,99 @@ export default function DashboardPage() {
                                 >
                                   💬 Foro de Consultas ({courseComments.filter(c => c.classNumber === (ci.classNumber || (idx + 1))).length})
                                 </button>
+                                <button
+                                  type="button"
+                                  onClick={() => startTakingAttendance(ci.classNumber || (idx + 1))}
+                                  className="px-3 py-1 bg-blue-955/50 hover:bg-blue-900/50 border border-blue-800 text-blue-300 rounded-lg text-[10px] font-bold transition flex items-center space-x-1.5"
+                                >
+                                  <span>📋 Control de Asistencia</span>
+                                </button>
                               </div>
+
+                              {/* Collapsible Attendance Section */}
+                              {activeAttendanceClass === (ci.classNumber || (idx + 1)) && (
+                                <div className="mt-4 bg-neutral-950 border border-neutral-850 p-4 rounded-xl space-y-4">
+                                  <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
+                                    <h6 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Tomar Asistencia (Clase {ci.classNumber || (idx + 1)})</h6>
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveAttendanceClass(null)}
+                                      className="text-gray-500 hover:text-gray-300 text-xs"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                                    {roster.map((student) => {
+                                      const currentVal = editingAttendanceRecords[student.id] || "present";
+                                      return (
+                                        <div key={student.id} className="flex justify-between items-center text-xs py-1.5 border-b border-neutral-900/60 last:border-b-0">
+                                          <div className="flex flex-col">
+                                            <span className="font-semibold text-white">{student.full_name || student.email}</span>
+                                            <span className="text-[10px] text-gray-500 font-mono">Matrícula: {student.matricula_unrn || "-"}</span>
+                                          </div>
+                                          <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-neutral-800">
+                                            <button
+                                              type="button"
+                                              onClick={() => setEditingAttendanceRecords(prev => ({ ...prev, [student.id]: "present" }))}
+                                              className={`px-2 py-1 rounded text-[10px] font-bold transition ${
+                                                currentVal === "present"
+                                                  ? "bg-green-600 text-white"
+                                                  : "text-gray-400 hover:text-white"
+                                              }`}
+                                            >
+                                              Presente
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => setEditingAttendanceRecords(prev => ({ ...prev, [student.id]: "late" }))}
+                                              className={`px-2 py-1 rounded text-[10px] font-bold transition ${
+                                                currentVal === "late"
+                                                  ? "bg-amber-600 text-white"
+                                                  : "text-gray-400 hover:text-white"
+                                              }`}
+                                            >
+                                              Tarde
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => setEditingAttendanceRecords(prev => ({ ...prev, [student.id]: "absent" }))}
+                                              className={`px-2 py-1 rounded text-[10px] font-bold transition ${
+                                                currentVal === "absent"
+                                                  ? "bg-red-600 text-white"
+                                                  : "text-gray-400 hover:text-white"
+                                              }`}
+                                            >
+                                              Ausente
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                    {roster.length === 0 && (
+                                      <p className="text-xs text-gray-500 italic">No hay estudiantes inscriptos en el curso.</p>
+                                    )}
+                                  </div>
+
+                                  <div className="flex justify-end gap-2 pt-2 border-t border-neutral-850">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveAttendanceClass(null)}
+                                      className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-850 text-gray-400 rounded-xl text-xs font-semibold transition"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSaveAttendance(ci.classNumber || (idx + 1))}
+                                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition"
+                                    >
+                                      Guardar
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
 
                               {/* Collapsible Comments Section */}
                               {expandedComments[ci.classNumber || (idx + 1)] && (
@@ -1367,6 +1528,10 @@ export default function DashboardPage() {
                               if (ci.special_status === "Examen") tagClass = "bg-purple-950/60 text-purple-400 border border-purple-800/40";
                               if (ci.special_status === "Feriado") tagClass = "bg-red-950/60 text-red-400 border border-red-800/40";
 
+                              // Look up student attendance for this class
+                              const attDoc = courseAttendance.find(a => a.classNumber === (ci.classNumber || 0));
+                              const studentStatus = attDoc?.records?.[profile?.id || ""];
+
                               return (
                                 <div
                                   key={index}
@@ -1376,9 +1541,22 @@ export default function DashboardPage() {
                                 >
                                   <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
                                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{ds}</span>
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${tagClass}`}>
-                                      {ci.special_status === "Normal" ? ci.type : ci.special_status}
-                                    </span>
+                                    <div className="flex items-center space-x-2">
+                                      {studentStatus && (
+                                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                          studentStatus === "present"
+                                            ? "bg-green-950/60 text-green-400 border border-green-800/40"
+                                            : studentStatus === "late"
+                                            ? "bg-amber-950/60 text-amber-400 border border-amber-800/40"
+                                            : "bg-red-950/60 text-red-400 border border-red-800/40"
+                                        }`}>
+                                          {studentStatus === "present" ? "Presente" : studentStatus === "late" ? "Tarde" : "Ausente"}
+                                        </span>
+                                      )}
+                                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${tagClass}`}>
+                                        {ci.special_status === "Normal" ? ci.type : ci.special_status}
+                                      </span>
+                                    </div>
                                   </div>
                                   <h5 className="font-semibold text-sm text-white">
                                     {ci.topic || ci.type}

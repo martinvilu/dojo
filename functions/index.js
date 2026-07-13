@@ -710,7 +710,7 @@ exports.api = functions.https.onCall(async (data, context) => {
             const students = [];
             for (let doc of snap.docs) {
                 const pSnap = await db.collection('profiles').doc(doc.data().student_id).get();
-                if(pSnap.exists) students.push(pSnap.data());
+                if(pSnap.exists) students.push({ id: pSnap.id, ...pSnap.data() });
             }
             return students;
         }
