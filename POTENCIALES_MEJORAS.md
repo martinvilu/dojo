@@ -12,6 +12,8 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Portafolio de Proyectos Públicos**: Dar la opción a los estudiantes de configurar ciertas entregas de GitHub como "públicas" en su perfil de la plataforma, creando un portafolio de proyectos académicos visible para reclutadores.
 * **Marcadores Temporales en Grabaciones (Bookmarks)**: Permitir a los estudiantes guardar comentarios o notas privadas en marcas de tiempo específicas de los videos de YouTube enlazados, facilitando el repaso rápido de momentos clave de la clase.
 * **Grupos de Cursada Auto-organizados**: Herramienta de emparejamiento inteligente que permita a los estudiantes formar grupos de estudio para tareas grupales o resolver dudas de forma autónoma con compañeros de horarios afines.
+* **Módulo de Tutorías Académicas**: Espacio para conectar a alumnos avanzados (tutores) con estudiantes que requieren ayuda, facilitando la reserva de horarios de mentoría y videollamadas de consulta.
+* **Visualizador de Avance y Correlatividades (Mapa Curricular)**: Gráfico interactivo que muestra las materias del plan de estudios, cuáles están aprobadas, cuáles están en curso, y qué materias futuras se habilitarán en función de los prerrequisitos.
 
 ## 2. Experiencia Docente
 * **Analíticas Avanzadas**: Integrar gráficos e indicadores de participación (ej: visualización de asistencia inferida, qué alumnos vieron los videos de clases grabadas, curva de progreso de calificaciones).
@@ -23,6 +25,8 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Banco de Consignas Reutilizables**: Biblioteca compartida en la que los docentes puedan guardar descripciones de entregas de tareas comunes (con sus rúbricas de evaluación) para reusarlas o clonarlas rápidamente en nuevos cuatrimestres.
 * **Asistente de IA Docente**: Integración de un modelo de lenguaje que proponga consignas alternativas de examen, redacte explicaciones teóricas complementarias para las clases o formule preguntas conceptuales adaptadas al temario actual.
 * **Alertas Tempranas de Desempeño**: Sistema automático que notifique al docente sobre estudiantes que presenten inasistencias reiteradas o encadenen múltiples entregas de tareas ausentes, identificando casos de riesgo académico de manera proactiva.
+* **Editor Visual de Rúbricas Ponderadas**: Herramienta interactiva para estructurar la calificación de tareas según múltiples criterios y ponderaciones (ej. "Código Limpio: 20%", "Pruebas Unitarias: 40%"), permitiendo calificar con clicks y calcular promedios de forma automática.
+* **Espacio de Co-Docencia Coordinada**: Funcionalidades específicas para cursos compartidos con múltiples ayudantes de cátedra, permitiendo asignar entregas para corregir según comisiones o distribuir tareas de soporte en foros.
 
 ## 3. Infraestructura y Plataforma
 * **Soporte Offline Completo (IndexedDB)**: Ampliar el alcance actual del PWA y Service Worker para almacenar localmente el contenido de las clases y avisos en caché estructurada. De esta manera, el estudiante puede visualizar el material sin conexión a internet.
@@ -32,3 +36,5 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Modo Oscuro Integrado y Temas de Accesibilidad**: Alternador nativo de interfaz oscura y soporte para paletas de alto contraste o tipografías aptas para personas con dislexia.
 * **Integración Nativa de Videollamadas (Zoom/Teams API)**: Generación automática de salas de reunión virtuales y recuperación automática de las grabaciones de video en la nube al finalizar la sesión, enlazándolas directamente a la clase correspondiente.
 * **Bitácora de Auditoría de Notas (Audit Logs)**: Registro histórico inmutable de modificaciones sobre calificaciones y entregas, con detalle del usuario responsable y fecha, garantizando transparencia académica y control de cambios.
+* **Exportador Estándar de Contenidos (SCORM / Common Cartridge)**: Permitir la exportación completa de cronogramas, materiales y tareas en formatos universales para facilitar la migración de datos hacia otros sistemas LMS (como Moodle o Canvas).
+* **Monitoreo de Consumos de Base de Datos y APM**: Integración de tableros de traza del consumo de lectura/escritura en Firestore por endpoint de Cloud Function para auditar y controlar costos operativos de la plataforma de manera proactiva.
