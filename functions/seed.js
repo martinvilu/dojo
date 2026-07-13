@@ -72,6 +72,41 @@ async function seed() {
         role: "titular"
     });
 
+    console.log("Creating 20 additional student profiles...");
+    const names = [
+        "Sasuke Uchiha", "Sakura Haruno", "Shikamaru Nara", "Choji Akimichi", 
+        "Ino Yamanaka", "Neji Hyuga", "Rock Lee", "Tenten", 
+        "Kiba Inuzuka", "Shino Aburame", "Hinata Hyuga", "Gaara", 
+        "Temari", "Kankuro", "Sai", "Yamato", 
+        "Konohamaru Sarutobi", "Mirai Sarutobi", "Boruto Uzumaki", "Sarada Uchiha"
+    ];
+    
+    for (let i = 0; i < 20; i++) {
+        const studentId = `student_extra_${i+1}`;
+        const name = names[i];
+        const email = `${name.toLowerCase().replace(/\s+/g, '')}@jutsu.com`;
+        
+        await db.collection('profiles').doc(studentId).set({
+            full_name: name,
+            email: email,
+            role: "student",
+            account_status: i % 2 === 0 ? "approved" : "pending",
+            matricula_unrn: `UNRN-100${i+10}`
+        });
+
+        await db.collection('enrollments').doc(`enrollment_extra_${i+1}`).set({
+            course_id: "course123",
+            student_id: studentId,
+            enrolled_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection('course_roster').doc(`course123_${studentId}`).set({
+            course_id: "course123",
+            student_id: studentId,
+            enrolled_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+    }
+
     console.log("Seed complete!");
 }
 

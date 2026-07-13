@@ -71,4 +71,56 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/enrollments/enroll
   }
 }'
 
+# Extra Students
+names=(
+  "Sasuke Uchiha" "Sakura Haruno" "Shikamaru Nara" "Choji Akimichi" 
+  "Ino Yamanaka" "Neji Hyuga" "Rock Lee" "Tenten" 
+  "Kiba Inuzuka" "Shino Aburame" "Hinata Hyuga" "Gaara" 
+  "Temari" "Kankuro" "Sai" "Yamato" 
+  "Konohamaru Sarutobi" "Mirai Sarutobi" "Boruto Uzumaki" "Sarada Uchiha"
+)
+
+for i in {0..19}
+do
+  id=$((i+1))
+  student_id="student_extra_$id"
+  name="${names[$i]}"
+  email=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr -d ' ')@jutsu.com
+  status="approved"
+  if (( i % 2 != 0 )); then
+    status="pending"
+  fi
+  matricula="UNRN-100$((i+10))"
+
+  # Profile
+  curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/profiles/$student_id" -H "Content-Type: application/json" -d "{
+    \"fields\": {
+      \"full_name\": { \"stringValue\": \"$name\" },
+      \"email\": { \"stringValue\": \"$email\" },
+      \"role\": { \"stringValue\": \"student\" },
+      \"account_status\": { \"stringValue\": \"$status\" },
+      \"matricula_unrn\": { \"stringValue\": \"$matricula\" }
+    }
+  }" > /dev/null
+
+  # Enrollment
+  curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/enrollments/enrollment_extra_$id" -H "Content-Type: application/json" -d "{
+    \"fields\": {
+      \"course_id\": { \"stringValue\": \"course123\" },
+      \"student_id\": { \"stringValue\": \"$student_id\" },
+      \"enrolled_at\": { \"timestampValue\": \"2026-06-01T00:00:00Z\" }
+    }
+  }" > /dev/null
+
+  # Course Roster
+  curl -s -X PATCH -H "Authorization: Bearer $TOKEN" "$BASE_URL/course_roster/course123_$student_id" -H "Content-Type: application/json" -d "{
+    \"fields\": {
+      \"course_id\": { \"stringValue\": \"course123\" },
+      \"student_id\": { \"stringValue\": \"$student_id\" },
+      \"enrolled_at\": { \"timestampValue\": \"2026-06-01T00:00:00Z\" }
+    }
+  }" > /dev/null
+done
+
 echo "Database seeded!"
+
