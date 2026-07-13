@@ -34,6 +34,12 @@ Al ejecutar `./seed.sh` se crean tres perfiles iniciales en la colección `profi
 | **Profesor** | `teacher@jutsu.com` | `teacher123` | `approved` | Docente titular de `course123` |
 | **Estudiante** | `student@jutsu.com` | `student123` | `pending` | Inscripto en `course123` |
 
+### Estudiantes Adicionales (Seed)
+Adicionalmente, se crean **20 estudiantes extra** con UIDs del tipo `student_extra_1` al `student_extra_20` (con correos como `sasukeuchiha@jutsu.com`, `sakuraharuno@jutsu.com`, hasta `saradauchiha@jutsu.com`). 
+- Todos están inscriptos y registrados en la cátedra `course123`.
+- Su estado de aprobación (`account_status`) se define alternadamente (los de índice par en estado `approved` y los impares en `pending`) para facilitar pruebas.
+- Cuentan con matrículas institucionales precargadas (`UNRN-10010` en adelante).
+
 ---
 
 ## 📋 Escenarios y Flujos de Prueba
@@ -58,3 +64,10 @@ Al ejecutar `./seed.sh` se crean tres perfiles iniciales en la colección `profi
 3. Inicia sesión como **Estudiante** (`student@jutsu.com`), entra a la misma cátedra y navega a **Avisos**.
 4. Verás el aviso con un botón **"Confirmar Recepción"**. Haz clic en él. El estado cambiará a `Acuse de recepción confirmado ✓`.
 5. Vuelve a iniciar sesión como **Profesor** o **Admin**. En el aviso correspondiente, haz clic en **"Ver Acuses de Recepción"**. Deberías ver listado al estudiante con su nombre, correo y la fecha/hora en la que leyó el aviso.
+
+### 4. Aprobación de Matrículas Pendientes (Admin)
+1. Inicia sesión como el **Admin** (`admin@jutsu.com`).
+2. Dirígete a la pestaña **Usuarios**.
+3. Deberías ver a varios de los 20 estudiantes adicionales con estado "Pendiente" y el botón **"Aprobar"** habilitado.
+4. Presiona **"Aprobar"** en cualquiera de ellos para verificar que el estado cambie automáticamente a "Aprobado" y se actualice en la base de datos de Firestore.
+
