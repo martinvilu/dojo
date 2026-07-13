@@ -55,6 +55,10 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Cátedras de Programación e Ingeniería de Software**:
   - **Pruebas Automatizadas Integradas (Autograding)**: Vinculación directa con GitHub Actions para ejecutar tests unitarios automáticos (ej. JUnit, Jest, PyTest) en cada entrega y actualizar el estado en el panel docente con el porcentaje de cobertura.
   - **Playground de Código Interactivo (Web Sandbox)**: Un sandbox web incrustado en el cronograma de clases que permita a los estudiantes realizar pequeños experimentos de código HTML/JS/Python directamente en el navegador sin instalar herramientas locales.
+  - **Inspección Automatizada de Calidad de Código (Linting)**: Analizador estático automático (ej. ESLint, Pylint) que evalúe y califique la legibilidad, formato y estándares de desarrollo del código entregado, reportando advertencias directo al alumno para corregir malas prácticas antes de la entrega definitiva.
+  - **Entorno de Programación en la Nube de un Clic**: Integración con servicios de contenedores web (ej. GitHub Codespaces / Gitpod) mediante un botón que abra el repositorio de la entrega en un VS Code Cloud preconfigurado con las librerías, JDKs y dependencias requeridas por la cátedra.
+  - **Visualizador del Flujo de Trabajo Git (Git Commits Visualizer)**: Gráfico de commits y ramas integrado en la interfaz de la entrega para que el docente evalúe el proceso incremental y la distribución del trabajo de los estudiantes en tareas grupales.
+  - **Generador de Entornos de Desafíos Algorítmicos (Test Runner)**: Herramienta que permite a los docentes definir casos de prueba (inputs/outputs estándar) para que los estudiantes validen sus algoritmos y estructuras de datos básicas de forma guiada en la plataforma.
 * **Cátedras de Diseño Gráfico, Multimedial y UX/UI**:
   - **Muro de Trabajo Visual (Pinboard)**: Panel estilo tablón donde los alumnos puedan subir capturas, mockups de Figma o esquemas, facilitando la crítica constructiva visual con comentarios marcados sobre zonas de la imagen.
 * **Cátedras de Matemáticas, Física y Ciencias Exactas**:
