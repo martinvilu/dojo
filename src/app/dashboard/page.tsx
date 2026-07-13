@@ -146,6 +146,12 @@ export default function DashboardPage() {
   const [studentGithubActivity, setStudentGithubActivity] = useState<{ commits: any[], pullRequests: any[], comments: any[] } | null>(null);
   const [studentGithubActivityTab, setStudentGithubActivityTab] = useState<"commits" | "pulls" | "comments">("commits");
 
+  // QR Attendance states
+  const [teacherActiveQr, setTeacherActiveQr] = useState<{ code: string; classNumber: number; expiresIn: number } | null>(null);
+  const [studentActiveAttendanceClass, setStudentActiveAttendanceClass] = useState<number | null>(null);
+  const [studentQrToken, setStudentQrToken] = useState("");
+  const [studentAttendanceGeoLoading, setStudentAttendanceGeoLoading] = useState(false);
+
   // Announcements states
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [newAnnouncementMessage, setNewAnnouncementMessage] = useState("");
@@ -206,6 +212,104 @@ export default function DashboardPage() {
     });
     return () => unsubscribe();
   }, [selectedCourse]);
+
+  useEffect(() => {
+    if (!teacherActiveQr) return;
+    const interval = setInterval(() => {
+      setTeacherActiveQr(prev => {
+        if (!prev) return null;
+        if (prev.expiresIn <= 1) {
+          clearInterval(interval);
+          return null;
+        }
+        return { ...prev, expiresIn: prev.expiresIn - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [teacherActiveQr]);
+
+  const handleGenerateAttendanceQr = async (classNumber: number) => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) return;
+    setApiLoading(true);
+    try {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      let lat: number | null = null;
+      let lng: number | null = null;
+      if (navigator.geolocation) {
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 });
+          });
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+        } catch (geoErr) {
+          console.warn("Geolocation denied or timed out:", geoErr);
+        }
+      }
+
+      const activeQrRef = doc(db, "courses", cid, "active_qr", "current");
+      await setDoc(activeQrRef, {
+        token: code,
+        classNumber,
+        lat,
+        lng,
+        created_at: serverTimestamp()
+      });
+      
+      setTeacherActiveQr({
+        code,
+        classNumber,
+        expiresIn: 300
+      });
+    } catch (err: any) {
+      alert("Error al generar QR de asistencia: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleSubmitStudentAttendanceQr = async (classNumber: number) => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) return;
+    setApiLoading(true);
+    setStudentAttendanceGeoLoading(true);
+    
+    let lat: number | null = null;
+    let lng: number | null = null;
+    
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+        });
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+      } catch (err) {
+        console.warn("Geolocation unavailable or denied:", err);
+      }
+    }
+    
+    setStudentAttendanceGeoLoading(false);
+    
+    try {
+      await api("submitQrAttendance", {
+        courseId: cid,
+        classNumber,
+        token: studentQrToken.trim().toUpperCase(),
+        lat,
+        lng
+      });
+      alert("¡Asistencia registrada con éxito! Ya estás presente.");
+      setStudentActiveAttendanceClass(null);
+      setStudentQrToken("");
+    } catch (err: any) {
+      alert("Error al registrar asistencia: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
 
   const handleSaveAttendance = async (classNumber: number) => {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
@@ -1466,13 +1570,22 @@ export default function DashboardPage() {
                                 <div className="mt-4 bg-neutral-950 border border-neutral-850 p-4 rounded-xl space-y-4">
                                   <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
                                     <h6 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Tomar Asistencia (Clase {ci.classNumber || (idx + 1)})</h6>
-                                    <button
-                                      type="button"
-                                      onClick={() => setActiveAttendanceClass(null)}
-                                      className="text-gray-500 hover:text-gray-300 text-xs"
-                                    >
-                                      Cancelar
-                                    </button>
+                                    <div className="flex gap-2.5 items-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleGenerateAttendanceQr(ci.classNumber || (idx + 1))}
+                                        className="px-2.5 py-1 bg-emerald-955/50 border border-emerald-800 text-emerald-300 hover:bg-emerald-900/50 rounded text-[10px] font-bold transition cursor-pointer"
+                                      >
+                                        🛡️ Generar QR Dinámico
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveAttendanceClass(null)}
+                                        className="text-gray-500 hover:text-gray-300 text-xs cursor-pointer"
+                                      >
+                                        Cancelar
+                                      </button>
+                                    </div>
                                   </div>
                                   
                                   <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
@@ -1694,6 +1807,15 @@ export default function DashboardPage() {
                                     >
                                       💬 Foro ({courseComments.filter(c => c.classNumber === (ci.classNumber || 0)).length})
                                     </button>
+                                    {profile?.role === "student" && studentStatus !== "present" && studentStatus !== "late" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setStudentActiveAttendanceClass(ci.classNumber || 0)}
+                                        className="text-emerald-500 hover:text-emerald-400 underline font-semibold focus:outline-none cursor-pointer text-xs"
+                                      >
+                                        📷 Firmar Presente QR
+                                      </button>
+                                    )}
                                   </div>
 
                                   {/* Collapsible Comments Section */}
@@ -2684,6 +2806,114 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Teacher QR Modal Overlay */}
+      {teacherActiveQr && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl max-w-sm w-full text-center space-y-6 shadow-2xl relative">
+            <h3 className="text-lg font-bold text-white">Presentismo por Código QR</h3>
+            <p className="text-xs text-gray-400">
+              Proyecta este código en pantalla para que los alumnos lo escaneen y firmen su presente.
+            </p>
+            
+            <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mx-auto">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&data=${encodeURIComponent(
+                  JSON.stringify({
+                    courseId: selectedCourse?.id || selectedCourse?.course?.id,
+                    classNumber: teacherActiveQr.classNumber,
+                    token: teacherActiveQr.code
+                  })
+                )}`}
+                alt="QR Code"
+                className="w-48 h-48"
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Código de asistencia</span>
+              <div className="text-3xl font-black text-amber-500 font-mono tracking-widest bg-neutral-955 py-2.5 rounded-xl border border-neutral-850">
+                {teacherActiveQr.code}
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-center space-x-2 text-xs font-bold text-gray-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>
+                Expira en: {Math.floor(teacherActiveQr.expiresIn / 60)}:
+                {(teacherActiveQr.expiresIn % 60).toString().padStart(2, "0")}
+              </span>
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => handleGenerateAttendanceQr(teacherActiveQr.classNumber)}
+                className="flex-1 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-750 text-gray-300 border border-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                🔄 Renovar
+              </button>
+              <button
+                type="button"
+                onClick={() => setTeacherActiveQr(null)}
+                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student QR / Code Attendance Modal */}
+      {studentActiveAttendanceClass !== null && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full text-center space-y-5 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Firmar Presente (Clase {studentActiveAttendanceClass})</h3>
+            <p className="text-xs text-gray-400">
+              Ingresá el código de 6 caracteres que se muestra en la pantalla del profesor. Se requiere acceso a tu ubicación.
+            </p>
+            
+            <div className="space-y-4">
+              <input
+                type="text"
+                maxLength={6}
+                value={studentQrToken}
+                onChange={(e) => setStudentQrToken(e.target.value.toUpperCase())}
+                placeholder="Ej: A7B9X2"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-center text-xl font-mono font-bold tracking-widest text-amber-400 focus:outline-none focus:border-blue-500"
+              />
+              
+              {studentAttendanceGeoLoading && (
+                <p className="text-[10px] text-blue-400 animate-pulse font-semibold">
+                  🌍 Obteniendo ubicación GPS del dispositivo...
+                </p>
+              )}
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setStudentActiveAttendanceClass(null);
+                  setStudentQrToken("");
+                }}
+                className="flex-1 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-750 text-gray-300 border border-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={studentQrToken.length < 6 || studentAttendanceGeoLoading}
+                onClick={() => handleSubmitStudentAttendanceQr(studentActiveAttendanceClass)}
+                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Confirmar Presente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
