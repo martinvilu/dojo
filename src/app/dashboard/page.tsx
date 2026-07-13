@@ -8,6 +8,8 @@ import { httpsCallable } from "firebase/functions";
 import { marked } from "marked";
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import AdminPanel from "@/components/dashboard/AdminPanel";
+import StudentPanel from "@/components/dashboard/StudentPanel";
+import ProfilePanel from "@/components/dashboard/ProfilePanel";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -1107,109 +1109,28 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 5. STUDENT COURSES */}
-        {activeTab === "student-courses" && !selectedCourse && (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-              <h2 className="text-2xl font-bold">Mis Cursadas</h2>
-              
-              <form onSubmit={handleEnrollCourse} className="flex gap-2">
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={enrollCode}
-                  onChange={(e) => setEnrollCode(e.target.value)}
-                  placeholder="Código Cátedra"
-                  className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-blue-500 uppercase font-mono tracking-widest text-center text-white"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer"
-                >
-                  Unirse
-                </button>
-              </form>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {courses.map((c) => (
-                <div key={c.id} className="bg-neutral-900/40 border border-neutral-800 p-6 rounded-2xl flex flex-col justify-between hover:border-neutral-700 transition">
-                  <div>
-                    <h3 className="text-lg font-bold text-white">{c.name}</h3>
-                    <p className="text-xs text-gray-500 mt-1">Organización: {c.github_org || "No configurada"}</p>
-                  </div>
-                  <div className="mt-4 flex space-x-2">
-                    <button
-                      onClick={() => viewCourseDetails(c)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
-                    >
-                      Ingresar
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {courses.length === 0 && (
-                <p className="text-gray-500 text-sm">No te has inscripto en ninguna cátedra aún. Coloca el código provisto por tu profesor.</p>
-              )}
-            </div>
-          </div>
+        {/* STUDENT TABS COMPONENT */}
+        {!selectedCourse && (
+          <StudentPanel
+            activeTab={activeTab}
+            courses={courses}
+            enrollCode={enrollCode}
+            setEnrollCode={setEnrollCode}
+            handleEnrollCourse={handleEnrollCourse}
+            viewCourseDetails={viewCourseDetails}
+          />
         )}
 
-        {/* 6. PROFILE TAB */}
-        {activeTab === "profile" && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Datos Académicos y Perfil</h2>
-            <form onSubmit={handleUpdateProfile} className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4 max-w-xl">
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Nombre Completo</label>
-                <input
-                  type="text"
-                  value={profile?.full_name || ""}
-                  disabled
-                  className="w-full bg-neutral-950/40 border border-neutral-850 rounded-xl px-4 py-2.5 text-sm text-gray-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Correo Primario</label>
-                <input
-                  type="text"
-                  value={profile?.email || ""}
-                  disabled
-                  className="w-full bg-neutral-950/40 border border-neutral-850 rounded-xl px-4 py-2.5 text-sm text-gray-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Matrícula UNRN</label>
-                  <input
-                    type="text"
-                    value={profileMatricula}
-                    onChange={(e) => setProfileMatricula(e.target.value)}
-                    placeholder="Ej: UNRN-12345"
-                    className="w-full bg-neutral-950/80 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Cohorte / Año de Ingreso</label>
-                  <input
-                    type="text"
-                    value={profileCohorte}
-                    onChange={(e) => setProfileCohorte(e.target.value)}
-                    placeholder="Ej: 2026"
-                    className="w-full bg-neutral-950/80 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 text-white"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition cursor-pointer"
-              >
-                Guardar Cambios
-              </button>
-            </form>
-          </div>
-        )}
+        {/* PROFILE TAB COMPONENT */}
+        <ProfilePanel
+          activeTab={activeTab}
+          profile={profile}
+          profileMatricula={profileMatricula}
+          setProfileMatricula={setProfileMatricula}
+          profileCohorte={profileCohorte}
+          setProfileCohorte={setProfileCohorte}
+          handleUpdateProfile={handleUpdateProfile}
+        />
 
         {/* DETALLADA VISTA DE CÁTEDRA */}
         {selectedCourse && ["admin-courses", "teacher-courses", "student-courses"].includes(activeTab) && (
