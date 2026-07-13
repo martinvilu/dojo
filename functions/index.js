@@ -526,6 +526,20 @@ exports.api = functions.https.onCall(async (data, context) => {
             return { success: true };
         }
         
+        if (action === 'gradeSubmission') {
+            const requesterProfile = await db.collection('profiles').doc(uid).get();
+            if (!requesterProfile.exists || (requesterProfile.data().role !== 'teacher' && requesterProfile.data().role !== 'admin')) {
+                throw new Error("No tienes permisos para calificar entregas");
+            }
+            const { submissionId, grade, feedback } = payload;
+            if (!submissionId) throw new Error("Falta el id de la entrega");
+            await db.collection('submissions').doc(submissionId).update({
+                grade: String(grade || ''),
+                feedback: String(feedback || ''),
+                graded_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true };
+        }
         
         if (action === 'getTeacherDashboardStats') {
             const cSnap = await db.collection('course_teachers').where('teacher_id', '==', uid).get();
@@ -883,10 +897,110 @@ exports.api = functions.https.onCall(async (data, context) => {
             return { success: true, repoUrl: `https://github.com/${orgName}/${repoName}` };
         }
 
+        if (action === 'getStudentGithubActivity') {
+            const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
+            if (!sSnap.exists) throw new Error("Entrega no encontrada");
+            const sub = sSnap.data();
+
+            let authorized = (sub.student_id === uid);
+            if (!authorized) {
+                const requesterProfile = await db.collection('profiles').doc(uid).get();
+                if (requesterProfile.exists && (requesterProfile.data().role === 'teacher' || requesterProfile.data().role === 'admin')) {
+                    authorized = true;
+                }
+            }
+            if (!authorized) throw new Error("Acceso no autorizado a la actividad de GitHub");
+
+            const aSnap = await db.collection('assignments').doc(sub.assignment_id).get();
+            const cSnap = await db.collection('courses').doc(aSnap.data().course_id).get();
+            const token = cSnap.data().github_token;
+            if (!token) throw new Error("El profesor no configuró el token de GitHub.");
+
+            const repoParts = sub.repo_url.replace('https://github.com/', '').split('/');
+            const owner = repoParts[0];
+            const repoName = repoParts[1];
+            
+            const githubHeaders = {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'User-Agent': 'Jutsu-Classroom'
+            };
+
+            let commits = [];
+            try {
+                const resCommits = await fetch(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=5`, {
+                    method: 'GET',
+                    headers: githubHeaders
+                });
+                if (resCommits.ok) {
+                    const dataCommits = await resCommits.json();
+                    commits = dataCommits.map(c => ({
+                        sha: c.sha?.substring(0, 7),
+                        message: c.commit.message,
+                        date: c.commit.author.date,
+                        url: c.html_url
+                    }));
+                }
+            } catch (e) {
+                console.error("Error fetching commits:", e);
+            }
+
+            let pullRequests = [];
+            try {
+                const resPulls = await fetch(`https://api.github.com/repos/${owner}/${repoName}/pulls?state=all&per_page=5`, {
+                    method: 'GET',
+                    headers: githubHeaders
+                });
+                if (resPulls.ok) {
+                    const dataPulls = await resPulls.json();
+                    pullRequests = dataPulls.map(p => ({
+                        number: p.number,
+                        title: p.title,
+                        state: p.state,
+                        url: p.html_url,
+                        created_at: p.created_at
+                    }));
+                }
+            } catch (e) {
+                console.error("Error fetching pull requests:", e);
+            }
+
+            let comments = [];
+            try {
+                const resComments = await fetch(`https://api.github.com/repos/${owner}/${repoName}/comments?per_page=5`, {
+                    method: 'GET',
+                    headers: githubHeaders
+                });
+                if (resComments.ok) {
+                    const dataComments = await resComments.json();
+                    comments = dataComments.map(c => ({
+                        author: c.user?.login,
+                        body: c.body,
+                        created_at: c.created_at,
+                        url: c.html_url
+                    }));
+                }
+            } catch (e) {
+                console.error("Error fetching repo comments:", e);
+            }
+
+            return { commits, pullRequests, comments };
+        }
+
         if (action === 'getStudentCommits') {
             const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
-            if (!sSnap.exists || sSnap.data().student_id !== uid) throw new Error("Entrega no encontrada o no autorizada");
+            if (!sSnap.exists) throw new Error("Entrega no encontrada");
             const sub = sSnap.data();
+
+            let authorized = (sub.student_id === uid);
+            if (!authorized) {
+                const requesterProfile = await db.collection('profiles').doc(uid).get();
+                if (requesterProfile.exists && (requesterProfile.data().role === 'teacher' || requesterProfile.data().role === 'admin')) {
+                    authorized = true;
+                }
+            }
+            if (!authorized) throw new Error("Acceso no autorizado o entrega no válida");
 
             const aSnap = await db.collection('assignments').doc(sub.assignment_id).get();
             const cSnap = await db.collection('courses').doc(aSnap.data().course_id).get();

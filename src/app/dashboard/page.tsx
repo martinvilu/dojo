@@ -134,6 +134,18 @@ export default function DashboardPage() {
   const [visibleCommitsSubId, setVisibleCommitsSubId] = useState<string | null>(null);
   const [subCommits, setSubCommits] = useState<any[]>([]);
 
+  // Grader & GitHub activity states
+  const [graderSubmissions, setGraderSubmissions] = useState<Record<string, any[]>>({});
+  const [expandedGraderAssignmentId, setExpandedGraderAssignmentId] = useState<string | null>(null);
+  const [githubActivitySubmissionId, setGithubActivitySubmissionId] = useState<string | null>(null);
+  const [githubActivityData, setGithubActivityData] = useState<{ commits: any[], pullRequests: any[], comments: any[] } | null>(null);
+  const [githubActivityLoading, setGithubActivityLoading] = useState(false);
+  const [githubActivityTab, setGithubActivityTab] = useState<"commits" | "pulls" | "comments">("commits");
+  const [editingGrades, setEditingGrades] = useState<Record<string, string>>({});
+  const [editingFeedbacks, setEditingFeedbacks] = useState<Record<string, string>>({});
+  const [studentGithubActivity, setStudentGithubActivity] = useState<{ commits: any[], pullRequests: any[], comments: any[] } | null>(null);
+  const [studentGithubActivityTab, setStudentGithubActivityTab] = useState<"commits" | "pulls" | "comments">("commits");
+
   // Announcements states
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [newAnnouncementMessage, setNewAnnouncementMessage] = useState("");
@@ -637,15 +649,17 @@ export default function DashboardPage() {
   const handleViewCommits = async (submissionId: string) => {
     if (visibleCommitsSubId === submissionId) {
       setVisibleCommitsSubId(null);
+      setStudentGithubActivity(null);
       return;
     }
     setApiLoading(true);
+    setStudentGithubActivityTab("commits");
     try {
-      const res = await api("getStudentCommits", { submissionId });
-      setSubCommits(res || []);
+      const res = await api("getStudentGithubActivity", { submissionId });
+      setStudentGithubActivity(res || { commits: [], pullRequests: [], comments: [] });
       setVisibleCommitsSubId(submissionId);
     } catch (err: any) {
-      alert("Error al cargar commits: " + err.message);
+      alert("Error al cargar actividad de GitHub: " + err.message);
     } finally {
       setApiLoading(false);
     }
@@ -836,6 +850,69 @@ export default function DashboardPage() {
       setAssignments((r.data || []).filter((a: any) => a.course_id === cid));
     } catch (err: any) {
       alert("Error al archivar la tarea: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleToggleGrader = async (assignmentId: string) => {
+    if (expandedGraderAssignmentId === assignmentId) {
+      setExpandedGraderAssignmentId(null);
+      return;
+    }
+    setApiLoading(true);
+    try {
+      const res = await api("getAssignmentSubmissions", { assignmentId });
+      setGraderSubmissions(prev => ({ ...prev, [assignmentId]: res || [] }));
+      setExpandedGraderAssignmentId(assignmentId);
+      
+      const grades: Record<string, string> = {};
+      const feedbacks: Record<string, string> = {};
+      (res || []).forEach((s: any) => {
+        grades[s.id] = s.grade || "";
+        feedbacks[s.id] = s.feedback || "";
+      });
+      setEditingGrades(prev => ({ ...prev, ...grades }));
+      setEditingFeedbacks(prev => ({ ...prev, ...feedbacks }));
+    } catch (err: any) {
+      alert("Error al cargar entregas: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleFetchGithubActivity = async (submissionId: string) => {
+    if (githubActivitySubmissionId === submissionId) {
+      setGithubActivitySubmissionId(null);
+      setGithubActivityData(null);
+      return;
+    }
+    setGithubActivityLoading(true);
+    setGithubActivitySubmissionId(submissionId);
+    setGithubActivityTab("commits");
+    try {
+      const res = await api("getStudentGithubActivity", { submissionId });
+      setGithubActivityData(res || { commits: [], pullRequests: [], comments: [] });
+    } catch (err: any) {
+      alert("Error al cargar actividad de GitHub: " + err.message);
+      setGithubActivitySubmissionId(null);
+      setGithubActivityData(null);
+    } finally {
+      setGithubActivityLoading(false);
+    }
+  };
+
+  const handleSaveSingleGrade = async (submissionId: string, assignmentId: string) => {
+    const grade = editingGrades[submissionId];
+    const feedback = editingFeedbacks[submissionId];
+    setApiLoading(true);
+    try {
+      await api("gradeSubmission", { submissionId, grade, feedback });
+      alert("Calificación guardada con éxito.");
+      const res = await api("getAssignmentSubmissions", { assignmentId });
+      setGraderSubmissions(prev => ({ ...prev, [assignmentId]: res || [] }));
+    } catch (err: any) {
+      alert("Error al guardar calificación: " + err.message);
     } finally {
       setApiLoading(false);
     }
@@ -1831,6 +1908,13 @@ export default function DashboardPage() {
                                   📤 Cargar Notas CSV
                                 </label>
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleGrader(a.id)}
+                                className="px-3 py-2 bg-blue-955/50 hover:bg-blue-900/50 border border-blue-800 rounded-xl text-xs font-semibold text-blue-300 transition cursor-pointer"
+                              >
+                                {expandedGraderAssignmentId === a.id ? "📂 Ocultar Entregas" : "📂 Ver Entregas y Actividad"}
+                              </button>
                             </div>
 
                             {/* Grading CSV sync message */}
@@ -1838,6 +1922,203 @@ export default function DashboardPage() {
                               <p className="text-xs font-semibold">{gradesCSVStatus[a.id]}</p>
                             )}
                           </div>
+
+                          {/* Collapsible Grader & Submissions List */}
+                          {expandedGraderAssignmentId === a.id && (
+                            <div className="border-t border-neutral-800/60 pt-6 mt-6 space-y-6">
+                              <h6 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Entregas de los Estudiantes</h6>
+                              
+                              <div className="space-y-4">
+                                {(graderSubmissions[a.id] || []).map((sub) => {
+                                  const studentName = sub.profiles?.full_name || sub.profiles?.email || "Estudiante";
+                                  const isGitHubLoaded = githubActivitySubmissionId === sub.id;
+                                  
+                                  return (
+                                    <div key={sub.id} className="bg-neutral-950/60 border border-neutral-850 p-5 rounded-2xl space-y-4 text-left">
+                                      <div className="flex justify-between items-start flex-wrap gap-2">
+                                        <div>
+                                          <h6 className="font-bold text-sm text-white">{studentName}</h6>
+                                          <p className="text-[10px] text-gray-500 font-mono">Matrícula: {sub.profiles?.matricula_unrn || "-"}</p>
+                                          {sub.repo_url && (
+                                            <a
+                                              href={sub.repo_url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-xs text-blue-400 hover:underline mt-1 inline-block"
+                                            >
+                                              GitHub: {sub.repo_url.replace("https://github.com/", "")} ↗
+                                            </a>
+                                          )}
+                                        </div>
+                                        
+                                        <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-neutral-800 text-[10px] font-bold">
+                                          <span className={`px-2.5 py-1 rounded ${
+                                            sub.status === "submitted" ? "bg-blue-950 text-blue-400" : "bg-neutral-800 text-gray-400"
+                                          }`}>
+                                            {sub.status === "submitted" ? "Entregado" : "Borrador"}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* View GitHub activity toggle */}
+                                      <div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleFetchGithubActivity(sub.id)}
+                                          className="text-xs text-emerald-400 hover:text-emerald-300 underline font-semibold focus:outline-none flex items-center gap-1.5 cursor-pointer"
+                                        >
+                                          🔍 {isGitHubLoaded ? "Ocultar Actividad GitHub" : "Ver Actividad GitHub (Commits, PRs, Comentarios)"}
+                                        </button>
+                                      </div>
+
+                                      {/* GitHub Activity Tabbed Panel */}
+                                      {isGitHubLoaded && (
+                                        <div className="bg-neutral-950 border border-neutral-900 rounded-xl p-4 mt-2 space-y-4 font-sans text-xs">
+                                          {githubActivityLoading ? (
+                                            <div className="flex items-center space-x-2 text-gray-500 animate-pulse py-2">
+                                              <span className="w-3.5 h-3.5 border-2 border-t-transparent border-emerald-400 rounded-full animate-spin"></span>
+                                              <span>Cargando actividad desde GitHub...</span>
+                                            </div>
+                                          ) : githubActivityData ? (
+                                            <div className="space-y-4">
+                                              {/* Sub-tabs */}
+                                              <div className="flex border-b border-neutral-900 pb-2 gap-4">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setGithubActivityTab("commits")}
+                                                  className={`font-semibold pb-1 border-b-2 transition-colors cursor-pointer ${
+                                                    githubActivityTab === "commits"
+                                                      ? "border-emerald-500 text-emerald-400"
+                                                      : "border-transparent text-gray-400 hover:text-white"
+                                                  }`}
+                                                >
+                                                  Commits ({githubActivityData.commits.length})
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setGithubActivityTab("pulls")}
+                                                  className={`font-semibold pb-1 border-b-2 transition-colors cursor-pointer ${
+                                                    githubActivityTab === "pulls"
+                                                      ? "border-emerald-500 text-emerald-400"
+                                                      : "border-transparent text-gray-400 hover:text-white"
+                                                  }`}
+                                                >
+                                                  Pull Requests ({githubActivityData.pullRequests.length})
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setGithubActivityTab("comments")}
+                                                  className={`font-semibold pb-1 border-b-2 transition-colors cursor-pointer ${
+                                                    githubActivityTab === "comments"
+                                                      ? "border-emerald-500 text-emerald-400"
+                                                      : "border-transparent text-gray-400 hover:text-white"
+                                                  }`}
+                                                >
+                                                  Comentarios ({githubActivityData.comments.length})
+                                                </button>
+                                              </div>
+
+                                              {/* Commits Tab */}
+                                              {githubActivityTab === "commits" && (
+                                                <div className="space-y-2 max-h-40 overflow-y-auto pr-1 font-mono text-[10px]">
+                                                  {githubActivityData.commits.map((c: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between border-b border-neutral-900/60 pb-1.5 last:border-0 last:pb-0">
+                                                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-mono text-[10px]">
+                                                        {c.sha.substring(0, 7)}: <span className="text-gray-300 font-sans">{c.message}</span>
+                                                      </a>
+                                                      <span className="text-gray-500">{new Date(c.date).toLocaleString("es-AR")}</span>
+                                                    </div>
+                                                  ))}
+                                                  {githubActivityData.commits.length === 0 && (
+                                                    <p className="text-gray-500 italic">No hay commits registrados en este repositorio.</p>
+                                                  )}
+                                                </div>
+                                              )}
+
+                                              {/* Pull Requests Tab */}
+                                              {githubActivityTab === "pulls" && (
+                                                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                                  {githubActivityData.pullRequests.map((p: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between items-center border-b border-neutral-900/60 pb-1.5 last:border-0 last:pb-0">
+                                                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                                        #{p.number}: <span className="text-gray-300 font-semibold">{p.title}</span>
+                                                      </a>
+                                                      <span className={`px-2.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                                        p.state === "open" ? "bg-green-950 text-green-400" : "bg-purple-950 text-purple-400"
+                                                      }`}>
+                                                        {p.state === "open" ? "Abierto" : "Cerrado"}
+                                                      </span>
+                                                    </div>
+                                                  ))}
+                                                  {githubActivityData.pullRequests.length === 0 && (
+                                                    <p className="text-gray-500 italic">No hay pull requests abiertos o cerrados.</p>
+                                                  )}
+                                                </div>
+                                              )}
+
+                                              {/* Comments Tab */}
+                                              {githubActivityTab === "comments" && (
+                                                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                                  {githubActivityData.comments.map((c: any, idx: number) => (
+                                                    <div key={idx} className="bg-neutral-900/40 p-2.5 rounded-lg border border-neutral-900 space-y-1">
+                                                      <div className="flex justify-between items-center text-[10px] text-gray-500">
+                                                        <span className="font-bold text-gray-400">@{c.author}</span>
+                                                        <span>{new Date(c.created_at).toLocaleString("es-AR")}</span>
+                                                      </div>
+                                                      <p className="text-xs text-gray-300 whitespace-pre-wrap">{c.body}</p>
+                                                    </div>
+                                                  ))}
+                                                  {githubActivityData.comments.length === 0 && (
+                                                    <p className="text-gray-500 italic">No hay comentarios en el código o pull requests.</p>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <p className="text-gray-500">No se pudo cargar la actividad.</p>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Grading Form */}
+                                      <div className="border-t border-neutral-900/60 pt-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nota</label>
+                                          <input
+                                            type="text"
+                                            value={editingGrades[sub.id] || ""}
+                                            onChange={(e) => setEditingGrades(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                                            placeholder="Nota (Ej: 9, Aprobado)"
+                                            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Feedback / Comentario</label>
+                                          <input
+                                            type="text"
+                                            value={editingFeedbacks[sub.id] || ""}
+                                            onChange={(e) => setEditingFeedbacks(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                                            placeholder="Buen trabajo..."
+                                            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white"
+                                          />
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleSaveSingleGrade(sub.id, a.id)}
+                                          className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-xl transition cursor-pointer"
+                                        >
+                                          Guardar Calificación
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                {(!graderSubmissions[a.id] || graderSubmissions[a.id].length === 0) && (
+                                  <p className="text-xs text-gray-500 italic">No hay entregas registradas para esta tarea aún.</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1910,18 +2191,109 @@ export default function DashboardPage() {
                                 )}
                               </div>
 
-                              {/* Commit panel */}
+                              {/* GitHub Activity Tabbed Panel */}
                               {visibleCommitsSubId === sub.id && (
-                                <div className="bg-neutral-950/80 p-4 rounded-xl border border-neutral-800 space-y-2 mt-2 max-h-52 overflow-y-auto font-mono text-[11px]">
-                                  <h6 className="font-semibold text-gray-400 uppercase text-[9px] mb-1.5">Últimos Commits subidos:</h6>
-                                  {subCommits.map((c: any, i: number) => (
-                                    <div key={i} className="flex justify-between border-b border-neutral-900 pb-1.5 last:border-0 last:pb-0">
-                                      <span className="text-blue-400">{c.sha.substring(0, 7)}: <span className="text-gray-300">{c.message}</span></span>
-                                      <span className="text-gray-500">{new Date(c.date).toLocaleString("es-AR")}</span>
+                                <div className="bg-neutral-950/80 border border-neutral-850 p-4 rounded-xl space-y-4 text-xs mt-3">
+                                  {studentGithubActivity ? (
+                                    <div className="space-y-4 text-left">
+                                      {/* Sub-tabs */}
+                                      <div className="flex border-b border-neutral-900 pb-2 gap-4">
+                                        <button
+                                          type="button"
+                                          onClick={() => setStudentGithubActivityTab("commits")}
+                                          className={`font-semibold pb-1 border-b-2 transition-colors cursor-pointer ${
+                                            studentGithubActivityTab === "commits"
+                                              ? "border-emerald-500 text-emerald-400"
+                                              : "border-transparent text-gray-400 hover:text-white"
+                                          }`}
+                                        >
+                                          Commits ({studentGithubActivity.commits.length})
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setStudentGithubActivityTab("pulls")}
+                                          className={`font-semibold pb-1 border-b-2 transition-colors cursor-pointer ${
+                                            studentGithubActivityTab === "pulls"
+                                              ? "border-emerald-500 text-emerald-400"
+                                              : "border-transparent text-gray-400 hover:text-white"
+                                          }`}
+                                        >
+                                          Pull Requests ({studentGithubActivity.pullRequests.length})
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setStudentGithubActivityTab("comments")}
+                                          className={`font-semibold pb-1 border-b-2 transition-colors cursor-pointer ${
+                                            studentGithubActivityTab === "comments"
+                                              ? "border-emerald-500 text-emerald-400"
+                                              : "border-transparent text-gray-400 hover:text-white"
+                                          }`}
+                                        >
+                                          Comentarios ({studentGithubActivity.comments.length})
+                                        </button>
+                                      </div>
+
+                                      {/* Commits Tab */}
+                                      {studentGithubActivityTab === "commits" && (
+                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1 font-mono text-[10px]">
+                                          {studentGithubActivity.commits.map((c: any, idx: number) => (
+                                            <div key={idx} className="flex justify-between border-b border-neutral-900/60 pb-1.5 last:border-0 last:pb-0">
+                                              <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-mono text-[10px]">
+                                                {c.sha.substring(0, 7)}: <span className="text-gray-300 font-sans">{c.message}</span>
+                                              </a>
+                                              <span className="text-gray-500">{new Date(c.date).toLocaleString("es-AR")}</span>
+                                            </div>
+                                          ))}
+                                          {studentGithubActivity.commits.length === 0 && (
+                                            <p className="text-gray-500 italic">No hay commits registrados en tu repositorio.</p>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Pull Requests Tab */}
+                                      {studentGithubActivityTab === "pulls" && (
+                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                          {studentGithubActivity.pullRequests.map((p: any, idx: number) => (
+                                            <div key={idx} className="flex justify-between items-center border-b border-neutral-900/60 pb-1.5 last:border-0 last:pb-0">
+                                              <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                                #{p.number}: <span className="text-gray-300 font-semibold">{p.title}</span>
+                                              </a>
+                                              <span className={`px-2.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                                p.state === "open" ? "bg-green-950 text-green-400" : "bg-purple-950 text-purple-400"
+                                              }`}>
+                                                {p.state === "open" ? "Abierto" : "Cerrado"}
+                                              </span>
+                                            </div>
+                                          ))}
+                                          {studentGithubActivity.pullRequests.length === 0 && (
+                                            <p className="text-gray-500 italic">No hay pull requests abiertos o cerrados.</p>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Comments Tab */}
+                                      {studentGithubActivityTab === "comments" && (
+                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                          {studentGithubActivity.comments.map((c: any, idx: number) => (
+                                            <div key={idx} className="bg-neutral-900/40 p-2.5 rounded-lg border border-neutral-900 space-y-1">
+                                              <div className="flex justify-between items-center text-[10px] text-gray-500">
+                                                <span className="font-bold text-gray-400 font-sans">@{c.author}</span>
+                                                <span>{new Date(c.created_at).toLocaleString("es-AR")}</span>
+                                              </div>
+                                              <p className="text-xs text-gray-300 whitespace-pre-wrap">{c.body}</p>
+                                            </div>
+                                          ))}
+                                          {studentGithubActivity.comments.length === 0 && (
+                                            <p className="text-gray-500 italic">No hay comentarios en tu código o pull requests.</p>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
-                                  ))}
-                                  {subCommits.length === 0 && (
-                                    <p className="text-gray-600">No hay commits registrados en este repositorio todavía.</p>
+                                  ) : (
+                                    <div className="flex items-center space-x-2 text-gray-500 animate-pulse py-2">
+                                      <span className="w-3.5 h-3.5 border-2 border-t-transparent border-emerald-400 rounded-full animate-spin"></span>
+                                      <span>Cargando actividad...</span>
+                                    </div>
                                   )}
                                 </div>
                               )}
