@@ -10,6 +10,8 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Sincronización de Calendario (Exportación iCal/ICS)**: Permitir a los estudiantes exportar el cronograma dinámico de clases y fechas límite de entregas de tareas a Google Calendar, Apple Calendar o Microsoft Outlook.
 * **Buscador Rápido Inteligente (Command + K)**: Implementar una barra de búsqueda omni-buscadora (Spotlight Search) accesible en cualquier parte del sitio para buscar temas de clases, avisos, entregas o nombres de profesores de forma instantánea.
 * **Portafolio de Proyectos Públicos**: Dar la opción a los estudiantes de configurar ciertas entregas de GitHub como "públicas" en su perfil de la plataforma, creando un portafolio de proyectos académicos visible para reclutadores.
+* **Marcadores Temporales en Grabaciones (Bookmarks)**: Permitir a los estudiantes guardar comentarios o notas privadas en marcas de tiempo específicas de los videos de YouTube enlazados, facilitando el repaso rápido de momentos clave de la clase.
+* **Grupos de Cursada Auto-organizados**: Herramienta de emparejamiento inteligente que permita a los estudiantes formar grupos de estudio para tareas grupales o resolver dudas de forma autónoma con compañeros de horarios afines.
 
 ## 2. Experiencia Docente
 * **Analíticas Avanzadas**: Integrar gráficos e indicadores de participación (ej: visualización de asistencia inferida, qué alumnos vieron los videos de clases grabadas, curva de progreso de calificaciones).
@@ -19,6 +21,8 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Registro de Asistencia mediante QR Dinámico**: Permitir al profesor proyectar en el aula física un código QR que cambia cada 10 segundos, de manera que los estudiantes puedan escanearlo con sus dispositivos para firmar su asistencia en la clase en tiempo real con geolocalización.
 * **Integración Bidireccional con Hojas de Cálculo (Google Sheets)**: Crear una exportación de notas y listado de alumnos directa a hojas de Google Drive y permitir que el docente actualice notas en el Sheets y se sincronicen de regreso a la plataforma de forma automática.
 * **Banco de Consignas Reutilizables**: Biblioteca compartida en la que los docentes puedan guardar descripciones de entregas de tareas comunes (con sus rúbricas de evaluación) para reusarlas o clonarlas rápidamente en nuevos cuatrimestres.
+* **Asistente de IA Docente**: Integración de un modelo de lenguaje que proponga consignas alternativas de examen, redacte explicaciones teóricas complementarias para las clases o formule preguntas conceptuales adaptadas al temario actual.
+* **Alertas Tempranas de Desempeño**: Sistema automático que notifique al docente sobre estudiantes que presenten inasistencias reiteradas o encadenen múltiples entregas de tareas ausentes, identificando casos de riesgo académico de manera proactiva.
 
 ## 3. Infraestructura y Plataforma
 * **Soporte Offline Completo (IndexedDB)**: Ampliar el alcance actual del PWA y Service Worker para almacenar localmente el contenido de las clases y avisos en caché estructurada. De esta manera, el estudiante puede visualizar el material sin conexión a internet.
@@ -26,4 +30,5 @@ Este documento detalla una lista de ideas y posibles funcionalidades a incorpora
 * **Detección de Plagio y Copias**: Analizador automático de código estático (usando similitud estructural de AST o APIs de comparación de código) que escanee los repositorios de GitHub entregados y alerte al docente de posibles plagios entre alumnos.
 * **Autenticación Unificada (Single Sign-On / SSO)**: Soporte para login a través de servidores institucionales universitarios (OAuth2, SAML, Microsoft Azure AD o Google Workspace corporativo).
 * **Modo Oscuro Integrado y Temas de Accesibilidad**: Alternador nativo de interfaz oscura y soporte para paletas de alto contraste o tipografías aptas para personas con dislexia.
-
+* **Integración Nativa de Videollamadas (Zoom/Teams API)**: Generación automática de salas de reunión virtuales y recuperación automática de las grabaciones de video en la nube al finalizar la sesión, enlazándolas directamente a la clase correspondiente.
+* **Bitácora de Auditoría de Notas (Audit Logs)**: Registro histórico inmutable de modificaciones sobre calificaciones y entregas, con detalle del usuario responsable y fecha, garantizando transparencia académica y control de cambios.
