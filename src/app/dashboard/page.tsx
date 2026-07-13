@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { auth, db, functions } from "@/lib/firebase/clientApp";
 import { httpsCallable } from "firebase/functions";
 import { marked } from "marked";
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -118,6 +119,62 @@ export default function DashboardPage() {
   // Announcement Acknowledgement states
   const [visibleAcksId, setVisibleAcksId] = useState<string | null>(null);
   const [announcementAcks, setAnnouncementAcks] = useState<any[]>([]);
+
+  // Class Q&A Comments states
+  const [courseComments, setCourseComments] = useState<any[]>([]);
+  const [expandedComments, setExpandedComments] = useState<Record<number, boolean>>({});
+  const [newCommentTexts, setNewCommentTexts] = useState<Record<number, string>>({});
+
+  const toggleComments = (idx: number) => {
+    setExpandedComments(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  useEffect(() => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) {
+      setCourseComments([]);
+      return;
+    }
+    
+    const q = query(
+      collection(db, "courses", cid, "class_comments"),
+      orderBy("created_at", "asc")
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const comments = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setCourseComments(comments);
+    }, (err) => {
+      console.error("Error loading comments:", err);
+    });
+    
+    return () => unsubscribe();
+  }, [selectedCourse]);
+
+  const handleAddComment = async (classNumber: number) => {
+    const text = newCommentTexts[classNumber]?.trim();
+    if (!text) return;
+    
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid || !profile) return;
+    
+    try {
+      await addDoc(collection(db, "courses", cid, "class_comments"), {
+        classNumber,
+        user_id: profile.id,
+        user_name: profile.full_name || profile.email,
+        user_role: profile.role,
+        content: text,
+        created_at: serverTimestamp()
+      });
+      setNewCommentTexts(prev => ({ ...prev, [classNumber]: "" }));
+    } catch (err: any) {
+      alert("Error al enviar comentario: " + err.message);
+    }
+  };
 
   // Fetch profiles and manage auth status
   useEffect(() => {
@@ -1433,6 +1490,71 @@ export default function DashboardPage() {
                                 />
                               </div>
                             </div>
+                            
+                            <div className="border-t border-neutral-800/80 pt-4 mt-4 space-y-4">
+                              <div className="flex justify-between items-center">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleComments(ci.classNumber || (idx + 1))}
+                                  className="text-amber-500 hover:text-amber-400 underline text-xs font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5"
+                                >
+                                  💬 Foro de Consultas ({courseComments.filter(c => c.classNumber === (ci.classNumber || (idx + 1))).length})
+                                </button>
+                              </div>
+
+                              {/* Collapsible Comments Section */}
+                              {expandedComments[ci.classNumber || (idx + 1)] && (
+                                <div className="space-y-4">
+                                  {/* Comments List */}
+                                  <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                                    {courseComments
+                                      .filter((c) => c.classNumber === (ci.classNumber || (idx + 1)))
+                                      .map((comment) => (
+                                        <div key={comment.id} className="bg-neutral-950/60 border border-neutral-850 p-3 rounded-xl space-y-1">
+                                          <div className="flex justify-between items-center text-[10px]">
+                                            <span className={`font-bold ${comment.user_role === 'teacher' ? 'text-amber-400' : 'text-blue-400'}`}>
+                                              {comment.user_name} ({comment.user_role === 'teacher' ? 'Profesor' : 'Estudiante'})
+                                            </span>
+                                            <span className="text-gray-500">
+                                              {comment.created_at?.toDate
+                                                ? comment.created_at.toDate().toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                                                : "Enviando..."}
+                                            </span>
+                                          </div>
+                                          <p className="text-xs text-gray-300 whitespace-pre-wrap">{comment.content}</p>
+                                        </div>
+                                      ))}
+                                    {courseComments.filter((c) => c.classNumber === (ci.classNumber || (idx + 1))).length === 0 && (
+                                      <p className="text-xs text-gray-500 italic">No hay consultas en esta clase todavía.</p>
+                                    )}
+                                  </div>
+
+                                  {/* Add Comment Input */}
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={newCommentTexts[ci.classNumber || (idx + 1)] || ""}
+                                      onChange={(e) => setNewCommentTexts(prev => ({ ...prev, [ci.classNumber || (idx + 1)]: e.target.value }))}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          handleAddComment(ci.classNumber || (idx + 1));
+                                        }
+                                      }}
+                                      placeholder="Escribe una respuesta o aviso..."
+                                      className="flex-1 bg-neutral-950 border border-neutral-850 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddComment(ci.classNumber || (idx + 1))}
+                                      className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer"
+                                    >
+                                      Responder
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -1505,7 +1627,67 @@ export default function DashboardPage() {
                                         Video Grabación ↗
                                       </a>
                                     )}
+                                    <button
+                                      onClick={() => toggleComments(ci.classNumber || 0)}
+                                      className="text-amber-500 hover:text-amber-400 underline font-semibold focus:outline-none cursor-pointer text-xs"
+                                    >
+                                      💬 Foro ({courseComments.filter(c => c.classNumber === (ci.classNumber || 0)).length})
+                                    </button>
                                   </div>
+
+                                  {/* Collapsible Comments Section */}
+                                  {expandedComments[ci.classNumber || 0] && (
+                                    <div className="mt-4 border-t border-neutral-800/80 pt-4 space-y-4">
+                                      <h6 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Foro de Consultas</h6>
+                                      
+                                      {/* Comments List */}
+                                      <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                                        {courseComments
+                                          .filter((c) => c.classNumber === (ci.classNumber || 0))
+                                          .map((comment) => (
+                                            <div key={comment.id} className="bg-neutral-950/60 border border-neutral-850 p-3 rounded-xl space-y-1">
+                                              <div className="flex justify-between items-center text-[10px]">
+                                                <span className={`font-bold ${comment.user_role === 'teacher' ? 'text-amber-400' : 'text-blue-400'}`}>
+                                                  {comment.user_name} ({comment.user_role === 'teacher' ? 'Profesor' : 'Estudiante'})
+                                                </span>
+                                                <span className="text-gray-500">
+                                                  {comment.created_at?.toDate
+                                                    ? comment.created_at.toDate().toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                                                    : "Enviando..."}
+                                                </span>
+                                              </div>
+                                              <p className="text-xs text-gray-300 whitespace-pre-wrap">{comment.content}</p>
+                                            </div>
+                                          ))}
+                                        {courseComments.filter((c) => c.classNumber === (ci.classNumber || 0)).length === 0 && (
+                                          <p className="text-xs text-gray-500 italic">No hay consultas en esta clase todavía.</p>
+                                        )}
+                                      </div>
+
+                                      {/* Add Comment Input */}
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          value={newCommentTexts[ci.classNumber || 0] || ""}
+                                          onChange={(e) => setNewCommentTexts(prev => ({ ...prev, [ci.classNumber || 0]: e.target.value }))}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              e.preventDefault();
+                                              handleAddComment(ci.classNumber || 0);
+                                            }
+                                          }}
+                                          placeholder="Escribe tu consulta o duda..."
+                                          className="flex-1 bg-neutral-950 border border-neutral-850 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                                        />
+                                        <button
+                                          onClick={() => handleAddComment(ci.classNumber || 0)}
+                                          className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer"
+                                        >
+                                          Enviar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
