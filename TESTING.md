@@ -1,44 +1,60 @@
 # Guía de Pruebas y Seed Data
 
-Para validar el sistema y trabajar de manera local con Firebase.
+Este documento describe cómo levantar el entorno y validar las características de Jutsu Classroom (roles, planificación, acuses de recibo).
 
 ## 🧪 Pruebas de Desarrollo
 
-Actualmente, el sistema está integrado con **Firebase Hosting** y **Cloud Functions v1** alojados en la nube.
-Para probar localmente, puedes usar la CLI de Firebase o apuntar tus pruebas al entorno live si estás en una rama de prueba.
+El frontend corre localmente con Next.js y consume las Firebase Cloud Functions en producción o en el emulador local.
 
 ### Comandos Útiles
 
-1.  **Servir Localmente (Hosting)**: 
+1.  **Iniciar Servidor Local Frontend**:
     ```bash
-    firebase serve --only hosting
+    npm run dev
     ```
-2.  **Desplegar Cloud Functions**: 
+2.  **Desplegar Cloud Functions & Reglas**:
     ```bash
-    firebase deploy --only functions
+    firebase deploy --only functions,firestore
     ```
-3.  **Script de Población (Seed)**: 
-    Para agregar datos de prueba iniciales a Firestore, ejecuta el script proporcionado:
+3.  **Ejecutar Seed de Base de Datos**:
+    Para cargar datos iniciales consistentes a Firestore de manera idempotente (usando `PATCH`):
     ```bash
     ./seed.sh
     ```
-    *(Asegúrate de darle permisos de ejecución: `chmod +x seed.sh`)*.
+
+---
 
 ## 👤 Usuarios de Prueba (Seed)
 
-Si ejecutas el script `seed.sh`, se crearán o asumirán usuarios pre-configurados. Inicia sesión con el email listado y usa tus métodos de autenticación (ej. Google Auth) si corresponde, o simplemente Email/Contraseña (si los diste de alta por allí):
+Al ejecutar `./seed.sh` se crean tres perfiles iniciales en la colección `profiles` con IDs predeterminados:
 
-| Rol | Email | Propósito |
-| :--- | :--- | :--- |
-| **Admin** | `admin@jutsu.com` | Crear materias. Ver todos los usuarios. |
-| **Profesor** | `teacher@jutsu.com` | Ver cursos asignados y compartir códigos de invitación. |
-| **Estudiante** | `student@jutsu.com` | Completar perfil, enrolarse a cursos por código. |
+| Rol | Email | UID | Estado Inicial | Cátedra Asignada |
+| :--- | :--- | :--- | :--- | :--- |
+| **Admin** | `admin@jutsu.com` | `admin123` | `approved` | Ninguna (acceso global) |
+| **Profesor** | `teacher@jutsu.com` | `teacher123` | `approved` | Docente titular de `course123` |
+| **Estudiante** | `student@jutsu.com` | `student123` | `pending` | Inscripto en `course123` |
 
-## 📡 Simulación de Enrolamiento
+---
 
-Para probar el flujo de la plataforma:
-1. Entra como **Admin** y crea un nuevo curso llamado "Test Course".
-2. Asigna ese curso a un profesor (manualmente en base de datos o por las herramientas en progreso).
-3. Entra como **Profesor**, ve a "Mis Clases" y copia el **Código de Invitación** de 6 caracteres.
-4. Entra como **Estudiante** por primera vez. Deberías ver un campo para colocar el código. Pégalo allí y dale a "Sumarme".
-5. Verifica que ahora el curso aparece en "Mi Cursada".
+## 📋 Escenarios y Flujos de Prueba
+
+### 1. Cambio Manual de Roles (Admin)
+1. Inicia sesión como el **Admin** (`admin@jutsu.com`).
+2. Dirígete a la pestaña **Usuarios**.
+3. Localiza un usuario en la tabla. En la columna **Rol**, utiliza el menú desplegable (Select) para cambiar su rol (ej: de `Estudiante` a `Profesor`).
+4. Confirma el cuadro de diálogo. La página se recargará y el rol quedará actualizado en Firestore.
+
+### 2. Gestión y Visualización de Clases (Profesor/Ayudante)
+1. Inicia sesión como el **Profesor** (`teacher@jutsu.com`).
+2. Haz clic en **Ver Detalle** de la cátedra "Introducción al Ninjutsu".
+3. Dirígete a la subpestaña **Cronograma**.
+4. Haz clic en **🔄 Regenerar Clases** para generar automáticamente los bloques horarios y clases basándose en la configuración de la materia.
+5. Haz clic en **💾 Guardar Cronograma**. Las clases se persistirán en Firestore.
+6. Cierra sesión e ingresa con otro profesor asignado o con un **Estudiante** (`student@jutsu.com`). Verifica que las clases planificadas se muestren correctamente y no desaparezcan.
+
+### 3. Acuse de Recepción de Avisos (Profesor ↔ Estudiante)
+1. Inicia sesión como **Profesor** (`teacher@jutsu.com`), ve a la materia y entra a la subpestaña **Avisos**.
+2. Escribe un mensaje en el cuadro de texto y haz clic en **Enviar Aviso**.
+3. Inicia sesión como **Estudiante** (`student@jutsu.com`), entra a la misma cátedra y navega a **Avisos**.
+4. Verás el aviso con un botón **"Confirmar Recepción"**. Haz clic en él. El estado cambiará a `Acuse de recepción confirmado ✓`.
+5. Vuelve a iniciar sesión como **Profesor** o **Admin**. En el aviso correspondiente, haz clic en **"Ver Acuses de Recepción"**. Deberías ver listado al estudiante con su nombre, correo y la fecha/hora en la que leyó el aviso.
