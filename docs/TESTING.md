@@ -159,3 +159,28 @@ El seed de la base de datos pre-carga una entrega enviada para **Naruto Uzumaki*
 5. Presiona **Guardar Cronograma** en la parte superior derecha.
 6. Regresa a la vista **Lista** y valida que los cambios aplicados en el Kanban (cambio de tipo "Práctica" y estado "Feriado") se renderizan de forma coherente en el listado.
 
+### 14. Pruebas de Tutorías Académicas entre Pares
+1. Inicia sesión con una cuenta de estudiante y navegá a la pestaña **🎓 Tutorías**.
+2. Presioná el botón **🤝 Postularme como Tutor**. Escribí los temas fuertes (e.g. "React, Node") y disponibilidad (e.g. "Miércoles 19:00"), y confirmá.
+3. Iniciá sesión con otra cuenta de estudiante, ve a la pestaña **🎓 Tutorías** y verificá que el tutor registrado aparece listado en "Tutores Disponibles".
+4. Presioná **Reservar Mentoría** en la tarjeta de ese tutor, ingresá una consulta y una fecha/hora y presioná Reservar.
+5. Regresá a la cuenta del tutor, verificá que la mentoría aparece en "Mis Tutorías y Mentorías" con estado "Pendiente". Presioná **Aceptar**.
+6. Verificá que la sesión pasa a "Confirmada" y se habilita un botón con el enlace a Google Meet para realizar la mentoría.
+
+### 15. Pruebas de Emparejamiento y Grupos de Estudio Auto-organizados
+1. Inicia sesión como estudiante y ve a la pestaña **👥 Grupos de Estudio**.
+2. Presioná **✨ Crear Nuevo Grupo**, completá los datos del grupo (asigná la preferencia horaria a "Tarde") y crealo.
+3. Verificá que el grupo se lista en la columna derecha y figurás en la lista de integrantes.
+4. En el panel "Emparejamiento Inteligente", seleccioná "Tarde" y presioná **Buscar Compañeros Afines**.
+5. Verificá que el buscador encuentra alumnos que estudian por la tarde, listando su email para contactarlos.
+
+### 16. Pruebas de Snapshot y Control de Versiones de Cronograma
+1. Inicia sesión como **Profesor** (`teacher@jutsu.com`) e ingresá a **Cronograma**.
+2. Presioná **💾 Guardar Versión**, ingresá "Plan original" como nombre del snapshot y aceptá.
+3. Modificá el cronograma (cambiando temas de clases o convirtiendo clases en Feriados/Exámenes).
+4. Presioná el botón **📜 Historial/Comparar**.
+5. Seleccioná la versión "Plan original" del listado izquierdo.
+6. Validá que en el panel derecho se genera un diff interactivo detallando las diferencias (las clases modificadas aparecen en color naranja y muestran la diferencia de tema/tipo).
+7. Presioná **Restaurar** en la versión del listado. Validá que el cronograma en pantalla regresa a los temas originales de forma automática.
+
+

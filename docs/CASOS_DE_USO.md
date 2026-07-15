@@ -123,6 +123,17 @@ Este documento detalla los casos de uso principales de la plataforma, divididos 
     5. Validar que la tarjeta se desplaza visualmente y actualiza su tipo o estado especial de forma inmediata.
     6. Presionar **Guardar Cronograma** para confirmar y persistir los cambios curriculares.
 
+### 16. Historial y Control de Versiones de Cronograma
+*   **Descripción:** El docente guarda snapshots de su cronograma, visualiza un diff de los cambios entre versiones y restaura cualquier versión anterior.
+*   **Pasos para probar:**
+    1. Ir a la subpestaña **Cronograma** de un curso.
+    2. Presionar **💾 Guardar Versión**, escribir un nombre descriptivo (ej: "Planificación Post-Parcial") y presionar Guardar.
+    3. Realizar algunos cambios en el cronograma (como mover una clase a "Feriado").
+    4. Presionar **📜 Historial/Comparar**.
+    5. Seleccionar la versión guardada previamente del listado izquierdo.
+    6. Comprobar que en la parte derecha se muestra un diff interactivo detallando las clases añadidas, eliminadas o modificadas de forma visual.
+    7. Presionar **Restaurar** para regresar el cronograma actual en pantalla a esa versión.
+
 ---
 
 ## 🎓 Casos de Uso del Estudiante
@@ -189,6 +200,25 @@ Este documento detalla los casos de uso principales de la plataforma, divididos 
     2. Calificar la clase usando las estrellas (1-5), elegir su nivel de comprensión y opcionalmente escribir un comentario o sugerencia.
     3. Presionar "Enviar Feedback".
     4. Comprobar que si vuelve a abrir el formulario, sus respuestas anteriores aparecen precargadas (permitiendo modificarlas), pero su identidad no queda vinculada en el registro que ve el profesor.
+
+### 9. Postulación y Reserva de Tutorías Académicas
+*   **Descripción:** Alumnos avanzados se registran como tutores y otros alumnos pueden reservar tutorías de consulta con ellos.
+*   **Pasos para probar:**
+    1. Entrar a la subpestaña **🎓 Tutorías**.
+    2. Presionar **🤝 Postularme como Tutor**, rellenar temas fuertes y disponibilidad horaria, y enviar.
+    3. Con otra cuenta de estudiante, entrar a la misma pestaña, ver al alumno listado en "Tutores Disponibles" y presionar **Reservar Mentoría**.
+    4. Indicar el tema de la consulta, la fecha y hora sugerida, y presionar Reservar.
+    5. Iniciar sesión como el tutor, ver la sesión en estado "Pendiente" en la sección derecha y presionar "Aceptar" para confirmarla.
+    6. Comprobar que una vez confirmada, se habilita el botón "🎥 Entrar a Sala Virtual" con un enlace dinámico a Google Meet.
+
+### 10. Creación y Emparejamiento en Grupos de Estudio
+*   **Descripción:** Los estudiantes arman grupos de estudio y buscan a otros compañeros que coincidan con sus horarios para invitarlos.
+*   **Pasos para probar:**
+    1. Entrar a la subpestaña **👥 Grupos de Estudio**.
+    2. Presionar **✨ Crear Nuevo Grupo**, especificar nombre, descripción, franja horaria (ej: "Noche") y presionar Crear.
+    3. Comprobar que el grupo aparece como "Activo" y que el creador está agregado automáticamente como miembro.
+    4. En la tarjeta "🔍 Emparejamiento Inteligente", seleccionar "Noche" en la preferencia horaria y hacer clic en **Buscar Compañeros Afines**.
+    5. Verificar que se listan todos los alumnos que tienen configurada la cursada en el turno de la noche para contactarlos.
 
 ---
 
