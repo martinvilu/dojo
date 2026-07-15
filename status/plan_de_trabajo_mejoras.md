@@ -54,6 +54,8 @@ gantt
     *   Asignación de comisiones a los estudiantes, mapeo de docentes responsables por comisión en configuración de la materia y filtros por comisión en las vistas de Alumnos, Asistencia y Tareas entregadas.
 *   **Tarea 2.8: Dashboard Docente Centralizado**
     *   Subpestaña de Resumen docente que muestra contadores rápidos de desempeño, cola de corrección de tareas con links directos y consultas de foro de clases pendientes de responder.
+*   **Tarea 2.9: Tablero Kanban para Planificación Curricular**
+    *   Vista alternativa de Cronograma mediante un tablero Kanban interactivo que categoriza las clases en Teóricas, Prácticas, Feriados y Exámenes, permitiendo reasignaciones rápidas por drag and drop.
 
 ### 🔌 Fase 3: UX y Resiliencia Offline (Completado)
 *   **Tarea 3.1: Modo Claro/Oscuro Integrado**

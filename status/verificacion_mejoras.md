@@ -16,7 +16,7 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Docente** | Integración Bidireccional con Google Sheets | 🟢 Completado | **Implementado**: Exportación en 1 clic de la planilla completa de notas, asistencias, alertas y estado a CSV compatible con Sheets/Excel. |
 | **Docente** | Alertas Tempranas de Desempeño | 🟢 Completado | **Implementado**: Subpestaña "Alumnos y Alertas" con cálculo en tiempo real de ratios de asistencia y tareas entregadas, emitiendo alertas por inasistencias y tareas vencidas sin entregar. |
 | **Docente** | Espacio de Co-Docencia Coordinada | 🟢 Completado | **Implementado**: Asignación de comisiones a perfiles de alumnos, vinculación de docentes responsables en configuración de cátedra y filtrado multi-vista. |
-| **Docente** | Tablero Kanban para Planificación Curricular | ⏳ Pendiente | Reorganización interactiva (drag & drop) del cronograma de clases. |
+| **Docente** | Tablero Kanban para Planificación Curricular | 🟢 Completado | **Implementado**: Tablero Kanban interactivo por drag & drop para reclasificar cronogramas entre Teóricas, Prácticas, Feriados y Exámenes. |
 | **Docente** | Encuestas Estudiantiles Anónimas | 🟢 Completado | **Implementado**: Módulo de feedback anónimo por clase en el cronograma con valoración (1-5 estrellas), nivel de comprensión y comentarios. |
 | **Docente** | Dashboard Docente Centralizado | 🟢 Completado | **Implementado**: Panel "Resumen" con cola de correcciones de entregas de tareas, últimas consultas de foro de clases y lista de alumnos en riesgo. |
 | **Infraestructura** | Paginación y Caching en Firestore | 🟢 Completado | Habilitación de persistencia IndexedDB y optimización de lecturas offline. |
@@ -135,10 +135,22 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
     *   **Consultas Recientes**: Listado de los últimos comentarios de alumnos en foros de clases que aún no tienen respuesta marcada como solución por el docente. Incluye el enlace "Responder en Foro" que redirige y despliega el foro de consultas de la clase exacta.
     *   **Alumnos que requieren Atención**: Vista rápida de la lista filtrada de alumnos en riesgo, con sus porcentajes de presentismo y desglose de alertas activas.
 
+### 13. Tablero Kanban para Planificación Curricular (Tablero Kanban)
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx).
+*   **Funcionamiento:**
+    *   Se agregó un selector de modo de vista en la cabecera de la subpestaña de **Cronograma** (Gestión de Clases) para profesores:
+        *   **📋 Lista**: Vista secuencial clásica y detallada con foros, asistencias y links.
+        *   **📊 Tablero Kanban**: Panel visual con 4 columnas principales: **📖 Teóricas**, **🛠️ Prácticas**, **🌴 Feriados** y **🏆 Exámenes**.
+    *   **Drag & Drop Nativo (HTML5)**:
+        *   Cada clase se comporta como una tarjeta arrastrable (`draggable="true"`).
+        *   El docente puede arrastrar cualquier clase de una columna a otra para reclasificarla en tiempo real.
+        *   Al soltar la tarjeta sobre una columna, se actualizan sus atributos internos: el tipo de clase (Teórica/Práctica) o su estado especial (Feriado/Examen).
+        *   Los cambios persisten localmente en el cronograma y se consolidan en Firestore de manera interactiva al presionar **Guardar Cronograma**.
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
 
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
-1.  **Tablero Kanban para Planificación Curricular:** Reorganización interactiva (drag & drop) del cronograma de clases.
-2.  **Control de Versiones de Cronogramas:** Historial de cronogramas y comparación curricular interanual.
+1.  **Control de Versiones de Cronogramas:** Historial de cronogramas y comparación curricular interanual.
+2.  **Alertas Automatizadas a Alumnos**: Módulo para que el sistema envíe notificaciones o correos automáticos a estudiantes que entren en estado "En Riesgo".
