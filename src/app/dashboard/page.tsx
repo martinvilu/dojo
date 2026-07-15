@@ -163,6 +163,10 @@ export default function DashboardPage() {
   const [feedbackStats, setFeedbackStats] = useState<{ avgRating: number; count: number; understandingDist: Record<string, number>; comments: string[] } | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState<boolean>(false);
 
+  // Commission & Co-docencia states
+  const [commissionFilter, setCommissionFilter] = useState<string>("Todas");
+  const [teacherCommissionsMapping, setTeacherCommissionsMapping] = useState<Record<string, string>>({});
+
   // Announcements states
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [newAnnouncementMessage, setNewAnnouncementMessage] = useState("");
@@ -194,6 +198,7 @@ export default function DashboardPage() {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) {
       setRoster([]);
+      setCourseTeachers([]);
       return;
     }
     api("getCourseRoster", { courseId: cid })
@@ -202,6 +207,14 @@ export default function DashboardPage() {
       })
       .catch((err) => {
         console.error("Error loading roster:", err);
+      });
+
+    api("getCourseTeachers", { courseId: cid })
+      .then((res) => {
+        setCourseTeachers(res || []);
+      })
+      .catch((err) => {
+        console.error("Error loading course teachers:", err);
       });
   }, [selectedCourse]);
 
@@ -547,6 +560,7 @@ export default function DashboardPage() {
             setTeacherGithubToken(data.github_token || "");
             setTeacherExternalCalendars((data.external_calendars || []).join(", "));
             setTeacherSchedules(data.schedules || []);
+            setTeacherCommissionsMapping(data.commissions_mapping || {});
             
             // Get other courses for cloning
             const otherCoursesRes = await api("getTeacherCourses");
@@ -903,7 +917,8 @@ export default function DashboardPage() {
           start_date: teacherStartDate,
           external_calendars: teacherExternalCalendars.split(",").map(c => c.trim()).filter(Boolean),
           github_token: teacherGithubToken,
-          schedules: teacherSchedules
+          schedules: teacherSchedules,
+          commissions_mapping: teacherCommissionsMapping
         }
       });
       alert("Configuración de cátedra guardada.");
@@ -930,6 +945,7 @@ export default function DashboardPage() {
       setTeacherGithubToken(data.github_token || "");
       setTeacherExternalCalendars((data.external_calendars || []).join(", "));
       setTeacherSchedules(data.schedules || []);
+      setTeacherCommissionsMapping(data.commissions_mapping || {});
       alert("Configuración clonada exitosamente.");
     } catch (err: any) {
       alert("Error al clonar configuración: " + err.message);
@@ -1234,6 +1250,32 @@ export default function DashboardPage() {
       URL.revokeObjectURL(url);
     } catch (err: any) {
       alert("Error al exportar planilla: " + err.message);
+    }
+  };
+
+  const handleUpdateCommission = async (studentId: string, commission: string) => {
+    const cid = selectedCourse.id || selectedCourse.course?.id;
+    if (!cid) return;
+    try {
+      const studentRef = doc(db, "profiles", studentId);
+      await updateDoc(studentRef, {
+        [`commissions.${cid}`]: commission
+      });
+      // Update local state instantly
+      setRoster(prev => prev.map(s => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            commissions: {
+              ...(s.commissions || {}),
+              [cid]: commission
+            }
+          };
+        }
+        return s;
+      }));
+    } catch (err: any) {
+      alert("Error al asignar comisión: " + err.message);
     }
   };
 
@@ -1975,7 +2017,19 @@ export default function DashboardPage() {
                                 <div className="mt-4 bg-neutral-950 border border-neutral-850 p-4 rounded-xl space-y-4">
                                   <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
                                     <h6 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Tomar Asistencia (Clase {ci.classNumber || (idx + 1)})</h6>
-                                    <div className="flex gap-2.5 items-center">
+                                    <div className="flex gap-2.5 items-center flex-wrap">
+                                      <select
+                                        value={commissionFilter}
+                                        onChange={(e) => setCommissionFilter(e.target.value)}
+                                        className="bg-neutral-900 border border-neutral-800 text-[10px] rounded px-2 py-1 text-gray-300 focus:outline-none cursor-pointer font-semibold"
+                                      >
+                                        <option value="Todas">Todas las Comisiones</option>
+                                        <option value="Comisión A">Comisión A</option>
+                                        <option value="Comisión B">Comisión B</option>
+                                        <option value="Comisión C">Comisión C</option>
+                                        <option value="Comisión D">Comisión D</option>
+                                        <option value="Sin Comisión">Sin Comisión</option>
+                                      </select>
                                       <button
                                         type="button"
                                         onClick={() => handleGenerateAttendanceQr(ci.classNumber || (idx + 1))}
@@ -1994,26 +2048,33 @@ export default function DashboardPage() {
                                   </div>
                                   
                                   <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                                    {roster.map((student) => {
-                                      const currentVal = editingAttendanceRecords[student.id] || "present";
-                                      return (
-                                        <div key={student.id} className="flex justify-between items-center text-xs py-1.5 border-b border-neutral-900/60 last:border-b-0">
-                                          <div className="flex flex-col">
-                                            <span className="font-semibold text-white">{student.full_name || student.email}</span>
-                                            <span className="text-[10px] text-gray-500 font-mono">Matrícula: {student.matricula_unrn || "-"}</span>
-                                          </div>
-                                          <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-neutral-800">
-                                            <button
-                                              type="button"
-                                              onClick={() => setEditingAttendanceRecords(prev => ({ ...prev, [student.id]: "present" }))}
-                                              className={`px-2 py-1 rounded text-[10px] font-bold transition ${
-                                                currentVal === "present"
-                                                  ? "bg-green-600 text-white"
-                                                  : "text-gray-400 hover:text-white"
-                                              }`}
-                                            >
-                                              Presente
-                                            </button>
+                                    {roster
+                                      .filter((student) => {
+                                        const studentComm = student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
+                                        if (commissionFilter === "Todas") return true;
+                                        if (commissionFilter === "Sin Comisión") return studentComm === "";
+                                        return studentComm === commissionFilter;
+                                      })
+                                      .map((student) => {
+                                        const currentVal = editingAttendanceRecords[student.id] || "present";
+                                        return (
+                                          <div key={student.id} className="flex justify-between items-center text-xs py-1.5 border-b border-neutral-900/60 last:border-b-0">
+                                            <div className="flex flex-col">
+                                              <span className="font-semibold text-white">{student.full_name || student.email}</span>
+                                              <span className="text-[10px] text-gray-550 font-mono">Matrícula: {student.matricula_unrn || "-"}</span>
+                                            </div>
+                                            <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-neutral-800">
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingAttendanceRecords(prev => ({ ...prev, [student.id]: "present" }))}
+                                                className={`px-2 py-1 rounded text-[10px] font-bold transition ${
+                                                  currentVal === "present"
+                                                    ? "bg-green-600 text-white"
+                                                    : "text-gray-400 hover:text-white"
+                                                }`}
+                                              >
+                                                Presente
+                                              </button>
                                             <button
                                               type="button"
                                               onClick={() => setEditingAttendanceRecords(prev => ({ ...prev, [student.id]: "late" }))}
@@ -2040,8 +2101,13 @@ export default function DashboardPage() {
                                         </div>
                                       );
                                     })}
-                                    {roster.length === 0 && (
-                                      <p className="text-xs text-gray-500 italic">No hay estudiantes inscriptos en el curso.</p>
+                                    {roster.filter((student) => {
+                                      const studentComm = student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
+                                      if (commissionFilter === "Todas") return true;
+                                      if (commissionFilter === "Sin Comisión") return studentComm === "";
+                                      return studentComm === commissionFilter;
+                                    }).length === 0 && (
+                                      <p className="text-xs text-gray-500 italic text-center py-2">No hay estudiantes en esta comisión.</p>
                                     )}
                                   </div>
 
@@ -2572,11 +2638,35 @@ export default function DashboardPage() {
 
                           {/* Collapsible Grader & Submissions List */}
                           {expandedGraderAssignmentId === a.id && (
-                            <div className="border-t border-neutral-800/60 pt-6 mt-6 space-y-6">
-                              <h6 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Entregas de los Estudiantes</h6>
-                              
-                              <div className="space-y-4">
-                                {(graderSubmissions[a.id] || []).map((sub) => {
+                             <div className="border-t border-neutral-800/60 pt-6 mt-6 space-y-6">
+                               <div className="flex justify-between items-center flex-wrap gap-2">
+                                 <h6 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Entregas de los Estudiantes</h6>
+                                 <div className="flex items-center space-x-1.5 bg-neutral-950 px-2.5 py-1 rounded-lg border border-neutral-850">
+                                   <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider font-sans">Comisión:</span>
+                                   <select
+                                     value={commissionFilter}
+                                     onChange={(e) => setCommissionFilter(e.target.value)}
+                                     className="bg-transparent text-[10px] text-gray-300 focus:outline-none cursor-pointer font-semibold font-sans"
+                                   >
+                                     <option value="Todas">Todas</option>
+                                     <option value="Comisión A">Comisión A</option>
+                                     <option value="Comisión B">Comisión B</option>
+                                     <option value="Comisión C">Comisión C</option>
+                                     <option value="Comisión D">Comisión D</option>
+                                     <option value="Sin Comisión">Sin Comisión</option>
+                                   </select>
+                                 </div>
+                               </div>
+                               
+                               <div className="space-y-4">
+                                 {(graderSubmissions[a.id] || [])
+                                   .filter((sub) => {
+                                     const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
+                                     if (commissionFilter === "Todas") return true;
+                                     if (commissionFilter === "Sin Comisión") return studentComm === "";
+                                     return studentComm === commissionFilter;
+                                   })
+                                   .map((sub) => {
                                   const studentName = sub.profiles?.full_name || sub.profiles?.email || "Estudiante";
                                   const isGitHubLoaded = githubActivitySubmissionId === sub.id;
                                   
@@ -2808,9 +2898,17 @@ export default function DashboardPage() {
                                     </div>
                                   );
                                 })}
-                                {(!graderSubmissions[a.id] || graderSubmissions[a.id].length === 0) && (
-                                  <p className="text-xs text-gray-500 italic">No hay entregas registradas para esta tarea aún.</p>
-                                )}
+                                 {(!graderSubmissions[a.id] || 
+                                   graderSubmissions[a.id].filter((sub) => {
+                                     const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
+                                     if (commissionFilter === "Todas") return true;
+                                     if (commissionFilter === "Sin Comisión") return studentComm === "";
+                                     return studentComm === commissionFilter;
+                                   }).length === 0) && (
+                                   <p className="text-xs text-gray-500 italic text-center py-4 bg-neutral-950/20 rounded-xl border border-neutral-850 border-dashed">
+                                     No hay entregas registradas en esta comisión aún.
+                                   </p>
+                                 )}
                               </div>
                             </div>
                           )}
@@ -3028,13 +3126,31 @@ export default function DashboardPage() {
                         Seguimiento en tiempo real del presentismo y cumplimiento de tareas de los estudiantes inscriptos.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleExportGradesMatrix}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
-                    >
-                      <span>📊 Exportar Planilla (Sheets)</span>
-                    </button>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <div className="flex items-center space-x-1.5 bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-850">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider font-sans">Comisión:</span>
+                        <select
+                          value={commissionFilter}
+                          onChange={(e) => setCommissionFilter(e.target.value)}
+                          className="bg-transparent text-xs text-gray-300 focus:outline-none cursor-pointer font-semibold"
+                        >
+                          <option value="Todas">Todas</option>
+                          <option value="Comisión A">Comisión A</option>
+                          <option value="Comisión B">Comisión B</option>
+                          <option value="Comisión C">Comisión C</option>
+                          <option value="Comisión D">Comisión D</option>
+                          <option value="Sin Comisión">Sin Comisión</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleExportGradesMatrix}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
+                      >
+                        <span>📊 Exportar Planilla (Sheets)</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto bg-neutral-950/40 border border-neutral-850 rounded-2xl">
@@ -3050,30 +3166,58 @@ export default function DashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-850 text-xs text-gray-300">
-                        {roster.map((student) => {
-                          const studentAtts = courseAttendance.filter(c => c.records && c.records[student.id]);
-                          const recordedCount = studentAtts.length;
-                          const presentOrLate = studentAtts.filter(c => c.records[student.id] === "present" || c.records[student.id] === "late").length;
-                          const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                          const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
+                        {roster
+                          .filter((student) => {
+                            const studentComm = student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
+                            if (commissionFilter === "Todas") return true;
+                            if (commissionFilter === "Sin Comisión") return studentComm === "";
+                            return studentComm === commissionFilter;
+                          })
+                          .map((student) => {
+                            const studentAtts = courseAttendance.filter(c => c.records && c.records[student.id]);
+                            const recordedCount = studentAtts.length;
+                            const presentOrLate = studentAtts.filter(c => c.records[student.id] === "present" || c.records[student.id] === "late").length;
+                            const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
+                            const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
 
-                          const studentSubmissions = courseSubmissions.filter(s => s.student_id === student.id);
-                          const submittedCount = studentSubmissions.length;
-                          const totalAssignments = assignments.length;
-                          const hasMissingAssignments = assignments.some(a => {
-                            const hasSub = studentSubmissions.some(s => s.assignment_id === a.id);
-                            const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
-                            return !hasSub && isPastDue;
-                          });
+                            const studentSubmissions = courseSubmissions.filter(s => s.student_id === student.id);
+                            const submittedCount = studentSubmissions.length;
+                            const totalAssignments = assignments.length;
+                            const hasMissingAssignments = assignments.some(a => {
+                              const hasSub = studentSubmissions.some(s => s.assignment_id === a.id);
+                              const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+                              return !hasSub && isPastDue;
+                            });
 
-                          const isAtRisk = hasCriticalAttendance || hasMissingAssignments;
+                            const isAtRisk = hasCriticalAttendance || hasMissingAssignments;
 
-                          return (
-                            <tr key={student.id} className="hover:bg-neutral-900/30 transition-colors">
-                              <td className="p-4">
-                                <div className="font-semibold text-white">{student.full_name || "Estudiante"}</div>
-                                <div className="text-[10px] text-gray-500">{student.email}</div>
-                              </td>
+                            return (
+                              <tr key={student.id} className="hover:bg-neutral-900/30 transition-colors">
+                                <td className="p-4">
+                                  <div className="font-semibold text-white">{student.full_name || "Estudiante"}</div>
+                                  <div className="text-[10px] text-gray-500 flex items-center space-x-2 mt-1">
+                                    <span>{student.email}</span>
+                                    {profile?.role === "teacher" ? (
+                                      <select
+                                        value={student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || ""}
+                                        onChange={(e) => handleUpdateCommission(student.id, e.target.value)}
+                                        className="bg-neutral-950 border border-neutral-800 text-[9px] rounded px-1.5 py-0.5 text-gray-400 focus:outline-none focus:border-blue-500 cursor-pointer font-semibold font-sans"
+                                      >
+                                        <option value="">Sin Comisión</option>
+                                        <option value="Comisión A">Comisión A</option>
+                                        <option value="Comisión B">Comisión B</option>
+                                        <option value="Comisión C">Comisión C</option>
+                                        <option value="Comisión D">Comisión D</option>
+                                      </select>
+                                    ) : (
+                                      student.commissions?.[selectedCourse.id || selectedCourse.course?.id] && (
+                                        <span className="bg-neutral-800 text-gray-400 border border-neutral-750 text-[9px] px-1.5 py-0.5 rounded font-semibold font-mono">
+                                          {student.commissions[selectedCourse.id || selectedCourse.course?.id]}
+                                        </span>
+                                      )
+                                    )}
+                                  </div>
+                                </td>
                               <td className="p-4 font-mono text-gray-400">{student.matricula_unrn || "No provista"}</td>
                               <td className="p-4 space-y-1">
                                 <div className="flex items-center justify-between text-[10px]">
@@ -3374,6 +3518,40 @@ export default function DashboardPage() {
                           >
                             Eliminar
                           </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Co-Docencia Commissions Mapping */}
+                  <div className="border-t border-neutral-800/60 pt-4 space-y-4">
+                    <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider">Co-Docencia & Responsables de Comisión</h4>
+                    <p className="text-[10px] text-gray-550 leading-normal">
+                      Asigna un docente responsable a cada comisión. Esto ayuda a coordinar las tareas, asistencia y consultas específicas.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {["Comisión A", "Comisión B", "Comisión C", "Comisión D"].map((comm) => (
+                        <div key={comm} className="flex justify-between items-center bg-neutral-950/60 border border-neutral-850 p-3 rounded-xl">
+                          <span className="text-xs font-bold text-white font-sans">{comm}</span>
+                          <select
+                            value={teacherCommissionsMapping[comm] || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setTeacherCommissionsMapping(prev => ({
+                                ...prev,
+                                [comm]: val
+                              }));
+                            }}
+                            className="bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1 text-xs focus:outline-none text-gray-300 font-sans max-w-[180px]"
+                          >
+                            <option value="">Sin responsable asignado</option>
+                            {courseTeachers.map((ct) => (
+                              <option key={ct.teacher_id} value={ct.teacher_id}>
+                                {ct.profiles?.full_name || ct.profiles?.email || "Docente"}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       ))}
                     </div>
