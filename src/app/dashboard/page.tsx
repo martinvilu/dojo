@@ -58,6 +58,7 @@ export default function DashboardPage() {
   const [apiLoading, setApiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("");
   const [error, setError] = useState("");
+  const hasProcessedParams = useRef(false);
 
   // Pending Matricula inputs
   const [matriculaInput, setMatriculaInput] = useState("");
@@ -587,6 +588,53 @@ export default function DashboardPage() {
 
     loadData();
   }, [activeTab, profile]);
+
+  // Load REST URL parameters (integration / direct link support)
+  useEffect(() => {
+    if (typeof window === "undefined" || !profile || courses.length === 0 || hasProcessedParams.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const courseId = params.get("courseId");
+    const assignmentId = params.get("assignmentId");
+    const userId = params.get("userId");
+    const tab = params.get("tab");
+
+    const processParams = async () => {
+      hasProcessedParams.current = true;
+      if (tab) {
+        setActiveTab(tab);
+      }
+      if (courseId) {
+        const found = courses.find((c: any) => (c.id === courseId || c.course?.id === courseId));
+        if (found) {
+          await viewCourseDetails(found.course || found);
+        }
+      }
+      if (assignmentId) {
+        let matchedCourse = null;
+        for (const c of courses) {
+          const cid = c.id || c.course?.id;
+          if (cid) {
+            try {
+              const res = await api("getCourseDetails", { courseId: cid });
+              if (res && res.assignments && res.assignments.some((a: any) => a.id === assignmentId)) {
+                matchedCourse = c.course || c;
+                break;
+              }
+            } catch (e) {}
+          }
+        }
+        if (matchedCourse) {
+          await viewCourseDetails(matchedCourse);
+          setCourseSubTab("assignments");
+        }
+      }
+      if (userId && profile?.role === "admin") {
+        setActiveTab("admin-users");
+      }
+    };
+
+    processParams();
+  }, [profile, courses]);
 
   // Load course details subtabs
   useEffect(() => {

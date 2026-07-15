@@ -1,12 +1,21 @@
-import React from "react";
+"use client";
+import React, { useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 
-export default async function ActivityDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
+export default function ActivityDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter();
+  const resolvedParams = use(params);
+
+  useEffect(() => {
+    router.push(`/dashboard?assignmentId=${resolvedParams.id}`);
+  }, [resolvedParams.id, router]);
+
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <h1 className="text-headline-lg font-bold text-on-surface mb-6">Detalle de Actividad</h1>
-      <p className="text-body-md text-secondary">Visualizando la actividad con ID: {resolvedParams.id}</p>
-      {/* TODO: Migrar la lógica de visualización y envíos (submissions) de la actividad */}
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+      <div className="flex items-center space-x-2 text-gray-400 animate-pulse">
+        <span className="w-4 h-4 border-2 border-t-transparent border-red-500 rounded-full animate-spin"></span>
+        <span>Redireccionando a la actividad en el Dojo...</span>
+      </div>
     </div>
   );
 }
