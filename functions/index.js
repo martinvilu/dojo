@@ -603,11 +603,32 @@ exports.api = functions.https.onCall(async (data, context) => {
             }
             const { submissionId, grade, feedback } = payload;
             if (!submissionId) throw new Error("Falta el id de la entrega");
+            
+            // Get previous grade state for audit log diff
+            const submissionDoc = await db.collection('submissions').doc(submissionId).get();
+            const previousData = submissionDoc.exists ? submissionDoc.data() : {};
+            
             await db.collection('submissions').doc(submissionId).update({
                 grade: String(grade || ''),
                 feedback: String(feedback || ''),
                 graded_at: admin.firestore.FieldValue.serverTimestamp()
             });
+            
+            // Write immutable audit log
+            await db.collection('audit_logs').add({
+                action: 'grade_submission',
+                submission_id: submissionId,
+                assignment_id: previousData.assignment_id || '',
+                student_id: previousData.student_id || '',
+                actor_id: uid,
+                actor_name: requesterProfile.data().full_name || requesterProfile.data().email,
+                previous_grade: previousData.grade || '',
+                new_grade: String(grade || ''),
+                previous_feedback: previousData.feedback || '',
+                new_feedback: String(feedback || ''),
+                created_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            
             return { success: true };
         }
         

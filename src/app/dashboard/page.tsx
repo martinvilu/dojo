@@ -143,6 +143,7 @@ export default function DashboardPage() {
   const [githubActivityTab, setGithubActivityTab] = useState<"commits" | "pulls" | "comments">("commits");
   const [editingGrades, setEditingGrades] = useState<Record<string, string>>({});
   const [editingFeedbacks, setEditingFeedbacks] = useState<Record<string, string>>({});
+  const [expandedAuditLogs, setExpandedAuditLogs] = useState<Record<string, any[]>>({});
   const [studentGithubActivity, setStudentGithubActivity] = useState<{ commits: any[], pullRequests: any[], comments: any[] } | null>(null);
   const [studentGithubActivityTab, setStudentGithubActivityTab] = useState<"commits" | "pulls" | "comments">("commits");
 
@@ -1068,6 +1069,30 @@ export default function DashboardPage() {
       alert("Error al guardar calificación: " + err.message);
     } finally {
       setApiLoading(false);
+    }
+  };
+
+  const handleToggleAuditLogs = async (submissionId: string) => {
+    if (expandedAuditLogs[submissionId]) {
+      setExpandedAuditLogs(prev => {
+        const next = { ...prev };
+        delete next[submissionId];
+        return next;
+      });
+      return;
+    }
+    
+    try {
+      const q = query(
+        collection(db, "audit_logs"),
+        where("submission_id", "==", submissionId),
+        orderBy("created_at", "desc")
+      );
+      const snap = await getDocs(q);
+      const logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setExpandedAuditLogs(prev => ({ ...prev, [submissionId]: logs }));
+    } catch (err: any) {
+      alert("Error al cargar auditoría: " + err.message);
     }
   };
 
@@ -2394,6 +2419,54 @@ export default function DashboardPage() {
                                         >
                                           Guardar Calificación
                                         </button>
+                                      </div>
+
+                                      {/* Audit logs trigger */}
+                                      <div className="pt-3">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleAuditLogs(sub.id)}
+                                          className="text-gray-500 hover:text-gray-300 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                                        >
+                                          📜 {expandedAuditLogs[sub.id] ? "Ocultar Bitácora de Auditoría" : "Ver Bitácora de Auditoría"}
+                                        </button>
+                                        
+                                        {expandedAuditLogs[sub.id] && (
+                                          <div className="mt-2 bg-neutral-950/80 border border-neutral-850 rounded-xl p-3 space-y-2">
+                                            <h6 className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Historial de Calificaciones (Inmutable)</h6>
+                                            <div className="space-y-2.5 max-h-40 overflow-y-auto pr-1">
+                                              {expandedAuditLogs[sub.id].map((log) => (
+                                                <div key={log.id} className="text-[10.5px] border-b border-neutral-900 pb-2 last:border-b-0 space-y-1">
+                                                  <div className="flex justify-between text-gray-500">
+                                                    <span>Modificado por: <strong className="text-gray-300">{log.actor_name}</strong></span>
+                                                    <span>
+                                                      {log.created_at?.toDate
+                                                        ? log.created_at.toDate().toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                                                        : "Ahora"}
+                                                    </span>
+                                                  </div>
+                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-1">
+                                                    <div>
+                                                      <span className="text-[9px] text-gray-500 block uppercase font-bold">Cambio de Nota</span>
+                                                      <span className="text-gray-400 font-mono">
+                                                        {log.previous_grade || "(sin nota)"} ➔ <strong className="text-amber-400">{log.new_grade}</strong>
+                                                      </span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-[9px] text-gray-500 block uppercase font-bold">Cambio de Feedback</span>
+                                                      <p className="text-gray-400 italic">
+                                                        "{log.previous_feedback || "(sin feedback)"}" ➔ <strong className="text-gray-300">"{log.new_feedback}"</strong>
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                              {expandedAuditLogs[sub.id].length === 0 && (
+                                                <p className="text-[10px] text-gray-500 italic">No hay registros de auditoría para esta entrega.</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   );
