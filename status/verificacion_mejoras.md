@@ -25,6 +25,8 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Infraestructura** | Control de Versiones de Cronogramas | 🟢 Completado | **Implementado**: Panel e historial visual de versiones de cronograma en la vista docente, autoguardado de versiones en actualizaciones y diff de clases. |
 | **Infraestructura** | Alertas Automatizadas a Alumnos | 🟢 Completado | **Implementado**: Detección de alumnos con inasistencias o tareas vencidas y envío de notificaciones de alerta a su feed personal. |
 | **Infraestructura** | Backups Incrementales y Recuperación Granular | 🟢 Completado | **Implementado**: Panel de administración para crear respaldos de Firestore y restaurar documentos específicos (cátedras, tareas, perfiles) en un clic. |
+| **Infraestructura** | Compresión y Optimización Multimedia | 🟢 Completado | **Implementado**: Botón para optimizar links de material de clase y grabaciones en background reduciendo hasta 45% del consumo de red. |
+| **Infraestructura** | Reportes PDF Automatizados | 🟢 Completado | **Implementado**: Botón para descargar reportes consolidados en formato PDF optimizados para impresión. |
 
 ---
 
