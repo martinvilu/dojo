@@ -41,4 +41,5 @@ jobs:
         with:
           args: deploy --only functions,firestore
         env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JUTSU_CLASSROOM_MRTIN }}
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JUTSU_CLASSROOM_MRTIN || secrets.FIREBASE_SERVICE_ACCOUNT || secrets.GCP_SA_KEY }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
