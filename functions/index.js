@@ -396,6 +396,269 @@ exports.api = functions.https.onCall(async (data, context) => {
             if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
             
             await db.collection('courses').doc(courseId).update(payload.data);
+
+            if (payload.data.class_instances) {
+                // Auto-save a version
+                const profileSnap = await db.collection('profiles').doc(uid).get();
+                const teacherName = profileSnap.exists ? (profileSnap.data().full_name || profileSnap.data().email) : 'Docente';
+                await db.collection('schedule_versions').add({
+                    course_id: courseId,
+                    version_name: `Autoguardado - ${new Date().toLocaleString('es-AR')}`,
+                    class_instances: payload.data.class_instances,
+                    created_at: admin.firestore.FieldValue.serverTimestamp(),
+                    created_by: uid,
+                    created_by_name: teacherName
+                });
+            }
+            return { success: true };
+        }
+
+        if (action === 'saveScheduleVersion') {
+            const { courseId, versionName, classInstances } = payload;
+            const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+            if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+            if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
+            
+            const profileSnap = await db.collection('profiles').doc(uid).get();
+            const teacherName = profileSnap.exists ? (profileSnap.data().full_name || profileSnap.data().email) : 'Docente';
+            
+            await db.collection('schedule_versions').add({
+                course_id: courseId,
+                version_name: versionName,
+                class_instances: classInstances,
+                created_at: admin.firestore.FieldValue.serverTimestamp(),
+                created_by: uid,
+                created_by_name: teacherName
+            });
+            return { success: true };
+        }
+
+        if (action === 'getScheduleVersions') {
+            const courseId = payload.courseId;
+            const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+            if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+            
+            const snap = await db.collection('schedule_versions')
+                .where('course_id', '==', courseId)
+                .orderBy('created_at', 'desc')
+                .get();
+                
+            return snap.docs.map(d => {
+                const data = d.data();
+                return {
+                    id: d.id,
+                    ...data,
+                    created_at: data.created_at ? data.created_at.toDate().toISOString() : null
+                };
+            });
+        }
+
+        if (action === 'restoreScheduleVersion') {
+            const { courseId, versionId } = payload;
+            const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+            if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+            if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
+            
+            const verSnap = await db.collection('schedule_versions').doc(versionId).get();
+            if (!verSnap.exists) throw new Error("Versión de cronograma no encontrada");
+            
+            const classInstances = verSnap.data().class_instances;
+            await db.collection('courses').doc(courseId).update({
+                class_instances: classInstances
+            });
+            return { success: true, class_instances: classInstances };
+        }
+
+        if (action === 'getComparisonCourses') {
+            const snap = await db.collection('courses').get();
+            return snap.docs.map(d => {
+                const data = d.data();
+                return {
+                    id: d.id,
+                    name: data.name,
+                    class_instances: data.class_instances || []
+                };
+            });
+        }
+
+        // STUDY GROUPS ACTIONS
+        if (action === 'createStudyGroup') {
+            const { courseId, name, description, schedulePrefs } = payload;
+            const profileSnap = await db.collection('profiles').doc(uid).get();
+            if (!profileSnap.exists) throw new Error("Perfil no encontrado");
+            
+            const groupRef = await db.collection('study_groups').add({
+                course_id: courseId,
+                name: name,
+                description: description,
+                schedule_prefs: schedulePrefs,
+                members: [uid],
+                created_at: admin.firestore.FieldValue.serverTimestamp(),
+                created_by: uid
+            });
+            return { success: true, id: groupRef.id };
+        }
+
+        if (action === 'joinStudyGroup') {
+            const { groupId } = payload;
+            const groupRef = db.collection('study_groups').doc(groupId);
+            const doc = await groupRef.get();
+            if (!doc.exists) throw new Error("Grupo no encontrado");
+            
+            const members = doc.data().members || [];
+            if (members.includes(uid)) return { success: true };
+            
+            await groupRef.update({
+                members: admin.firestore.FieldValue.arrayUnion(uid)
+            });
+            return { success: true };
+        }
+
+        if (action === 'leaveStudyGroup') {
+            const { groupId } = payload;
+            const groupRef = db.collection('study_groups').doc(groupId);
+            const doc = await groupRef.get();
+            if (!doc.exists) throw new Error("Grupo no encontrado");
+            
+            const members = doc.data().members || [];
+            const newMembers = members.filter(m => m !== uid);
+            
+            if (newMembers.length === 0) {
+                await groupRef.delete();
+            } else {
+                await groupRef.update({
+                    members: newMembers
+                });
+            }
+            return { success: true };
+        }
+
+        if (action === 'getStudyGroups') {
+            const courseId = payload.courseId;
+            const snap = await db.collection('study_groups').where('course_id', '==', courseId).get();
+            
+            const groups = [];
+            for (let doc of snap.docs) {
+                const data = doc.data();
+                const memberProfiles = [];
+                for (let memberId of data.members || []) {
+                    const pSnap = await db.collection('profiles').doc(memberId).get();
+                    if (pSnap.exists) memberProfiles.push({ id: memberId, ...pSnap.data() });
+                }
+                groups.push({
+                    id: doc.id,
+                    ...data,
+                    member_profiles: memberProfiles,
+                    created_at: data.created_at ? data.created_at.toDate().toISOString() : null
+                });
+            }
+            return groups;
+        }
+
+        if (action === 'findStudyBuddies') {
+            const { courseId, schedulePrefs } = payload;
+            const rosterSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
+            const studentIds = rosterSnap.docs.map(d => d.data().student_id);
+            
+            const matchedStudents = [];
+            for (let studentId of studentIds) {
+                if (studentId === uid) continue;
+                
+                const pSnap = await db.collection('profiles').doc(studentId).get();
+                if (pSnap.exists) {
+                    const pData = pSnap.data();
+                    const matchesPrefs = pData.schedule_pref === schedulePrefs;
+                    if (matchesPrefs) {
+                        matchedStudents.push({
+                            id: studentId,
+                            full_name: pData.full_name,
+                            email: pData.email,
+                            role: pData.role,
+                            schedule_pref: pData.schedule_pref
+                        });
+                    }
+                }
+            }
+            return matchedStudents;
+        }
+
+        // TUTORING SESSION ACTIONS
+        if (action === 'registerAsTutor') {
+            const { courseId, topics, availability } = payload;
+            const profileSnap = await db.collection('profiles').doc(uid).get();
+            if (!profileSnap.exists) throw new Error("Perfil no encontrado");
+            const pData = profileSnap.data();
+            
+            await db.collection('tutors').doc(`${courseId}_${uid}`).set({
+                course_id: courseId,
+                user_id: uid,
+                user_name: pData.full_name || pData.email,
+                email: pData.email,
+                topics: topics,
+                availability: availability,
+                registered_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true };
+        }
+
+        if (action === 'getCourseTutors') {
+            const courseId = payload.courseId;
+            const snap = await db.collection('tutors').where('course_id', '==', courseId).get();
+            return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        if (action === 'bookTutoringSession') {
+            const { courseId, tutorId, dateTime, topic } = payload;
+            const profileSnap = await db.collection('profiles').doc(uid).get();
+            if (!profileSnap.exists) throw new Error("Perfil no encontrado");
+            const pData = profileSnap.data();
+            
+            const tutorProf = await db.collection('profiles').doc(tutorId).get();
+            const tutorName = tutorProf.exists ? (tutorProf.data().full_name || tutorProf.data().email) : 'Tutor';
+            
+            const meetingId = Math.random().toString(36).substring(2, 5) + '-' + 
+                              Math.random().toString(36).substring(2, 6) + '-' + 
+                              Math.random().toString(36).substring(2, 5);
+            
+            const ref = await db.collection('tutoring_sessions').add({
+                course_id: courseId,
+                tutor_id: tutorId,
+                tutor_name: tutorName,
+                student_id: uid,
+                student_name: pData.full_name || pData.email,
+                date_time: dateTime,
+                topic: topic,
+                status: 'requested',
+                meeting_link: `https://meet.google.com/${meetingId}`,
+                created_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true, id: ref.id };
+        }
+
+        if (action === 'getTutoringSessions') {
+            const { courseId, role } = payload;
+            let queryRef = db.collection('tutoring_sessions').where('course_id', '==', courseId);
+            if (role === 'tutor') {
+                queryRef = queryRef.where('tutor_id', '==', uid);
+            } else {
+                queryRef = queryRef.where('student_id', '==', uid);
+            }
+            const snap = await queryRef.get();
+            return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        if (action === 'updateTutoringSessionStatus') {
+            const { sessionId, status } = payload;
+            const ref = db.collection('tutoring_sessions').doc(sessionId);
+            const doc = await ref.get();
+            if (!doc.exists) throw new Error("Sesión no encontrada");
+            
+            const data = doc.data();
+            if (data.tutor_id !== uid && data.student_id !== uid) {
+                throw new Error("No tienes permiso para modificar esta sesión");
+            }
+            
+            await ref.update({ status });
             return { success: true };
         }
 
