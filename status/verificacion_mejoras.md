@@ -8,7 +8,7 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 
 | Categoría | Requerimiento / Feature | Estado | Detalle Técnico |
 | :--- | :--- | :--- | :--- |
-| **Estudiante** | Gamificación (puntos/niveles/medallas) | ⏳ Pendiente | Diseñado para fases futuras de fidelización estudiantil. |
+| **Estudiante** | Gamificación (puntos/niveles/medallas) | 🟢 Completado | **Implementado**: Panel "Rango Ninja" con cálculo dinámico de XP (asistencia, tareas, comentarios y mejores respuestas), niveles y medallas de honor en el dashboard. |
 | **Estudiante** | Módulo de Tutorías Académicas | ⏳ Pendiente | Módulo de reserva de mentorías académicas por pares. |
 | **Estudiante** | Grupos de Cursada Auto-organizados | ⏳ Pendiente | Algoritmo de emparejamiento inteligente de grupos de estudio. |
 | **Estudiante** | Foros y Preguntas y Respuestas (Q&A) | 🟢 Completado | **Implementado**: Hilo de consultas en tiempo real por clase con reacciones emoji (👍, 🎉, ❤️) y Modo "Stack Overflow" (solución/respuesta correcta destacada por el docente). |
@@ -84,11 +84,29 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
         *   Resumen de alertas tempranas activas y condición final de cursada.
     *   El archivo se genera y descarga con codificación UTF-8 para su importación directa y visualización correcta en Excel o Google Sheets.
 
+### 9. Gamificación y Medallas de Honor (Rango Ninja)
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx).
+*   **Funcionamiento:**
+    *   Se implementó un panel interactivo y visualmente atractivo de **"Rango Ninja de Cursada"** visible al estudiante al ingresar a cualquier materia.
+    *   **Cálculo Dinámico de Puntos de Experiencia (XP)** sin necesidad de escrituras adicionales:
+        *   **Asistencia**: +10 XP por cada clase en la que haya estado presente o tarde.
+        *   **Tareas Entregadas**: +50 XP por tarea entregada, y un bonus de `Nota * 5 XP` si ya posee calificación (ej. nota 10 añade +50 XP).
+        *   **Participación en Foros**: +10 XP por cada comentario realizado en el foro de cualquier clase.
+        *   **Soluciones Aprobadas**: +100 XP por cada respuesta que el docente haya marcado como la solución oficial ("Mejor Respuesta").
+    *   **Niveles**: Rango calculado dinámicamente con progreso de barra:
+        *   `Nivel = Math.floor(XP / 100) + 1`
+        *   **Títulos de Rango**: Nivel 1-2 (`Genin`), Nivel 3-4 (`Chūnin`), Nivel 5 o superior (`Jōnin`).
+    *   **Medallas de Honor**: Badges dinámicos otorgados por hitos específicos:
+        *   🥇 **Maestro de Chakra**: Promedio de calificaciones igual o superior a 9.
+        *   🥈 **Asistencia Perfecta**: 100% de asistencia (con al menos 3 clases registradas en el curso).
+        *   🥉 **Ninja Activo**: Mínimo 3 comentarios en foros de clase.
+        *   🎖️ **Solucionador**: Al menos 1 respuesta marcada como solución por el docente.
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
 
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
-1.  **Gamificación (puntos/niveles/medallas):** Sistema de recompensas de gamificación por entregar tareas temprano y participar activamente en el foro.
-2.  **Encuestas Estudiantiles Anónimas:** Módulo para que los alumnos den retroalimentación anónima de cada clase o tema al docente.
-3.  **Espacio de Co-Docencia Coordinada:** Permitir asignar la corrección de entregas específicas a ayudantes de cátedra.
+1.  **Encuestas Estudiantiles Anónimas:** Módulo para que los alumnos den retroalimentación anónima de cada clase o tema al docente.
+2.  **Espacio de Co-Docencia Coordinada:** Permitir asignar la corrección de entregas específicas a ayudantes de cátedra.
+3.  **Tablero Kanban para Planificación Curricular:** Reorganización interactiva (drag & drop) del cronograma de clases.
