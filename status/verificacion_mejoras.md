@@ -9,8 +9,8 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | Categoría | Requerimiento / Feature | Estado | Detalle Técnico |
 | :--- | :--- | :--- | :--- |
 | **Estudiante** | Gamificación (puntos/niveles/medallas) | 🟢 Completado | **Implementado**: Panel "Rango Ninja" con cálculo dinámico de XP (asistencia, tareas, comentarios y mejores respuestas), niveles y medallas de honor en el dashboard. |
-| **Estudiante** | Módulo de Tutorías Académicas | ⏳ Pendiente | Módulo de reserva de mentorías académicas por pares. |
-| **Estudiante** | Grupos de Cursada Auto-organizados | ⏳ Pendiente | Algoritmo de emparejamiento inteligente de grupos de estudio. |
+| **Estudiante** | Módulo de Tutorías Académicas | 🟢 Completado | **Implementado**: Subpestaña "Tutorías" para postularse como tutor, listar tutores de la cursada, reservar mentorías y salas de reunión virtual. |
+| **Estudiante** | Grupos de Cursada Auto-organizados | 🟢 Completado | **Implementado**: Subpestaña "Grupos de Estudio" con emparejamiento inteligente por disponibilidad horaria, creación de grupos y gestión de miembros. |
 | **Estudiante** | Foros y Preguntas y Respuestas (Q&A) | 🟢 Completado | **Implementado**: Hilo de consultas en tiempo real por clase con reacciones emoji (👍, 🎉, ❤️) y Modo "Stack Overflow" (solución/respuesta correcta destacada por el docente). |
 | **Docente** | Registro de Asistencia por QR Dinámico | 🟢 Completado | Generación de token dinámico con geolocalización (docente) y validación de cercanía GPS (< 150m) en Cloud Function. |
 | **Docente** | Integración Bidireccional con Google Sheets | 🟢 Completado | **Implementado**: Exportación en 1 clic de la planilla completa de notas, asistencias, alertas y estado a CSV compatible con Sheets/Excel. |
@@ -19,10 +19,10 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Docente** | Tablero Kanban para Planificación Curricular | 🟢 Completado | **Implementado**: Tablero Kanban interactivo por drag & drop para reclasificar cronogramas entre Teóricas, Prácticas, Feriados y Exámenes. |
 | **Docente** | Encuestas Estudiantiles Anónimas | 🟢 Completado | **Implementado**: Módulo de feedback anónimo por clase en el cronograma con valoración (1-5 estrellas), nivel de comprensión y comentarios. |
 | **Docente** | Dashboard Docente Centralizado | 🟢 Completado | **Implementado**: Panel "Resumen" con cola de correcciones de entregas de tareas, últimas consultas de foro de clases y lista de alumnos en riesgo. |
-| **Infraestructura** | Paginación y Caching en Firestore | 🟢 Completado | Habilitación de persistencia IndexedDB y optimización de lecturas offline. |
+| **Infraestructura** | Paginación y Caching en Firestore | 🟢 Completado | Habilitación de presentismo IndexedDB y optimización de lecturas offline. |
 | **Infraestructura** | Modo Oscuro Integrado | 🟢 Completado | Alternador global de temas persistido en `localStorage` y variables CSS semánticas en [globals.css](file:///home/mrtin/dev/gaula/src/app/globals.css). |
 | **Infraestructura** | Bitácora de Auditoría de Notas (Audit Logs) | 🟢 Completado | **Implementado**: Registro inmutable con diff detallado de nota/feedback en Cloud Functions e historial desplegable en la interfaz del docente. |
-| **Infraestructura** | Control de Versiones de Cronogramas | ⏳ Pendiente | Historial de cronogramas y comparación curricular interanual. |
+| **Infraestructura** | Control de Versiones de Cronogramas | 🟢 Completado | **Implementado**: Panel e historial visual de versiones de cronograma en la vista docente, autoguardado de versiones en actualizaciones y diff de clases. |
 
 ---
 
@@ -147,10 +147,32 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
         *   Al soltar la tarjeta sobre una columna, se actualizan sus atributos internos: el tipo de clase (Teórica/Práctica) o su estado especial (Feriado/Examen).
         *   Los cambios persisten localmente en el cronograma y se consolidan en Firestore de manera interactiva al presionar **Guardar Cronograma**.
 
+### 14. Módulo de Tutorías Académicas (Tutorías entre Pares)
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx) y [index.js](file:///home/mrtin/dev/gaula/functions/index.js) (Cloud Functions).
+*   **Funcionamiento:**
+    *   **Postulación**: Cualquier alumno puede postularse como tutor académico para una cátedra especificando sus temas fuertes y disponibilidad horaria.
+    *   **Reserva de Mentorías**: Los alumnos pueden ver los tutores disponibles, solicitar una mentoría seleccionando tema, fecha y hora.
+    *   **Enlace de Reunión**: Al confirmarse la mentoría, el sistema genera automáticamente un enlace a una sala virtual de Google Meet.
+
+### 15. Grupos de Cursada Auto-organizados
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx) y [index.js](file:///home/mrtin/dev/gaula/functions/index.js) (Cloud Functions).
+*   **Funcionamiento:**
+    *   **Creación e Integración**: Los estudiantes pueden crear grupos de estudio indicando nombre, descripción y horarios (Mañana, Tarde, Noche).
+    *   **Matching Inteligente**: Un buscador integrado de compañeros encuentra alumnos de la cátedra que estudien en la misma franja horaria para poder agregarlos.
+    *   **Gestión**: Los alumnos pueden unirse o salir de los grupos en tiempo real de forma autónoma.
+
+### 16. Control de Versiones de Cronogramas (VCS)
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx) y [index.js](file:///home/mrtin/dev/gaula/functions/index.js) (Cloud Functions).
+*   **Funcionamiento:**
+    *   **Snapshot Histórico**: Cada vez que el docente guarda el cronograma, se crea un respaldo automático en la colección `schedule_versions`. También puede guardar snapshots con nombres manuales.
+    *   **Comparación y Restauración**: Los docentes pueden seleccionar cualquier versión anterior y ver un diff interactivo de clases añadidas, eliminadas o modificadas, con la opción de restaurarla en un clic.
+    *   **Comparación Interanual**: Permite contrastar el cronograma actual con otras materias históricas cargadas en el sistema.
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
 
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
-1.  **Control de Versiones de Cronogramas:** Historial de cronogramas y comparación curricular interanual.
-2.  **Alertas Automatizadas a Alumnos**: Módulo para que el sistema envíe notificaciones o correos automáticos a estudiantes que entren en estado "En Riesgo".
+1.  **Alertas Automatizadas a Alumnos**: Módulo para que el sistema envíe notificaciones o correos automáticos a estudiantes que entren en estado "En Riesgo".
+2.  **Backups Incrementales y Recuperación Granular**: Respaldos continuos en la nube con posibilidad de restaurar documentos individuales de Firestore.
+

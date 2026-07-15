@@ -56,6 +56,12 @@ gantt
     *   Subpestaña de Resumen docente que muestra contadores rápidos de desempeño, cola de corrección de tareas con links directos y consultas de foro de clases pendientes de responder.
 *   **Tarea 2.9: Tablero Kanban para Planificación Curricular**
     *   Vista alternativa de Cronograma mediante un tablero Kanban interactivo que categoriza las clases en Teóricas, Prácticas, Feriados y Exámenes, permitiendo reasignaciones rápidas por drag and drop.
+*   **Tarea 2.10: Módulo de Tutorías Académicas**
+    *   Subpestaña "Tutorías" que permite a los estudiantes postularse como tutores de la cursada declarando disponibilidad, listar tutores disponibles, solicitar mentorías académicas por pares y acceder a videollamadas virtuales.
+*   **Tarea 2.11: Grupos de Cursada Auto-organizados**
+    *   Subpestaña "Grupos de Estudio" que facilita la creación de grupos de estudio y la búsqueda inteligente de compañeros afines que estudien en las mismas franjas horarias.
+*   **Tarea 2.12: Control de Versiones de Cronogramas**
+    *   Guardado automático e historial manual de versiones de cronograma en la base de datos de Firestore. Interfaz de comparación de versiones (diff de clases) y restauración en caliente.
 
 ### 🔌 Fase 3: UX y Resiliencia Offline (Completado)
 *   **Tarea 3.1: Modo Claro/Oscuro Integrado**
