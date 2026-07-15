@@ -68,6 +68,10 @@ gantt
     *   Diseño responsive con alternador de tema en la barra lateral, persistido a través de `localStorage` y controlado mediante variables CSS en [globals.css](file:///home/mrtin/dev/gaula/src/app/globals.css).
 *   **Tarea 3.2: Modo Offline PWA (IndexedDB)**
     *   Se habilitó persistencia local robusta en Firebase mediante `enableIndexedDbPersistence` en [clientApp.ts](file:///home/mrtin/dev/gaula/src/lib/firebase/clientApp.ts), garantizando acceso sin conexión a clases e inscripciones.
+*   **Tarea 3.3: Alertas Automatizadas a Alumnos**
+    *   Envío automatizado de avisos de desempeño en base a inasistencias y tareas vencidas, con guardado de periodicidad semanal para no saturar al estudiante.
+*   **Tarea 3.4: Backups Incrementales y Recuperación Granular**
+    *   Modulo administrativo para respaldar snapshots de datos clave e interfaz interactiva para revertir documentos individuales sin necesidad de restaurar bases de datos completas.
 
 ### 🔗 Fase 4: Integración con GitHub (Completado)
 *   **Tarea 4.1: Visualización de Actividad de Repositorios**

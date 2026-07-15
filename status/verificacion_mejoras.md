@@ -23,6 +23,8 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Infraestructura** | Modo Oscuro Integrado | 🟢 Completado | Alternador global de temas persistido en `localStorage` y variables CSS semánticas en [globals.css](file:///home/mrtin/dev/gaula/src/app/globals.css). |
 | **Infraestructura** | Bitácora de Auditoría de Notas (Audit Logs) | 🟢 Completado | **Implementado**: Registro inmutable con diff detallado de nota/feedback en Cloud Functions e historial desplegable en la interfaz del docente. |
 | **Infraestructura** | Control de Versiones de Cronogramas | 🟢 Completado | **Implementado**: Panel e historial visual de versiones de cronograma en la vista docente, autoguardado de versiones en actualizaciones y diff de clases. |
+| **Infraestructura** | Alertas Automatizadas a Alumnos | 🟢 Completado | **Implementado**: Detección de alumnos con inasistencias o tareas vencidas y envío de notificaciones de alerta a su feed personal. |
+| **Infraestructura** | Backups Incrementales y Recuperación Granular | 🟢 Completado | **Implementado**: Panel de administración para crear respaldos de Firestore y restaurar documentos específicos (cátedras, tareas, perfiles) en un clic. |
 
 ---
 
@@ -168,11 +170,25 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
     *   **Comparación y Restauración**: Los docentes pueden seleccionar cualquier versión anterior y ver un diff interactivo de clases añadidas, eliminadas o modificadas, con la opción de restaurarla en un clic.
     *   **Comparación Interanual**: Permite contrastar el cronograma actual con otras materias históricas cargadas en el sistema.
 
+### 17. Alertas Automatizadas a Alumnos
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx) y [index.js](file:///home/mrtin/dev/gaula/functions/index.js) (Cloud Functions).
+*   **Funcionamiento:**
+    *   **Evaluación de Riesgo**: Los docentes pueden presionar el botón "📢 Alertas Automáticas" en la subpestaña de Alumnos.
+    *   **Detección e Inyección**: Cloud Functions evalúa la asistencia y entregas pendientes de cada alumno del roster.
+    *   **Notificación Dirigida**: Si el alumno tiene inasistencias críticas (< 75%) o >= 2 entregas vencidas sin entregar, inyecta una notificación personalizada en su panel de novedades que se repite como máximo una vez por semana.
+
+### 18. Backups Incrementales y Recuperación Granular
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx) y [index.js](file:///home/mrtin/dev/gaula/functions/index.js) (Cloud Functions).
+*   **Funcionamiento:**
+    *   **Creación de Puntos de Restauración**: Los administradores pueden presionar "💾 Crear Respaldo Completo Ahora" desde la nueva sección de "Respaldos y Recuperación". Se captura un snapshot de las colecciones `courses`, `assignments` y `profiles`.
+    *   **Restauración Granular**: En lugar de restaurar toda la base de datos (lo que causaría pérdida de datos recientes), el administrador puede seleccionar un respaldo y elegir un documento específico (una cátedra, una tarea o un perfil de usuario) para revertirlo a su estado anterior en 1 clic.
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
 
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
-1.  **Alertas Automatizadas a Alumnos**: Módulo para que el sistema envíe notificaciones o correos automáticos a estudiantes que entren en estado "En Riesgo".
-2.  **Backups Incrementales y Recuperación Granular**: Respaldos continuos en la nube con posibilidad de restaurar documentos individuales de Firestore.
+1.  **Compresión y Optimización Multimedia**: Compresor de archivos en background para optimizar automáticamente materiales didácticos, grabaciones y lecturas de cátedra, reduciendo ancho de banda en accesos de estudiantes con conexiones lentas.
+2.  **Reportes en PDF Automatizados**: Módulo para descargar reportes de asistencia y rendimiento consolidados en formato PDF con gráficos de barra de progreso.
+
 
