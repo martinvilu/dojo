@@ -14,7 +14,7 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Estudiante** | Foros y Preguntas y Respuestas (Q&A) | 🟢 Completado | **Implementado**: Hilo de consultas en tiempo real por clase con reacciones emoji (👍, 🎉, ❤️) y Modo "Stack Overflow" (solución/respuesta correcta destacada por el docente). |
 | **Docente** | Registro de Asistencia por QR Dinámico | 🟢 Completado | Generación de token dinámico con geolocalización (docente) y validación de cercanía GPS (< 150m) en Cloud Function. |
 | **Docente** | Integración Bidireccional con Google Sheets | ⏳ Pendiente | Sincronización automática de notas mediante webhooks y Google Sheets API. |
-| **Docente** | Alertas Tempranas de Desempeño | ⏳ Pendiente | Notificaciones automáticas de inasistencias acumuladas o entregas ausentes. |
+| **Docente** | Alertas Tempranas de Desempeño | 🟢 Completado | **Implementado**: Subpestaña "Alumnos y Alertas" con cálculo en tiempo real de ratios de asistencia y tareas entregadas, emitiendo alertas por inasistencias y tareas vencidas sin entregar. |
 | **Docente** | Espacio de Co-Docencia Coordinada | ⏳ Pendiente | Asignación de correcciones por ayudantes y administración de comisiones. |
 | **Docente** | Tablero Kanban para Planificación Curricular | ⏳ Pendiente | Reorganización interactiva (drag & drop) del cronograma de clases. |
 | **Docente** | Encuestas Estudiantiles Anónimas | ⏳ Pendiente | Módulo de feedback anónimo en tiempo real sobre la metodología docente. |
@@ -64,6 +64,14 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
     *   Al guardar o actualizar una nota/feedback desde la Cloud Function `gradeSubmission`, se registra un log inmutable en la colección `audit_logs` que guarda la nota anterior, la nueva nota, el feedback anterior, el nuevo feedback, el autor de la edición y la marca temporal.
     *   En la interfaz de corrección del docente, un botón desplegable permite ver en tiempo real toda la línea de tiempo e historial de cambios para esa entrega en particular.
 
+### 7. Alertas Tempranas de Desempeño
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx).
+*   **Funcionamiento:**
+    *   Se implementó la subpestaña **👥 Alumnos y Alertas** en el detalle del curso para docentes.
+    *   El sistema recupera en tiempo real las clases registradas con asistencia, las asistencias particulares del alumno, el total de tareas creadas y sus entregas.
+    *   Emite automáticamente alertas de **"Asistencia Crítica"** (si tras al menos 3 clases su presentismo es menor al 75%) y **"Tareas Atrasadas"** (si existen tareas vencidas sin entrega registrada).
+    *   Determina la condición general del alumno: **REGULAR** o **EN RIESGO** si posee alguna alerta activa.
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
@@ -71,4 +79,4 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
 1.  **Integración con Google Sheets:** Permitir exportar las calificaciones finales y cronogramas de cursada a una hoja de cálculo en un clic.
 2.  **Gamificación (puntos/niveles/medallas):** Sistema de recompensas de gamificación por entregar tareas temprano y participar activamente en el foro.
-3.  **Alertas Tempranas de Desempeño:** Avisos automáticos si un estudiante acumula inasistencias o tiene tareas críticas sin entregar.
+3.  **Encuestas Estudiantiles Anónimas:** Módulo para que los alumnos den retroalimentación anónima de cada clase o tema al docente.

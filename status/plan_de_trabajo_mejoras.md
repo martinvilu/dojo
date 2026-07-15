@@ -42,6 +42,8 @@ gantt
 *   **Tarea 2.2: Gestión de Asistencia / Presentismo QR**
     *   **Vista Docente**: Botón para generar código QR de asistencia en tiempo real con código alfanumérico de respaldo (6 caracteres) y geolocalización del docente. Incluye cronómetro de expiración de 5 minutos.
     *   **Vista Estudiante**: Botón interactivo "Firmar Presente QR" que solicita la ubicación GPS del dispositivo del estudiante y valida la proximidad con el profesor (límite de 150 metros) en el backend (Cloud Function).
+*   **Tarea 2.3: Alertas Tempranas de Desempeño**
+    *   Subpestaña **Alumnos y Alertas** que monitoriza el presentismo y tareas entregadas por estudiante en tiempo real, emitiendo avisos ante inasistencias acumuladas o entregas vencidas.
 
 ### 🔌 Fase 3: UX y Resiliencia Offline (Completado)
 *   **Tarea 3.1: Modo Claro/Oscuro Integrado**
