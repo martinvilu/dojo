@@ -13,7 +13,7 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Estudiante** | Grupos de Cursada Auto-organizados | ⏳ Pendiente | Algoritmo de emparejamiento inteligente de grupos de estudio. |
 | **Estudiante** | Foros y Preguntas y Respuestas (Q&A) | 🟢 Completado | **Implementado**: Hilo de consultas en tiempo real por clase con reacciones emoji (👍, 🎉, ❤️) y Modo "Stack Overflow" (solución/respuesta correcta destacada por el docente). |
 | **Docente** | Registro de Asistencia por QR Dinámico | 🟢 Completado | Generación de token dinámico con geolocalización (docente) y validación de cercanía GPS (< 150m) en Cloud Function. |
-| **Docente** | Integración Bidireccional con Google Sheets | ⏳ Pendiente | Sincronización automática de notas mediante webhooks y Google Sheets API. |
+| **Docente** | Integración Bidireccional con Google Sheets | 🟢 Completado | **Implementado**: Exportación en 1 clic de la planilla completa de notas, asistencias, alertas y estado a CSV compatible con Sheets/Excel. |
 | **Docente** | Alertas Tempranas de Desempeño | 🟢 Completado | **Implementado**: Subpestaña "Alumnos y Alertas" con cálculo en tiempo real de ratios de asistencia y tareas entregadas, emitiendo alertas por inasistencias y tareas vencidas sin entregar. |
 | **Docente** | Espacio de Co-Docencia Coordinada | ⏳ Pendiente | Asignación de correcciones por ayudantes y administración de comisiones. |
 | **Docente** | Tablero Kanban para Planificación Curricular | ⏳ Pendiente | Reorganización interactiva (drag & drop) del cronograma de clases. |
@@ -72,11 +72,23 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
     *   Emite automáticamente alertas de **"Asistencia Crítica"** (si tras al menos 3 clases su presentismo es menor al 75%) y **"Tareas Atrasadas"** (si existen tareas vencidas sin entrega registrada).
     *   Determina la condición general del alumno: **REGULAR** o **EN RIESGO** si posee alguna alerta activa.
 
+### 8. Integración con Google Sheets (Planilla Completa)
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx).
+*   **Funcionamiento:**
+    *   Se agregó el botón **📊 Exportar Planilla (Sheets)** en el panel "Alumnos y Alertas".
+    *   Este botón genera dinámicamente un archivo CSV con la matriz completa del curso:
+        *   Columnas con información del alumno (Nombre, Email, Matrícula).
+        *   Columnas dinámicas individuales para cada una de las tareas creadas con su calificación (o "sin entrega").
+        *   Promedio numérico calculado automáticamente.
+        *   Porcentaje de asistencia acumulada.
+        *   Resumen de alertas tempranas activas y condición final de cursada.
+    *   El archivo se genera y descarga con codificación UTF-8 para su importación directa y visualización correcta en Excel o Google Sheets.
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
 
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
-1.  **Integración con Google Sheets:** Permitir exportar las calificaciones finales y cronogramas de cursada a una hoja de cálculo en un clic.
-2.  **Gamificación (puntos/niveles/medallas):** Sistema de recompensas de gamificación por entregar tareas temprano y participar activamente en el foro.
-3.  **Encuestas Estudiantiles Anónimas:** Módulo para que los alumnos den retroalimentación anónima de cada clase o tema al docente.
+1.  **Gamificación (puntos/niveles/medallas):** Sistema de recompensas de gamificación por entregar tareas temprano y participar activamente en el foro.
+2.  **Encuestas Estudiantiles Anónimas:** Módulo para que los alumnos den retroalimentación anónima de cada clase o tema al docente.
+3.  **Espacio de Co-Docencia Coordinada:** Permitir asignar la corrección de entregas específicas a ayudantes de cátedra.
