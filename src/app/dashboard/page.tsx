@@ -178,7 +178,8 @@ export default function DashboardPage() {
   // Calendar render state
   const [calendarViewMode, setCalendarViewMode] = useState<"list" | "grid">("list");
 
-  // Course Teacher states
+  const [scheduleViewMode, setScheduleViewMode] = useState<"list" | "kanban">("list");
+
   const [courseTeachers, setCourseTeachers] = useState<any[]>([]);
   const [allTeachersList, setAllTeachersList] = useState<any[]>([]);
   const [selectedNewTeacherId, setSelectedNewTeacherId] = useState("");
@@ -965,6 +966,20 @@ export default function DashboardPage() {
   const handleUpdateClassInstance = (idx: number, field: keyof ClassInstance, value: any) => {
     const updated = [...teacherClasses];
     updated[idx] = { ...updated[idx], [field]: value };
+    setTeacherClasses(updated);
+  };
+
+  const handleMoveClassKanban = (classIdx: number, targetColumn: string) => {
+    const updated = [...teacherClasses];
+    if (targetColumn === "Teórica") {
+      updated[classIdx] = { ...updated[classIdx], type: "Teórica", special_status: "Normal" };
+    } else if (targetColumn === "Práctica") {
+      updated[classIdx] = { ...updated[classIdx], type: "Práctica", special_status: "Normal" };
+    } else if (targetColumn === "Feriado") {
+      updated[classIdx] = { ...updated[classIdx], special_status: "Feriado" };
+    } else if (targetColumn === "Examen") {
+      updated[classIdx] = { ...updated[classIdx], special_status: "Examen" };
+    }
     setTeacherClasses(updated);
   };
 
@@ -2272,8 +2287,30 @@ export default function DashboardPage() {
                 {profile?.role === "teacher" ? (
                   /* TEACHER VIEW: EDIT CRONOGRAMA */
                   <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-bold">Gestión de Clases</h3>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="flex items-center gap-4">
+                        <h3 className="text-lg font-bold">Gestión de Clases</h3>
+                        <div className="flex bg-neutral-950 border border-neutral-850 rounded-xl p-1 text-[11px] font-semibold">
+                          <button
+                            type="button"
+                            onClick={() => setScheduleViewMode("list")}
+                            className={`px-3 py-1 rounded-lg transition cursor-pointer ${
+                              scheduleViewMode === "list" ? "bg-neutral-850 text-white shadow" : "text-gray-400 hover:text-white"
+                            }`}
+                          >
+                            📋 Lista
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setScheduleViewMode("kanban")}
+                            className={`px-3 py-1 rounded-lg transition cursor-pointer ${
+                              scheduleViewMode === "kanban" ? "bg-neutral-850 text-white shadow" : "text-gray-400 hover:text-white"
+                            }`}
+                          >
+                            📊 Tablero Kanban
+                          </button>
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         <button
                           onClick={handleGenerateClasses}
@@ -2290,8 +2327,9 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      {teacherClasses.map((ci, idx) => {
+                    {scheduleViewMode === "list" ? (
+                      <div className="space-y-4">
+                        {teacherClasses.map((ci, idx) => {
                         const dateObj = new Date(ci.date);
                         const dateStr = dateObj.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
                         const timeStr = dateObj.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
@@ -2630,6 +2668,207 @@ export default function DashboardPage() {
                         <p className="text-gray-500 text-sm">No hay clases creadas. Ve a la pestaña 'Ajustes Cátedra' para crearlas.</p>
                       )}
                     </div>
+                  ) : (
+                    /* KANBAN BOARD VIEW */
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start select-none">
+                      {/* COLUMN 1: TEÓRICA */}
+                      {(() => {
+                        const colClasses = teacherClasses
+                          .map((c, i) => ({ ...c, originalIndex: i }))
+                          .filter((c) => c.type === "Teórica" && c.special_status === "Normal");
+                        return (
+                          <div
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
+                              handleMoveClassKanban(classIdx, "Teórica");
+                            }}
+                            className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-4 space-y-4 min-h-[400px] flex flex-col"
+                          >
+                            <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
+                              <h4 className="font-bold text-xs text-white uppercase tracking-wider">📖 Teóricas</h4>
+                              <span className="font-mono text-[10px] bg-neutral-800 px-2 py-0.5 rounded text-gray-400 font-bold">
+                                {colClasses.length}
+                              </span>
+                            </div>
+                            <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
+                              {colClasses.map((item) => (
+                                <div
+                                  key={item.originalIndex}
+                                  draggable="true"
+                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", item.originalIndex.toString())}
+                                  className="bg-neutral-950 border border-neutral-855 p-4 rounded-xl space-y-2 cursor-grab active:cursor-grabbing hover:border-neutral-700 transition"
+                                >
+                                  <div className="flex justify-between items-center text-[10px]">
+                                    <span className="font-bold text-gray-550">Clase {item.originalIndex + 1}</span>
+                                    <span className="text-gray-550 font-sans">
+                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                    </span>
+                                  </div>
+                                  <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema"}</h5>
+                                  {item.description && (
+                                    <p className="text-[10px] text-gray-450 truncate">{item.description}</p>
+                                  )}
+                                </div>
+                              ))}
+                              {colClasses.length === 0 && (
+                                <div className="text-center text-[10px] text-gray-550 italic py-8">
+                                  Arrastra clases aquí.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* COLUMN 2: PRÁCTICA */}
+                      {(() => {
+                        const colClasses = teacherClasses
+                          .map((c, i) => ({ ...c, originalIndex: i }))
+                          .filter((c) => c.type === "Práctica" && c.special_status === "Normal");
+                        return (
+                          <div
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
+                              handleMoveClassKanban(classIdx, "Práctica");
+                            }}
+                            className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-4 space-y-4 min-h-[400px] flex flex-col"
+                          >
+                            <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
+                              <h4 className="font-bold text-xs text-white uppercase tracking-wider">🛠️ Prácticas</h4>
+                              <span className="font-mono text-[10px] bg-neutral-800 px-2 py-0.5 rounded text-gray-400 font-bold">
+                                {colClasses.length}
+                              </span>
+                            </div>
+                            <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
+                              {colClasses.map((item) => (
+                                <div
+                                  key={item.originalIndex}
+                                  draggable="true"
+                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", item.originalIndex.toString())}
+                                  className="bg-neutral-955 border border-neutral-855 p-4 rounded-xl space-y-2 cursor-grab active:cursor-grabbing hover:border-neutral-700 transition"
+                                >
+                                  <div className="flex justify-between items-center text-[10px]">
+                                    <span className="font-bold text-gray-550">Clase {item.originalIndex + 1}</span>
+                                    <span className="text-gray-550 font-sans">
+                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                    </span>
+                                  </div>
+                                  <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema"}</h5>
+                                  {item.description && (
+                                    <p className="text-[10px] text-gray-455 truncate">{item.description}</p>
+                                  )}
+                                </div>
+                              ))}
+                              {colClasses.length === 0 && (
+                                <div className="text-center text-[10px] text-gray-550 italic py-8">
+                                  Arrastra clases aquí.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* COLUMN 3: FERIADOS */}
+                      {(() => {
+                        const colClasses = teacherClasses
+                          .map((c, i) => ({ ...c, originalIndex: i }))
+                          .filter((c) => c.special_status === "Feriado");
+                        return (
+                          <div
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
+                              handleMoveClassKanban(classIdx, "Feriado");
+                            }}
+                            className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-4 space-y-4 min-h-[400px] flex flex-col"
+                          >
+                            <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
+                              <h4 className="font-bold text-xs text-white uppercase tracking-wider">🌴 Feriados</h4>
+                              <span className="font-mono text-[10px] bg-neutral-850 px-2 py-0.5 rounded text-amber-500 font-bold font-sans">
+                                {colClasses.length}
+                              </span>
+                            </div>
+                            <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
+                              {colClasses.map((item) => (
+                                <div
+                                  key={item.originalIndex}
+                                  draggable="true"
+                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", item.originalIndex.toString())}
+                                  className="bg-neutral-955/5 border border-amber-955/20 p-4 rounded-xl space-y-2 cursor-grab active:cursor-grabbing hover:border-neutral-700 transition opacity-80"
+                                >
+                                  <div className="flex justify-between items-center text-[10px]">
+                                    <span className="font-bold text-amber-550 font-sans">Clase {item.originalIndex + 1}</span>
+                                    <span className="text-gray-550 font-sans">
+                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                    </span>
+                                  </div>
+                                  <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema (Feriado)"}</h5>
+                                </div>
+                              ))}
+                              {colClasses.length === 0 && (
+                                <div className="text-center text-[10px] text-gray-555 italic py-8">
+                                  Arrastra feriados aquí.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* COLUMN 4: EXAMEN / EVALUACIONES */}
+                      {(() => {
+                        const colClasses = teacherClasses
+                          .map((c, i) => ({ ...c, originalIndex: i }))
+                          .filter((c) => c.special_status === "Examen");
+                        return (
+                          <div
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
+                              handleMoveClassKanban(classIdx, "Examen");
+                            }}
+                            className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-4 space-y-4 min-h-[400px] flex flex-col"
+                          >
+                            <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
+                              <h4 className="font-bold text-xs text-white uppercase tracking-wider">🏆 Exámenes</h4>
+                              <span className="font-mono text-[10px] bg-red-955 border border-red-900/30 px-2 py-0.5 rounded text-red-400 font-bold font-sans">
+                                {colClasses.length}
+                              </span>
+                            </div>
+                            <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
+                              {colClasses.map((item) => (
+                                <div
+                                  key={item.originalIndex}
+                                  draggable="true"
+                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", item.originalIndex.toString())}
+                                  className="bg-red-955/10 border border-red-955/35 p-4 rounded-xl space-y-2 cursor-grab active:cursor-grabbing hover:border-red-900/30 transition"
+                                >
+                                  <div className="flex justify-between items-center text-[10px]">
+                                    <span className="font-bold text-red-450 font-sans">Clase {item.originalIndex + 1}</span>
+                                    <span className="text-gray-555 font-mono">
+                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                    </span>
+                                  </div>
+                                  <h5 className="font-bold text-xs text-red-200 truncate">{item.topic || "Evaluación"}</h5>
+                                  <span className="px-1.5 py-0.5 rounded bg-red-955 border border-red-900/30 text-[9px] text-red-400 font-bold font-mono">
+                                    {item.special_status}
+                                  </span>
+                                </div>
+                              ))}
+                              {colClasses.length === 0 && (
+                                <div className="text-center text-[10px] text-gray-555 italic py-8">
+                                  Arrastra exámenes aquí.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                   </div>
                 ) : (
                   /* STUDENT VIEW: CHRONOGRAM */
