@@ -1,4 +1,4 @@
-# Casos de Uso y Pruebas - Jutsu Classroom
+# Casos de Uso y Pruebas - Ninja Dojo
 
 Este documento detalla los casos de uso principales de la plataforma, divididos por el rol del usuario (Profesor y Estudiante). Para cada caso de uso se especifican las acciones necesarias para probarlo de principio a fin.
 

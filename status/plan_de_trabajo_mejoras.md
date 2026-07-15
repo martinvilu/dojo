@@ -1,6 +1,6 @@
 # Plan de Trabajo - Implementación de Mejoras (Actualizado)
 
-Este plan detalla el estado y la estrategia de desarrollo para la implementación de las mejoras prioritarias descritas en el roadmap de la plataforma Jutsu Classroom, habiendo completado satisfactoriamente todas las fases.
+Este plan detalla el estado y la estrategia de desarrollo para la implementación de las mejoras prioritarias descritas en el roadmap de la plataforma Ninja Dojo, habiendo completado satisfactoriamente todas las fases.
 
 ---
 

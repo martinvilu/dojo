@@ -7,8 +7,8 @@ const db = admin.firestore();
 
 exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
     let role = 'student';
-    if (user.email === 'admin@jutsu.com' || user.email === 'admin@gaula.com') role = 'admin';
-    if (user.email === 'teacher@jutsu.com' || user.email === 'teacher@gaula.com') role = 'teacher';
+    if (user.email === 'admin@jutsu.com' || user.email === 'admin@gaula.com' || user.email === 'admin@dojo.com') role = 'admin';
+    if (user.email === 'teacher@jutsu.com' || user.email === 'teacher@gaula.com' || user.email === 'teacher@dojo.com') role = 'teacher';
 
     const profileData = {
         id: user.uid,

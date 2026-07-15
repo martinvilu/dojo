@@ -1,4 +1,4 @@
-# Roadmap y Estado de Funcionalidades - Jutsu Classroom
+# Roadmap y Estado de Funcionalidades - Ninja Dojo
 
 Este documento detalla el estado actual de las funcionalidades de la plataforma, marcando aquellas implementadas y listando las ideas a futuro para mejorar la experiencia de estudiantes y docentes.
 

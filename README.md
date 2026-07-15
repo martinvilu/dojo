@@ -1,6 +1,6 @@
-# Jutsu Classroom
+# Ninja Dojo
 
-Jutsu Classroom es una plataforma híbrida de gestión educativa que integra un frontend interactivo y reactivo desarrollado con **Next.js** (React, TypeScript y Tailwind CSS) respaldado por un backend serverless en **Firebase** (Authentication, Firestore, Cloud Functions y App Hosting).
+Ninja Dojo es una plataforma híbrida de gestión educativa que integra un frontend interactivo y reactivo desarrollado con **Next.js** (React, TypeScript y Tailwind CSS) respaldado por un backend serverless en **Firebase** (Authentication, Firestore, Cloud Functions y App Hosting).
 
 La aplicación permite la gestión de cátedras, inscripción de estudiantes y profesores mediante códigos de acceso, planificación interactiva de cronogramas, envío de avisos generales y asignación de tareas con soporte de colaboración grupal.
 

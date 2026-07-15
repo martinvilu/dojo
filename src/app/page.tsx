@@ -40,8 +40,8 @@ export default function Home() {
       {/* Navigation Header */}
       <header className="max-w-7xl w-full mx-auto px-6 py-6 flex justify-between items-center relative z-10">
         <div className="flex items-center space-x-2">
-          <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-            Gaula Classroom
+          <span className="text-xl font-bold bg-gradient-to-r from-red-400 to-amber-500 bg-clip-text text-transparent">
+            Ninja Dojo
           </span>
         </div>
         <div>
@@ -81,7 +81,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="w-full text-center py-8 border-t border-neutral-900 text-xs text-gray-600 relative z-10">
-        <p>© 2026 Gaula Classroom. Todos los derechos reservados.</p>
+        <p>© 2026 Ninja Dojo. Todos los derechos reservados.</p>
       </footer>
     </div>
   );

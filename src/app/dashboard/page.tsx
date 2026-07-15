@@ -2058,8 +2058,8 @@ export default function DashboardPage() {
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-bg-secondary border-b md:border-b-0 md:border-r border-border-custom flex flex-col p-6 space-y-6">
         <div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-            Gaula Classroom
+          <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-amber-500 bg-clip-text text-transparent">
+            Ninja Dojo
           </h1>
           <p className="text-xs text-text-secondary mt-1 uppercase tracking-wider font-semibold">
             {profile?.role === "admin" ? "Administrador" : profile?.role === "teacher" ? "Profesor" : "Estudiante"}

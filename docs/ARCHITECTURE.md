@@ -1,12 +1,12 @@
-# Arquitectura del Sistema - Jutsu Classroom
+# Arquitectura del Sistema - Ninja Dojo
 
-Este documento proporciona una visión detallada de los componentes del sistema, el modelo de seguridad, el diseño de la base de datos y la estructura de archivos de Jutsu Classroom.
+Este documento proporciona una visión detallada de los componentes del sistema, el modelo de seguridad, el diseño de la base de datos y la estructura de archivos de Ninja Dojo.
 
 ---
 
 ## 1. Vista General de Componentes
 
-Jutsu Classroom está diseñado bajo una arquitectura serverless híbrida compuesta por:
+Ninja Dojo está diseñado bajo una arquitectura serverless híbrida compuesta por:
 
 ```mermaid
 graph TD

@@ -1,4 +1,4 @@
-# Reporte de Verificación de Mejoras - Jutsu Classroom
+# Reporte de Verificación de Mejoras - Ninja Dojo
 
 Este documento detalla la auditoría y estado de cumplimiento de los features descritos en el archivo [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md) en la versión actual del sistema.
 

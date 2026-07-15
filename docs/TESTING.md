@@ -1,6 +1,6 @@
 # Guía de Pruebas y Seed Data
 
-Este documento describe cómo levantar el entorno y validar las características de Jutsu Classroom (roles, planificación, acuses de recibo).
+Este documento describe cómo levantar el entorno y validar las características de Ninja Dojo (roles, planificación, acuses de recibo).
 
 ## 🧪 Pruebas de Desarrollo
 
