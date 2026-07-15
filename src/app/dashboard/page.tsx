@@ -208,6 +208,9 @@ export default function DashboardPage() {
   const [selectedVersionForDiff, setSelectedVersionForDiff] = useState<any | null>(null);
   const [selectedCourseForComparison, setSelectedCourseForComparison] = useState<any | null>(null);
 
+  // Backups states
+  const [systemBackups, setSystemBackups] = useState<any[]>([]);
+
   // Study Groups states
   const [studyGroups, setStudyGroups] = useState<any[]>([]);
   const [loadingStudyGroups, setLoadingStudyGroups] = useState(false);
@@ -558,6 +561,9 @@ export default function DashboardPage() {
           const res = await api("getGlobalSettings");
           setGlobalSettings(res || {});
           setGlobalCalendarUrl(res?.globalCalendarIcsUrl || "");
+        } else if (activeTab === "admin-backups") {
+          const res = await api("getSystemBackups");
+          setSystemBackups(res || []);
         } else if (activeTab === "teacher-courses") {
           const res = await api("getTeacherCourses");
           setCourses(res || []);
@@ -1263,6 +1269,48 @@ export default function DashboardPage() {
     }
   };
 
+  // Backups and Alerts actions
+  const handleCreateBackup = async () => {
+    setApiLoading(true);
+    try {
+      const res = await api("createSystemBackup");
+      alert("Respaldo creado correctamente con ID: " + res.backupId);
+      const backupsRes = await api("getSystemBackups");
+      setSystemBackups(backupsRes || []);
+    } catch (err: any) {
+      alert("Error al crear respaldo: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleRestoreBackupDocument = async (backupId: string, collectionName: string, docId: string) => {
+    if (!confirm(`¿Seguro que querés restaurar el documento ${docId} de la colección ${collectionName}? Sobrescribirá los datos actuales en la base de datos remota.`)) return;
+    setApiLoading(true);
+    try {
+      await api("restoreBackupDocument", { backupId, collectionName, docId });
+      alert("Documento restaurado con éxito.");
+    } catch (err: any) {
+      alert("Error al restaurar documento: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleCheckAndAlertStudentsAtRisk = async () => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) return;
+    setApiLoading(true);
+    try {
+      const res = await api("checkAndAlertStudentsAtRisk", { courseId: cid });
+      alert(`Verificación completada. Se dispararon alertas para ${res.alertsTriggeredCount} alumnos.`);
+    } catch (err: any) {
+      alert("Error al verificar alertas: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   // Teacher Assignments Actions
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1932,6 +1980,14 @@ export default function DashboardPage() {
               >
                 <span>Configuración</span>
               </button>
+              <button
+                onClick={() => setActiveTab("admin-backups")}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+                  activeTab === "admin-backups" ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-neutral-800 hover:text-white"
+                }`}
+              >
+                <span>💾 Respaldos y Recuperación</span>
+              </button>
             </>
           )}
 
@@ -2023,6 +2079,116 @@ export default function DashboardPage() {
             handleSaveSettings={handleSaveSettings}
             viewCourseDetails={viewCourseDetails}
           />
+        )}
+
+        {/* ADMIN BACKUPS PANEL */}
+        {profile?.role === "admin" && activeTab === "admin-backups" && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-bold">Respaldos Incrementales y Recuperación Granular</h2>
+                <p className="text-xs text-gray-400">Creá puntos de restauración del sistema y recuperá documentos individuales de Firestore.</p>
+              </div>
+              <button
+                onClick={handleCreateBackup}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                💾 Crear Respaldo Completo Ahora
+              </button>
+            </div>
+
+            <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-6 space-y-6">
+              <h3 className="text-base font-bold text-white">Respaldos Guardados ({systemBackups.length})</h3>
+              
+              <div className="space-y-4">
+                {systemBackups.map((b) => (
+                  <div key={b.id} className="bg-neutral-950/60 border border-neutral-850 p-5 rounded-2xl space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-neutral-850 pb-3 gap-2">
+                      <div>
+                        <span className="text-[10px] text-gray-500 font-mono">ID: {b.id}</span>
+                        <p className="text-sm font-bold text-white">Fecha: {new Date(b.created_at).toLocaleString()}</p>
+                        <p className="text-xs text-gray-400">Creado por: {b.created_by_name}</p>
+                      </div>
+                      <div className="flex gap-2 text-[11px]">
+                        <span className="bg-neutral-900 px-3 py-1 rounded-full text-gray-300">{b.courses_count} Cátedras</span>
+                        <span className="bg-neutral-900 px-3 py-1 rounded-full text-gray-300">{b.assignments_count} Tareas</span>
+                        <span className="bg-neutral-900 px-3 py-1 rounded-full text-gray-300">{b.profiles_count} Perfiles</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Restauración Granular</h4>
+                      <p className="text-[11px] text-gray-500">
+                        Seleccioná un elemento para revertir su estado al momento de este respaldo.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-850 space-y-2">
+                          <span className="text-xs font-bold text-amber-500">Cátedras</span>
+                          <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                            {courses.map((course) => (
+                              <div key={course.id} className="flex justify-between items-center bg-neutral-950 p-2 rounded-lg border border-neutral-900 text-[10px]">
+                                <span className="truncate text-white max-w-[120px]">{course.name}</span>
+                                <button
+                                  onClick={() => handleRestoreBackupDocument(b.id, "courses", course.id)}
+                                  className="text-blue-400 hover:underline font-bold"
+                                >
+                                  Restaurar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-850 space-y-2">
+                          <span className="text-xs font-bold text-amber-500">Tareas</span>
+                          <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                            {assignments.map((asg) => (
+                              <div key={asg.id} className="flex justify-between items-center bg-neutral-950 p-2 rounded-lg border border-neutral-900 text-[10px]">
+                                <span className="truncate text-white max-w-[120px]">{asg.title}</span>
+                                <button
+                                  onClick={() => handleRestoreBackupDocument(b.id, "assignments", asg.id)}
+                                  className="text-blue-400 hover:underline font-bold"
+                                >
+                                  Restaurar
+                                </button>
+                              </div>
+                            ))}
+                            {assignments.length === 0 && (
+                              <p className="text-[10px] text-gray-500 text-center py-2">Sin tareas cargadas en UI.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-850 space-y-2">
+                          <span className="text-xs font-bold text-amber-500">Usuarios / Perfiles</span>
+                          <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                            {users.map((u) => (
+                              <div key={u.id} className="flex justify-between items-center bg-neutral-950 p-2 rounded-lg border border-neutral-900 text-[10px]">
+                                <span className="truncate text-white max-w-[120px]">{u.full_name || u.email}</span>
+                                <button
+                                  onClick={() => handleRestoreBackupDocument(b.id, "profiles", u.id)}
+                                  className="text-blue-400 hover:underline font-bold"
+                                >
+                                  Restaurar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {systemBackups.length === 0 && (
+                  <div className="bg-neutral-950/20 border border-dashed border-neutral-800 p-8 rounded-2xl text-center text-gray-500 text-sm">
+                    No hay respaldos registrados. Presioná el botón de arriba para generar el primero.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* TEACHER TABS COMPONENT */}
@@ -4055,6 +4221,13 @@ export default function DashboardPage() {
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
                       >
                         <span>📊 Exportar Planilla (Sheets)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCheckAndAlertStudentsAtRisk}
+                        className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-amber-500 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
+                      >
+                        <span>📢 Alertas Automáticas</span>
                       </button>
                     </div>
                   </div>
