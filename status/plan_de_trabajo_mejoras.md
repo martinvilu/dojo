@@ -50,6 +50,8 @@ gantt
     *   Panel interactivo de Rango Ninja en la cabecera del curso para alumnos. Otorga XP dinámicos (presentismo, entregas, notas, participación) y medallas de honor (Chakra Master, Asistencia Perfecta, etc.) con barras de progreso de nivel.
 *   **Tarea 2.6: Encuestas Estudiantiles Anónimas (Class Feedback)**
     *   Módulo de encuestas anónimas por clase con valoración (1-5 estrellas), nivel de comprensión y comentarios para estudiantes, y panel estadístico agregado para docentes.
+*   **Tarea 2.7: Espacio de Co-Docencia Coordinada y Comisiones**
+    *   Asignación de comisiones a los estudiantes, mapeo de docentes responsables por comisión en configuración de la materia y filtros por comisión en las vistas de Alumnos, Asistencia y Tareas entregadas.
 
 ### 🔌 Fase 3: UX y Resiliencia Offline (Completado)
 *   **Tarea 3.1: Modo Claro/Oscuro Integrado**

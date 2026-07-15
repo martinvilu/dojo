@@ -15,7 +15,7 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Docente** | Registro de Asistencia por QR Dinámico | 🟢 Completado | Generación de token dinámico con geolocalización (docente) y validación de cercanía GPS (< 150m) en Cloud Function. |
 | **Docente** | Integración Bidireccional con Google Sheets | 🟢 Completado | **Implementado**: Exportación en 1 clic de la planilla completa de notas, asistencias, alertas y estado a CSV compatible con Sheets/Excel. |
 | **Docente** | Alertas Tempranas de Desempeño | 🟢 Completado | **Implementado**: Subpestaña "Alumnos y Alertas" con cálculo en tiempo real de ratios de asistencia y tareas entregadas, emitiendo alertas por inasistencias y tareas vencidas sin entregar. |
-| **Docente** | Espacio de Co-Docencia Coordinada | ⏳ Pendiente | Asignación de correcciones por ayudantes y administración de comisiones. |
+| **Docente** | Espacio de Co-Docencia Coordinada | 🟢 Completado | **Implementado**: Asignación de comisiones a perfiles de alumnos, vinculación de docentes responsables en configuración de cátedra y filtrado multi-vista. |
 | **Docente** | Tablero Kanban para Planificación Curricular | ⏳ Pendiente | Reorganización interactiva (drag & drop) del cronograma de clases. |
 | **Docente** | Encuestas Estudiantiles Anónimas | 🟢 Completado | **Implementado**: Módulo de feedback anónimo por clase en el cronograma con valoración (1-5 estrellas), nivel de comprensión y comentarios. |
 | **Docente** | Dashboard Docente Centralizado | ⏳ Pendiente | Tablero unificado de correcciones pendientes, consultas y notificaciones. |
@@ -112,11 +112,22 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
     *   **Docentes**:
         *   Pueden hacer clic en **📊 Feedback Anónimo** para visualizar un panel estadístico con la valoración promedio (sobre 5 estrellas), cantidad total de encuestas, distribución porcentual interactiva del nivel de comprensión y el listado de comentarios anónimos.
 
+### 11. Espacio de Co-Docencia Coordinada y Comisiones (Co-Docencia)
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx).
+*   **Funcionamiento:**
+    *   Se implementó el soporte completo para múltiples comisiones y docentes responsables por cátedra:
+        *   **Configuración (Settings)**: Se añadió el panel "Co-Docencia & Responsables de Comisión" donde el profesor titular puede vincular cada comisión ("Comisión A", "Comisión B", "Comisión C", "Comisión D") a un docente responsable específico (seleccionado dinámicamente de la lista de docentes asignados a la cátedra).
+        *   **Alumnos y Alertas**: Los profesores pueden asignar y cambiar comisiones a los estudiantes mediante selectores desplegables dinámicos, que persisten en sus perfiles de Firestore. Los estudiantes pueden ver su badge de comisión asignada.
+        *   **Filtrado en Tiempo Real**: Se añadieron selectores de filtrado por comisión en:
+            *   La tabla general de "Alumnos y Alertas".
+            *   El control/roster de Asistencias por clase en el cronograma.
+            *   El panel de entregas y actividad de alumnos (para facilitar la corrección focalizada a ayudantes).
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
 
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
-1.  **Espacio de Co-Docencia Coordinada:** Permitir asignar la corrección de entregas específicas a ayudantes de cátedra.
-2.  **Tablero Kanban para Planificación Curricular:** Reorganización interactiva (drag & drop) del cronograma de clases.
-3.  **Control de Versiones de Cronogramas:** Historial de cronogramas y comparación curricular interanual.
+1.  **Tablero Kanban para Planificación Curricular:** Reorganización interactiva (drag & drop) del cronograma de clases.
+2.  **Control de Versiones de Cronogramas:** Historial de cronogramas y comparación curricular interanual.
+3.  **Dashboard Docente Centralizado:** Tablero unificado de correcciones pendientes, consultas y notificaciones.
