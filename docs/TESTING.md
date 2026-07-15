@@ -143,6 +143,10 @@ El seed de la base de datos pre-carga una entrega enviada para **Naruto Uzumaki*
 6. Ve a la pestaña **Cronograma**, abre el panel **Control de Asistencia** de una clase y filtra la lista de presentismo seleccionando "Comisión A".
 7. Ve a la pestaña **Tareas**, abre "Ver Entregas y Actividad" de cualquier tarea y filtra la cola de entregas por la comisión deseada para verificar el filtrado coordinado de correcciones.
 
-
-
-
+### 12. Pruebas de Flujo Rápido en Resumen Docente (Docente / Admin)
+1. Inicia sesión como **Profesor** (`teacher@jutsu.com`).
+2. Al ingresar a una cátedra, valida que la aplicación aterriza directamente en la pestaña **Resumen**.
+3. Verifica que se muestran las tarjetas métricas (Correcciones Pendientes, Alumnos en Riesgo y Entregas Totales).
+4. En la tarjeta "Cola de Corrección de Trabajos", busca un entregable pendiente y haz clic en **Evaluar**. Valida que te redirige a la pestaña de Tareas con el entregable abierto.
+5. Regresa al **Resumen**, ubica la tarjeta "Consultas Recientes en Clases" y haz clic en **Responder en Foro** de alguna consulta. Valida que te redirige al Cronograma y se despliega automáticamente la sección de comentarios de la clase respectiva.
+6. Valida que la tabla "Alumnos que requieren Atención" muestra correctamente solo los alumnos en riesgo y coincide con los mostrados en el panel "Alumnos y Alertas".

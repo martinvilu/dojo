@@ -99,6 +99,20 @@ Este documento detalla los casos de uso principales de la plataforma, divididos 
     4. Navegar a "Cronograma" -> "📋 Control de Asistencia" de una clase, y verificar que también es posible filtrar el roster por comisión.
     5. Navegar a "Tareas" -> "Ver Entregas y Actividad" de cualquier tarea, y verificar que el listado de entregas y los estados se filtran dinámicamente por la comisión seleccionada.
 
+### 13. Consulta de Métricas y Alertas en el Resumen Docente
+*   **Descripción:** El docente o administrador visualiza la salud de la cursada a través del panel unificado de Resumen.
+*   **Pasos para probar:**
+    1. Seleccionar la cátedra en el listado principal de cursos.
+    2. Validar que para docentes y administradores la página aterriza automáticamente en la subpestaña **📊 Resumen**.
+    3. Verificar los contadores de "Correcciones Pendientes", "Alumnos en Riesgo" y "Entregas Totales".
+    4. Comprobar que en la tabla "Alumnos que requieren Atención" se listan los perfiles en riesgo con su ratio de asistencia y badges de alerta correspondientes.
+
+### 14. Flujo Directo de Corrección y Respuestas desde el Resumen
+*   **Descripción:** El docente evalúa entregas y responde preguntas directamente desde la cola de tareas y foros pendientes del Resumen.
+*   **Pasos para probar:**
+    1. En la tarjeta "Cola de Corrección de Trabajos", buscar una entrega y presionar el botón "Evaluar". Verificar que el sistema cambia automáticamente al panel de tareas desplegando la entrega correspondiente.
+    2. En la tarjeta "Consultas Recientes en Clases", buscar una pregunta de un foro y presionar "Responder en Foro". Verificar que la aplicación redirige al cronograma y expande el foro de consultas de la clase exacta.
+
 ---
 
 ## 🎓 Casos de Uso del Estudiante
