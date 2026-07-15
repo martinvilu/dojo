@@ -134,5 +134,15 @@ El seed de la base de datos pre-carga una entrega enviada para **Naruto Uzumaki*
 5. Cambia el rol de un usuario con el select y presiona aceptar en la confirmación. Verifica que el rol se modifique en Firestore de forma automática.
 6. Intenta entrar a `/dashboard/users` con un usuario **Estudiante** o **Profesor** y verifica que el sistema bloquea el acceso de forma segura y lo redirige de vuelta al dashboard general.
 
+### 11. Pruebas de Co-Docencia, Comisiones y Filtrado Rápido (Docente)
+1. Inicia sesión como **Profesor** (`teacher@jutsu.com`).
+2. Ingresa a la cursada y ve a la pestaña **👥 Alumnos y Alertas**.
+3. Cambia la comisión de varios alumnos utilizando el selector desplegable individual en cada fila (asigna algunos a "Comisión A" y otros a "Comisión B").
+4. Cambia el filtro general de comisión de "Todas" a "Comisión A" y verifica que la tabla filtra instantáneamente mostrando solo los estudiantes correspondientes.
+5. Ve a la pestaña **Ajustes Cátedra** (Settings). En la sección "Co-Docencia & Responsables de Comisión", selecciona un docente responsable para la "Comisión A" (e.g. asociando a tu colega o a ti mismo). Haz clic en **Guardar Configuración**.
+6. Ve a la pestaña **Cronograma**, abre el panel **Control de Asistencia** de una clase y filtra la lista de presentismo seleccionando "Comisión A".
+7. Ve a la pestaña **Tareas**, abre "Ver Entregas y Actividad" de cualquier tarea y filtra la cola de entregas por la comisión deseada para verificar el filtrado coordinado de correcciones.
+
+
 
 

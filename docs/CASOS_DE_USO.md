@@ -82,6 +82,23 @@ Este documento detalla los casos de uso principales de la plataforma, divididos 
     2. Presionar el botón `📊 Feedback Anónimo` en cualquier clase que ya haya sido dictada.
     3. Visualizar la valoración promedio por estrellas, total de alumnos participantes, distribución de nivel de entendimiento y sugerencias escritas anónimas.
 
+### 11. Configuración de Co-Docencia y Responsables de Comisión
+*   **Descripción:** El docente titular gestiona la distribución de responsabilidades por comisión entre el equipo de ayudantes y profesores de la cátedra.
+*   **Pasos para probar:**
+    1. Ir a la subpestaña "Ajustes Cátedra" (Settings).
+    2. Ubicar la sección "Co-Docencia & Responsables de Comisión".
+    3. Seleccionar un docente responsable para cada comisión ("Comisión A", "Comisión B", etc.) usando los selectores desplegables con la lista de ayudantes y profesores asignados.
+    4. Hacer clic en "Guardar Configuración".
+
+### 12. Administración y Filtrado de Comisiones en el Aula
+*   **Descripción:** Los profesores y ayudantes filtran las vistas de alumnos, asistencia y entregas para concentrarse en su comisión a cargo, y asignan comisiones a los estudiantes.
+*   **Pasos para probar:**
+    1. Ir a la subpestaña "👥 Alumnos y Alertas".
+    2. Asignar comisiones a los estudiantes mediante el selector desplegable de cada fila.
+    3. Utilizar el selector general de "Comisión" para filtrar la tabla y ver solo los alumnos de una comisión específica.
+    4. Navegar a "Cronograma" -> "📋 Control de Asistencia" de una clase, y verificar que también es posible filtrar el roster por comisión.
+    5. Navegar a "Tareas" -> "Ver Entregas y Actividad" de cualquier tarea, y verificar que el listado de entregas y los estados se filtran dinámicamente por la comisión seleccionada.
+
 ---
 
 ## 🎓 Casos de Uso del Estudiante
