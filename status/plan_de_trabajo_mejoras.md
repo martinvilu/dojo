@@ -52,6 +52,8 @@ gantt
     *   Módulo de encuestas anónimas por clase con valoración (1-5 estrellas), nivel de comprensión y comentarios para estudiantes, y panel estadístico agregado para docentes.
 *   **Tarea 2.7: Espacio de Co-Docencia Coordinada y Comisiones**
     *   Asignación de comisiones a los estudiantes, mapeo de docentes responsables por comisión en configuración de la materia y filtros por comisión en las vistas de Alumnos, Asistencia y Tareas entregadas.
+*   **Tarea 2.8: Dashboard Docente Centralizado**
+    *   Subpestaña de Resumen docente que muestra contadores rápidos de desempeño, cola de corrección de tareas con links directos y consultas de foro de clases pendientes de responder.
 
 ### 🔌 Fase 3: UX y Resiliencia Offline (Completado)
 *   **Tarea 3.1: Modo Claro/Oscuro Integrado**

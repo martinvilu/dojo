@@ -18,7 +18,7 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Docente** | Espacio de Co-Docencia Coordinada | 🟢 Completado | **Implementado**: Asignación de comisiones a perfiles de alumnos, vinculación de docentes responsables en configuración de cátedra y filtrado multi-vista. |
 | **Docente** | Tablero Kanban para Planificación Curricular | ⏳ Pendiente | Reorganización interactiva (drag & drop) del cronograma de clases. |
 | **Docente** | Encuestas Estudiantiles Anónimas | 🟢 Completado | **Implementado**: Módulo de feedback anónimo por clase en el cronograma con valoración (1-5 estrellas), nivel de comprensión y comentarios. |
-| **Docente** | Dashboard Docente Centralizado | ⏳ Pendiente | Tablero unificado de correcciones pendientes, consultas y notificaciones. |
+| **Docente** | Dashboard Docente Centralizado | 🟢 Completado | **Implementado**: Panel "Resumen" con cola de correcciones de entregas de tareas, últimas consultas de foro de clases y lista de alumnos en riesgo. |
 | **Infraestructura** | Paginación y Caching en Firestore | 🟢 Completado | Habilitación de persistencia IndexedDB y optimización de lecturas offline. |
 | **Infraestructura** | Modo Oscuro Integrado | 🟢 Completado | Alternador global de temas persistido en `localStorage` y variables CSS semánticas en [globals.css](file:///home/mrtin/dev/gaula/src/app/globals.css). |
 | **Infraestructura** | Bitácora de Auditoría de Notas (Audit Logs) | 🟢 Completado | **Implementado**: Registro inmutable con diff detallado de nota/feedback en Cloud Functions e historial desplegable en la interfaz del docente. |
@@ -123,6 +123,18 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
             *   El control/roster de Asistencias por clase en el cronograma.
             *   El panel de entregas y actividad de alumnos (para facilitar la corrección focalizada a ayudantes).
 
+### 12. Dashboard Docente Centralizado (Resumen Docente)
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx).
+*   **Funcionamiento:**
+    *   Se implementó una nueva subpestaña inicial **📊 Resumen** visible únicamente para docentes y administradores.
+    *   **Métricas del Resumen**:
+        *   **Correcciones Pendientes**: Contador dinámico de entregas enviadas que no poseen calificación aún.
+        *   **Alumnos en Riesgo**: Contador rápido de alumnos con asistencia crítica o tareas vencidas sin entregar.
+        *   **Entregas Totales**: Contador global del volumen de entregas en la cátedra.
+    *   **Cola de Corrección**: Listado de todos los trabajos entregados pendientes de evaluación. Incluye nombre, comisión del alumno, y el botón "Evaluar" que redirige de forma directa al panel de evaluación de dicha tarea.
+    *   **Consultas Recientes**: Listado de los últimos comentarios de alumnos en foros de clases que aún no tienen respuesta marcada como solución por el docente. Incluye el enlace "Responder en Foro" que redirige y despliega el foro de consultas de la clase exacta.
+    *   **Alumnos que requieren Atención**: Vista rápida de la lista filtrada de alumnos en riesgo, con sus porcentajes de presentismo y desglose de alertas activas.
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
@@ -130,4 +142,3 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
 1.  **Tablero Kanban para Planificación Curricular:** Reorganización interactiva (drag & drop) del cronograma de clases.
 2.  **Control de Versiones de Cronogramas:** Historial de cronogramas y comparación curricular interanual.
-3.  **Dashboard Docente Centralizado:** Tablero unificado de correcciones pendientes, consultas y notificaciones.
