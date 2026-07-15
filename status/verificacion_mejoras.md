@@ -17,7 +17,7 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
 | **Docente** | Alertas Tempranas de Desempeño | 🟢 Completado | **Implementado**: Subpestaña "Alumnos y Alertas" con cálculo en tiempo real de ratios de asistencia y tareas entregadas, emitiendo alertas por inasistencias y tareas vencidas sin entregar. |
 | **Docente** | Espacio de Co-Docencia Coordinada | ⏳ Pendiente | Asignación de correcciones por ayudantes y administración de comisiones. |
 | **Docente** | Tablero Kanban para Planificación Curricular | ⏳ Pendiente | Reorganización interactiva (drag & drop) del cronograma de clases. |
-| **Docente** | Encuestas Estudiantiles Anónimas | ⏳ Pendiente | Módulo de feedback anónimo en tiempo real sobre la metodología docente. |
+| **Docente** | Encuestas Estudiantiles Anónimas | 🟢 Completado | **Implementado**: Módulo de feedback anónimo por clase en el cronograma con valoración (1-5 estrellas), nivel de comprensión y comentarios. |
 | **Docente** | Dashboard Docente Centralizado | ⏳ Pendiente | Tablero unificado de correcciones pendientes, consultas y notificaciones. |
 | **Infraestructura** | Paginación y Caching en Firestore | 🟢 Completado | Habilitación de persistencia IndexedDB y optimización de lecturas offline. |
 | **Infraestructura** | Modo Oscuro Integrado | 🟢 Completado | Alternador global de temas persistido en `localStorage` y variables CSS semánticas en [globals.css](file:///home/mrtin/dev/gaula/src/app/globals.css). |
@@ -102,11 +102,21 @@ Este documento detalla la auditoría y estado de cumplimiento de los features de
         *   🥉 **Ninja Activo**: Mínimo 3 comentarios en foros de clase.
         *   🎖️ **Solucionador**: Al menos 1 respuesta marcada como solución por el docente.
 
+### 10. Encuestas Estudiantiles Anónimas (Class Feedback)
+*   **Archivos Modificados:** [page.tsx](file:///home/mrtin/dev/gaula/src/app/dashboard/page.tsx).
+*   **Funcionamiento:**
+    *   Se agregó un botón interactivo **✍️ Feedback Anónimo** para estudiantes y profesores al lado de cada clase en el cronograma.
+    *   **Estudiantes**:
+        *   Pueden enviar una calificación (1-5 estrellas), seleccionar su nivel de comprensión ("Entendí todo", "Entendí la mayor parte", "Tengo dudas", "No entendí nada") y escribir una sugerencia opcional.
+        *   Para asegurar el anonimato e impedir doble voto, se encripta el identificador usando SHA-256 (`SHA-256(studentId + classNumber)`) como ID del documento en Firestore.
+    *   **Docentes**:
+        *   Pueden hacer clic en **📊 Feedback Anónimo** para visualizar un panel estadístico con la valoración promedio (sobre 5 estrellas), cantidad total de encuestas, distribución porcentual interactiva del nivel de comprensión y el listado de comentarios anónimos.
+
 ---
 
 ## 🛠️ Próximas Implementaciones Prioritarias Sugeridas
 
 Para continuar con el plan de mejoras de [MEJORAS.md](file:///home/mrtin/dev/gaula/MEJORAS.md), se recomiendan los siguientes pasos:
-1.  **Encuestas Estudiantiles Anónimas:** Módulo para que los alumnos den retroalimentación anónima de cada clase o tema al docente.
-2.  **Espacio de Co-Docencia Coordinada:** Permitir asignar la corrección de entregas específicas a ayudantes de cátedra.
-3.  **Tablero Kanban para Planificación Curricular:** Reorganización interactiva (drag & drop) del cronograma de clases.
+1.  **Espacio de Co-Docencia Coordinada:** Permitir asignar la corrección de entregas específicas a ayudantes de cátedra.
+2.  **Tablero Kanban para Planificación Curricular:** Reorganización interactiva (drag & drop) del cronograma de clases.
+3.  **Control de Versiones de Cronogramas:** Historial de cronogramas y comparación curricular interanual.

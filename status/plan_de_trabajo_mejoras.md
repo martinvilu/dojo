@@ -48,6 +48,8 @@ gantt
     *   Botón para exportar la matriz completa de notas, asistencias, alertas tempranas y condición académica final a formato CSV compatible de forma nativa con Google Sheets y Excel.
 *   **Tarea 2.5: Gamificación y Medallas de Honor (Rango Ninja)**
     *   Panel interactivo de Rango Ninja en la cabecera del curso para alumnos. Otorga XP dinámicos (presentismo, entregas, notas, participación) y medallas de honor (Chakra Master, Asistencia Perfecta, etc.) con barras de progreso de nivel.
+*   **Tarea 2.6: Encuestas Estudiantiles Anónimas (Class Feedback)**
+    *   Módulo de encuestas anónimas por clase con valoración (1-5 estrellas), nivel de comprensión y comentarios para estudiantes, y panel estadístico agregado para docentes.
 
 ### 🔌 Fase 3: UX y Resiliencia Offline (Completado)
 *   **Tarea 3.1: Modo Claro/Oscuro Integrado**
