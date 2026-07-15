@@ -1149,6 +1149,85 @@ export default function DashboardPage() {
     }
   };
 
+  const handleExportGradesMatrix = () => {
+    const cid = selectedCourse.id || selectedCourse.course?.id;
+    if (!cid) return;
+    if (roster.length === 0) {
+      alert("No hay alumnos inscriptos en esta materia todavía.");
+      return;
+    }
+    
+    try {
+      let csv = "Nombre,Email,Matricula,";
+      assignments.forEach(a => {
+        csv += `"${a.title.replace(/"/g, '""')}",`;
+      });
+      csv += "Promedio,Asistencia,Alertas,Condicion\n";
+      
+      roster.forEach(student => {
+        // Name, Email, Matricula
+        csv += `"${(student.full_name || "").replace(/"/g, '""')}","${student.email || ""}","${student.matricula_unrn || ""}",`;
+        
+        let totalGradesSum = 0;
+        let gradesCount = 0;
+        
+        // Assignments columns
+        assignments.forEach(a => {
+          const sub = courseSubmissions.find(s => s.student_id === student.id && s.assignment_id === a.id);
+          const gradeVal = sub ? sub.grade : "";
+          csv += `"${(gradeVal || "").replace(/"/g, '""')}",`;
+          
+          const num = parseFloat(gradeVal);
+          if (!isNaN(num)) {
+            totalGradesSum += num;
+            gradesCount++;
+          }
+        });
+        
+        // Numerical Average
+        const avg = gradesCount > 0 ? (totalGradesSum / gradesCount).toFixed(2) : "-";
+        
+        // Attendance percentage
+        const studentAtts = courseAttendance.filter(c => c.records && c.records[student.id]);
+        const recordedCount = studentAtts.length;
+        const presentOrLate = studentAtts.filter(c => c.records[student.id] === "present" || c.records[student.id] === "late").length;
+        const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
+        const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
+        
+        // Missing assignments
+        const studentSubmissions = courseSubmissions.filter(s => s.student_id === student.id);
+        const hasMissingAssignments = assignments.some(a => {
+          const hasSub = studentSubmissions.some(s => s.assignment_id === a.id);
+          const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+          return !hasSub && isPastDue;
+        });
+        
+        // Alerts summary string
+        const alertsArr = [];
+        if (hasCriticalAttendance) alertsArr.push("Asistencia Critica");
+        if (hasMissingAssignments) alertsArr.push("Tareas Atrasadas");
+        const alertsStr = alertsArr.length > 0 ? alertsArr.join(" | ") : "Ninguna";
+        
+        // Condition status
+        const cond = (hasCriticalAttendance || hasMissingAssignments) ? "EN RIESGO" : "REGULAR";
+        
+        csv += `"${avg}","${attendanceRate.toFixed(0)}%","${alertsStr}","${cond}"\n`;
+      });
+      
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `planilla_notas_y_alertas_${selectedCourse.name.replace(/\s+/g, "_")}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert("Error al exportar planilla: " + err.message);
+    }
+  };
+
   const handleImportCSVGrades = async (assignmentId: string, token: string, files: FileList | null) => {
     if (!files || !files.length) return;
     const file = files[0];
@@ -2718,13 +2797,20 @@ export default function DashboardPage() {
             {courseSubTab === "students" && (
               <div className="space-y-6">
                 <div className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                       <h3 className="text-lg font-bold text-white">Alumnos y Alertas de Desempeño</h3>
                       <p className="text-xs text-gray-400 mt-1">
                         Seguimiento en tiempo real del presentismo y cumplimiento de tareas de los estudiantes inscriptos.
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleExportGradesMatrix}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
+                    >
+                      <span>📊 Exportar Planilla (Sheets)</span>
+                    </button>
                   </div>
 
                   <div className="overflow-x-auto bg-neutral-950/40 border border-neutral-850 rounded-2xl">
