@@ -59,13 +59,28 @@ Este documento detalla los casos de uso principales de la plataforma, divididos 
     4. Aceptar la sugerencia para actualizar el título del video en YouTube con el nombre de la clase (ej. "Clase X: Tema").
     5. Verificar que el campo "Enlace a Grabación" se llenó automáticamente.
 
-### 7. Gestión y Calificación de Entregas
-*   **Descripción:** El docente revisa los trabajos y repositorios de los alumnos y les asigna notas.
+### 8. Monitoreo de Alumnos y Alertas Tempranas de Desempeño
+*   **Descripción:** El docente supervisa el presentismo y entrega de tareas de todos los alumnos, visualizando alertas automáticas de riesgo de cursada.
 *   **Pasos para probar:**
-    1. Ir a la pestaña "Entregas".
-    2. Visualizar la lista de trabajos entregados por los estudiantes (enlaces de repositorios GitHub, pull requests, etc.).
-    3. Hacer clic en evaluar/calificar una entrega, ingresar el puntaje y una devolución en texto.
-    4. Guardar y verificar que el estado cambie a corregido.
+    1. Ir a la subpestaña "👥 Alumnos y Alertas" en el detalle de la cursada.
+    2. Visualizar la lista de alumnos inscriptos con sus porcentajes de asistencia en tiempo real y el progreso de tareas.
+    3. Verificar que si un alumno posee menos del 75% de asistencia (tras al menos 3 clases registradas), se muestra la etiqueta de alerta `⚠️ Asistencia Crítica`.
+    4. Verificar que si un alumno tiene tareas vencidas sin entrega registrada, se muestra la etiqueta `⚠️ Tareas Atrasadas`.
+    5. Verificar que el estado del alumno cambia a `EN RIESGO` si posee alguna alerta activa.
+
+### 9. Sincronización e Integración con Google Sheets
+*   **Descripción:** El docente descarga la matriz completa de progreso de la cursada para importarla en Google Sheets o Excel.
+*   **Pasos para probar:**
+    1. En la subpestaña "👥 Alumnos y Alertas", hacer clic en el botón "📊 Exportar Planilla (Sheets)".
+    2. Verificar que se genera y descarga un archivo `.csv` con la codificación de compatibilidad universal.
+    3. Abrir el archivo y validar que contiene columnas para Nombre, Email, Matrícula, las calificaciones de cada una de las tareas del curso, el promedio numérico general, el presentismo acumulado, las alertas activas y la condición final de cursada.
+
+### 10. Consulta de Estadísticas de Feedback Anónimo
+*   **Descripción:** El docente consulta el nivel de comprensión y la valoración cualitativa de cada clase dictada de forma 100% anónima.
+*   **Pasos para probar:**
+    1. Ir al "Cronograma" del curso.
+    2. Presionar el botón `📊 Feedback Anónimo` en cualquier clase que ya haya sido dictada.
+    3. Visualizar la valoración promedio por estrellas, total de alumnos participantes, distribución de nivel de entendimiento y sugerencias escritas anónimas.
 
 ---
 
@@ -117,6 +132,34 @@ Este documento detalla los casos de uso principales de la plataforma, divididos 
     1. En la pestaña "Tareas", abrir el bloque de la tarea correspondiente.
     2. Presionar "🔍 Ver Commits / Actividad".
     3. Inspeccionar el historial de commits, estado de PRs y comentarios del profesor en las pestañas respectivas.
+
+### 7. Consulta de Rango Ninja y Gamificación
+*   **Descripción:** El estudiante visualiza su nivel de experiencia (XP), progreso de nivel y medallas de honor de cursada obtenidas según su desempeño.
+*   **Pasos para probar:**
+    1. Entrar al curso desde el dashboard de estudiante.
+    2. Visualizar el bloque destacado de "Rango Ninja de Cursada" en la cabecera.
+    3. Validar que muestra el nivel acumulado, la barra de progreso de XP y el rango (`Genin`, `Chūnin` o `Jōnin`).
+    4. Verificar que las medallas de honor obtenidas (ej: `Maestro de Chakra` si el promedio es >= 9, `Asistencia Perfecta`, `Ninja Activo` o `Solucionador`) se muestran como badges ilustrativos.
+
+### 8. Envío de Feedback Anónimo por Clase
+*   **Descripción:** El estudiante evalúa la clase (de forma totalmente anónima) para brindar retroalimentación al docente sobre el ritmo y su comprensión.
+*   **Pasos para probar:**
+    1. En el "Cronograma", presionar el botón `✍️ Feedback Anónimo` de una clase ya dictada.
+    2. Calificar la clase usando las estrellas (1-5), elegir su nivel de comprensión y opcionalmente escribir un comentario o sugerencia.
+    3. Presionar "Enviar Feedback".
+    4. Comprobar que si vuelve a abrir el formulario, sus respuestas anteriores aparecen precargadas (permitiendo modificarlas), pero su identidad no queda vinculada en el registro que ve el profesor.
+
+---
+
+## 👑 Casos de Uso del Administrador
+
+### 1. Gestión de Roles y Aprobación de Usuarios
+*   **Descripción:** El administrador gestiona los roles del sistema de todos los usuarios registrados y aprueba cuentas nuevas.
+*   **Pasos para probar:**
+    1. Iniciar sesión como administrador e ingresar a la pestaña "Usuarios" en la barra lateral (o ruta `/dashboard/users`).
+    2. Utilizar el cuadro de búsqueda para filtrar la lista por nombre, email o matrícula.
+    3. Cambiar el rol de un usuario usando el selector desplegable (ej. promover de Estudiante a Profesor).
+    4. Aprobar a un usuario pendiente presionando el botón "Aprobar".
 
 ---
 
@@ -206,4 +249,57 @@ stateDiagram-v2
     DBGradeUpdate --> StudentView: Alumno visualiza su nota y retroalimentación
     StudentView --> [*]
 ```
+
+### 4. Diagrama de Flujo: Anonimización de Feedback mediante SHA-256 Hashing
+Explica cómo el sistema impide duplicados de encuestas sin revelar la identidad del estudiante:
+
+```mermaid
+graph TD
+    A["Estudiante envía feedback"] --> B["Obtener UID de Estudiante + Nro de Clase"]
+    B --> C["Aplicar Algoritmo de Hashing SHA-256"]
+    C --> D["Generar Document ID Único (Hexadecimal de 64 caracteres)"]
+    D --> E["Firestore: setDoc(doc('class_feedback', docId))"]
+    E --> F["Clave del Documento es el Hash, el cuerpo NO contiene datos del alumno"]
+    F --> G["Profesor recupera respuestas de la clase por consulta de Nro Clase"]
+    G --> H["Visualiza Estadísticas y Sugerencias 100% Anónimas"]
+```
+
+### 5. Diagrama de Actividad: Sistema de Gamificación Dinámica (Rango Ninja)
+Muestra cómo se calcula el Rango y las Medallas del alumno en tiempo real sin escrituras adicionales en base de datos:
+
+```mermaid
+stateDiagram-v2
+    [*] --> ReadFirestoreData: Carga de Cursada de Alumno
+    ReadFirestoreData --> CalculateAttendanceXP: +10 XP por presentismo / tardanza
+    ReadFirestoreData --> CalculateSubmissionsXP: +50 XP por entrega + (Nota * 5 XP)
+    ReadFirestoreData --> CalculateCommentsXP: +10 XP por comentario en foro
+    ReadFirestoreData --> CalculateSolutionsXP: +100 XP por respuesta marcada como solución
+    
+    CalculateAttendanceXP --> SumAllXP: Sumar XP parciales
+    CalculateSubmissionsXP --> SumAllXP
+    CalculateCommentsXP --> SumAllXP
+    CalculateSolutionsXP --> SumAllXP
+    
+    SumAllXP --> LevelCalculation: Nivel = Math.floor(TotalXP / 100) + 1
+    LevelCalculation --> EvaluateRanks: Rango = Nivel >= 5 ? Jōnin : Nivel >= 3 ? Chūnin : Genin
+    
+    EvaluateRanks --> CheckBadges: Verificar Medallas de Honor
+    state CheckBadges {
+        [*] --> CheckChakraMaster: Promedio de Notas >= 9 ?
+        CheckChakraMaster --> GoldBadge: 🥇 Maestro de Chakra
+        
+        [*] --> CheckPerfectAttendance: Asistencia == 100% (mín. 3 clases)?
+        CheckPerfectAttendance --> SilverBadge: 🥈 Asistencia Perfecta
+        
+        [*] --> CheckActiveComments: Comentarios Foro >= 3 ?
+        CheckActiveComments --> BronzeBadge: 🥉 Ninja Activo
+        
+        [*] --> CheckSolutionsCount: Soluciones Aprobadas >= 1 ?
+        CheckSolutionsCount --> MedalBadge: 🎖️ Solucionador
+    }
+    
+    CheckBadges --> RenderDashboard: Renderiza cabecera Ninja interactiva
+    RenderDashboard --> [*]
+```
+
 

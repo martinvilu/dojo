@@ -98,4 +98,41 @@ El seed de la base de datos pre-carga una entrega enviada para **Naruto Uzumaki*
    * Si estás a menos de 150 metros del docente, tu asistencia se guardará como **Presente** y el badge en tu cronograma cambiará en tiempo real.
    * Si las coordenadas GPS están fuera de rango o el código expiró, el sistema denegará el presente con un mensaje descriptivo.
 
+### 7. Alertas Tempranas de Desempeño y Planilla Sheets (Profesor)
+1. Inicia sesión como el **Profesor** (`teacher@jutsu.com`).
+2. Ingresa a la cátedra y haz clic en la subpestaña **👥 Alumnos y Alertas**.
+3. Visualiza la tabla con todos los alumnos inscritos (del seed).
+4. Verifica que para aquellos alumnos que tengan asistencia crítica (menor a 75% habiéndose dictado al menos 3 clases) se activa el badge de `⚠️ Asistencia Crítica`.
+5. Verifica que si el alumno tiene alguna tarea con fecha límite de entrega ya vencida y no la ha entregado, se activa el badge de `⚠️ Tareas Atrasadas`.
+6. En caso de tener alguna de estas alertas, comprueba que la condición del alumno cambie a `EN RIESGO`.
+7. Haz clic en **📊 Exportar Planilla (Sheets)**. Verifica que se genera y descarga un archivo `.csv` con la matriz completa del curso estructurada en columnas.
+
+### 8. Rango Ninja y Gamificación (Estudiante)
+1. Inicia sesión como el **Estudiante** (`student@jutsu.com`).
+2. Ingresa a la cátedra "Introducción al Ninjutsu".
+3. En la parte superior verás el panel de **Rango Ninja de Cursada**.
+4. Valida tu nivel y barra de XP. Para sumar puntos:
+   * Asiste a clases (presentes).
+   * Envía tareas y espera que sean calificadas.
+   * Comenta en los foros de consulta de cada clase.
+   * Haz que tus respuestas en el foro sean marcadas como "Mejor Respuesta" por el profesor.
+5. Comprueba que al ganar puntos se actualiza tu nivel en tiempo real y que se desbloquean las medallas respectivas (ej: `🥇 Maestro de Chakra` si tu promedio es >= 9).
+
+### 9. Encuestas Estudiantiles Anónimas (Estudiante ↔ Profesor)
+1. Inicia sesión como el **Estudiante** (`student@jutsu.com`), ve a **Cronograma** y busca una clase pasada.
+2. Presiona el botón **✍️ Feedback Anónimo**.
+3. Califica con estrellas, selecciona tu nivel de comprensión, escribe un comentario sugerido y presiona **Enviar Feedback**.
+4. Cierra la sesión e inicia como **Profesor** (`teacher@jutsu.com`).
+5. Ve a **Cronograma** y en la misma clase haz clic en **📊 Feedback Anónimo**.
+6. Valida que se muestra la valoración promedio, cantidad total de encuestas completadas, gráfico de distribución de comprensión y el listado de sugerencias de forma 100% anónima (sin revelar el nombre ni ID del alumno).
+
+### 10. Gestión Global de Roles en Ruta Directa (Admin)
+1. Inicia sesión como **Admin** (`admin@jutsu.com`).
+2. Ingresa directamente a la URL del navegador `/dashboard/users`.
+3. Valida que el panel carga de forma premium la lista completa de perfiles.
+4. Escribe un nombre en la barra de búsqueda y verifica que el filtrado funciona instantáneamente.
+5. Cambia el rol de un usuario con el select y presiona aceptar en la confirmación. Verifica que el rol se modifique en Firestore de forma automática.
+6. Intenta entrar a `/dashboard/users` con un usuario **Estudiante** o **Profesor** y verifica que el sistema bloquea el acceso de forma segura y lo redirige de vuelta al dashboard general.
+
+
 
