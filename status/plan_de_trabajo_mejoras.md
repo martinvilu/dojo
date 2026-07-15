@@ -38,6 +38,7 @@ gantt
 *   **Tarea 2.1: Foro / Q&A por Clase (Interacción Estudiante ↔ Profesor)**
     *   Implementación de foro en tiempo real (`onSnapshot`) a nivel de clase usando la subcolección `class_comments`.
     *   Soporte Markdown en la renderización de comentarios y consultas (con código fuente).
+    *   **Mejora de Q&A**: Integración de reacciones emoji (👍, 🎉, ❤️) y Modo "Stack Overflow" permitiendo a los docentes marcar respuestas como Solución destacada.
 *   **Tarea 2.2: Gestión de Asistencia / Presentismo QR**
     *   **Vista Docente**: Botón para generar código QR de asistencia en tiempo real con código alfanumérico de respaldo (6 caracteres) y geolocalización del docente. Incluye cronómetro de expiración de 5 minutos.
     *   **Vista Estudiante**: Botón interactivo "Firmar Presente QR" que solicita la ubicación GPS del dispositivo del estudiante y valida la proximidad con el profesor (límite de 150 metros) en el backend (Cloud Function).
@@ -56,3 +57,5 @@ gantt
         *   **Pull Requests**: número de PR, título del PR, estado de PR (open/closed/merged) con enlaces directos a GitHub.
         *   **Comentarios**: autor del comentario de código, contenido y fecha.
     *   **Calificación Inline**: Permite al docente calificar y escribir un feedback para el alumno directamente desde la misma interfaz interactiva de visualización de actividad.
+    *   **Bitácora de Auditoría (Audit Logs)**: Las calificaciones hechas de forma inline guardan logs inmutables con diffs de los cambios (nota y comentario previo vs nuevo) legibles en una línea de tiempo en el panel del docente.
+
