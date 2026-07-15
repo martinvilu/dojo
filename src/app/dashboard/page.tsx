@@ -144,6 +144,7 @@ export default function DashboardPage() {
   const [editingGrades, setEditingGrades] = useState<Record<string, string>>({});
   const [editingFeedbacks, setEditingFeedbacks] = useState<Record<string, string>>({});
   const [expandedAuditLogs, setExpandedAuditLogs] = useState<Record<string, any[]>>({});
+  const [courseSubmissions, setCourseSubmissions] = useState<any[]>([]);
   const [studentGithubActivity, setStudentGithubActivity] = useState<{ commits: any[], pullRequests: any[], comments: any[] } | null>(null);
   const [studentGithubActivityTab, setStudentGithubActivityTab] = useState<"commits" | "pulls" | "comments">("commits");
 
@@ -1096,6 +1097,31 @@ export default function DashboardPage() {
     }
   };
 
+  const loadAllCourseSubmissions = async () => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid || assignments.length === 0) return;
+    
+    try {
+      const allSubs: any[] = [];
+      await Promise.all(assignments.map(async (a) => {
+        const q = query(collection(db, "submissions"), where("assignment_id", "==", a.id));
+        const snap = await getDocs(q);
+        snap.forEach((doc) => {
+          allSubs.push({ id: doc.id, ...doc.data() });
+        });
+      }));
+      setCourseSubmissions(allSubs);
+    } catch (err) {
+      console.error("Error loading course submissions for alerts:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (courseSubTab === "students") {
+      loadAllCourseSubmissions();
+    }
+  }, [courseSubTab]);
+
   const handleDownloadGradesTemplate = async (assignmentId: string, title: string) => {
     const cid = selectedCourse.id || selectedCourse.course?.id;
     setApiLoading(true);
@@ -1511,6 +1537,14 @@ export default function DashboardPage() {
                     className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "settings" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                   >
                     Ajustes Cátedra
+                  </button>
+                )}
+                {(profile?.role === "admin" || profile?.role === "teacher") && (
+                  <button
+                    onClick={() => setCourseSubTab("students")}
+                    className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "students" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
+                  >
+                    👥 Alumnos y Alertas
                   </button>
                 )}
                 {(profile?.role === "admin" || profile?.role === "teacher") && (
@@ -2677,6 +2711,130 @@ export default function DashboardPage() {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* SUBTAB ALUMNOS Y ALERTAS */}
+            {courseSubTab === "students" && (
+              <div className="space-y-6">
+                <div className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Alumnos y Alertas de Desempeño</h3>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Seguimiento en tiempo real del presentismo y cumplimiento de tareas de los estudiantes inscriptos.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto bg-neutral-950/40 border border-neutral-850 rounded-2xl">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-neutral-800 bg-neutral-950/60 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                          <th className="p-4">Estudiante</th>
+                          <th className="p-4">Matrícula</th>
+                          <th className="p-4">Asistencia</th>
+                          <th className="p-4">Tareas Entregadas</th>
+                          <th className="p-4">Alertas Tempranas</th>
+                          <th className="p-4">Condición</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-850 text-xs text-gray-300">
+                        {roster.map((student) => {
+                          const studentAtts = courseAttendance.filter(c => c.records && c.records[student.id]);
+                          const recordedCount = studentAtts.length;
+                          const presentOrLate = studentAtts.filter(c => c.records[student.id] === "present" || c.records[student.id] === "late").length;
+                          const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
+                          const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
+
+                          const studentSubmissions = courseSubmissions.filter(s => s.student_id === student.id);
+                          const submittedCount = studentSubmissions.length;
+                          const totalAssignments = assignments.length;
+                          const hasMissingAssignments = assignments.some(a => {
+                            const hasSub = studentSubmissions.some(s => s.assignment_id === a.id);
+                            const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+                            return !hasSub && isPastDue;
+                          });
+
+                          const isAtRisk = hasCriticalAttendance || hasMissingAssignments;
+
+                          return (
+                            <tr key={student.id} className="hover:bg-neutral-900/30 transition-colors">
+                              <td className="p-4">
+                                <div className="font-semibold text-white">{student.full_name || "Estudiante"}</div>
+                                <div className="text-[10px] text-gray-500">{student.email}</div>
+                              </td>
+                              <td className="p-4 font-mono text-gray-400">{student.matricula_unrn || "No provista"}</td>
+                              <td className="p-4 space-y-1">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span>{presentOrLate} / {recordedCount} clases</span>
+                                  <span className={attendanceRate < 75 ? "text-red-400 font-bold" : "text-emerald-400 font-bold"}>
+                                    {attendanceRate.toFixed(0)}%
+                                  </span>
+                                </div>
+                                <div className="w-24 h-1.5 bg-neutral-900 border border-neutral-800 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${attendanceRate < 75 ? "bg-red-500" : "bg-emerald-500"}`}
+                                    style={{ width: `${Math.min(100, attendanceRate)}%` }}
+                                  ></div>
+                                </div>
+                              </td>
+                              <td className="p-4 space-y-1">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span>{submittedCount} / {totalAssignments} tareas</span>
+                                  <span className="text-gray-400 font-bold">
+                                    {totalAssignments > 0 ? ((submittedCount / totalAssignments) * 100).toFixed(0) : 100}%
+                                  </span>
+                                </div>
+                                <div className="w-24 h-1.5 bg-neutral-900 border border-neutral-800 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-blue-500"
+                                    style={{ width: `${totalAssignments > 0 ? (submittedCount / totalAssignments) * 100 : 100}%` }}
+                                  ></div>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {hasCriticalAttendance && (
+                                    <span className="px-2 py-0.5 rounded-md bg-red-950/80 border border-red-800/40 text-red-400 text-[9px] font-bold uppercase tracking-wider animate-pulse">
+                                      ⚠️ Asistencia Crítica
+                                    </span>
+                                  )}
+                                  {hasMissingAssignments && (
+                                    <span className="px-2 py-0.5 rounded-md bg-amber-955/80 border border-amber-800/40 text-amber-400 text-[9px] font-bold uppercase tracking-wider">
+                                      ⚠️ Tareas Atrasadas
+                                    </span>
+                                  )}
+                                  {!hasCriticalAttendance && !hasMissingAssignments && (
+                                    <span className="px-2 py-0.5 rounded-md bg-neutral-900 border border-neutral-800 text-gray-500 text-[9px] font-bold uppercase tracking-wider">
+                                      Sin Alertas
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <span className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                                  isAtRisk
+                                    ? "bg-red-950/40 border border-red-900/30 text-red-400"
+                                    : "bg-emerald-950/40 border border-emerald-900/30 text-emerald-400"
+                                }`}>
+                                  {isAtRisk ? "EN RIESGO" : "REGULAR"}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {roster.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="p-4 text-center text-gray-500 italic">
+                              No hay alumnos inscriptos en esta cátedra.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             )}
 
