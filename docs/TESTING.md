@@ -150,3 +150,12 @@ El seed de la base de datos pre-carga una entrega enviada para **Naruto Uzumaki*
 4. En la tarjeta "Cola de Corrección de Trabajos", busca un entregable pendiente y haz clic en **Evaluar**. Valida que te redirige a la pestaña de Tareas con el entregable abierto.
 5. Regresa al **Resumen**, ubica la tarjeta "Consultas Recientes en Clases" y haz clic en **Responder en Foro** de alguna consulta. Valida que te redirige al Cronograma y se despliega automáticamente la sección de comentarios de la clase respectiva.
 6. Valida que la tabla "Alumnos que requieren Atención" muestra correctamente solo los alumnos en riesgo y coincide con los mostrados en el panel "Alumnos y Alertas".
+
+### 13. Pruebas de Reorganización en Tablero Kanban (Docente)
+1. Inicia sesión como **Profesor** (`teacher@jutsu.com`).
+2. Ir a **Cronograma** y activar la vista **Tablero Kanban**.
+3. Toma una clase teórica y arrástrala hacia la columna **Prácticas**. Verifica que se mueve visualmente de columna.
+4. Toma otra clase y arrástrala hacia la columna **🌴 Feriados**.
+5. Presiona **Guardar Cronograma** en la parte superior derecha.
+6. Regresa a la vista **Lista** y valida que los cambios aplicados en el Kanban (cambio de tipo "Práctica" y estado "Feriado") se renderizan de forma coherente en el listado.
+

@@ -113,6 +113,16 @@ Este documento detalla los casos de uso principales de la plataforma, divididos 
     1. En la tarjeta "Cola de Corrección de Trabajos", buscar una entrega y presionar el botón "Evaluar". Verificar que el sistema cambia automáticamente al panel de tareas desplegando la entrega correspondiente.
     2. En la tarjeta "Consultas Recientes en Clases", buscar una pregunta de un foro y presionar "Responder en Foro". Verificar que la aplicación redirige al cronograma y expande el foro de consultas de la clase exacta.
 
+### 15. Reorganización Curricular mediante Tablero Kanban
+*   **Descripción:** El docente titular reorganiza e intercambia la tipología y estado de las clases usando arrastre interactivo.
+*   **Pasos para probar:**
+    1. Ir a la subpestaña **Cronograma**.
+    2. Hacer clic en el botón selector **Tablero Kanban** de la cabecera.
+    3. Validar que las clases se renderizan en 4 columnas separadas.
+    4. Arrastrar una clase de la columna "Teóricas" a la columna "Prácticas" o "Feriados" usando el mouse/táctil.
+    5. Validar que la tarjeta se desplaza visualmente y actualiza su tipo o estado especial de forma inmediata.
+    6. Presionar **Guardar Cronograma** para confirmar y persistir los cambios curriculares.
+
 ---
 
 ## 🎓 Casos de Uso del Estudiante
