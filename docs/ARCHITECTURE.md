@@ -146,6 +146,154 @@ Registro de acuse de recibo de avisos completado por los estudiantes.
 }
 ```
 
+### Colección: `class_comments`
+Subcolección dentro de cada clase para almacenar comentarios del foro Q&A con soporte de soluciones del docente y reacciones.
+```json
+{
+  "class_number": 1,
+  "author_id": "student123",
+  "author_name": "Naruto Uzumaki",
+  "content": "Consulta sobre Git...",
+  "created_at": "timestamp",
+  "reactions": { "👍": ["student123"], "🎉": [] },
+  "is_solution": true
+}
+```
+
+### Colección: `attendance`
+Registros de presentismo de los estudiantes.
+```json
+{
+  "course_id": "course123",
+  "student_id": "student123",
+  "class_number": 1,
+  "status": "present | absent | late",
+  "recorded_at": "timestamp"
+}
+```
+
+### Colección: `assignments`
+Entregas y tareas académicas publicadas.
+```json
+{
+  "course_id": "course123",
+  "title": "Práctica Git",
+  "description": "Consignas...",
+  "template_repo": "owner/repo",
+  "deadline": "timestamp",
+  "created_at": "timestamp"
+}
+```
+
+### Colección: `submissions`
+Entregas de tareas hechas por los alumnos.
+```json
+{
+  "assignment_id": "assign123",
+  "student_id": "student123",
+  "github_repo": "student/repo",
+  "status": "submitted | graded",
+  "grade": 9,
+  "feedback": "Buen trabajo...",
+  "submitted_at": "timestamp"
+}
+```
+
+### Colección: `notifications`
+Avisos, alertas de inactividad, respuestas de tutorías o advertencias de riesgo.
+```json
+{
+  "student_id": "student123",
+  "message": "Mensaje de alerta...",
+  "link": "/dashboard/courses/course123",
+  "read": false,
+  "created_at": "timestamp"
+}
+```
+
+### Colección: `study_groups`
+Grupos de estudio formados por estudiantes con preferencias horarias de cursada.
+```json
+{
+  "course_id": "course123",
+  "name": "Los Ninjas del Código",
+  "description": "Estudiamos algoritmos...",
+  "schedule_pref": "Mañana | Tarde | Noche",
+  "members": ["student123", "student456"],
+  "created_by": "student123",
+  "created_at": "timestamp"
+}
+```
+
+### Colección: `tutors`
+Perfiles postulados para tutorías entre pares en la cursada.
+```json
+{
+  "course_id": "course123",
+  "student_id": "student123",
+  "name": "Sasuke Uchiha",
+  "strong_topics": "Backend, TypeScript",
+  "availability": "Viernes 18:00",
+  "created_at": "timestamp"
+}
+```
+
+### Colección: `tutoring_sessions`
+Reservas e historial de mentorías programadas y confirmadas.
+```json
+{
+  "course_id": "course123",
+  "tutor_id": "student123",
+  "student_id": "student456",
+  "topic": "Dudas sobre Nest.js",
+  "date_time": "2026-07-20T18:00:00",
+  "status": "requested | confirmed | cancelled",
+  "meet_url": "https://meet.google.com/abc-defg-hij",
+  "created_at": "timestamp"
+}
+```
+
+### Colección: `schedule_versions`
+Snapshots de planificación de cronogramas.
+```json
+{
+  "course_id": "course123",
+  "name": "Versión Inicial",
+  "class_instances": [ { "topic": "Tema...", "date": "..." } ],
+  "created_by": "teacher123",
+  "created_at": "timestamp"
+}
+```
+
+### Colección: `backups`
+Puntos de restauración global del sistema creados por los administradores.
+```json
+{
+  "courses": [ { "id": "course123", "name": "..." } ],
+  "assignments": [ { "id": "assign123", "title": "..." } ],
+  "profiles": [ { "id": "user123", "full_name": "..." } ],
+  "created_by": "admin123",
+  "created_by_name": "Minato Namikaze",
+  "created_at": "timestamp"
+}
+```
+
+### Colección: `audit_logs`
+Logs históricos detallando modificaciones sobre calificaciones (calificaciones inline en GitHub o trabajos prácticos).
+```json
+{
+  "course_id": "course123",
+  "submission_id": "sub123",
+  "editor_id": "teacher123",
+  "editor_name": "Kakashi Hatake",
+  "diff": {
+    "old": { "grade": 7, "feedback": "bueno" },
+    "new": { "grade": 9, "feedback": "excelente refactor" }
+  },
+  "created_at": "timestamp"
+}
+```
+
 ---
 
 ## 4. Estructura de Directorios del Código Fuente
