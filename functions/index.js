@@ -1,11 +1,14 @@
-const functions = require("firebase-functions/v1");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { beforeUserCreated } = require("firebase-functions/v2/identity");
 const admin = require("firebase-admin");
 const crypto = require('crypto');
 admin.initializeApp();
 
 const db = admin.firestore();
 
-exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
+exports.onUserCreated = beforeUserCreated(async (event) => {
+    const user = event.data;
     let role = 'student';
     if (user.email === 'admin@jutsu.com' || user.email === 'admin@gaula.com' || user.email === 'admin@dojo.com') role = 'admin';
     if (user.email === 'teacher@jutsu.com' || user.email === 'teacher@gaula.com' || user.email === 'teacher@dojo.com') role = 'teacher';
@@ -19,7 +22,11 @@ exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
         account_status: role === 'student' ? 'pending' : 'approved',
         created_at: admin.firestore.FieldValue.serverTimestamp()
     };
-    await db.collection('profiles').doc(user.uid).set(profileData);
+    try {
+        await db.collection('profiles').doc(user.uid).set(profileData);
+    } catch (e) {
+        console.error(`Error creating profile for user ${user.uid}:`, e);
+    }
 });
 
 async function syncGradeToMoodle(previousData, grade, feedback) {
@@ -119,10 +126,10 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
     }
 }
 
-exports.api = functions.https.onCall(async (data, context) => {
-    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
-    const uid = context.auth.uid;
-    const { action, payload } = data;
+exports.api = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in.');
+    const uid = request.auth.uid;
+    const { action, payload } = request.data;
     
     // Helper to get user profile
     const getMyProfile = async () => (await db.collection('profiles').doc(uid).get()).data();
@@ -306,7 +313,7 @@ exports.api = functions.https.onCall(async (data, context) => {
         }
 
         if (action === 'saveGlobalSettings') {
-            if (role !== 'admin') throw new functions.https.HttpsError('permission-denied', 'Only admin can save global settings');
+            if (role !== 'admin') throw new HttpsError('permission-denied', 'Only admin can save global settings');
             await db.collection('globals').doc('settings').set(payload, { merge: true });
             return { success: true };
         }
@@ -1773,11 +1780,11 @@ exports.api = functions.https.onCall(async (data, context) => {
 
 
     } catch (e) {
-        throw new functions.https.HttpsError('internal', e.message);
+        throw new HttpsError('internal', e.message);
     }
 });
 
-exports.calendar = functions.https.onRequest(async (req, res) => {
+exports.calendar = onRequest(async (req, res) => {
     const courseId = req.query.id;
     if (!courseId) return res.status(400).send('Falta el ID del curso');
     
@@ -1886,7 +1893,7 @@ exports.calendar = functions.https.onRequest(async (req, res) => {
 });
 
 
-exports.webhook = functions.https.onRequest(async (req, res) => {
+exports.webhook = onRequest(async (req, res) => {
     // Para resolver CORS
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST');
@@ -1955,7 +1962,7 @@ exports.webhook = functions.https.onRequest(async (req, res) => {
 });
 
 
-exports.exportGradesCsv = functions.https.onRequest(async (req, res) => {
+exports.exportGradesCsv = onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     if (req.method === 'OPTIONS') return res.status(204).send('');
@@ -2016,7 +2023,7 @@ exports.exportGradesCsv = functions.https.onRequest(async (req, res) => {
     }
 });
 
-exports.importGrades = functions.https.onRequest(async (req, res) => {
+exports.importGrades = onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     if (req.method === 'OPTIONS') {
@@ -2115,7 +2122,7 @@ exports.importGrades = functions.https.onRequest(async (req, res) => {
     }
 });
 
-exports.sendDailySummaries = functions.pubsub.schedule('every day 20:00').timeZone('America/Argentina/Buenos_Aires').onRun(async (context) => {
+exports.sendDailySummaries = onSchedule({ schedule: 'every day 20:00', timeZone: 'America/Argentina/Buenos_Aires' }, async (event) => {
     try {
         const snap = await db.collection('notifications').where('is_daily_pending', '==', true).get();
         if (snap.empty) return null;

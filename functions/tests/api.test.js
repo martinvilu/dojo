@@ -62,17 +62,17 @@ describe('API Callable Function', () => {
   });
 
   it('throws unauthenticated error if not logged in', async () => {
-    const wrapped = test.wrap(myFunctions.api);
-    await expect(wrapped({ action: 'getProfile' }, { auth: null })).rejects.toThrow('Must be logged in.');
+    await expect(
+      myFunctions.api.run({ data: { action: 'getProfile' }, auth: null })
+    ).rejects.toThrow('Must be logged in.');
   });
 
   it('can create a new course', async () => {
     const db = admin.firestore();
-    const wrapped = test.wrap(myFunctions.api);
-    await wrapped(
-      { action: 'createCourse', payload: { name: 'Test Course' } },
-      { auth: { uid: 'user_uid' } }
-    );
+    await myFunctions.api.run({
+      data: { action: 'createCourse', payload: { name: 'Test Course' } },
+      auth: { uid: 'user_uid' }
+    });
     expect(db.collection().add).toHaveBeenCalled();
   });
 
