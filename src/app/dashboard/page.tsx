@@ -603,21 +603,37 @@ export default function DashboardPage() {
       hasProcessedParams.current = true;
       const outcomeUrl = params.get("lis_outcome_service_url");
       const resultId = params.get("lis_result_sourcedid");
+      const ltiLaunch = params.get("lti_launch") === "true";
+      
       if (outcomeUrl && resultId) {
         moodleLtiParams.current = { outcomeUrl, resultId };
       }
       if (tab) {
         setActiveTab(tab);
       }
+      
+      let updatedCourses = courses;
+      if (ltiLaunch && courseId) {
+        try {
+          await api("moodleAutoEnroll", { courseId });
+          const roleTab = profile.role === "admin" ? "getAdminCourses" : (profile.role === "teacher" ? "getTeacherCourses" : "getStudentCourses");
+          const updated = await api(roleTab);
+          setCourses(updated || []);
+          updatedCourses = updated || [];
+        } catch (e) {
+          console.error("LTI Auto-enroll error:", e);
+        }
+      }
+
       if (courseId) {
-        const found = courses.find((c: any) => (c.id === courseId || c.course?.id === courseId));
+        const found = updatedCourses.find((c: any) => (c.id === courseId || c.course?.id === courseId));
         if (found) {
           await viewCourseDetails(found.course || found);
         }
       }
       if (assignmentId) {
         let matchedCourse = null;
-        for (const c of courses) {
+        for (const c of updatedCourses) {
           const cid = c.id || c.course?.id;
           if (cid) {
             try {
