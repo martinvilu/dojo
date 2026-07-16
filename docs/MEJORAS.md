@@ -18,6 +18,8 @@ Este documento integra y consolida los listados de [MEJORAS.md](file:///home/mrt
     *   *Detalle de implementación*: Subpestaña "Grupos de Estudio" para la creación de grupos y emparejamiento inteligente de compañeros afines según su turno/disponibilidad horaria.
 *   [x] **Sincronización de Calendario**:
     *   *Detalle de implementación*: Configuración en los ajustes de la cátedra para registrar e importar URLs de calendarios externos y sincronizar cronogramas.
+*   [x] **Escáner de Asistencia QR Integrado**:
+    *   *Detalle de implementación*: Acceso directo y cámara web integrados en la interfaz del alumno para escanear y validar presentismo en 1 segundo con geolocalización.
 *   [ ] **Integración de Evaluaciones por Pares (Peer Review)**:
     *   *Propuesta*: Permitir a los estudiantes evaluar de forma anónima los trabajos de sus compañeros mediante rúbricas predefinidas, promoviendo el pensamiento crítico.
 *   [ ] **Notificaciones Externas**:
