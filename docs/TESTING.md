@@ -183,4 +183,17 @@ El seed de la base de datos pre-carga una entrega enviada para **Naruto Uzumaki*
 6. Validá que en el panel derecho se genera un diff interactivo detallando las diferencias (las clases modificadas aparecen en color naranja y muestran la diferencia de tema/tipo).
 7. Presioná **Restaurar** en la versión del listado. Validá que el cronograma en pantalla regresa a los temas originales de forma automática.
 
+### 17. Pruebas de Integración con Moodle (LTI Launch & Auto-Enrollment)
+1. Simulá un lanzamiento LTI enviando una petición POST con un `id_token` mockeado al endpoint `/api/lti/launch`, o navegá directamente a la ruta de redirección del Dashboard simulando los parámetros de consulta:
+   `/dashboard?lti_launch=true&courseId=course123&assignmentId=assign123&lis_outcome_service_url=https://moodle.example.com/mod/lti/service.php&lis_result_sourcedid=sourcedid123`
+2. Validá que se ejecuta automáticamente la matrícula del alumno en el curso correspondiente (`course123`) de forma transparente en segundo plano.
+3. Si es la primera vez que el alumno ingresa y no tiene su usuario de GitHub configurado en su perfil, validá que la aplicación interrumpe la navegación solicitándole que conecte su cuenta de GitHub mediante un popup no invasivo.
+4. Al completar la vinculación del perfil de GitHub, verificá que el alumno es enfocado automáticamente en la tarea (`assign123`) dentro del curso recién matriculado.
 
+### 18. Pruebas del Visualizador de Flujo Git (Commits Visualizer)
+1. Iniciá sesión como **Profesor** (`teacher@jutsu.com`) o **Estudiante** (`student@jutsu.com`).
+2. Dirigite a la sección de **Tareas** de un curso.
+3. Hacé clic en "Ver Entregas y Actividad" (Profesor) o "Actividad en GitHub" (Estudiante) de una tarea.
+4. Seleccioná la pestaña **🌳 Gráfico Git & Aporte**.
+5. Validá que en el panel "Distribución del Trabajo" se renderizan las barras estadísticas con los porcentajes de commits por alumno.
+6. En el panel "Flujo de Ramas y Commits", validá la visualización del gráfico de ramas (`main`, `dev`, `feature/alerts`) representadas verticalmente con círculos de colores interconectados, nombres y avatares de los autores de cada commit.

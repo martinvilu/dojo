@@ -399,4 +399,14 @@ describe('Exhaustive API Tests', () => {
     } catch (e) {}
   });
 
+  it('covers moodleAutoEnroll', async () => {
+    const wrapped = test.wrap(myFunctions.api);
+    try {
+        await wrapped(
+          { action: 'moodleAutoEnroll', payload: { courseId: 'c1' } },
+          { auth: { uid: 'user_uid' } }
+        );
+    } catch (e) {}
+  });
+
 });
