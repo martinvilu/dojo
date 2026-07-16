@@ -1,13 +1,12 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { beforeUserCreated } = require("firebase-functions/v2/identity");
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
 const db = admin.firestore();
 
-exports.onUserCreated = beforeUserCreated(async (event) => {
-    const user = event.data;
+exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
     let role = 'student';
     if (user.email === 'admin@jutsu.com' || user.email === 'admin@gaula.com' || user.email === 'admin@dojo.com') role = 'admin';
     if (user.email === 'teacher@jutsu.com' || user.email === 'teacher@gaula.com' || user.email === 'teacher@dojo.com') role = 'teacher';
