@@ -13,7 +13,15 @@ async function getCourseDetails(payload, context) {
     const cSnap = await db.collection('courses').doc(courseId).get();
     if (!cSnap.exists) throw new Error("Curso no encontrado");
     
-    return { id: cSnap.id, ...cSnap.data() };
+    const data = cSnap.data();
+    if (!data.sync_secret) {
+        data.sync_secret = Math.random().toString(36).substring(2, 10).toUpperCase();
+        await db.collection('courses').doc(courseId).update({
+            sync_secret: data.sync_secret
+        });
+    }
+    
+    return { id: cSnap.id, ...data };
 }
 
 async function enrollCourse(payload, context) {
@@ -65,6 +73,7 @@ async function createCourse(payload, context) {
         invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
         teacher_invite_code: 'T-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
         assistant_invite_code: 'A-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+        sync_secret: Math.random().toString(36).substring(2, 10).toUpperCase(),
         created_by: uid,
         created_at: admin.firestore.FieldValue.serverTimestamp()
     });
@@ -139,12 +148,17 @@ async function getCourseSettings(payload, context) {
         data.assistant_invite_code = 'A-' + Math.random().toString(36).substring(2, 8).toUpperCase();
         needsUpdate = true;
     }
+    if (!data.sync_secret) {
+        data.sync_secret = Math.random().toString(36).substring(2, 10).toUpperCase();
+        needsUpdate = true;
+    }
     
     if (needsUpdate) {
         await db.collection('courses').doc(courseId).update({
             invite_code: data.invite_code,
             teacher_invite_code: data.teacher_invite_code,
-            assistant_invite_code: data.assistant_invite_code
+            assistant_invite_code: data.assistant_invite_code,
+            sync_secret: data.sync_secret || null
         });
     }
     
