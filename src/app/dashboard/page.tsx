@@ -15,6 +15,7 @@ import GithubActivityPanel from "@/components/dashboard/github/GithubActivityPan
 import ToastNotification from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/components/dashboard/tutoring/TutoringPanel";
 import AttendanceManager from "@/components/dashboard/attendance/AttendanceManager";
+import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -230,7 +231,6 @@ export default function DashboardPage() {
   // Class Q&A Comments states
   const [courseComments, setCourseComments] = useState<any[]>([]);
   const [expandedComments, setExpandedComments] = useState<Record<number, boolean>>({});
-  const [newCommentTexts, setNewCommentTexts] = useState<Record<number, string>>({});
 
   // Attendance states
   const [courseAttendance, setCourseAttendance] = useState<any[]>([]);
@@ -401,76 +401,7 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [selectedCourse]);
 
-  const handleAddComment = async (classNumber: number) => {
-    const text = newCommentTexts[classNumber]?.trim();
-    if (!text) return;
-    
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid || !profile) return;
-    
-    try {
-      await addDoc(collection(db, "courses", cid, "class_comments"), {
-        classNumber,
-        user_id: profile.id,
-        user_name: profile.full_name || profile.email,
-        user_role: profile.role,
-        content: text,
-        created_at: serverTimestamp()
-      });
-      setNewCommentTexts(prev => ({ ...prev, [classNumber]: "" }));
-    } catch (err: any) {
-      alert("Error al enviar comentario: " + err.message);
-    }
-  };
 
-  const handleToggleReaction = async (commentId: string, reactionType: "thumbs_up" | "party" | "heart") => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid || !profile) return;
-    
-    const commentRef = doc(db, "courses", cid, "class_comments", commentId);
-    try {
-      const commentDoc = await getDoc(commentRef);
-      if (!commentDoc.exists()) return;
-      
-      const data = commentDoc.data();
-      const currentReactions = data.reactions?.[reactionType] || [];
-      const hasReacted = currentReactions.includes(profile.id);
-      
-      await updateDoc(commentRef, {
-        [`reactions.${reactionType}`]: hasReacted
-          ? arrayRemove(profile.id)
-          : arrayUnion(profile.id)
-      });
-    } catch (err: any) {
-      console.error("Error toggling reaction:", err);
-    }
-  };
-
-  const handleMarkBestAnswer = async (commentId: string, classNumber: number, currentStatus: boolean) => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid || !profile) return;
-    if (profile.role !== "teacher" && profile.role !== "admin") return;
-    
-    try {
-      const q = query(
-        collection(db, "courses", cid, "class_comments"),
-        where("classNumber", "==", classNumber),
-        where("is_best_answer", "==", true)
-      );
-      const snap = await getDocs(q);
-      const batch = writeBatch(db);
-      snap.docs.forEach((doc) => {
-        batch.update(doc.ref, { is_best_answer: false });
-      });
-      
-      const targetRef = doc(db, "courses", cid, "class_comments", commentId);
-      batch.update(targetRef, { is_best_answer: !currentStatus });
-      
-      await batch.commit();
-    } catch (err: any) {
-      alert("Error al marcar mejor respuesta: " + err.message);
-    }
-  };
 
   // Fetch profiles and manage auth status
   useEffect(() => {
@@ -3038,119 +2969,12 @@ export default function DashboardPage() {
 
                               {/* Collapsible Comments Section */}
                               {expandedComments[ci.classNumber || (idx + 1)] && (
-                                <div className="space-y-4">
-                                  {/* Comments List */}
-                                  <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                                    {courseComments
-                                      .filter((c) => c.classNumber === (ci.classNumber || (idx + 1)))
-                                      .map((comment: any) => (
-                                        <div
-                                          key={comment.id}
-                                          className={`p-3.5 rounded-xl space-y-2 border transition ${
-                                            comment.is_best_answer
-                                              ? "border-emerald-500 bg-emerald-950/15"
-                                              : "bg-neutral-950/60 border-neutral-850"
-                                          }`}
-                                        >
-                                          <div className="flex justify-between items-center text-[10px]">
-                                            <div className="flex items-center space-x-2">
-                                              <span className={`font-bold ${comment.user_role === 'teacher' ? 'text-amber-400' : 'text-blue-400'}`}>
-                                                {comment.user_name} ({comment.user_role === 'teacher' ? 'Profesor' : 'Estudiante'})
-                                              </span>
-                                              {comment.is_best_answer && (
-                                                <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-400 text-[8px] font-bold uppercase tracking-wider">
-                                                  ✔️ Solución
-                                                </span>
-                                              )}
-                                            </div>
-                                            <span className="text-gray-500">
-                                              {comment.created_at?.toDate
-                                                ? comment.created_at.toDate().toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-                                                : "Enviando..."}
-                                            </span>
-                                          </div>
-                                          <p className="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
-                                          
-                                          <div className="flex justify-between items-center pt-2 mt-1 border-t border-neutral-900/60 text-[10px]">
-                                            <div className="flex gap-2">
-                                              <button
-                                                type="button"
-                                                onClick={() => handleToggleReaction(comment.id, "thumbs_up")}
-                                                className={`px-2 py-0.5 rounded border flex items-center gap-1 transition-colors cursor-pointer text-[10px] ${
-                                                  (comment.reactions?.thumbs_up || []).includes(profile?.id)
-                                                    ? "bg-blue-950/40 border-blue-800 text-blue-400 font-bold"
-                                                    : "bg-neutral-900/40 border-neutral-850 text-gray-500 hover:text-gray-305"
-                                                }`}
-                                              >
-                                                👍 {(comment.reactions?.thumbs_up || []).length}
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => handleToggleReaction(comment.id, "party")}
-                                                className={`px-2 py-0.5 rounded border flex items-center gap-1 transition-colors cursor-pointer text-[10px] ${
-                                                  (comment.reactions?.party || []).includes(profile?.id)
-                                                    ? "bg-purple-950/40 border-purple-800 text-purple-400 font-bold"
-                                                    : "bg-neutral-900/40 border-neutral-850 text-gray-500 hover:text-gray-305"
-                                                }`}
-                                              >
-                                                🎉 {(comment.reactions?.party || []).length}
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => handleToggleReaction(comment.id, "heart")}
-                                                className={`px-2 py-0.5 rounded border flex items-center gap-1 transition-colors cursor-pointer text-[10px] ${
-                                                  (comment.reactions?.heart || []).includes(profile?.id)
-                                                    ? "bg-red-955/20 border-red-800 text-red-400 font-bold"
-                                                    : "bg-neutral-900/40 border-neutral-850 text-gray-500 hover:text-gray-305"
-                                                }`}
-                                              >
-                                                ❤️ {(comment.reactions?.heart || []).length}
-                                              </button>
-                                            </div>
-
-                                            <button
-                                              type="button"
-                                              onClick={() => handleMarkBestAnswer(comment.id, ci.classNumber || (idx + 1), comment.is_best_answer || false)}
-                                              className={`text-[9px] font-bold px-2 py-0.5 rounded border transition cursor-pointer ${
-                                                comment.is_best_answer
-                                                  ? "bg-emerald-950/50 border-emerald-800 text-emerald-400"
-                                                  : "bg-neutral-900/50 border-neutral-850 text-gray-400 hover:text-white"
-                                              }`}
-                                            >
-                                              {comment.is_best_answer ? "Desmarcar Solución" : "Marcar como Solución"}
-                                            </button>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    {courseComments.filter((c) => c.classNumber === (ci.classNumber || (idx + 1))).length === 0 && (
-                                      <p className="text-xs text-gray-500 italic">No hay consultas en esta clase todavía.</p>
-                                    )}
-                                  </div>
-
-                                  {/* Add Comment Input */}
-                                  <div className="flex gap-2">
-                                    <input
-                                      type="text"
-                                      value={newCommentTexts[ci.classNumber || (idx + 1)] || ""}
-                                      onChange={(e) => setNewCommentTexts(prev => ({ ...prev, [ci.classNumber || (idx + 1)]: e.target.value }))}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          handleAddComment(ci.classNumber || (idx + 1));
-                                        }
-                                      }}
-                                      placeholder="Escribe una respuesta o aviso..."
-                                      className="flex-1 bg-neutral-950 border border-neutral-850 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleAddComment(ci.classNumber || (idx + 1))}
-                                      className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer"
-                                    >
-                                      Responder
-                                    </button>
-                                  </div>
-                                </div>
+                                <ClassCommentsThread
+                                  classNumber={ci.classNumber || (idx + 1)}
+                                  courseId={selectedCourse.id || selectedCourse.course?.id}
+                                  courseComments={courseComments}
+                                  profile={profile}
+                                />
                               )}
                             </div>
                           </div>
@@ -3468,106 +3292,12 @@ export default function DashboardPage() {
 
                                   {/* Collapsible Comments Section */}
                                   {expandedComments[ci.classNumber || 0] && (
-                                    <div className="mt-4 border-t border-neutral-800/80 pt-4 space-y-4">
-                                      <h6 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Foro de Consultas</h6>
-                                      
-                                      {/* Comments List */}
-                                      <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                                        {courseComments
-                                          .filter((c) => c.classNumber === (ci.classNumber || 0))
-                                          .map((comment: any) => (
-                                            <div
-                                              key={comment.id}
-                                              className={`p-3.5 rounded-xl space-y-2 border transition ${
-                                                comment.is_best_answer
-                                                  ? "border-emerald-500 bg-emerald-950/15"
-                                                  : "bg-neutral-950/60 border-neutral-850"
-                                              }`}
-                                            >
-                                              <div className="flex justify-between items-center text-[10px]">
-                                                <div className="flex items-center space-x-2">
-                                                  <span className={`font-bold ${comment.user_role === 'teacher' ? 'text-amber-400' : 'text-blue-400'}`}>
-                                                    {comment.user_name} ({comment.user_role === 'teacher' ? 'Profesor' : 'Estudiante'})
-                                                  </span>
-                                                  {comment.is_best_answer && (
-                                                    <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-400 text-[8px] font-bold uppercase tracking-wider">
-                                                      ✔️ Solución
-                                                    </span>
-                                                  )}
-                                                </div>
-                                                <span className="text-gray-500">
-                                                  {comment.created_at?.toDate
-                                                    ? comment.created_at.toDate().toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-                                                    : "Enviando..."}
-                                                </span>
-                                              </div>
-                                              <p className="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
-                                              
-                                              <div className="flex pt-2 mt-1 border-t border-neutral-900/60 text-[10px] gap-2">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleToggleReaction(comment.id, "thumbs_up")}
-                                                  className={`px-2 py-0.5 rounded border flex items-center gap-1 transition-colors cursor-pointer text-[10px] ${
-                                                    (comment.reactions?.thumbs_up || []).includes(profile?.id)
-                                                      ? "bg-blue-950/40 border-blue-800 text-blue-400 font-bold"
-                                                      : "bg-neutral-900/40 border-neutral-850 text-gray-500 hover:text-gray-305"
-                                                  }`}
-                                                >
-                                                  👍 {(comment.reactions?.thumbs_up || []).length}
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleToggleReaction(comment.id, "party")}
-                                                  className={`px-2 py-0.5 rounded border flex items-center gap-1 transition-colors cursor-pointer text-[10px] ${
-                                                    (comment.reactions?.party || []).includes(profile?.id)
-                                                      ? "bg-purple-950/40 border-purple-800 text-purple-400 font-bold"
-                                                      : "bg-neutral-900/40 border-neutral-850 text-gray-500 hover:text-gray-305"
-                                                  }`}
-                                                >
-                                                  🎉 {(comment.reactions?.party || []).length}
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleToggleReaction(comment.id, "heart")}
-                                                  className={`px-2 py-0.5 rounded border flex items-center gap-1 transition-colors cursor-pointer text-[10px] ${
-                                                    (comment.reactions?.heart || []).includes(profile?.id)
-                                                      ? "bg-red-955/20 border-red-800 text-red-400 font-bold"
-                                                      : "bg-neutral-900/40 border-neutral-850 text-gray-500 hover:text-gray-305"
-                                                  }`}
-                                                >
-                                                  ❤️ {(comment.reactions?.heart || []).length}
-                                                </button>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        {courseComments.filter((c) => c.classNumber === (ci.classNumber || 0)).length === 0 && (
-                                          <p className="text-xs text-gray-500 italic">No hay consultas en esta clase todavía.</p>
-                                        )}
-                                      </div>
-
-                                      {/* Add Comment Input */}
-                                      <div className="flex gap-2">
-                                        <input
-                                          type="text"
-                                          value={newCommentTexts[ci.classNumber || 0] || ""}
-                                          onChange={(e) => setNewCommentTexts(prev => ({ ...prev, [ci.classNumber || 0]: e.target.value }))}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                              e.preventDefault();
-                                              handleAddComment(ci.classNumber || 0);
-                                            }
-                                          }}
-                                          placeholder="Escribe tu consulta o duda..."
-                                          className="flex-1 bg-neutral-950 border border-neutral-850 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
-                                        />
-                                        <button
-                                          onClick={() => handleAddComment(ci.classNumber || 0)}
-                                          className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer"
-                                        >
-                                          Enviar
-                                        </button>
-                                      </div>
-                                    </div>
+                                    <ClassCommentsThread
+                                      classNumber={ci.classNumber || 0}
+                                      courseId={selectedCourse.id || selectedCourse.course?.id}
+                                      courseComments={courseComments}
+                                      profile={profile}
+                                    />
                                   )}
                                 </div>
                               );
