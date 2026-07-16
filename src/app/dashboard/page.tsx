@@ -28,6 +28,7 @@ interface UserProfile {
   account_status: "pending" | "approved";
   matricula_unrn?: string;
   cohorte?: string;
+  github_user?: string;
 }
 
 interface ClassInstance {
@@ -60,6 +61,35 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const hasProcessedParams = useRef(false);
   const moodleLtiParams = useRef<{ outcomeUrl?: string, resultId?: string }>({});
+
+  // Global toast override for non-intrusive alerts
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const originalAlert = window.alert;
+    window.alert = (message: string) => {
+      let type: "success" | "error" | "info" = "info";
+      const lowercaseMsg = String(message || "").toLowerCase();
+      if (lowercaseMsg.includes("error") || lowercaseMsg.includes("falló") || lowercaseMsg.includes("inválido") || lowercaseMsg.includes("atención") || lowercaseMsg.includes("obligatorio")) {
+        type = "error";
+      } else if (lowercaseMsg.includes("éxito") || lowercaseMsg.includes("exitosamente") || lowercaseMsg.includes("correctamente") || lowercaseMsg.includes("guardada") || lowercaseMsg.includes("guardado") || lowercaseMsg.includes("creado")) {
+        type = "success";
+      }
+      setToast({ message: String(message), type });
+    };
+    return () => {
+      window.alert = originalAlert;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // Pending Matricula inputs
   const [matriculaInput, setMatriculaInput] = useState("");
@@ -620,6 +650,21 @@ export default function DashboardPage() {
           const updated = await api(roleTab);
           setCourses(updated || []);
           updatedCourses = updated || [];
+
+          if (profile.role === "student" && !profile.github_user) {
+            const githubUser = prompt(
+              "¡Hola! Has ingresado a Ninja Dojo desde Moodle por primera vez.\n" +
+              "Para poder crear y sincronizar tu repositorio de tareas, por favor ingresa tu usuario de GitHub:"
+            );
+            if (githubUser && githubUser.trim()) {
+              const cleanedUser = githubUser.trim();
+              await api("updateProfile", { github_user: cleanedUser });
+              setProfile((prev: any) => prev ? { ...prev, github_user: cleanedUser } : null);
+              alert("¡Tu usuario de GitHub ha sido vinculado correctamente!");
+            } else {
+              alert("⚠️ Atención: Debes vincular tu usuario de GitHub desde la pestaña Mi Perfil antes de poder entregar tareas.");
+            }
+          }
         } catch (e) {
           console.error("LTI Auto-enroll error:", e);
         }
@@ -6266,6 +6311,22 @@ export default function DashboardPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+      
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center space-x-3 bg-neutral-900 border border-neutral-800 px-4 py-3.5 rounded-xl shadow-2xl max-w-sm">
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+            toast.type === "success" ? "bg-emerald-500 shadow-md shadow-emerald-500/50" : toast.type === "error" ? "bg-red-500 shadow-md shadow-red-500/50" : "bg-blue-500 shadow-md shadow-blue-500/50"
+          }`}></span>
+          <p className="text-xs text-gray-200 font-medium leading-normal">{toast.message}</p>
+          <button 
+            type="button"
+            onClick={() => setToast(null)} 
+            className="text-gray-500 hover:text-white text-xs font-bold pl-2 cursor-pointer transition-colors"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>
