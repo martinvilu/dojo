@@ -46,7 +46,7 @@ Este documento integra y consolida los listados de [MEJORAS.md](file:///home/mrt
 ### 2. Experiencia Docente
 
 *   [x] **Registro de Asistencia mediante QR Dinámico**:
-    *   *Detalle de implementación*: Generación de token alfanumérico temporal (expiración de 5 minutos) con geolocalización de docente y validación de proximidad GPS (< 150m) en el backend (Cloud Function).
+    *   *Detalle de implementación*: Generación de token alfanumérico temporal que se regenera automáticamente cada 30 segundos en el frontend con geolocalización de docente. El backend (Cloud Function) valida proximidad GPS (< 150m) y expira estrictamente los códigos de más de 45 segundos para prevenir reutilización fraudulenta.
 *   [x] **Integración Bidireccional con Hojas de Cálculo (Sheets/Excel)**:
     *   *Detalle de implementación*: Exportación en 1 clic de la matriz completa de notas, asistencia, alertas y regularidad académica a CSV nativo compatible con Google Sheets o Excel, además de importación directa vía CSV de calificaciones.
 *   [x] **Alertas Tempranas de Desempeño**:
