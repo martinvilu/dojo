@@ -55,14 +55,17 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 - [x] **Moodle Calendar Sync**:
   - Exposición de la URL de exportación de cronograma (.ics) en la UI de Ajustes de Cátedra para que Moodle se suscriba automáticamente.
 
+- [x] **M3: Aislación de Módulos (TutoringPanel)**:
+  - Extracción del módulo de tutorías académicas entre pares, reservas de mentorías y sus modales en `TutoringPanel.tsx`.
+
 ---
 
 ## 2. Tareas por Completar (Pendientes / Futuras)
 
 ### 📦 Fase de Modularización (Basado en el Reporte de Arquitectura)
-- [ ] **M3: Aislación de Módulos de Cátedras**:
+- [ ] **M4: Aislación de Módulos de Asistencia y Consultas**:
   - Mover `AttendanceManager.tsx` (asistencia y QR) e `Hilos de Consultas` a componentes independientes.
-- [ ] **M4: Desmonolitizar Functions Backend**:
+- [ ] **M5: Desmonolitizar Functions Backend**:
   - Dividir `functions/index.js` en submódulos de acciones independientes cargadas de forma dinámica.
 
 ### 🛡️ Funcionalidades Futuras
