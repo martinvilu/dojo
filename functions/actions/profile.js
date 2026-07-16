@@ -2,8 +2,17 @@ const admin = require("firebase-admin");
 
 async function getProfile(payload, context) {
     const { uid, db } = context;
-    const pSnap = await db.collection('profiles').doc(uid).get();
-    return pSnap.exists ? pSnap.data() : null;
+    const ref = db.collection('profiles').doc(uid);
+    const pSnap = await ref.get();
+    if (!pSnap.exists) return null;
+    
+    await ref.update({
+        last_login: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    const data = pSnap.data();
+    data.last_login = admin.firestore.Timestamp.now();
+    return data;
 }
 
 async function updateProfile(payload, context) {
