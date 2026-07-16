@@ -206,6 +206,8 @@ export default function DashboardPage() {
   // Commission & Co-docencia states
   const [commissionFilter, setCommissionFilter] = useState<string>("Todas");
   const [teacherCommissionsMapping, setTeacherCommissionsMapping] = useState<Record<string, string>>({});
+  const [teacherCommissions, setTeacherCommissions] = useState<string[]>([]);
+  const [newCommissionInput, setNewCommissionInput] = useState<string>("");
 
   // Teacher Central Dashboard states
   const [overviewSubmissionsList, setOverviewSubmissionsList] = useState<any[]>([]);
@@ -280,6 +282,7 @@ export default function DashboardPage() {
 
   // Tutoring Sessions states
   const [tutors, setTutors] = useState<any[]>([]);
+  const courseCommissions = (selectedCourse?.commissions || selectedCourse?.course?.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]) as string[];
   const [loadingTutors, setLoadingTutors] = useState(false);
   const [tutoringSessions, setTutoringSessions] = useState<any[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
@@ -588,6 +591,7 @@ export default function DashboardPage() {
             setTeacherExternalCalendars((data.external_calendars || []).join(", "));
             setTeacherSchedules(data.schedules || []);
             setTeacherCommissionsMapping(data.commissions_mapping || {});
+            setTeacherCommissions(data.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]);
             
             // Get other courses for cloning
             const otherCoursesRes = await api("getTeacherCourses");
@@ -962,19 +966,50 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       const durationNum = parseInt(teacherDuration);
+      const updatedData = {
+        cover_text: teacherCoverText,
+        duration_weeks: isNaN(durationNum) ? null : durationNum,
+        start_date: teacherStartDate,
+        external_calendars: teacherExternalCalendars.split(",").map(c => c.trim()).filter(Boolean),
+        github_token: teacherGithubToken,
+        moodle_enabled: teacherMoodleEnabled,
+        schedules: teacherSchedules,
+        commissions: teacherCommissions,
+        commissions_mapping: teacherCommissionsMapping
+      };
+
       await api("updateCourseSettings", {
         courseId: cid,
-        data: {
-          cover_text: teacherCoverText,
-          duration_weeks: isNaN(durationNum) ? null : durationNum,
-          start_date: teacherStartDate,
-          external_calendars: teacherExternalCalendars.split(",").map(c => c.trim()).filter(Boolean),
-          github_token: teacherGithubToken,
-          moodle_enabled: teacherMoodleEnabled,
-          schedules: teacherSchedules,
-          commissions_mapping: teacherCommissionsMapping
-        }
+        data: updatedData
       });
+
+      setSelectedCourse((prev: any) => {
+        if (!prev) return null;
+        if (prev.course) {
+          return {
+            ...prev,
+            course: {
+              ...prev.course,
+              ...updatedData
+            }
+          };
+        }
+        return {
+          ...prev,
+          ...updatedData
+        };
+      });
+
+      setCourses(prev => prev.map(c => {
+        if (c.id === cid) {
+          return {
+            ...c,
+            ...updatedData
+          };
+        }
+        return c;
+      }));
+
       alert("Configuración de cátedra guardada.");
     } catch (err: any) {
       alert("Error al guardar configuración: " + err.message);
@@ -1001,6 +1036,7 @@ export default function DashboardPage() {
       setTeacherExternalCalendars((data.external_calendars || []).join(", "));
       setTeacherSchedules(data.schedules || []);
       setTeacherCommissionsMapping(data.commissions_mapping || {});
+      setTeacherCommissions(data.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]);
       alert("Configuración clonada exitosamente.");
     } catch (err: any) {
       alert("Error al clonar configuración: " + err.message);
@@ -2963,6 +2999,7 @@ export default function DashboardPage() {
                                   courseId={selectedCourse.id || selectedCourse.course?.id}
                                   roster={roster}
                                   courseAttendance={courseAttendance}
+                                  commissions={courseCommissions}
                                   onClose={() => setActiveAttendanceClass(null)}
                                 />
                               )}
@@ -3486,10 +3523,9 @@ export default function DashboardPage() {
                                      className="bg-transparent text-[10px] text-gray-300 focus:outline-none cursor-pointer font-semibold font-sans"
                                    >
                                      <option value="Todas">Todas</option>
-                                     <option value="Comisión A">Comisión A</option>
-                                     <option value="Comisión B">Comisión B</option>
-                                     <option value="Comisión C">Comisión C</option>
-                                     <option value="Comisión D">Comisión D</option>
+                                     {courseCommissions.map(comm => (
+                                       <option key={comm} value={comm}>{comm}</option>
+                                     ))}
                                      <option value="Sin Comisión">Sin Comisión</option>
                                    </select>
                                  </div>
@@ -3780,10 +3816,9 @@ export default function DashboardPage() {
                           className="bg-transparent text-xs text-gray-300 focus:outline-none cursor-pointer font-semibold"
                         >
                           <option value="Todas">Todas</option>
-                          <option value="Comisión A">Comisión A</option>
-                          <option value="Comisión B">Comisión B</option>
-                          <option value="Comisión C">Comisión C</option>
-                          <option value="Comisión D">Comisión D</option>
+                          {courseCommissions.map(comm => (
+                            <option key={comm} value={comm}>{comm}</option>
+                          ))}
                           <option value="Sin Comisión">Sin Comisión</option>
                         </select>
                       </div>
@@ -3863,10 +3898,9 @@ export default function DashboardPage() {
                                         className="bg-neutral-950 border border-neutral-800 text-[9px] rounded px-1.5 py-0.5 text-gray-400 focus:outline-none focus:border-blue-500 cursor-pointer font-semibold font-sans"
                                       >
                                         <option value="">Sin Comisión</option>
-                                        <option value="Comisión A">Comisión A</option>
-                                        <option value="Comisión B">Comisión B</option>
-                                        <option value="Comisión C">Comisión C</option>
-                                        <option value="Comisión D">Comisión D</option>
+                                        {courseCommissions.map(comm => (
+                                          <option key={comm} value={comm}>{comm}</option>
+                                        ))}
                                       </select>
                                     ) : (
                                       student.commissions?.[selectedCourse.id || selectedCourse.course?.id] && (
@@ -4229,10 +4263,55 @@ export default function DashboardPage() {
                       Asigna un docente responsable a cada comisión. Esto ayuda a coordinar las tareas, asistencia y consultas específicas.
                     </p>
 
+                    <div className="flex gap-2 max-w-md">
+                      <input
+                        type="text"
+                        placeholder="Ej. Comisión E o Comisión 1"
+                        value={newCommissionInput}
+                        onChange={(e) => setNewCommissionInput(e.target.value)}
+                        className="flex-1 bg-neutral-950 border border-neutral-850 rounded-xl px-3 py-2 text-xs focus:outline-none text-white font-sans"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const name = newCommissionInput.trim();
+                          if (!name) return;
+                          if (teacherCommissions.includes(name)) {
+                            alert("Esa comisión ya existe.");
+                            return;
+                          }
+                          setTeacherCommissions(prev => [...prev, name]);
+                          setNewCommissionInput("");
+                        }}
+                        className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold transition font-sans cursor-pointer"
+                      >
+                        Agregar Comisión
+                      </button>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {["Comisión A", "Comisión B", "Comisión C", "Comisión D"].map((comm) => (
-                        <div key={comm} className="flex justify-between items-center bg-neutral-950/60 border border-neutral-850 p-3 rounded-xl">
-                          <span className="text-xs font-bold text-white font-sans">{comm}</span>
+                      {teacherCommissions.map((comm) => (
+                        <div key={comm} className="flex justify-between items-center bg-neutral-950/60 border border-neutral-850 p-3 rounded-xl gap-2">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`¿Estás seguro de eliminar la ${comm}?`)) {
+                                  setTeacherCommissions(prev => prev.filter(c => c !== comm));
+                                  setTeacherCommissionsMapping(prev => {
+                                    const copy = { ...prev };
+                                    delete copy[comm];
+                                    return copy;
+                                  });
+                                }
+                              }}
+                              className="text-red-500 hover:text-red-400 p-1 text-xs cursor-pointer"
+                              title="Eliminar comisión"
+                            >
+                              🗑️
+                            </button>
+                            <span className="text-xs font-bold text-white font-sans">{comm}</span>
+                          </div>
                           <select
                             value={teacherCommissionsMapping[comm] || ""}
                             onChange={(e) => {

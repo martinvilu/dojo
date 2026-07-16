@@ -21,6 +21,7 @@ interface AttendanceManagerProps {
   courseId: string;
   roster: Student[];
   courseAttendance: AttendanceRecord[];
+  commissions?: string[];
   onClose: () => void;
 }
 
@@ -29,6 +30,7 @@ export default function AttendanceManager({
   courseId,
   roster,
   courseAttendance,
+  commissions = ["Comisión A", "Comisión B", "Comisión C", "Comisión D"],
   onClose,
 }: AttendanceManagerProps) {
   // Local states
@@ -147,10 +149,9 @@ export default function AttendanceManager({
             className="bg-neutral-900 border border-neutral-800 text-[10px] rounded px-2 py-1 text-gray-300 focus:outline-none cursor-pointer font-semibold"
           >
             <option value="Todas">Todas las Comisiones</option>
-            <option value="Comisión A">Comisión A</option>
-            <option value="Comisión B">Comisión B</option>
-            <option value="Comisión C">Comisión C</option>
-            <option value="Comisión D">Comisión D</option>
+            {commissions.map((comm) => (
+              <option key={comm} value={comm}>{comm}</option>
+            ))}
             <option value="Sin Comisión">Sin Comisión</option>
           </select>
           <button

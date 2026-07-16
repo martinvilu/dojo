@@ -197,7 +197,9 @@ async function cloneCourseExtraData(payload, context) {
             class_instances: data.class_instances || [],
             schedules: data.schedules || [],
             start_date: data.start_date || '',
-            duration_weeks: data.duration_weeks || 16
+            duration_weeks: data.duration_weeks || 16,
+            commissions: data.commissions || [],
+            commissions_mapping: data.commissions_mapping || {}
         });
     }
     
