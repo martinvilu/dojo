@@ -28,6 +28,26 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
         return;
     }
 
+    // Verify if Moodle integration is enabled for this course
+    if (previousData.assignment_id) {
+        try {
+            const assignmentDoc = await db.collection('assignments').doc(previousData.assignment_id).get();
+            if (assignmentDoc.exists) {
+                const assignment = assignmentDoc.data();
+                const courseDoc = await db.collection('courses').doc(assignment.course_id).get();
+                if (courseDoc.exists) {
+                    const course = courseDoc.data();
+                    if (!course.moodle_enabled) {
+                        console.log("Moodle integration is disabled for this course:", course.name);
+                        return;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Error verifying moodle_enabled setting in course:", e);
+        }
+    }
+
     const outcomeUrl = previousData.moodle_lis_outcome_service_url;
     const sourcedId = previousData.moodle_lis_result_sourcedid;
 

@@ -143,6 +143,7 @@ export default function DashboardPage() {
   const [teacherDuration, setTeacherDuration] = useState("");
   const [teacherCoverText, setTeacherCoverText] = useState("");
   const [teacherGithubToken, setTeacherGithubToken] = useState("");
+  const [teacherMoodleEnabled, setTeacherMoodleEnabled] = useState(false);
   const [teacherExternalCalendars, setTeacherExternalCalendars] = useState("");
   const [teacherSchedules, setTeacherSchedules] = useState<ScheduleItem[]>([]);
   const [teacherClasses, setTeacherClasses] = useState<ClassInstance[]>([]);
@@ -722,6 +723,7 @@ export default function DashboardPage() {
             setTeacherDuration(data.duration_weeks?.toString() || "");
             setTeacherCoverText(data.cover_text || "");
             setTeacherGithubToken(data.github_token || "");
+            setTeacherMoodleEnabled(data.moodle_enabled || false);
             setTeacherExternalCalendars((data.external_calendars || []).join(", "));
             setTeacherSchedules(data.schedules || []);
             setTeacherCommissionsMapping(data.commissions_mapping || {});
@@ -1101,6 +1103,7 @@ export default function DashboardPage() {
           start_date: teacherStartDate,
           external_calendars: teacherExternalCalendars.split(",").map(c => c.trim()).filter(Boolean),
           github_token: teacherGithubToken,
+          moodle_enabled: teacherMoodleEnabled,
           schedules: teacherSchedules,
           commissions_mapping: teacherCommissionsMapping
         }
@@ -1127,6 +1130,7 @@ export default function DashboardPage() {
       setTeacherDuration(data.duration_weeks?.toString() || "");
       setTeacherCoverText(data.cover_text || "");
       setTeacherGithubToken(data.github_token || "");
+      setTeacherMoodleEnabled(data.moodle_enabled || false);
       setTeacherExternalCalendars((data.external_calendars || []).join(", "));
       setTeacherSchedules(data.schedules || []);
       setTeacherCommissionsMapping(data.commissions_mapping || {});
@@ -5056,6 +5060,19 @@ export default function DashboardPage() {
                       placeholder="ghp_..."
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white"
                     />
+                  </div>
+
+                  <div className="flex items-center space-x-3 bg-neutral-900/50 p-4 rounded-xl border border-neutral-850">
+                    <input
+                      type="checkbox"
+                      id="moodleEnabledCheckbox"
+                      checked={teacherMoodleEnabled}
+                      onChange={(e) => setTeacherMoodleEnabled(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 bg-neutral-950 border-neutral-800 cursor-pointer"
+                    />
+                    <label htmlFor="moodleEnabledCheckbox" className="text-xs font-semibold text-gray-300 cursor-pointer select-none">
+                      🔌 Integración con Moodle Habilitada (LTI 1.3 & AGS Grade Sync)
+                    </label>
                   </div>
 
                   <div>
