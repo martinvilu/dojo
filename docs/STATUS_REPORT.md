@@ -1,0 +1,67 @@
+# Estado de Tareas - Ninja Dojo
+
+Este documento detalla explícitamente las tareas completadas, en curso y pendientes en el proyecto, sirviendo como registro histórico y planificador de actividades.
+
+---
+
+## 1. Tareas Completadas (Entregadas en `main`)
+
+### 🌳 Git & VCS
+- [x] **Visualizador del Flujo de Trabajo Git (Git Commits Visualizer)**:
+  - Renderizado de gráfico de ramas (`main`, `dev`, `feature/alerts`) mediante nodos interconectados verticalmente en la línea de tiempo.
+  - Gráfico estadístico de barras (distribución de trabajo) que calcula y muestra el aporte porcentual de commits de cada participante.
+  - Integrado tanto en la vista del estudiante como en la revisión del docente.
+- [x] **Control de Versiones de Cronograma (VCS)**:
+  - Historial y guardado manual/automático de versiones del cronograma de clases.
+  - Visor interactivo de diferencias (diff) y restauración rápida en caliente.
+
+### 🔌 Integración con Moodle (4.2+)
+- [x] **Arquitectura de URIs REST Dedicadas**:
+  - Rutas dinámicas unificadas: `/dashboard/activities/[id]`, `/dashboard/courses/[id]` y `/dashboard/users/[id]`.
+- [x] **Manejador de Lanzamiento LTI 1.3**:
+  - Endpoint `/api/lti/launch` (POST) para procesar tokens firmados de Moodle, extraer datos de usuario y redireccionar al recurso correspondiente.
+- [x] **Exposición de Keyset JWKS**:
+  - Endpoint `/api/lti/jwks` (GET) para firma de tokens y seguridad de la herramienta externa.
+- [x] **Matrícula / Auto-Inscripción del Estudiante**:
+  - Acción `moodleAutoEnroll` para inscribir al usuario LTI directamente en la cátedra en su primer acceso.
+- [x] **Vinculación Proactiva de GitHub**:
+  - Modal/interrogante interactivo para enlazar el usuario de GitHub si el estudiante auto-matriculado no posee uno asociado en su perfil.
+- [x] **Sincronización Automática de Calificaciones (AGS)**:
+  - Envío automático de notas normalizadas (escala decimal) al Gradebook de Moodle tras calificar desde Ninja Dojo.
+  - Logs históricos guardados en `audit_logs` con la respuesta del servidor de Moodle.
+- [x] **Integración Completamente Opcional**:
+  - Switch de activación "Integración con Moodle" en Ajustes de Cátedra de Profesores. Validación en backend para omitir la sincronización si no está habilitada.
+
+### 🎨 Experiencia de Usuario & UI/UX
+- [x] **Sistema Toast de Notificaciones Flotantes**:
+  - Interceptor global de `window.alert` en el Dashboard para capturar popups nativos y transformarlos en toasts flotantes dinámicos, no intrusivos y autocerrables.
+- [x] **Temas Claro y Oscuro**:
+  - Control de tema mediante variables CSS y persistencia en `localStorage`.
+
+### 🚀 Infraestructura, CI/CD & Calidad
+- [x] **Deploy Resiliente en GitHub Actions**:
+  - Ajuste en `.github/workflows/firebase-deploy.yml` para soportar fallbacks de secrets (`FIREBASE_SERVICE_ACCOUNT` y `FIREBASE_TOKEN`).
+- [x] **Corrección del Error de Prerenderizado**:
+  - Clave de fallback `AIzaSyFakeKeyForBuildPrerendering_NoCrash` en `clientApp.ts` para evitar fallos de inicialización de Firebase durante `next build`.
+- [x] **Cobertura de Pruebas**:
+  - Pruebas unitarias de Jest creadas para `moodleAutoEnroll`. 41/41 pruebas pasando exitosamente en la suite general del backend.
+
+---
+
+## 2. Tareas por Completar (Pendientes / Futuras)
+
+### 📦 Fase de Modularización (Basado en el Reporte de Arquitectura)
+- [ ] **M1: Refactorizar Componentes de GitHub en Cliente**:
+  - Extraer `CommitVisualizer.tsx` y `GithubActivityPanel.tsx` de `page.tsx` hacia `/src/components/dashboard/github/`.
+- [ ] **M2: Aislación de Módulos de Cátedras**:
+  - Mover `AttendanceManager.tsx` (asistencia y QR) e `Hilos de Consultas` a componentes independientes.
+- [ ] **M3: Desmonolitizar Functions Backend**:
+  - Dividir `functions/index.js` en submódulos de acciones independientes cargadas de forma dinámica.
+
+### 🛡️ Funcionalidades Futuras
+- [ ] **Detección de Plagio y Copias**:
+  - Analizador de código estático por similitud estructural de AST para alertar posibles copias entre repositorios de alumnos.
+- [ ] **Autograding Integrado**:
+  - Vinculación con GitHub Actions para correr pruebas unitarias y sincronizar el porcentaje de aprobación de tests directo a la nota del alumno.
+- [ ] **Moodle Calendar Sync**:
+  - Sincronización del cronograma de Ninja Dojo con el calendario de Moodle mediante la API de servicios web de Moodle.
