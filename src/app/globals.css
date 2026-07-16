@@ -38,6 +38,17 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
+
+  --animate-scanner-line: scanner-line 2.5s ease-in-out infinite;
+
+  @keyframes scanner-line {
+    0%, 100% {
+      top: 4%;
+    }
+    50% {
+      top: 96%;
+    }
+  }
 }
 
 body {

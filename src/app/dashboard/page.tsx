@@ -16,6 +16,7 @@ import ToastNotification from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/components/dashboard/tutoring/TutoringPanel";
 import AttendanceManager from "@/components/dashboard/attendance/AttendanceManager";
 import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
+import QrScannerModal from "@/components/dashboard/attendance/QrScannerModal";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -193,6 +194,7 @@ export default function DashboardPage() {
   const [studentActiveAttendanceClass, setStudentActiveAttendanceClass] = useState<number | null>(null);
   const [studentQrToken, setStudentQrToken] = useState("");
   const [studentAttendanceGeoLoading, setStudentAttendanceGeoLoading] = useState(false);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
 
   // Anonymous Feedback states
   const [activeFeedbackClass, setActiveFeedbackClass] = useState<number | null>(null);
@@ -2092,6 +2094,12 @@ export default function DashboardPage() {
                 }`}
               >
                 <span>Mis Cátedras</span>
+              </button>
+              <button
+                onClick={() => setIsQrScannerOpen(true)}
+                className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center space-x-3 bg-emerald-950/45 text-emerald-400 border border-emerald-800/40 hover:bg-emerald-900/40 hover:text-emerald-300 mt-2"
+              >
+                <span>📷 Escanear QR</span>
               </button>
             </>
           )}
@@ -4606,6 +4614,66 @@ export default function DashboardPage() {
       </main>
 
       {/* Teacher QR Modal is handled inside AttendanceManager */}
+
+      {/* Student live QR Scanner Modal */}
+      {isQrScannerOpen && (
+        <QrScannerModal
+          onClose={() => setIsQrScannerOpen(false)}
+          onScanSuccess={async (scannedData) => {
+            setIsQrScannerOpen(false);
+            setApiLoading(true);
+            setStudentAttendanceGeoLoading(true);
+            
+            let lat: number | null = null;
+            let lng: number | null = null;
+            
+            if (navigator.geolocation) {
+              try {
+                const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                  navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                });
+                lat = pos.coords.latitude;
+                lng = pos.coords.longitude;
+              } catch (err) {
+                console.warn("Geolocation unavailable or denied:", err);
+              }
+            }
+            
+            setStudentAttendanceGeoLoading(false);
+            
+            try {
+              await api("submitQrAttendance", {
+                courseId: scannedData.courseId,
+                classNumber: scannedData.classNumber,
+                token: scannedData.token,
+                lat,
+                lng
+              });
+              alert("¡Asistencia registrada con éxito! Ya estás presente.");
+            } catch (err: any) {
+              alert("Error al registrar asistencia: " + err.message);
+            } finally {
+              setApiLoading(false);
+            }
+          }}
+        />
+      )}
+
+      {/* Floating Action Button (FAB) for student QR scanner */}
+      {profile?.role === "student" && !isQrScannerOpen && (
+        <button
+          type="button"
+          onClick={() => setIsQrScannerOpen(true)}
+          className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 z-40 border border-emerald-500/30 group cursor-pointer"
+          title="Escanear QR de Asistencia"
+          aria-label="Escanear QR de Asistencia"
+        >
+          <span className="text-xl">📷</span>
+          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-bold font-sans ml-0 group-hover:ml-2 whitespace-nowrap">
+            Escanear Asistencia
+          </span>
+        </button>
+      )}
 
       {/* Student QR / Code Attendance Modal */}
       {studentActiveAttendanceClass !== null && (
