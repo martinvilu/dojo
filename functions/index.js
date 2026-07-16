@@ -22,6 +22,83 @@ exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
     await db.collection('profiles').doc(user.uid).set(profileData);
 });
 
+async function syncGradeToMoodle(previousData, grade, feedback) {
+    if (!previousData.moodle_lis_outcome_service_url || !previousData.moodle_lis_result_sourcedid) {
+        console.log("No Moodle LTI sync parameters found for submission:", previousData.id || "unknown");
+        return;
+    }
+
+    const outcomeUrl = previousData.moodle_lis_outcome_service_url;
+    const sourcedId = previousData.moodle_lis_result_sourcedid;
+
+    // Convert grade to standard decimal (0.0 to 1.0)
+    let numericGrade = parseFloat(grade);
+    if (isNaN(numericGrade)) {
+        numericGrade = 0.0;
+    } else {
+        // If grade is out of 10, normalize to 1.0
+        if (numericGrade > 1.0) {
+            numericGrade = numericGrade / 10.0;
+        }
+    }
+    if (numericGrade > 1.0) numericGrade = 1.0;
+    if (numericGrade < 0.0) numericGrade = 0.0;
+
+    console.log(`Sincronizando nota ${numericGrade} con Moodle URL: ${outcomeUrl}`);
+
+    const xmlPayload = `<?xml version="1.0" encoding="UTF-8"?>
+<imsx_POXEnvelopeRequest xmlns="http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
+  <imsx_POXHeader>
+    <imsx_POXRequestHeaderInfo>
+      <imsx_version>V1.0</imsx_version>
+      <imsx_messageIdentifier>${Date.now()}</imsx_messageIdentifier>
+    </imsx_POXRequestHeaderInfo>
+  </imsx_POXHeader>
+  <imsx_POXBody>
+    <replaceResultRequest>
+      <resultRecord>
+        <sourcedGUID>
+          <sourcedId>${sourcedId}</sourcedId>
+        </sourcedGUID>
+        <result>
+          <resultScore>
+            <language>es</language>
+            <textString>${numericGrade.toFixed(2)}</textString>
+          </resultScore>
+        </result>
+      </resultRecord>
+    </replaceResultRequest>
+  </imsx_POXBody>
+</imsx_POXEnvelopeRequest>`;
+
+    try {
+        const fetch = require('node-fetch');
+        const response = await fetch(outcomeUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/xml',
+                'Authorization': 'OAuth realm=""'
+            },
+            body: xmlPayload
+        });
+        
+        const resText = await response.text();
+        console.log("Respuesta de sincronización con Moodle:", response.status, resText);
+        
+        await db.collection('audit_logs').add({
+            action: 'moodle_grade_sync',
+            submission_id: previousData.id || '',
+            status: response.ok ? 'success' : 'failure',
+            status_code: response.status,
+            grade: String(grade),
+            normalized_grade: numericGrade,
+            created_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (err) {
+        console.error("Error al sincronizar nota con Moodle:", err);
+    }
+}
+
 exports.api = functions.https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
     const uid = context.auth.uid;
@@ -1026,6 +1103,13 @@ exports.api = functions.https.onCall(async (data, context) => {
                 created_at: admin.firestore.FieldValue.serverTimestamp()
             });
             
+            // Trigger background grade sync with Moodle LTI if applicable
+            if (previousData.moodle_lis_outcome_service_url) {
+                syncGradeToMoodle({ id: submissionId, ...previousData }, grade, feedback).catch(e => {
+                    console.error("Error trigger syncGradeToMoodle:", e);
+                });
+            }
+            
             return { success: true };
         }
         
@@ -1379,6 +1463,8 @@ exports.api = functions.https.onCall(async (data, context) => {
                 grade: '',
                 feedback: '',
                 is_locked: false,
+                moodle_lis_outcome_service_url: payload.moodle_lis_outcome_service_url || '',
+                moodle_lis_result_sourcedid: payload.moodle_lis_result_sourcedid || '',
                 created_at: admin.firestore.FieldValue.serverTimestamp()
             });
             

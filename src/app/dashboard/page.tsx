@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("");
   const [error, setError] = useState("");
   const hasProcessedParams = useRef(false);
+  const moodleLtiParams = useRef<{ outcomeUrl?: string, resultId?: string }>({});
 
   // Pending Matricula inputs
   const [matriculaInput, setMatriculaInput] = useState("");
@@ -600,6 +601,11 @@ export default function DashboardPage() {
 
     const processParams = async () => {
       hasProcessedParams.current = true;
+      const outcomeUrl = params.get("lis_outcome_service_url");
+      const resultId = params.get("lis_result_sourcedid");
+      if (outcomeUrl && resultId) {
+        moodleLtiParams.current = { outcomeUrl, resultId };
+      }
       if (tab) {
         setActiveTab(tab);
       }
@@ -905,7 +911,12 @@ export default function DashboardPage() {
     }
     setApiLoading(true);
     try {
-      await api("acceptAssignment", { assignmentId, groupName });
+      await api("acceptAssignment", { 
+        assignmentId, 
+        groupName,
+        moodle_lis_outcome_service_url: moodleLtiParams.current.outcomeUrl || "",
+        moodle_lis_result_sourcedid: moodleLtiParams.current.resultId || ""
+      });
       alert("¡Repositorio de GitHub creado con éxito!");
       // Reload assignments
       const cid = selectedCourse.id || selectedCourse.course?.id;

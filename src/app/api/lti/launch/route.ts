@@ -10,6 +10,8 @@ export async function POST(request: Request) {
     let email = "";
     let name = "";
     let roles: string[] = [];
+    let outcomeUrl = "";
+    let resultId = "";
 
     if (contentType.includes("form") || contentType.includes("multipart")) {
       const formData = await request.formData();
@@ -26,6 +28,17 @@ export async function POST(request: Request) {
             const customParams = payload["https://purl.imsglobal.org/spec/lti/claim/custom"] || {};
             assignmentId = customParams.assignmentId || "";
             courseId = customParams.courseId || "";
+
+            // Parse LTI grade outcome params (LTI 1.1 / 1.2 POX, or LTI 1.3 AGS claim)
+            const lisClaim = payload["https://purl.imsglobal.org/spec/lti/claim/lis"] || {};
+            outcomeUrl = lisClaim.outcome_service_url || "";
+            resultId = lisClaim.result_sourcedid || "";
+            
+            if (!outcomeUrl) {
+              const agsClaim = payload["https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"] || {};
+              outcomeUrl = agsClaim.lineitem || agsClaim.lineitems || "";
+              resultId = agsClaim.lineitem ? "ags-lineitem" : "";
+            }
           } catch (e) {
             console.error("Error decoding LTI token parts:", e);
           }
@@ -50,6 +63,12 @@ export async function POST(request: Request) {
     url.searchParams.set("lti_email", email);
     url.searchParams.set("lti_name", name);
     url.searchParams.set("lti_role", roles.some(r => r.includes("Instructor") || r.includes("Administrator")) ? "teacher" : "student");
+    if (outcomeUrl) {
+      url.searchParams.set("lis_outcome_service_url", outcomeUrl);
+    }
+    if (resultId) {
+      url.searchParams.set("lis_result_sourcedid", resultId);
+    }
 
     return NextResponse.redirect(url.toString(), 303);
   } catch (error: any) {
