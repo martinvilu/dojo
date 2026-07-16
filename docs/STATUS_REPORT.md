@@ -57,16 +57,14 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 
 - [x] **M3: Aislación de Módulos (TutoringPanel)**:
   - Extracción del módulo de tutorías académicas entre pares, reservas de mentorías y sus modales en `TutoringPanel.tsx`.
+- [x] **M4: Aislación de Módulos de Asistencia y Consultas**:
+  - Mover `AttendanceManager.tsx` (asistencia y QR) e `Hilos de Consultas` (`ClassCommentsThread.tsx`) a componentes independientes.
+- [x] **M5: Desmonolitizar Functions Backend**:
+  - Dividir `functions/index.js` en submódulos de acciones independientes cargadas de forma dinámica en `/functions/actions/`.
 
 ---
 
 ## 2. Tareas por Completar (Pendientes / Futuras)
-
-### 📦 Fase de Modularización (Basado en el Reporte de Arquitectura)
-- [ ] **M4: Aislación de Módulos de Asistencia y Consultas**:
-  - Mover `AttendanceManager.tsx` (asistencia y QR) e `Hilos de Consultas` a componentes independientes.
-- [ ] **M5: Desmonolitizar Functions Backend**:
-  - Dividir `functions/index.js` en submódulos de acciones independientes cargadas de forma dinámica.
 
 ### 🛡️ Funcionalidades Futuras
 - [ ] **Detección de Plagio y Copias**:
