@@ -25,7 +25,7 @@ exports.onUserCreated = beforeUserCreated(async (event) => {
     try {
         await db.collection('profiles').doc(user.uid).set(profileData);
     } catch (e) {
-        console.error('Error creating user profile:', e);
+        console.error(`Error creating profile for user ${user.uid}:`, e);
     }
 });
 
