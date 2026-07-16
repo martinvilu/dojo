@@ -53,20 +53,20 @@ export default function AttendanceManager({
     setEditingRecords(initialRecords);
   }, [classNumber, courseAttendance, roster]);
 
-  // QR Timer
+  // QR Timer Countdown with auto-rotation every 30 seconds
   useEffect(() => {
     if (!activeQr) return;
-    const interval = setInterval(() => {
-      setActiveQr((prev) => {
-        if (!prev) return null;
-        if (prev.expiresIn <= 1) {
-          clearInterval(interval);
-          return null;
-        }
-        return { ...prev, expiresIn: prev.expiresIn - 1 };
-      });
+    const timer = setTimeout(() => {
+      if (activeQr.expiresIn <= 1) {
+        handleGenerateQr();
+      } else {
+        setActiveQr({
+          ...activeQr,
+          expiresIn: activeQr.expiresIn - 1,
+        });
+      }
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearTimeout(timer);
   }, [activeQr]);
 
   const handleGenerateQr = async () => {
@@ -99,7 +99,7 @@ export default function AttendanceManager({
 
       setActiveQr({
         code,
-        expiresIn: 300,
+        expiresIn: 30,
       });
     } catch (err: any) {
       alert("Error al generar QR de asistencia: " + err.message);
@@ -274,8 +274,7 @@ export default function AttendanceManager({
             <div className="flex items-center justify-center space-x-2 text-xs font-bold text-gray-300">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
               <span>
-                Expira en: {Math.floor(activeQr.expiresIn / 60)}:
-                {(activeQr.expiresIn % 60).toString().padStart(2, "0")}
+                El código rota en: {activeQr.expiresIn}s
               </span>
             </div>
 

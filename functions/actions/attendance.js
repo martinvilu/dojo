@@ -46,8 +46,8 @@ async function submitQrAttendance(payload, context) {
     const created = qrData.created_at.toDate();
     const now = new Date();
     const diffSeconds = (now - created) / 1000;
-    if (diffSeconds > 300) {
-        throw new Error("El código de asistencia ha expirado (límite de 5 minutos).");
+    if (diffSeconds > 45) {
+        throw new Error("El código de asistencia ha expirado. Por favor, escanea el código QR actual de la pantalla.");
     }
     
     if (qrData.lat && qrData.lng && lat && lng) {
