@@ -12,6 +12,7 @@ import StudentPanel from "@/components/dashboard/StudentPanel";
 import ProfilePanel from "@/components/dashboard/ProfilePanel";
 import TeacherPanel from "@/components/dashboard/TeacherPanel";
 import GithubActivityPanel from "@/components/dashboard/github/GithubActivityPanel";
+import ToastNotification from "@/components/dashboard/ui/ToastNotification";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -4626,6 +4627,33 @@ export default function DashboardPage() {
                     </label>
                   </div>
 
+                  {teacherMoodleEnabled && (
+                    <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-850 space-y-2">
+                      <span className="text-xs font-bold text-gray-300 block">📅 URL del Calendario de la Cátedra (Para Moodle)</span>
+                      <p className="text-[10px] text-gray-400">
+                        Copia esta URL y agrégala en el Calendario de Moodle como una suscripción externa (URL) para sincronizar las clases automáticamente:
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/calendar?id=${selectedCourse.id || selectedCourse.course?.id}`}
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-gray-300 select-all font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/calendar?id=${selectedCourse.id || selectedCourse.course?.id}`);
+                            alert("¡Enlace de calendario copiado!");
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer"
+                        >
+                          Copiar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-semibold text-gray-400 mb-1">Calendarios Externos ICS (URLs separadas por comas)</label>
                     <input
@@ -5883,19 +5911,11 @@ export default function DashboardPage() {
       )}
       
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center space-x-3 bg-neutral-900 border border-neutral-800 px-4 py-3.5 rounded-xl shadow-2xl max-w-sm">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-            toast.type === "success" ? "bg-emerald-500 shadow-md shadow-emerald-500/50" : toast.type === "error" ? "bg-red-500 shadow-md shadow-red-500/50" : "bg-blue-500 shadow-md shadow-blue-500/50"
-          }`}></span>
-          <p className="text-xs text-gray-200 font-medium leading-normal">{toast.message}</p>
-          <button 
-            type="button"
-            onClick={() => setToast(null)} 
-            className="text-gray-500 hover:text-white text-xs font-bold pl-2 cursor-pointer transition-colors"
-          >
-            ✕
-          </button>
-        </div>
+        <ToastNotification
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

@@ -75,4 +75,15 @@ describe('API Callable Function', () => {
     );
     expect(db.collection().add).toHaveBeenCalled();
   });
+
+  it('calendar endpoint returns 400 if course ID is missing', async () => {
+    const req = { query: {} };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn()
+    };
+    await myFunctions.calendar(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith('Falta el ID del curso');
+  });
 });

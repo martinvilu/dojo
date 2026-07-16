@@ -48,14 +48,21 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 
 ---
 
+- [x] **M1: Refactorizar Componentes de GitHub en Cliente**:
+  - Extraer `CommitVisualizer.tsx` y `GithubActivityPanel.tsx` de `page.tsx` hacia `/src/components/dashboard/github/`.
+- [x] **M2: Aislación de Módulos (ToastNotification)**:
+  - Extracción y modularización del sistema de toasts flotantes en `ToastNotification.tsx`.
+- [x] **Moodle Calendar Sync**:
+  - Exposición de la URL de exportación de cronograma (.ics) en la UI de Ajustes de Cátedra para que Moodle se suscriba automáticamente.
+
+---
+
 ## 2. Tareas por Completar (Pendientes / Futuras)
 
 ### 📦 Fase de Modularización (Basado en el Reporte de Arquitectura)
-- [ ] **M1: Refactorizar Componentes de GitHub en Cliente**:
-  - Extraer `CommitVisualizer.tsx` y `GithubActivityPanel.tsx` de `page.tsx` hacia `/src/components/dashboard/github/`.
-- [ ] **M2: Aislación de Módulos de Cátedras**:
+- [ ] **M3: Aislación de Módulos de Cátedras**:
   - Mover `AttendanceManager.tsx` (asistencia y QR) e `Hilos de Consultas` a componentes independientes.
-- [ ] **M3: Desmonolitizar Functions Backend**:
+- [ ] **M4: Desmonolitizar Functions Backend**:
   - Dividir `functions/index.js` en submódulos de acciones independientes cargadas de forma dinámica.
 
 ### 🛡️ Funcionalidades Futuras
@@ -63,5 +70,3 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
   - Analizador de código estático por similitud estructural de AST para alertar posibles copias entre repositorios de alumnos.
 - [ ] **Autograding Integrado**:
   - Vinculación con GitHub Actions para correr pruebas unitarias y sincronizar el porcentaje de aprobación de tests directo a la nota del alumno.
-- [ ] **Moodle Calendar Sync**:
-  - Sincronización del cronograma de Ninja Dojo con el calendario de Moodle mediante la API de servicios web de Moodle.
