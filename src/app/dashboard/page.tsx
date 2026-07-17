@@ -1301,6 +1301,7 @@ export default function DashboardPage() {
     if (!printWindow) return alert("Por favor habilita las ventanas emergentes para descargar el reporte.");
     
     const rosterHtml = roster
+      .filter(s => s.role === "student")
       .map(s => {
         const presentCount = courseAttendance.filter(a => a.student_id === s.student_id && ["present", "late"].includes(a.status)).length;
         const totalClasses = teacherClasses.length;
