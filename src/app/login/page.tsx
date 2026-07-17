@@ -75,10 +75,13 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
+      const msg = err.message || "";
       if (err.code === "auth/account-exists-with-different-credential") {
         setError("Ya existe una cuenta vinculada a este correo con otro proveedor.");
+      } else if (msg.includes("missing initial state") || msg.includes("sessionStorage") || err.code === "auth/web-storage-unsupported") {
+        setError("Error de Privacidad/Cookies: El navegador bloqueó el acceso al almacenamiento de sesión (sessionStorage). Esto suele suceder en modo Incógnito estricto, o en navegadores como Safari y Brave que restringen el seguimiento entre sitios. Por favor, habilitá las cookies de terceros para este sitio o intentá iniciar sesión en una pestaña normal.");
       } else {
-        setError(err.message || "Error al iniciar sesión.");
+        setError(msg || "Error al iniciar sesión.");
       }
     } finally {
       setLoading(false);
