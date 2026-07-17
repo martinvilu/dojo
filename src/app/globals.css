@@ -57,3 +57,62 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* Light mode compatibility and contrast overrides for hardcoded dark classes */
+html:not(.dark) .bg-neutral-900,
+html:not(.dark) .bg-neutral-900\/60,
+html:not(.dark) .bg-neutral-900\/40,
+html:not(.dark) .bg-neutral-950,
+html:not(.dark) .bg-neutral-950\/60,
+html:not(.dark) .bg-neutral-950\/80,
+html:not(.dark) .bg-neutral-950\/45,
+html:not(.dark) .bg-neutral-955\/20,
+html:not(.dark) .bg-neutral-955\/10 {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+html:not(.dark) .bg-neutral-950\/20 {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+html:not(.dark) .border-neutral-800,
+html:not(.dark) .border-neutral-850,
+html:not(.dark) .border-neutral-900,
+html:not(.dark) .border-neutral-950,
+html:not(.dark) .border-neutral-800\/80,
+html:not(.dark) .border-neutral-850\/40 {
+  border-color: var(--border-custom) !important;
+}
+
+html:not(.dark) .text-white {
+  color: var(--text-primary) !important;
+}
+
+html:not(.dark) .text-gray-100,
+html:not(.dark) .text-gray-200,
+html:not(.dark) .text-gray-300,
+html:not(.dark) .text-gray-400 {
+  color: var(--text-secondary) !important;
+}
+
+html:not(.dark) .text-gray-500 {
+  color: var(--text-muted) !important;
+}
+
+html:not(.dark) .bg-neutral-800,
+html:not(.dark) .bg-neutral-850 {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+html:not(.dark) .hover\:bg-neutral-800:hover,
+html:not(.dark) .hover\:bg-neutral-850:hover,
+html:not(.dark) .hover\:bg-neutral-900\/10:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+html:not(.dark) .hover\:text-white:hover {
+  color: var(--text-primary) !important;
+}

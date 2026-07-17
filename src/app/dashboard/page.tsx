@@ -17,6 +17,7 @@ import TutoringPanel from "@/components/dashboard/tutoring/TutoringPanel";
 import AttendanceManager from "@/components/dashboard/attendance/AttendanceManager";
 import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
 import QrScannerModal from "@/components/dashboard/attendance/QrScannerModal";
+import CalendarPanel from "@/components/dashboard/calendar/CalendarPanel";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -195,6 +196,10 @@ export default function DashboardPage() {
   const [studentQrToken, setStudentQrToken] = useState("");
   const [studentAttendanceGeoLoading, setStudentAttendanceGeoLoading] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+
+  // Sidebar & Profile Menu states
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   // Anonymous Feedback states
   const [activeFeedbackClass, setActiveFeedbackClass] = useState<number | null>(null);
@@ -2023,29 +2028,94 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col md:flex-row transition-colors duration-200">
       {/* SIDEBAR */}
-      <aside className="w-full md:w-64 bg-bg-secondary border-b md:border-b-0 md:border-r border-border-custom flex flex-col p-6 space-y-6">
-        <div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-amber-500 bg-clip-text text-transparent">
-            Ninja Dojo
+      <aside className={`w-full ${
+        isSidebarCollapsed ? "md:w-20" : "md:w-64"
+      } bg-bg-secondary border-b md:border-b-0 md:border-r border-border-custom flex flex-col p-6 space-y-6 transition-all duration-300 relative`}>
+        {/* Collapse Toggle Button (Desktop Only) */}
+        <button
+          type="button"
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="hidden md:flex absolute top-5 -right-3.5 bg-bg-secondary border border-border-custom text-text-secondary hover:text-text-primary p-1.5 rounded-full z-50 shadow-md cursor-pointer transition-transform hover:scale-110"
+        >
+          <span>{isSidebarCollapsed ? "▶" : "◀"}</span>
+        </button>
+
+        <div className="overflow-hidden">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-amber-500 bg-clip-text text-transparent truncate">
+            {isSidebarCollapsed ? "🥷" : "Ninja Dojo"}
           </h1>
-          <p className="text-xs text-text-secondary mt-1 uppercase tracking-wider font-semibold">
-            {profile?.role === "admin" ? "Administrador" : profile?.role === "teacher" ? "Profesor" : "Estudiante"}
-          </p>
+          {!isSidebarCollapsed && (
+            <p className="text-xs text-text-secondary mt-1 uppercase tracking-wider font-semibold truncate animate-fade-in">
+              {profile?.role === "admin" ? "Administrador" : profile?.role === "teacher" ? "Profesor" : "Estudiante"}
+            </p>
+          )}
         </div>
 
-        {/* User Badge */}
-        <div className="flex items-center space-x-3 bg-bg-primary/50 p-3 rounded-xl border border-border-custom">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white uppercase overflow-hidden text-sm">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
-            ) : (
-              profile?.full_name?.substring(0, 2) || "U"
+        {/* Clickable User Profile Badge with floating menu */}
+        <div className="relative">
+          <div
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            className="flex items-center space-x-3 bg-bg-primary/50 p-3 rounded-xl border border-border-custom cursor-pointer hover:bg-bg-tertiary transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white uppercase overflow-hidden text-sm shrink-0">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
+              ) : (
+                profile?.full_name?.substring(0, 2) || "U"
+              )}
+            </div>
+            {!isSidebarCollapsed && (
+              <div className="overflow-hidden text-left animate-fade-in">
+                <h4 className="text-sm font-semibold text-text-primary truncate">{profile?.full_name}</h4>
+                <p className="text-xs text-text-secondary truncate">{currentUser?.email}</p>
+              </div>
             )}
           </div>
-          <div className="overflow-hidden">
-            <h4 className="text-sm font-semibold truncate">{profile?.full_name}</h4>
-            <p className="text-xs text-gray-500 truncate">{currentUser?.email}</p>
-          </div>
+
+          {/* FLOATING PROFILE MENU (POPOVER) */}
+          {isProfileMenuOpen && (
+            <>
+              {/* Overlay blocker */}
+              <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)}></div>
+              <div className={`absolute ${
+                isSidebarCollapsed 
+                  ? "md:left-14 md:-bottom-2 md:right-auto md:w-56" 
+                  : "md:left-2 md:right-2 md:-bottom-2 md:translate-y-full"
+              } bottom-18 left-0 right-0 bg-bg-secondary border border-border-custom p-3 rounded-2xl shadow-2xl z-50 space-y-1.5 animate-fade-in text-left`}>
+                <button
+                  onClick={() => {
+                    setActiveTab("profile");
+                    setIsProfileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer flex items-center space-x-2"
+                >
+                  <span>👤</span>
+                  <span>Mi Perfil</span>
+                </button>
+                <button
+                  onClick={() => {
+                    toggleTheme();
+                    setIsProfileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer flex items-center space-x-2"
+                >
+                  <span>{theme === "light" ? "🌙" : "☀️"}</span>
+                  <span>{theme === "light" ? "Modo Oscuro" : "Modo Claro"}</span>
+                </button>
+                <hr className="border-border-custom my-1" />
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsProfileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold bg-red-950/20 hover:bg-red-900/30 text-red-600 dark:text-red-400 transition cursor-pointer flex items-center space-x-2"
+                >
+                  <span>🚪</span>
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Navigation */}
@@ -2055,34 +2125,38 @@ export default function DashboardPage() {
               <button
                 onClick={() => setActiveTab("admin-courses")}
                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
-                  activeTab === "admin-courses" ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-neutral-800 hover:text-white"
+                  activeTab === "admin-courses" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
                 }`}
               >
-                <span>Cátedras</span>
+                <span>🏫</span>
+                {!isSidebarCollapsed && <span>Cátedras</span>}
               </button>
               <button
                 onClick={() => setActiveTab("admin-users")}
                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
-                  activeTab === "admin-users" ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-neutral-800 hover:text-white"
+                  activeTab === "admin-users" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
                 }`}
               >
-                <span>Usuarios</span>
+                <span>👥</span>
+                {!isSidebarCollapsed && <span>Usuarios</span>}
               </button>
               <button
                 onClick={() => setActiveTab("admin-settings")}
                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
-                  activeTab === "admin-settings" ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-neutral-800 hover:text-white"
+                  activeTab === "admin-settings" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
                 }`}
               >
-                <span>Configuración</span>
+                <span>⚙️</span>
+                {!isSidebarCollapsed && <span>Configuración</span>}
               </button>
               <button
                 onClick={() => setActiveTab("admin-backups")}
                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
-                  activeTab === "admin-backups" ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-neutral-800 hover:text-white"
+                  activeTab === "admin-backups" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
                 }`}
               >
-                <span>💾 Respaldos y Recuperación</span>
+                <span>💾</span>
+                {!isSidebarCollapsed && <span>Respaldos</span>}
               </button>
             </>
           )}
@@ -2092,10 +2166,11 @@ export default function DashboardPage() {
               <button
                 onClick={() => setActiveTab("teacher-courses")}
                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
-                  activeTab === "teacher-courses" ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-neutral-800 hover:text-white"
+                  activeTab === "teacher-courses" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
                 }`}
               >
-                <span>Mis Cátedras</span>
+                <span>📚</span>
+                {!isSidebarCollapsed && <span>Mis Cátedras</span>}
               </button>
             </>
           )}
@@ -2105,44 +2180,43 @@ export default function DashboardPage() {
               <button
                 onClick={() => setActiveTab("student-courses")}
                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
-                  activeTab === "student-courses" ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-neutral-800 hover:text-white"
+                  activeTab === "student-courses" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
                 }`}
               >
-                <span>Mis Cátedras</span>
+                <span>📚</span>
+                {!isSidebarCollapsed && <span>Mis Cátedras</span>}
               </button>
               <button
                 onClick={() => setIsQrScannerOpen(true)}
-                className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center space-x-3 bg-emerald-950/45 text-emerald-400 border border-emerald-800/40 hover:bg-emerald-900/40 hover:text-emerald-300 mt-2"
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center space-x-3 bg-emerald-50 dark:bg-emerald-955/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:text-emerald-700 dark:hover:text-emerald-300 mt-2`}
               >
-                <span>📷 Escanear QR</span>
+                <span>📷</span>
+                {!isSidebarCollapsed && <span>Escanear QR</span>}
               </button>
             </>
           )}
 
+          {/* Unified Calendar Tab Link */}
+          <button
+            onClick={() => setActiveTab("calendar")}
+            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+              activeTab === "calendar" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
+            }`}
+          >
+            <span>📅</span>
+            {!isSidebarCollapsed && <span>Calendario</span>}
+          </button>
+
           <button
             onClick={() => setActiveTab("profile")}
             className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
-              activeTab === "profile" ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-neutral-800 hover:text-white"
+              activeTab === "profile" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
             }`}
           >
-            <span>Mi Perfil</span>
+            <span>👤</span>
+            {!isSidebarCollapsed && <span>Mi Perfil</span>}
           </button>
         </nav>
-
-        <div className="border-t border-border-custom pt-4 space-y-2">
-          <button
-            onClick={toggleTheme}
-            className="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer flex items-center justify-center space-x-2 border border-border-custom"
-          >
-            <span>{theme === "light" ? "🌙 Modo Oscuro" : "☀️ Modo Claro"}</span>
-          </button>
-          <button
-            onClick={handleLogout}
-            className="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-red-950/30 text-red-400 hover:bg-red-900/40 hover:text-red-300 transition cursor-pointer"
-          >
-            Cerrar Sesión
-          </button>
-        </div>
       </aside>
 
       {/* MAIN CONTENT AREA */}
@@ -2313,6 +2387,55 @@ export default function DashboardPage() {
             handleEnrollCourse={handleEnrollCourse}
             viewCourseDetails={viewCourseDetails}
           />
+        )}
+
+        {/* UNIFIED CALENDAR PANEL */}
+        {activeTab === "calendar" && (
+          <div className="space-y-6">
+            {!selectedCourse ? (
+              <div className="bg-bg-secondary border border-border-custom p-8 rounded-3xl text-center space-y-4 max-w-md mx-auto my-12 shadow-md">
+                <span className="text-4xl block animate-bounce">📅</span>
+                <h3 className="text-lg font-bold text-text-primary">Ver Calendario</h3>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Por favor, seleccioná una de tus cátedras para cargar su cronograma y visualizar las clases y entregas en formato mensual y semanal:
+                </p>
+                <div className="space-y-2 mt-4 max-h-64 overflow-y-auto pr-1">
+                  {courses.length === 0 ? (
+                    <p className="text-xs text-text-secondary italic py-4">No tenés cátedras registradas.</p>
+                  ) : (
+                    courses.map((c) => {
+                      const cid = c.id || c.course?.id;
+                      const name = c.name || c.course?.name || "Sin Nombre";
+                      return (
+                        <button
+                          key={cid}
+                          onClick={() => viewCourseDetails(c)}
+                          className="w-full text-left px-4 py-3 rounded-xl bg-bg-primary hover:bg-bg-tertiary border border-border-custom text-xs font-bold transition flex justify-between items-center cursor-pointer text-text-primary hover:scale-[1.01]"
+                        >
+                          <span>{name}</span>
+                          <span className="text-blue-500 font-extrabold">Seleccionar →</span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <button
+                  onClick={() => setSelectedCourse(null)}
+                  className="text-xs text-text-secondary hover:text-text-primary transition underline flex items-center space-x-1"
+                >
+                  <span>←</span> <span>Cambiar de cátedra</span>
+                </button>
+                <CalendarPanel
+                  classes={teacherClasses}
+                  assignments={assignments}
+                  activeCourseName={selectedCourse.name || selectedCourse.course?.name || ""}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         {/* PROFILE TAB COMPONENT */}
