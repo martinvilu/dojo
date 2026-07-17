@@ -8,6 +8,7 @@ interface Student {
   email: string;
   matricula_unrn?: string;
   commissions?: Record<string, string>;
+  role?: string;
 }
 
 interface AttendanceRecord {
@@ -130,6 +131,7 @@ export default function AttendanceManager({
   };
 
   const filteredRoster = roster.filter((student) => {
+    if (student.role !== "student") return false;
     const studentComm = student.commissions?.[courseId] || "";
     if (commissionFilter === "Todas") return true;
     if (commissionFilter === "Sin Comisión") return studentComm === "";

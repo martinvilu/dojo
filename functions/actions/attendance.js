@@ -26,6 +26,11 @@ async function submitQrAttendance(payload, context) {
     if (!courseId || classNumber === undefined || !token) {
         throw new Error("Faltan datos para procesar la asistencia");
     }
+
+    const profileSnap = await db.collection('profiles').doc(uid).get();
+    if (profileSnap.exists && profileSnap.data().role !== "student") {
+        throw new Error("Solo los estudiantes pueden firmar asistencia. Los profesores y administradores no registran asistencia.");
+    }
     
     const qrRef = db.collection('courses').doc(courseId).collection('active_qr').doc('current');
     const qrDoc = await qrRef.get();

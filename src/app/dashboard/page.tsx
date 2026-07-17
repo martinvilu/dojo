@@ -1606,6 +1606,7 @@ export default function DashboardPage() {
       csv += "Promedio,Asistencia,Alertas,Condicion\n";
       
       roster.forEach(student => {
+        if (student.role !== "student") return;
         // Name, Email, Matricula
         csv += `"${(student.full_name || "").replace(/"/g, '""')}","${student.email || ""}","${student.matricula_unrn || ""}",`;
         
@@ -2713,6 +2714,7 @@ export default function DashboardPage() {
                       <tbody className="divide-y divide-neutral-900 text-gray-300">
                         {roster
                           .filter((student) => {
+                            if (student.role !== "student") return false;
                             const studentAtts = courseAttendance.filter((c) => c.records && c.records[student.id]);
                             const recordedCount = studentAtts.length;
                             const presentOrLate = studentAtts.filter(
@@ -2780,6 +2782,7 @@ export default function DashboardPage() {
                             );
                           })}
                         {roster.filter((student) => {
+                          if (student.role !== "student") return false;
                           const studentAtts = courseAttendance.filter((c) => c.records && c.records[student.id]);
                           const recordedCount = studentAtts.length;
                           const presentOrLate = studentAtts.filter(
@@ -3870,6 +3873,7 @@ export default function DashboardPage() {
                       <tbody className="divide-y divide-neutral-850 text-xs text-gray-300">
                         {roster
                           .filter((student) => {
+                            if (student.role !== "student") return false;
                             const studentComm = student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
                             if (commissionFilter === "Todas") return true;
                             if (commissionFilter === "Sin Comisión") return studentComm === "";
