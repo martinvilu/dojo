@@ -139,6 +139,7 @@ const actionModules = {
     getGlobalSettings: 'admin',
     saveGlobalSettings: 'admin',
     getAdminCourseDetails: 'admin',
+    deleteUser: 'admin',
     
     // attendance
     markAttendance: 'attendance',

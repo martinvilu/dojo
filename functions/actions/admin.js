@@ -110,6 +110,39 @@ async function getAdminCourseDetails(payload, context) {
     return course;
 }
 
+async function deleteUser(payload, context) {
+    const { db, admin, getMyProfile } = context;
+    const { targetUid } = payload;
+    const myProfile = await getMyProfile();
+    if (myProfile.role !== 'admin') throw new Error("Solo los administradores pueden borrar usuarios");
+
+    // 1. Delete from Firebase Auth
+    try {
+        await admin.auth().deleteUser(targetUid);
+    } catch (authErr) {
+        console.warn("User did not exist in Firebase Auth or failed to delete:", authErr.message);
+    }
+
+    // 2. Delete profile document from Firestore
+    await db.collection('profiles').doc(targetUid).delete();
+
+    // 3. Delete from course_roster (student enrollments)
+    const rosterSnaps = await db.collection('course_roster').where('student_id', '==', targetUid).get();
+    const batch = db.batch();
+    rosterSnaps.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+
+    // 4. Delete from course_teachers (teacher assignments)
+    const teacherSnaps = await db.collection('course_teachers').where('teacher_id', '==', targetUid).get();
+    teacherSnaps.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    return { success: true };
+}
+
 module.exports = {
     approveUser,
     updateUserRole,
@@ -118,5 +151,6 @@ module.exports = {
     getAdminCourses,
     getGlobalSettings,
     saveGlobalSettings,
-    getAdminCourseDetails
+    getAdminCourseDetails,
+    deleteUser
 };

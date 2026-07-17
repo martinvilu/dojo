@@ -707,6 +707,19 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDeleteUser = async (uid: string) => {
+    setApiLoading(true);
+    try {
+      await api("deleteUser", { targetUid: uid });
+      const res = await api("getAdminUsers");
+      setUsers(res || []);
+    } catch (err: any) {
+      setError("Error al borrar usuario: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleUpdateUserRole = async (uid: string, newRole: "admin" | "teacher" | "student") => {
     if (!confirm(`¿Estás seguro de que deseas cambiar el rol del usuario a ${newRole === "admin" ? "Administrador" : newRole === "teacher" ? "Profesor" : "Estudiante"}?`)) return;
     setApiLoading(true);
@@ -2165,6 +2178,7 @@ export default function DashboardPage() {
             handleCreateCourse={handleCreateCourse}
             handleUpdateUserRole={handleUpdateUserRole}
             handleApproveUser={handleApproveUser}
+            handleDeleteUser={handleDeleteUser}
             handleSaveSettings={handleSaveSettings}
             viewCourseDetails={viewCourseDetails}
           />

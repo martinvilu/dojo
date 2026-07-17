@@ -28,6 +28,7 @@ interface AdminPanelProps {
   handleCreateCourse: (e: React.FormEvent) => void;
   handleUpdateUserRole: (uid: string, newRole: "admin" | "teacher" | "student") => void;
   handleApproveUser: (uid: string) => void;
+  handleDeleteUser: (uid: string) => void;
   handleSaveSettings: (e: React.FormEvent) => void;
   viewCourseDetails: (course: any) => void;
 }
@@ -45,11 +46,13 @@ export default function AdminPanel({
   handleCreateCourse,
   handleUpdateUserRole,
   handleApproveUser,
+  handleDeleteUser,
   handleSaveSettings,
   viewCourseDetails,
 }: AdminPanelProps) {
   const [sortField, setSortField] = useState<string>("full_name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -228,7 +231,7 @@ export default function AdminPanel({
                         {u.account_status === "approved" ? "Aprobado" : "Pendiente"}
                       </span>
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 flex items-center space-x-2">
                       {u.account_status === "pending" && (
                         <button
                           onClick={() => handleApproveUser(u.id)}
@@ -237,6 +240,12 @@ export default function AdminPanel({
                           Aprobar
                         </button>
                       )}
+                      <button
+                        onClick={() => setUserToDelete(u)}
+                        className="bg-red-950/40 hover:bg-red-900/40 text-red-400 border border-red-900/30 text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer"
+                      >
+                        Borrar
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -270,6 +279,56 @@ export default function AdminPanel({
               Guardar Configuración
             </button>
           </form>
+        </div>
+      )}
+
+      {/* MODAL DE ADVERTENCIA PARA BORRAR USUARIO */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-md w-full space-y-6 shadow-2xl relative">
+            <div className="flex items-center space-x-3 text-red-500">
+              <span className="text-3xl">⚠️</span>
+              <h3 className="text-lg font-bold text-white">Advertencia: Borrar Usuario</h3>
+            </div>
+            
+            <div className="space-y-3 text-sm text-gray-300">
+              <p>
+                Estás a punto de eliminar permanentemente a <strong className="text-white">{userToDelete.full_name || userToDelete.email}</strong> ({userToDelete.email}) del sistema.
+              </p>
+              <div className="bg-red-950/20 border border-red-900/40 p-4 rounded-xl space-y-2">
+                <p className="text-xs text-red-400 font-bold uppercase tracking-wider">Esta acción realizará lo siguiente de forma irreversible:</p>
+                <ul className="list-disc list-inside text-xs text-gray-400 space-y-1.5">
+                  <li>Eliminará la cuenta de autenticación (Firebase Auth).</li>
+                  <li>Borrará el documento de perfil en la base de datos.</li>
+                  <li>Removerá al usuario de todas las cursadas en las que esté inscripto.</li>
+                  <li>Eliminará cualquier asignación como docente o ayudante.</li>
+                </ul>
+              </div>
+              <p className="text-xs text-gray-400 font-medium">
+                ¿Confirmás que querés continuar con la eliminación del usuario?
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                className="flex-1 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-750 text-gray-300 border border-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteUser(userToDelete.id);
+                  setUserToDelete(null);
+                }}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Sí, borrar permanentemente
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
