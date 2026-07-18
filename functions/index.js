@@ -193,6 +193,7 @@ const actionModules = {
     createSystemBackup: 'backups',
     getSystemBackups: 'backups',
     restoreBackupDocument: 'backups',
+    downloadSystemBackup: 'backups',
     
     // announcements
     createAnnouncement: 'announcements',

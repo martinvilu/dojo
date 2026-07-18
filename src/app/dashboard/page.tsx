@@ -1283,6 +1283,27 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDownloadBackup = async (backupId: string) => {
+    setApiLoading(true);
+    try {
+      const data = await api("downloadSystemBackup", { backupId });
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `backup-${backupId}-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert("Error al descargar respaldo: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleRestoreBackupDocument = async (backupId: string, collectionName: string, docId: string) => {
     if (!confirm(`¿Seguro que querés restaurar el documento ${docId} de la colección ${collectionName}? Sobrescribirá los datos actuales en la base de datos remota.`)) return;
     setApiLoading(true);
@@ -2280,16 +2301,25 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 {systemBackups.map((b) => (
                   <div key={b.id} className="bg-neutral-950/60 border border-neutral-850 p-5 rounded-2xl space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-neutral-850 pb-3 gap-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border-custom pb-3 gap-2">
                       <div>
-                        <span className="text-[10px] text-gray-500 font-mono">ID: {b.id}</span>
-                        <p className="text-sm font-bold text-white">Fecha: {new Date(b.created_at).toLocaleString()}</p>
-                        <p className="text-xs text-gray-400">Creado por: {b.created_by_name}</p>
+                        <span className="text-[10px] text-text-secondary font-mono">ID: {b.id}</span>
+                        <p className="text-sm font-bold text-text-primary">Fecha: {new Date(b.created_at).toLocaleString()}</p>
+                        <p className="text-xs text-text-secondary">Creado por: {b.created_by_name}</p>
                       </div>
-                      <div className="flex gap-2 text-[11px]">
-                        <span className="bg-neutral-900 px-3 py-1 rounded-full text-gray-300">{b.courses_count} Cátedras</span>
-                        <span className="bg-neutral-900 px-3 py-1 rounded-full text-gray-300">{b.assignments_count} Tareas</span>
-                        <span className="bg-neutral-900 px-3 py-1 rounded-full text-gray-300">{b.profiles_count} Perfiles</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex gap-2 text-[11px]">
+                          <span className="bg-bg-tertiary px-3 py-1 rounded-full text-text-secondary">{b.courses_count} Cátedras</span>
+                          <span className="bg-bg-tertiary px-3 py-1 rounded-full text-text-secondary">{b.assignments_count} Tareas</span>
+                          <span className="bg-bg-tertiary px-3 py-1 rounded-full text-text-secondary">{b.profiles_count} Perfiles</span>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadBackup(b.id)}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded-xl transition cursor-pointer flex items-center space-x-1"
+                          title="Descargar respaldo completo como archivo JSON"
+                        >
+                          <span>📥</span> <span>Descargar JSON</span>
+                        </button>
                       </div>
                     </div>
 

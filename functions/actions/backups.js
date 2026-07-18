@@ -64,8 +64,20 @@ async function restoreBackupDocument(payload, context) {
     return { success: true };
 }
 
+async function downloadSystemBackup(payload, context) {
+    const { db, getMyProfile } = context;
+    const profile = await getMyProfile();
+    if (profile.role !== 'admin') throw new Error("Acceso denegado");
+    
+    const { backupId } = payload;
+    const doc = await db.collection('backups').doc(backupId).get();
+    if (!doc.exists) throw new Error("Respaldo no encontrado");
+    return doc.data();
+}
+
 module.exports = {
     createSystemBackup,
     getSystemBackups,
-    restoreBackupDocument
+    restoreBackupDocument,
+    downloadSystemBackup
 };
