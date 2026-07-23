@@ -524,6 +524,44 @@ export default function DashboardPage() {
     loadData();
   }, [activeTab, profile]);
 
+  // Dynamic Document Title based on active course or tab (starts with "Dojo")
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    let titleStr = "Dojo";
+
+    if (selectedCourse) {
+      const courseName = selectedCourse.name || "Cátedra";
+      const subtabMap: Record<string, string> = {
+        overview: "Inicio",
+        classes: "Clases y Cronograma",
+        assignments: "Tareas y Entregas",
+        roster: "Alumnos y Alertas",
+        forum: "Foros y Consultas",
+        groups: "Grupos de Estudio",
+        tutorias: "Tutorías Académicas",
+        announcements: "Avisos",
+        settings: "Configuración",
+      };
+      const subtabName = subtabMap[courseSubTab] || "Detalles";
+      titleStr = `Dojo | ${courseName} - ${subtabName}`;
+    } else {
+      const tabMap: Record<string, string> = {
+        "teacher-courses": "Mis Cátedras",
+        "student-courses": "Mis Cursadas",
+        "admin-courses": "Gestión de Cátedras",
+        "admin-users": "Administración de Usuarios",
+        "admin-backups": "Respaldos de Sistema",
+        calendar: "Calendario Global",
+        profile: "Mi Perfil",
+      };
+      const tabName = tabMap[activeTab] || "Dashboard";
+      titleStr = `Dojo | ${tabName}`;
+    }
+
+    document.title = titleStr;
+  }, [selectedCourse, courseSubTab, activeTab]);
+
   // Load REST URL parameters (integration / direct link support)
   useEffect(() => {
     if (typeof window === "undefined" || !profile || courses.length === 0 || hasProcessedParams.current) return;
