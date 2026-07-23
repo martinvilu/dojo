@@ -2468,6 +2468,7 @@ export default function DashboardPage() {
             handleEnrollCourse={handleEnrollCourse}
             viewCourseDetails={viewCourseDetails}
             onOpenCourseCalendar={handleOpenCourseCalendar}
+            onOpenQrScanner={() => setIsQrScannerOpen(true)}
           />
         )}
 

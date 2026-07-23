@@ -10,6 +10,7 @@ interface StudentPanelProps {
   handleEnrollCourse: (e: React.FormEvent) => void;
   viewCourseDetails: (course: any) => void;
   onOpenCourseCalendar?: (courseId: string) => void;
+  onOpenQrScanner?: () => void;
 }
 
 export default function StudentPanel({
@@ -20,33 +21,54 @@ export default function StudentPanel({
   handleEnrollCourse,
   viewCourseDetails,
   onOpenCourseCalendar,
+  onOpenQrScanner,
 }: StudentPanelProps) {
   if (activeTab !== "student-courses") return null;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h2 className="text-2xl font-bold text-text-primary">Mis Cursadas</h2>
+      {/* Header & Quick Action Row */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 bg-bg-secondary p-5 rounded-2xl border border-border-custom shadow-sm">
+        <div>
+          <h2 className="text-2xl font-bold text-text-primary">Mis Cursadas</h2>
+          <p className="text-xs text-text-secondary mt-0.5">Gestión de materias inscriptas, asistencia y entregas de código.</p>
+        </div>
         
-        <form onSubmit={handleEnrollCourse} className="flex gap-2">
-          <input
-            type="text"
-            maxLength={6}
-            value={enrollCode}
-            onChange={(e) => setEnrollCode(e.target.value)}
-            placeholder="Código Cátedra"
-            className="bg-bg-secondary border border-border-custom rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-blue-500 uppercase font-mono tracking-widest text-center text-text-primary"
-            required
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer"
-          >
-            Unirse
-          </button>
-        </form>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Prominent QR Scanner Button for Student */}
+          {onOpenQrScanner && (
+            <button
+              type="button"
+              onClick={onOpenQrScanner}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center space-x-2 shadow-sm border border-emerald-500/30"
+            >
+              <span>📷</span>
+              <span>Escanear QR Asistencia</span>
+            </button>
+          )}
+
+          {/* Join Course Form */}
+          <form onSubmit={handleEnrollCourse} className="flex gap-2">
+            <input
+              type="text"
+              maxLength={6}
+              value={enrollCode}
+              onChange={(e) => setEnrollCode(e.target.value)}
+              placeholder="Código Cátedra"
+              className="bg-bg-primary border border-border-custom rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-blue-500 uppercase font-mono tracking-widest text-center text-text-primary placeholder:text-text-secondary"
+              required
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer"
+            >
+              Unirse
+            </button>
+          </form>
+        </div>
       </div>
 
+      {/* Courses Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {courses.map((c) => {
           const courseId = c.id || c.course?.id;
@@ -94,20 +116,30 @@ export default function StudentPanel({
                 </div>
               </div>
 
+              {/* Action Buttons (Ingresar, Calendario, QR Asistencia) */}
               <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border-custom pt-4">
                 <button
                   onClick={() => viewCourseDetails(c)}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition cursor-pointer shadow-sm"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition cursor-pointer shadow-sm"
                 >
                   Ingresar
                 </button>
                 <button
                   onClick={() => onOpenCourseCalendar && onOpenCourseCalendar(courseId)}
-                  className="px-5 py-2.5 bg-bg-primary hover:bg-bg-tertiary text-text-primary border border-border-custom rounded-xl text-xs font-semibold transition cursor-pointer flex items-center space-x-1.5"
+                  className="px-4 py-2 bg-bg-primary hover:bg-bg-tertiary text-text-primary border border-border-custom rounded-xl text-xs font-semibold transition cursor-pointer flex items-center space-x-1.5"
                 >
                   <span>📅</span>
                   <span>Calendario</span>
                 </button>
+                {onOpenQrScanner && (
+                  <button
+                    onClick={onOpenQrScanner}
+                    className="px-4 py-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 border border-emerald-500/30 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <span>📷</span>
+                    <span>Asistencia QR</span>
+                  </button>
+                )}
               </div>
             </div>
           );
