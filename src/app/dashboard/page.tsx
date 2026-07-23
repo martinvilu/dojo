@@ -4402,6 +4402,17 @@ export default function DashboardPage() {
                         >
                           Copiar
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const feedUrl = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/calendar?id=${selectedCourse.id || selectedCourse.course?.id}`;
+                            window.open(`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`, "_blank");
+                          }}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1 whitespace-nowrap"
+                          title="Añadir suscripción a Google Calendar"
+                        >
+                          <span>📅 Google Calendar</span>
+                        </button>
                       </div>
                     </div>
                   )}

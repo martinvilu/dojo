@@ -215,6 +215,26 @@ export default function CalendarPanel({
     document.body.removeChild(link);
   };
 
+  const handleGoogleCalendarSubscribe = () => {
+    let feedUrl = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/calendar`;
+    if (selectedCourseFilter && selectedCourseFilter !== "all") {
+      feedUrl += `?id=${selectedCourseFilter}`;
+    }
+    const googleCalUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`;
+    window.open(googleCalUrl, "_blank");
+  };
+
+  const handleGoogleCalendarAddEvent = (eventObj: any) => {
+    if (!eventObj) return;
+    const title = eventObj.title || "Clase Ninja Dojo";
+    const details = eventObj.details?.description || eventObj.details?.topic || "Evento de Ninja Dojo";
+    const dateStr = eventObj.details?.date || eventObj.details?.due_date || new Date().toISOString().split("T")[0];
+    const cleanDate = dateStr.split("T")[0].replace(/-/g, "");
+    const dates = `${cleanDate}/${cleanDate}`;
+    const googleEventUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dates}&details=${encodeURIComponent(details)}`;
+    window.open(googleEventUrl, "_blank");
+  };
+
   const monthNames = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -287,14 +307,23 @@ export default function CalendarPanel({
             </button>
           </div>
 
-          {/* EXPORT ICAL BUTTON */}
-          <button
-            onClick={handleExportICS}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer flex items-center space-x-1.5 shadow-sm"
-            title="Exportar a Google Calendar, Outlook o Apple Calendar"
-          >
-            <span>📥 Exportar .ics</span>
-          </button>
+          {/* EXPORT ICAL & GOOGLE CALENDAR BUTTONS */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleExportICS}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer flex items-center space-x-1.5 shadow-sm"
+              title="Exportar archivo iCal (.ics) para Google Calendar, Outlook o Apple Calendar"
+            >
+              <span>📥 Exportar .ics</span>
+            </button>
+            <button
+              onClick={handleGoogleCalendarSubscribe}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer flex items-center space-x-1.5 shadow-sm"
+              title="Atajo para añadir este calendario automáticamente en Google Calendar"
+            >
+              <span>📅 Añadir a Google Calendar</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -599,12 +628,22 @@ export default function CalendarPanel({
               )}
             </div>
 
-            <button
-              onClick={() => setSelectedEvent(null)}
-              className="w-full px-4 py-2.5 bg-bg-primary hover:bg-bg-tertiary text-text-primary border border-border-custom text-xs font-bold rounded-xl transition cursor-pointer"
-            >
-              Cerrar
-            </button>
+            <div className="flex flex-col gap-2 pt-2 border-t border-border-custom">
+              <button
+                type="button"
+                onClick={() => handleGoogleCalendarAddEvent(selectedEvent)}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center space-x-2 shadow-sm"
+              >
+                <span>📅</span>
+                <span>Agregar este evento a Google Calendar</span>
+              </button>
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="w-full px-4 py-2.5 bg-bg-primary hover:bg-bg-tertiary text-text-primary border border-border-custom text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
