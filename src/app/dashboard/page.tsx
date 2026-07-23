@@ -479,6 +479,35 @@ export default function DashboardPage() {
         } else if (activeTab === "student-courses") {
           const res = await api("getStudentCourses");
           setCourses(res || []);
+        } else if (activeTab === "calendar") {
+          const userCourses = profile?.role === "student" 
+            ? await api("getStudentCourses") 
+            : await api("getTeacherCourses");
+          const safeCourses = userCourses || [];
+          setCourses(safeCourses);
+
+          const courseIds = safeCourses.map((c: any) => c.id || c.course?.id).filter(Boolean);
+          if (courseIds.length > 0) {
+            const assignRes = profile?.role === "student" 
+              ? await api("getStudentAssignments", { courseIds }) 
+              : await api("getTeacherAssignments", { courseIds });
+            const loadedAssignments = Array.isArray(assignRes) ? assignRes : (assignRes?.assignments || []);
+            setAssignments(loadedAssignments);
+
+            const allClassInstances: any[] = [];
+            safeCourses.forEach((c: any) => {
+              const cData = c.course || c;
+              const instances = cData.class_instances || [];
+              instances.forEach((inst: any) => {
+                allClassInstances.push({
+                  ...inst,
+                  course_id: cData.id || c.id,
+                  course_name: cData.name || c.name,
+                });
+              });
+            });
+            setTeacherClasses(allClassInstances);
+          }
         } else if (activeTab === "profile" && profile) {
           setProfileMatricula(profile.matricula_unrn || "");
           setProfileCohorte(profile.cohorte || "");
@@ -2436,51 +2465,16 @@ export default function DashboardPage() {
 
         {/* UNIFIED CALENDAR PANEL */}
         {activeTab === "calendar" && (
-          <div className="space-y-6">
-            {!selectedCourse ? (
-              <div className="bg-bg-secondary border border-border-custom p-8 rounded-3xl text-center space-y-4 max-w-md mx-auto my-12 shadow-md">
-                <span className="text-4xl block animate-bounce">📅</span>
-                <h3 className="text-lg font-bold text-text-primary">Ver Calendario</h3>
-                <p className="text-xs text-text-secondary leading-relaxed">
-                  Por favor, seleccioná una de tus cátedras para cargar su cronograma y visualizar las clases y entregas en formato mensual y semanal:
-                </p>
-                <div className="space-y-2 mt-4 max-h-64 overflow-y-auto pr-1">
-                  {courses.length === 0 ? (
-                    <p className="text-xs text-text-secondary italic py-4">No tenés cátedras registradas.</p>
-                  ) : (
-                    courses.map((c) => {
-                      const cid = c.id || c.course?.id;
-                      const name = c.name || c.course?.name || "Sin Nombre";
-                      return (
-                        <button
-                          key={cid}
-                          onClick={() => viewCourseDetails(c)}
-                          className="w-full text-left px-4 py-3 rounded-xl bg-bg-primary hover:bg-bg-tertiary border border-border-custom text-xs font-bold transition flex justify-between items-center cursor-pointer text-text-primary hover:scale-[1.01]"
-                        >
-                          <span>{name}</span>
-                          <span className="text-blue-500 font-extrabold">Seleccionar →</span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <button
-                  onClick={() => setSelectedCourse(null)}
-                  className="text-xs text-text-secondary hover:text-text-primary transition underline flex items-center space-x-1"
-                >
-                  <span>←</span> <span>Cambiar de cátedra</span>
-                </button>
-                <CalendarPanel
-                  classes={teacherClasses}
-                  assignments={assignments}
-                  activeCourseName={selectedCourse.name || selectedCourse.course?.name || ""}
-                />
-              </div>
-            )}
-          </div>
+          <CalendarPanel
+            activeTab={activeTab}
+            classes={teacherClasses}
+            assignments={assignments}
+            courses={(courses || []).map((c: any) => ({
+              id: c.id || c.course?.id,
+              name: c.name || c.course?.name || "Sin nombre",
+            }))}
+            activeCourseName="Global"
+          />
         )}
 
         {/* PROFILE TAB COMPONENT */}

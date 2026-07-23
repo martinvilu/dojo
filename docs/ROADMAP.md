@@ -11,13 +11,13 @@ Este documento detalla el estado actual de las funcionalidades de la plataforma,
 *   [x] **Foros y Preguntas y Respuestas por Clase (Q&A)**: Hilos de consulta en tiempo real por clase, reacciones emoji (👍, 🎉, ❤️) y Modo "Stack Overflow" (solución/respuesta correcta destacada por el docente).
 *   [x] **Grupos de Cursada Auto-organizados**: Subpestaña "Grupos de Estudio" para la creación de grupos y emparejamiento inteligente de compañeros afines según su turno/disponibilidad horaria.
 *   [x] **Módulo de Tutorías Académicas (Mentoría entre Pares)**: Subpestaña "Tutorías" para postularse como tutor, listar tutores de la cursada, reservar mentorías con sala de videoconferencia generada automáticamente en Google Meet.
-*   [ ] **Sincronización de Calendario (Exportación iCal/ICS)**: Permitir a los estudiantes exportar el cronograma dinámico de clases y fechas límite de entregas de tareas a Google Calendar, Apple Calendar o Microsoft Outlook.
+*   [x] **Sincronización de Calendario (Exportación iCal/ICS)**: Exportación instantánea del cronograma dinámico de clases y entregas a Google Calendar, Apple Calendar y Outlook mediante archivos `.ics` e iCal feeds.
+*   [x] **Marcadores Temporales en Grabaciones (Bookmarks)**: Sistema de etiquetado por timestamps en grabaciones de video para acceder instantáneamente a explicaciones clave.
 *   [ ] **Buscador Rápido Inteligente (Command + K)**: Implementar una barra de búsqueda omni-buscadora (Spotlight Search) accesible en cualquier parte del sitio para buscar temas de clases, avisos, entregas o nombres de profesores de forma instantánea.
 *   [ ] **Portafolio de Proyectos Públicos**: Dar la opción a los estudiantes de configurar ciertas entregas de GitHub como "públicas" en su perfil de la plataforma, creando un portafolio de proyectos académicos visible para reclutadores.
-*   [ ] **Marcadores Temporales en Grabaciones (Bookmarks)**: Permitir a los estudiantes guardar comentarios o notas privadas en marcas de tiempo específicas de los videos de YouTube enlazados, facilitando el repaso rápido de momentos clave de la clase.
 
 ### 2. Experiencia Docente
-*   [x] **Registro de Asistencia mediante QR Dinámico**: Generación de token alfanumérico temporal (expiración de 5 minutos) con geolocalización de docente y validación de proximidad GPS (< 150m) en el backend (Cloud Function).
+*   [x] **Registro de Asistencia mediante QR Dinámico**: Generación de token alfanumérico temporal (expiración de 45 segundos) con geolocalización de docente y validación de proximidad GPS (< 150m) en el backend (Cloud Function).
 *   [x] **Integración Bidireccional con Hojas de Cálculo (Sheets/Excel)**: Exportación en 1 clic de la matriz completa de notas, asistencia, alertas y regularidad académica a CSV nativo compatible con Google Sheets o Excel.
 *   [x] **Alertas Tempranas de Desempeño**: Panel "Alumnos y Alertas" con cálculo en tiempo real de regularidad y estado de riesgo académico.
 *   [x] **Espacio de Co-Docencia Coordinada**: Gestión de comisiones de estudiantes y vinculación de docentes responsables por comisión con filtros multi-vista.
@@ -45,15 +45,23 @@ Este documento detalla el estado actual de las funcionalidades de la plataforma,
 
 ---
 
-## 🚀 Mejoras Futuras y Específicas por Cátedra (Programación / DevOps)
-*   **Pruebas Automatizadas Integradas (Autograding)**: Vinculación directa con GitHub Actions para ejecutar tests unitarios automáticos (ej. JUnit, Jest, PyTest) en cada entrega y actualizar el estado en el panel docente con el porcentaje de cobertura.
-*   **Playground de Código Interactivo (Web Sandbox)**: Un sandbox web incrustado en el cronograma de clases que permita a los estudiantes realizar pequeños experimentos de código HTML/JS/Python directamente en el navegador sin instalar herramientas locales.
-*   **Inspección Automatizada de Calidad de Código (Linting)**: Analizador estático automático (ej. ESLint, Pylint) que evalúe y califique la legibilidad, formato y estándares de desarrollo del código entregado, reportando advertencias directo al alumno para corregir malas prácticas antes de la entrega definitiva.
-*   **Entorno de Programación en la Nube de un Clic**: Integración con servicios de contenedores web (ej. GitHub Codespaces / Gitpod) mediante un botón que abra el repositorio de la entrega en un VS Code Cloud preconfigurado con las librerías, JDKs y dependencias requeridas por la cátedra.
-*   **Visualizador del Flujo de Trabajo Git (Git Commits Visualizer)** [Completado]: Gráfico de commits y ramas integrado en la interfaz de la entrega para que el docente evalúe el proceso incremental y la distribución del trabajo de los estudiantes en tareas grupales.
-*   **Generador de Entornos de Desafíos Algorítmicos (Test Runner)**: Herramienta que permite a los docentes definir casos de prueba (inputs/outputs estándar) para que los estudiantes validen sus algoritmos y estructuras de datos básicas de forma guiada en la plataforma.
-*   **Revisión de Código en Línea e Inline (Inline Code Review)**: Permitir a los docentes agregar comentarios y notas directamente sobre líneas de código del archivo fuente del alumno en la interfaz web de entregas (similar a los reviews en Pull Requests de GitHub), evitando la descarga del código localmente.
-*   **Control de Cobertura y Escaneo de Seguridad de Dependencias (SAST)**: Análisis automáticos para evaluar el porcentaje de líneas de código cubiertas por pruebas unitarias del estudiante e identificar vulnerabilidades críticas en dependencias declaradas (estilo `npm audit` o `Dependabot`).
-*   **Simulador de Gestión de Proyectos Ágiles (Scrum Board)**: Un tablero Kanban de equipo integrado, backlog de sprints y gráfico de burndown para cátedras avanzadas de Ingeniería de Software donde se evalúan metodologías ágiles de trabajo en equipo.
-*   **Programación Colaborativa en Parejas (Live Pair Programming)**: Espacio virtual donde dos estudiantes puedan editar simultáneamente un mismo archivo de código en tiempo real dentro del sandbox de la plataforma, registrando la participación individual.
-*   **Explicador de Errores de Consola asistido por IA**: Asistente virtual de depuración que interprete la traza de errores del compilador o la consola de testeo en entregas fallidas, guiando pedagógicamente al estudiante para resolver el bug.
+## 💡 Nuevas 10+ Funcionalidades Potenciales (Propuestas por Categoría)
+
+### 🤖 Inteligencia Artificial & Asistencia Pedagógica
+1. **Asistente Pedagógico de Corrección por IA**: Sugerencia automática de notas y comentarios analizando las diferencias de código (diffs) de los estudiantes con las soluciones esperadas.
+2. **Generador Automático de Exámenes y Cuestionarios**: Creación instantánea de preguntas y evaluaciones adaptadas al temario de cada clase mediante modelos de IA (Gemini API).
+3. **Resúmenes Automáticos de Clases Grabadas**: Transcripción y síntesis inteligente de las grabaciones de clases guardando marcadores temporales automáticos.
+
+### 📈 Analítica Avanzada & Gestión Institucional
+4. **Matriz de Competencias y Progreso Académico**: Tablero visual del mapa de habilidades teóricas y prácticas adquiridas por cada estudiante a lo largo del cuatrimestre.
+5. **Predicción de Abandono Escolar con Machine Learning**: Algoritmo de clasificación que identifique patrones tempranos de deserción combinando entregas omitidas, asistencias caídas y baja interacción en foros.
+6. **Sistema de Certificados Digitales Verificables en Blockchain / QR**: Generación automática de certificados de aprobación de cátedras con código QR de autenticidad para egresados.
+
+### 🤝 Colaboración & Aprendizaje Experiencial
+7. **Simulador de Code Reviews en Equipo**: Flujo de trabajo donde los estudiantes deben revisar y comentar los Pull Requests de sus compañeros antes de la entrega final.
+8. **Salas de Estudio Virtuales con Pizarra Interactiva (Whiteboard)**: Espacio síncrono integrado con dibujo vectorial, notas adhesivas y chat web para grupos de estudio.
+9. **Desafíos Semanales de Código (Coding League)**: Desafíos cortos semanales estilo LeetCode / Hackerrank que otorgan XP adicional en la tabla de clasificación.
+
+### 🔐 Seguridad & Infraestructura Institucional
+10. **Proctoring y Control de Integridad en Exámenes**: Modo seguro de evaluación remota con detección de cambio de pestañas, bloqueo de navegador y supervisión periódica.
+11. **Sincronización Automática Bidireccional con SIU Guaraní / Banner**: API de integración con sistemas universitarios para importar actas oficiales y subir notas finales.

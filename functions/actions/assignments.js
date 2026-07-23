@@ -292,9 +292,12 @@ async function getStudentGithubActivity(payload, context) {
     const token = cSnap.data().github_token;
     if (!token) throw new Error("El profesor no configuró el token de GitHub.");
 
-    const repoParts = sub.repo_url.replace('https://github.com/', '').split('/');
+    const cleanRepoUrl = (sub.repo_url || '').trim().replace(/\/$/, '').replace(/\.git$/, '');
+    const repoParts = cleanRepoUrl.replace(/^https?:\/\/github\.com\//, '').split('/');
     const owner = repoParts[0];
     const repoName = repoParts[1];
+    
+    if (!owner || !repoName) throw new Error("URL de repositorio de GitHub no válida.");
     
     const githubHeaders = {
         'Authorization': `token ${token}`,
