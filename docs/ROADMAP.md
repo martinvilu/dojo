@@ -18,7 +18,7 @@ Este documento detalla el estado actual de las funcionalidades de la plataforma,
 
 ### 2. Experiencia Docente
 *   [x] **Registro de Asistencia mediante QR Dinámico**: Generación de token alfanumérico temporal (expiración de 45 segundos) con geolocalización de docente y validación de proximidad GPS (< 150m) en el backend (Cloud Function).
-*   [x] **Integración Bidireccional con Hojas de Cálculo (Sheets/Excel)**: Exportación en 1 clic de la matriz completa de notas, asistencia, alertas y regularidad académica a CSV nativo compatible con Google Sheets o Excel.
+*   [x] **Integración Bidireccional con Hojas de Cálculo (Sheets/Excel)**: Exportación en 1 clic de la matriz completa de notas y asistencia a endpoints CSV nativos (`exportGradesCsv` y `exportAttendanceCsv`) compatibles con Google Sheets `=IMPORTDATA` o Excel.
 *   [x] **Alertas Tempranas de Desempeño**: Panel "Alumnos y Alertas" con cálculo en tiempo real de regularidad y estado de riesgo académico.
 *   [x] **Espacio de Co-Docencia Coordinada**: Gestión de comisiones de estudiantes y vinculación de docentes responsables por comisión con filtros multi-vista.
 *   [x] **Tablero Kanban para Planificación Curricular**: Vista interactiva drag & drop para reorganizar cronogramas y clases entre Teóricas, Prácticas, Feriados y Exámenes.
@@ -45,23 +45,33 @@ Este documento detalla el estado actual de las funcionalidades de la plataforma,
 
 ---
 
-## 💡 Nuevas 10+ Funcionalidades Potenciales (Propuestas por Categoría)
+## 💡 Funcionalidades Potenciales Propuestas (Organizadas por Categoría)
 
 ### 🤖 Inteligencia Artificial & Asistencia Pedagógica
 1. **Asistente Pedagógico de Corrección por IA**: Sugerencia automática de notas y comentarios analizando las diferencias de código (diffs) de los estudiantes con las soluciones esperadas.
 2. **Generador Automático de Exámenes y Cuestionarios**: Creación instantánea de preguntas y evaluaciones adaptadas al temario de cada clase mediante modelos de IA (Gemini API).
 3. **Resúmenes Automáticos de Clases Grabadas**: Transcripción y síntesis inteligente de las grabaciones de clases guardando marcadores temporales automáticos.
+4. **Entorno Interactivo de Código en el Navegador (In-Browser Code REPL)**: Ejecución de fragmentos de código en JavaScript/TypeScript/Python usando WebAssembly directamente desde la interfaz de la clase.
 
 ### 📈 Analítica Avanzada & Gestión Institucional
-4. **Matriz de Competencias y Progreso Académico**: Tablero visual del mapa de habilidades teóricas y prácticas adquiridas por cada estudiante a lo largo del cuatrimestre.
-5. **Predicción de Abandono Escolar con Machine Learning**: Algoritmo de clasificación que identifique patrones tempranos de deserción combinando entregas omitidas, asistencias caídas y baja interacción en foros.
-6. **Sistema de Certificados Digitales Verificables en Blockchain / QR**: Generación automática de certificados de aprobación de cátedras con código QR de autenticidad para egresados.
+5. **Matriz de Competencias y Progreso Académico**: Tablero visual del mapa de habilidades teóricas y prácticas adquiridas por cada estudiante a lo largo del cuatrimestre.
+6. **Predicción de Abandono Escolar con Machine Learning**: Algoritmo de clasificación que identifique patrones tempranos de deserción combinando entregas omitidas, asistencias caídas y baja interacción en foros.
+7. **Sistema de Certificados Digitales Verificables en Blockchain / QR**: Generación automática de certificados de aprobación de cátedras con código QR de autenticidad para egresados.
+8. **Tablero de Métricas de Rendimiento en GitHub**: Analítica gráfica de frecuencia de commits, horarios de mayor productividad y volumen de cambios por alumno.
 
 ### 🤝 Colaboración & Aprendizaje Experiencial
-7. **Simulador de Code Reviews en Equipo**: Flujo de trabajo donde los estudiantes deben revisar y comentar los Pull Requests de sus compañeros antes de la entrega final.
-8. **Salas de Estudio Virtuales con Pizarra Interactiva (Whiteboard)**: Espacio síncrono integrado con dibujo vectorial, notas adhesivas y chat web para grupos de estudio.
-9. **Desafíos Semanales de Código (Coding League)**: Desafíos cortos semanales estilo LeetCode / Hackerrank que otorgan XP adicional en la tabla de clasificación.
+9. **Simulador de Code Reviews en Equipo**: Flujo de trabajo donde los estudiantes deben revisar y comentar los Pull Requests de sus compañeros antes de la entrega final.
+10. **Salas de Estudio Virtuales con Pizarra Interactiva (Whiteboard)**: Espacio síncrono integrado con dibujo vectorial, notas adhesivas y chat web para grupos de estudio.
+11. **Desafíos Semanales de Código (Coding League)**: Desafíos cortos semanales estilo LeetCode / Hackerrank que otorgan XP adicional en la tabla de clasificación.
+12. **Chat y Canales Temáticos por Cátedra (Estilo Slack/Discord)**: Comunicación síncrona en tiempo real con canales como `#anuncios`, `#consultas-tp` y `#general`.
+13. **Asignación de Parejas Dinámicas para Pair Programming**: Algoritmo de rotación de compañeros para trabajos prácticos en parejas según nivel y horario.
 
-### 🔐 Seguridad & Infraestructura Institucional
-10. **Proctoring y Control de Integridad en Exámenes**: Modo seguro de evaluación remota con detección de cambio de pestañas, bloqueo de navegador y supervisión periódica.
-11. **Sincronización Automática Bidireccional con SIU Guaraní / Banner**: API de integración con sistemas universitarios para importar actas oficiales y subir notas finales.
+### 🔐 Seguridad, Notificaciones e Infraestructura
+14. **Proctoring y Control de Integridad en Exámenes**: Modo seguro de evaluación remota con detección de cambio de pestañas, bloqueo de navegador y supervisión periódica.
+15. **Sincronización Automática Bidireccional con SIU Guaraní / Banner**: API de integración con sistemas universitarios para importar actas oficiales y subir notas finales.
+16. **Notificaciones Push Web y Móviles (PWA / Firebase FCM)**: Avisos instantáneos al teléfono o computadora cuando se abre el QR de asistencia o se califica un trabajo práctico.
+17. **Sistema de Rúbricas de Evaluación Multidimensional**: Criterios de corrección desglosados (Legibilidad, Pruebas, Arquitectura, Buenas Prácticas) con cálculo automático de notas.
+18. **Temporizador Pomodoro y Modo Enfoque de Estudio**: Herramienta integrada para sesiones de estudio concentrado registrando el tiempo invertido por tarea.
+19. **Soporte Multilingüe e Internacionalización (i18n)**: Traducción nativa de la interfaz a Inglés y Portugués.
+20. **Sandbox Seguro de Ejecución de Pruebas Unitarias (Docker Runner)**: Ejecutor de tests automatizados aislado que procesa el código entregado por los alumnos en contenedores efímeros.
+21. **App Móvil Nativa (React Native / Flutter)**: Aplicación nativa optimizada para escaneo rápido de asistencia por QR y consulta de calificaciones sin navegador.
