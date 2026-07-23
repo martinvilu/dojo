@@ -1968,6 +1968,22 @@ export default function DashboardPage() {
     }
   };
 
+  // Open course calendar directly
+  const handleOpenCourseCalendar = (courseId: string) => {
+    const courseMatch = courses.find((c: any) => (c.id || c.course?.id) === courseId);
+    if (courseMatch) {
+      const cData = courseMatch.course || courseMatch;
+      const instances = cData.class_instances || [];
+      const formattedClasses = instances.map((inst: any) => ({
+        ...inst,
+        course_id: courseId,
+        course_name: cData.name || courseMatch.name,
+      }));
+      setTeacherClasses(formattedClasses);
+    }
+    setActiveTab("calendar");
+  };
+
   // View course details (shared logic)
   const viewCourseDetails = async (course: any) => {
     const courseId = course.id;
@@ -2260,7 +2276,7 @@ export default function DashboardPage() {
             }`}
           >
             <span>📅</span>
-            {!isSidebarCollapsed && <span>Calendario</span>}
+            {!isSidebarCollapsed && <span>Calendario Global</span>}
           </button>
 
           <button
@@ -2448,6 +2464,7 @@ export default function DashboardPage() {
             activeTab={activeTab}
             courses={courses}
             viewCourseDetails={viewCourseDetails}
+            onOpenCourseCalendar={handleOpenCourseCalendar}
           />
         )}
 
@@ -2460,6 +2477,7 @@ export default function DashboardPage() {
             setEnrollCode={setEnrollCode}
             handleEnrollCourse={handleEnrollCourse}
             viewCourseDetails={viewCourseDetails}
+            onOpenCourseCalendar={handleOpenCourseCalendar}
           />
         )}
 
