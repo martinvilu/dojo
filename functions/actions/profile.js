@@ -1,14 +1,34 @@
 const admin = require("firebase-admin");
 
 async function getProfile(payload, context) {
-    const { uid, db } = context;
+    const { uid, db, authUser } = context;
     const ref = db.collection('profiles').doc(uid);
-    const pSnap = await ref.get();
-    if (!pSnap.exists) return null;
+    let pSnap = await ref.get();
     
-    await ref.update({
-        last_login: admin.firestore.FieldValue.serverTimestamp()
-    });
+    if (!pSnap.exists) {
+        let role = 'student';
+        const email = authUser?.email || payload?.email || '';
+        if (email === 'admin@jutsu.com' || email === 'admin@gaula.com' || email === 'admin@dojo.com') role = 'admin';
+        if (email === 'teacher@jutsu.com' || email === 'teacher@gaula.com' || email === 'teacher@dojo.com') role = 'teacher';
+
+        const profileData = {
+            id: uid,
+            full_name: authUser?.name || (email ? email.split('@')[0] : 'User'),
+            email: email,
+            role: role,
+            avatar_url: authUser?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser?.name || 'User')}`,
+            account_status: role === 'student' ? 'pending' : 'approved',
+            created_at: admin.firestore.FieldValue.serverTimestamp(),
+            last_login: admin.firestore.FieldValue.serverTimestamp()
+        };
+        await ref.set(profileData, { merge: true });
+        pSnap = await ref.get();
+      if (!pSnap.exists) return profileData;
+    } else {
+        await ref.update({
+            last_login: admin.firestore.FieldValue.serverTimestamp()
+        });
+    }
     
     const data = pSnap.data();
     data.last_login = admin.firestore.Timestamp.now();

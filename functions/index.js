@@ -1,12 +1,13 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const functions = require("firebase-functions/v1");
+const { beforeUserCreated } = require("firebase-functions/v2/identity");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
 const db = admin.firestore();
 
-exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
+exports.beforeUserCreated = beforeUserCreated(async (event) => {
+    const user = event.data;
     let role = 'student';
     if (user.email === 'admin@jutsu.com' || user.email === 'admin@gaula.com' || user.email === 'admin@dojo.com') role = 'admin';
     if (user.email === 'teacher@jutsu.com' || user.email === 'teacher@gaula.com' || user.email === 'teacher@dojo.com') role = 'teacher';
@@ -16,12 +17,12 @@ exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
         full_name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'),
         email: user.email,
         role: role,
-        avatar_url: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}`,
+        avatar_url: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}`,
         account_status: role === 'student' ? 'pending' : 'approved',
         created_at: admin.firestore.FieldValue.serverTimestamp()
     };
     try {
-        await db.collection('profiles').doc(user.uid).set(profileData);
+        await db.collection('profiles').doc(user.uid).set(profileData, { merge: true });
     } catch (e) {
         console.error(`Error creating profile for user ${user.uid}:`, e);
     }

@@ -2278,16 +2278,6 @@ export default function DashboardPage() {
             <span>📅</span>
             {!isSidebarCollapsed && <span>Calendario Global</span>}
           </button>
-
-          <button
-            onClick={() => setActiveTab("profile")}
-            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
-              activeTab === "profile" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
-            }`}
-          >
-            <span>👤</span>
-            {!isSidebarCollapsed && <span>Mi Perfil</span>}
-          </button>
         </nav>
       </aside>
 
