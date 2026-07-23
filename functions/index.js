@@ -1,32 +1,9 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { beforeUserCreated } = require("firebase-functions/v2/identity");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
 const db = admin.firestore();
-
-exports.beforeUserCreated = beforeUserCreated(async (event) => {
-    const user = event.data;
-    let role = 'student';
-    if (user.email === 'admin@jutsu.com' || user.email === 'admin@gaula.com' || user.email === 'admin@dojo.com') role = 'admin';
-    if (user.email === 'teacher@jutsu.com' || user.email === 'teacher@gaula.com' || user.email === 'teacher@dojo.com') role = 'teacher';
-
-    const profileData = {
-        id: user.uid,
-        full_name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'),
-        email: user.email,
-        role: role,
-        avatar_url: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}`,
-        account_status: role === 'student' ? 'pending' : 'approved',
-        created_at: admin.firestore.FieldValue.serverTimestamp()
-    };
-    try {
-        await db.collection('profiles').doc(user.uid).set(profileData, { merge: true });
-    } catch (e) {
-        console.error(`Error creating profile for user ${user.uid}:`, e);
-    }
-});
 
 async function syncGradeToMoodle(previousData, grade, feedback) {
     if (!previousData.moodle_lis_outcome_service_url || !previousData.moodle_lis_result_sourcedid) {
