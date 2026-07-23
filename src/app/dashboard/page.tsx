@@ -105,6 +105,7 @@ export default function DashboardPage() {
   // Profile Edit state
   const [profileMatricula, setProfileMatricula] = useState("");
   const [profileCohorte, setProfileCohorte] = useState("");
+  const [profileGithubUser, setProfileGithubUser] = useState("");
 
   // Data states
   const [courses, setCourses] = useState<any[]>([]);
@@ -481,6 +482,7 @@ export default function DashboardPage() {
         } else if (activeTab === "profile" && profile) {
           setProfileMatricula(profile.matricula_unrn || "");
           setProfileCohorte(profile.cohorte || "");
+          setProfileGithubUser(profile.github_user || "");
         }
       } catch (err: any) {
         console.error("Error loading tab data:", err);
@@ -1922,7 +1924,11 @@ export default function DashboardPage() {
     e.preventDefault();
     setApiLoading(true);
     try {
-      await api("updateProfile", { matricula_unrn: profileMatricula, cohorte: profileCohorte });
+      await api("updateProfile", { 
+        matricula_unrn: profileMatricula, 
+        cohorte: profileCohorte,
+        github_user: profileGithubUser 
+      });
       const profileRes = await api("getProfile");
       setProfile(profileRes);
       alert("Perfil actualizado correctamente.");
@@ -2251,6 +2257,15 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {profile && !profile.github_user && (
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-955/20 border border-amber-250 dark:border-amber-900/40 rounded-2xl text-amber-800 dark:text-amber-400 text-xs font-semibold flex justify-between items-center animate-pulse">
+            <span>⚠️ Falta configurar tu usuario de GitHub. Por favor, ve a <strong>Mi Perfil</strong> y completalo para habilitar el seguimiento de commits y entregas.</span>
+            <button onClick={() => setActiveTab("profile")} className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline">
+              Configurar Ahora →
+            </button>
+          </div>
+        )}
+
         {apiLoading && (
           <div className="mb-6 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-blue-400 text-sm flex items-center space-x-3 animate-pulse">
             <span className="w-4 h-4 border-2 border-t-transparent border-blue-500 rounded-full animate-spin"></span>
@@ -2476,6 +2491,8 @@ export default function DashboardPage() {
           setProfileMatricula={setProfileMatricula}
           profileCohorte={profileCohorte}
           setProfileCohorte={setProfileCohorte}
+          profileGithubUser={profileGithubUser}
+          setProfileGithubUser={setProfileGithubUser}
           handleUpdateProfile={handleUpdateProfile}
         />
 
