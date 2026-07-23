@@ -75,34 +75,30 @@ El proyecto se encuentra en un estado funcional avanzado con las siguientes cara
 - **Inscripción y Acceso Resiliente**: Los estudiantes pueden enrolarse en cátedras mediante códigos generados de manera dinámica. La recuperación de cátedras por el estudiante consulta de manera cruzada las colecciones de inscripciones (`enrollments` y `course_roster`) evitando desapariciones de registros en la interfaz.
 - **Asociación Docente**: Soporte para la asignación y desasignación manual de profesores a las aulas y cátedras desde el panel de control del administrador.
 
-### 📅 Planificación Base y Cronogramas
-- **Gestión del Cronograma**: Profesores y ayudantes pueden visualizar la planificación base (clases y bloques horarios) con un flujo de carga seguro (`getCourseDetails`) que evita errores de permisos o actualizaciones simultáneas de la base de datos.
-- **Creación y Edición de Clases**: Herramientas integradas para regenerar y guardar el cronograma de clases de manera automática.
+### 📅 Planificación Base, Calendario y Marcadores
+- **Visualización Directa y Filtro de Cátedras**: Acceso directo al calendario con selector dinámico para alternar entre *🌐 Calendario Global* y materias específicas.
+- **Sincronización iCal (.ics)**: Exportación instantánea del cronograma de clases y entregas en formato estandarizado `.ics` compatible con Google Calendar, Outlook y Apple Calendar.
+- **Marcadores Temporales en Grabaciones (Bookmarks)**: Etiquetado de minutos específicos en videos de clases (timestamps) con títulos descriptivos para acceso rápido.
 
-### 📢 Comunicación y Entregas
-- **Acuse de Recepción de Avisos**: Los avisos creados por los docentes cuentan con un sistema de confirmación interactivo. Los estudiantes confirman la lectura del aviso presionando "Confirmar Recepción", y los docentes y administradores pueden inspeccionar el listado de lecturas en tiempo real con marcas de tiempo detalladas.
-- **Asignaciones**: Carga y gestión de tareas asociadas a las cátedras.
+### 📢 Comunicación, Entregas y Perfil de Usuario
+- **Usuario de GitHub Requerido**: Registro y validación obligatoria del nombre de usuario de GitHub (`github_user`) con alerta preventiva en el dashboard.
+- **Seguimiento de Commits y PRs**: Integración limpia con GitHub REST API para monitorear commits, Pull Requests y comentarios en entregas.
+- **Acuse de Recepción de Avisos**: Los avisos creados por los docentes cuentan con confirmación interactiva de lectura.
 
-### 🛠️ Infraestructura y Backend
-- **Motor Node.js Actualizado**: Configuración optimizada de las Cloud Functions al motor runtime de **Node.js 22** para evitar interrupciones de soporte.
-- **Seeds Idempotentes**: Scripts de inicialización y poblamiento de base de datos (`seed.sh` y `functions/seed.js`) optimizados para ser idempotentes usando métodos `PATCH` en lugar de `POST`, garantizando la consistencia en el estado de aprobación de los perfiles de prueba.
-
-## Arquitectura del Sistema
-- **Frontend React / Next.js (`src/app/`)**: Implementa la interfaz interactiva y el panel de control de múltiples roles con hidratación de datos en tiempo real mediante Firebase Client SDK.
-- **Backend Firebase Cloud Functions (`functions/index.js`)**: Encapsula las operaciones privilegiadas en un controlador de llamadas de API (`api`), asegurando las verificaciones de rol y la seguridad de los datos de Firestore.
-- **Firestore (`firestore.rules` / `firestore.indexes.json`)**: Base de datos de documentos flexible orientada a materias, alumnos, entregas y asistencia.
+### 🛠️ Infraestructura y Seguridad
+- **Eliminación Física de Usuarios**: Borrado en cascada (Firebase Auth + Firestore) por administradores con modal de advertencia preventiva.
+- **Suite de Pruebas Unitarias Exhaustivas**: 58/58 tests unitarios pasando en el backend con Jest.
 
 ## 📚 Documentación del Sistema
 
-Toda la documentación técnica y funcional del proyecto se encuentra organizada en la carpeta `docs/`:
+Toda la documentación técnica y funcional del proyecto se encuentra organizada en `docs/` y `manual/`:
 
+- **[Manual de Usuario (MyST Markdown)](file:///home/mrtin/dev/gaula/manual/index.md)**: Guía completa de uso por características para [Docentes](file:///home/mrtin/dev/gaula/manual/docentes.md) y [Estudiantes](file:///home/mrtin/dev/gaula/manual/estudiantes.md).
 - **[Arquitectura y Diseño de Datos](file:///home/mrtin/dev/gaula/docs/ARCHITECTURE.md)**: Detalle del modelo de seguridad (RBAC), colecciones de base de datos (Firestore) y la estructura de archivos.
 - **[Casos de Uso del Sistema](file:///home/mrtin/dev/gaula/docs/CASOS_DE_USO.md)**: Escenarios detallados por rol (profesor, estudiante, administrador).
 - **[Diagramas UML (Mermaid)](file:///home/mrtin/dev/gaula/docs/UML.md)**: Diagrama de Casos de Uso, Modelo Entidad-Relación y Diagrama de Secuencias de flujos críticos.
 - **[Guía de Pruebas y Semillas (Testing)](file:///home/mrtin/dev/gaula/docs/TESTING.md)**: Comandos de consola y flujos para simular el comportamiento de la plataforma localmente con la semilla de base de datos.
-- **[Roadmap y Plan de Mejoras](file:///home/mrtin/dev/gaula/docs/ROADMAP.md)**: Ideas de evolución técnica y pedagógica adaptadas para diferentes tipos de cátedra.
+- **[Roadmap y Plan de Mejoras](file:///home/mrtin/dev/gaula/docs/ROADMAP.md)**: Estado del sistema e ideas de evolución técnica y pedagógica adaptadas por categoría.
 - **[Estándares de Desarrollo](file:///home/mrtin/dev/gaula/docs/DEVELOPMENT.md)**: Estilo de commits y pautas para el mantenimiento del repositorio.
 - **[Estilo de Interfaz (Design Tokens)](file:///home/mrtin/dev/gaula/docs/DESIGN.md)**: Configuración CSS y paletas de colores del sistema.
 - **[Propuestas de Codenames](file:///home/mrtin/dev/gaula/docs/NOMBRES.md)**: Sugerencias creativas e informales para nombrar el proyecto.
-
-
