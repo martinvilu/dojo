@@ -86,4 +86,16 @@ describe('API Callable Function', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.send).toHaveBeenCalledWith('Falta el ID del curso');
   });
+
+  it('exportAttendanceCsv returns 400 if courseId or token is missing', async () => {
+    const req = { query: {}, set: jest.fn() };
+    const res = {
+      set: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn()
+    };
+    await myFunctions.exportAttendanceCsv(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith('Falta courseId o token');
+  });
 });

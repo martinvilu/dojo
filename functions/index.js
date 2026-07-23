@@ -495,6 +495,104 @@ exports.exportGradesCsv = onRequest(async (req, res) => {
     }
 });
 
+exports.exportAttendanceCsv = onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') return res.status(204).send('');
+    
+    try {
+        const { courseId, token } = req.query;
+        if (!courseId || !token) return res.status(400).send("Falta courseId o token");
+
+        const cSnap = await db.collection('courses').doc(courseId).get();
+        if (!cSnap.exists) return res.status(404).send("Materia no encontrada");
+        const course = cSnap.data();
+
+        if (course.sync_secret !== token) return res.status(401).send("Token inválido");
+
+        // Fetch roster students for this course
+        const rosterSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
+        const studentIds = new Set();
+        rosterSnap.docs.forEach(doc => {
+            const data = doc.data();
+            if (data.student_id) studentIds.add(data.student_id);
+        });
+
+        // Also fetch from enrollments
+        const enrollSnap = await db.collection('enrollments').get();
+        enrollSnap.docs.forEach(doc => {
+            if (doc.id.includes(`_${courseId}`)) {
+                const data = doc.data();
+                if (data.student_id) studentIds.add(data.student_id);
+            }
+        });
+
+        const profilesMap = {};
+        for (const sid of Array.from(studentIds)) {
+            const pSnap = await db.collection('profiles').doc(sid).get();
+            if (pSnap.exists) {
+                profilesMap[sid] = pSnap.data();
+            }
+        }
+
+        // Fetch course attendance records
+        const attCollSnap = await db.collection('courses').doc(courseId).collection('attendance').get();
+        const globalAttSnap = await db.collection('attendance').where('course_id', '==', courseId).get();
+
+        const escapeCsv = (str) => {
+            if (typeof str !== 'string') return '';
+            if (str.includes(';') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        };
+
+        let csv = "timestamp;materia;clase;estudiante_email;estudiante_nombre;estudiante_matricula;usuario_github;estado\n";
+
+        // From courses/{courseId}/attendance
+        attCollSnap.docs.forEach(doc => {
+            const data = doc.data();
+            const classNum = data.classNumber || doc.id.replace('class_', '');
+            const records = data.records || {};
+            const timestamp = data.updated_at ? (data.updated_at.toDate ? data.updated_at.toDate().toISOString() : new Date(data.updated_at).toISOString()) : new Date().toISOString();
+
+            for (const [sid, status] of Object.entries(records)) {
+                const profile = profilesMap[sid] || {};
+                const email = profile.email || profile.contact_email || '';
+                const name = profile.full_name || '';
+                const matricula = profile.matricula_unrn || '';
+                const githubUser = profile.github_username || profile.github_user || '';
+
+                csv += `${escapeCsv(timestamp)};${escapeCsv(course.name)};${escapeCsv(String(classNum))};${escapeCsv(email)};${escapeCsv(name)};${escapeCsv(matricula)};${escapeCsv(githubUser)};${escapeCsv(String(status))}\n`;
+            }
+        });
+
+        // From global attendance collection
+        globalAttSnap.docs.forEach(doc => {
+            const data = doc.data();
+            const sid = data.student_id;
+            const classId = data.class_id || data.classNumber || '1';
+            const timestamp = data.timestamp ? (data.timestamp.toDate ? data.timestamp.toDate().toISOString() : new Date(data.timestamp).toISOString()) : new Date().toISOString();
+            const profile = profilesMap[sid] || {};
+
+            const email = profile.email || profile.contact_email || '';
+            const name = profile.full_name || '';
+            const matricula = profile.matricula_unrn || '';
+            const githubUser = profile.github_username || profile.github_user || '';
+
+            csv += `${escapeCsv(timestamp)};${escapeCsv(course.name)};${escapeCsv(String(classId))};${escapeCsv(email)};${escapeCsv(name)};${escapeCsv(matricula)};${escapeCsv(githubUser)};presente\n`;
+        });
+
+        res.set('Content-Type', 'text/csv; charset=utf-8');
+        res.set('Content-Disposition', `attachment; filename="asistencia_${course.name.replace(/\s+/g, '_')}.csv"`);
+        res.status(200).send(csv);
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).send("Error interno: " + e.message);
+    }
+});
+
 exports.importGrades = onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
