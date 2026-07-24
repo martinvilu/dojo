@@ -154,6 +154,13 @@ const actionModules = {
     logActivity: 'activity',
     getActivityLogs: 'activity',
     
+    // gmailAuth
+    getGmailAuthUrl: 'gmailAuth',
+    saveGmailAuthCode: 'gmailAuth',
+    getGmailAuthStatus: 'gmailAuth',
+    disconnectGmailAuth: 'gmailAuth',
+    sendGmailNotification: 'gmailAuth',
+    
     // schedule
     saveScheduleVersion: 'schedule',
     getScheduleVersions: 'schedule',

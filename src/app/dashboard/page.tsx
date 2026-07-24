@@ -220,6 +220,10 @@ export default function DashboardPage() {
   const [teacherCommissions, setTeacherCommissions] = useState<string[]>([]);
   const [newCommissionInput, setNewCommissionInput] = useState<string>("");
 
+  // Gmail OAuth Integration states
+  const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; email: string | null }>({ connected: false, email: null });
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+
   // Teacher Central Dashboard states
   const [overviewSubmissionsList, setOverviewSubmissionsList] = useState<any[]>([]);
   const [loadingOverviewSubmissions, setLoadingOverviewSubmissions] = useState<boolean>(false);
@@ -673,6 +677,13 @@ export default function DashboardPage() {
             setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
             const comms = Array.isArray(data.commissions) ? data.commissions : (Array.isArray(selectedCourse?.commissions) ? selectedCourse.commissions : ["Comisión A", "Comisión B"]);
             setTeacherCommissions(comms);
+            
+            try {
+              const gStatus = await api("getGmailAuthStatus");
+              setGmailStatus(gStatus || { connected: false, email: null });
+            } catch (e) {
+              console.error("Error al obtener estado de Gmail:", e);
+            }
             
             // Get other courses for cloning
             const otherCoursesRes = await api("getTeacherCourses");
@@ -1211,6 +1222,85 @@ export default function DashboardPage() {
       setApiLoading(false);
     }
   };
+  useEffect(() => {
+    if (typeof window === "undefined" || !profile) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    if (code && (profile.role === "teacher" || profile.role === "admin")) {
+      const handleExchangeCode = async () => {
+        setApiLoading(true);
+        try {
+          const redirectUri = window.location.origin + window.location.pathname;
+          const res = await api("saveGmailAuthCode", { code, redirectUri });
+          alert(`¡Cuenta de Gmail (${res.email}) vinculada exitosamente!`);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setGmailStatus({ connected: true, email: res.email });
+        } catch (err: any) {
+          alert("Error al vincular cuenta de Gmail: " + err.message);
+        } finally {
+          setApiLoading(false);
+        }
+      };
+      handleExchangeCode();
+    }
+  }, [profile]);
+
+  const handleStartGmailAuth = async () => {
+    setApiLoading(true);
+    try {
+      const redirectUri = window.location.origin + window.location.pathname;
+      const res = await api("getGmailAuthUrl", { redirectUri });
+      if (res?.authUrl) {
+        window.location.href = res.authUrl;
+      }
+    } catch (err: any) {
+      alert("Error al iniciar autorización con Gmail: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleDisconnectGmail = async () => {
+    if (!confirm("¿Estás seguro de desvincular tu cuenta de Gmail? No se podrán enviar notificaciones desde tu correo.")) return;
+    setApiLoading(true);
+    try {
+      await api("disconnectGmailAuth");
+      setGmailStatus({ connected: false, email: null });
+      alert("Cuenta de Gmail desvinculada.");
+    } catch (err: any) {
+      alert("Error al desvincular Gmail: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleSendTestGmail = async () => {
+    if (!testEmailAddress || !testEmailAddress.includes("@")) {
+      alert("Ingresá un correo de destino válido.");
+      return;
+    }
+    setApiLoading(true);
+    try {
+      const res = await api("sendGmailNotification", {
+        to: testEmailAddress,
+        subject: "🔔 Prueba de Envío desde Dojo via Gmail API",
+        htmlBody: `
+          <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 500px;">
+            <h2 style="color: #2563eb; margin-top: 0;">¡Prueba de Notificación Exitosa!</h2>
+            <p>Hola, este correo de prueba fue enviado desde tu cuenta vinculada (<strong>${gmailStatus.email}</strong>) mediante la <strong>Gmail API</strong> oficial.</p>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">Sistema Dojo Ninja / Jutsu Classroom — ${new Date().toLocaleString("es-AR")}</p>
+          </div>
+        `
+      });
+      alert(`¡Correo de prueba enviado exitosamente a ${testEmailAddress} desde ${res.emailSentFrom}!`);
+      setTestEmailAddress("");
+    } catch (err: any) {
+      alert("Error al enviar correo de prueba: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
 
 
   // Schedule Versioning & History actions
@@ -4472,6 +4562,70 @@ export default function DashboardPage() {
                         <span>🔑 Generar PAT en GitHub con permisos necesarios (repo, admin:org) ↗</span>
                       </a>
                     </div>
+                  </div>
+
+                  {/* GMAIL OAUTH INTEGRATION CARD */}
+                  <div className="bg-neutral-950/80 p-5 rounded-2xl border border-neutral-850 space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center space-x-2">
+                          <span>📧 Envío de Notificaciones por Gmail (Gmail API OAuth2)</span>
+                        </h4>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Autorizá tu cuenta de Gmail institucional o personal para enviar avisos, alertas de inasistencias y estados del curso directamente desde tu casilla oficial con 100% de entregabilidad a bandeja de entrada.
+                        </p>
+                      </div>
+                      {gmailStatus.connected ? (
+                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-xl text-xs font-mono font-bold whitespace-nowrap flex items-center space-x-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                          <span>Conectado: {gmailStatus.email}</span>
+                        </span>
+                      ) : (
+                        <span className="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-xl text-xs font-mono font-bold whitespace-nowrap">
+                          ⚪ No Vinculado
+                        </span>
+                      )}
+                    </div>
+
+                    {!gmailStatus.connected ? (
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={handleStartGmailAuth}
+                          className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition flex items-center space-x-2 cursor-pointer shadow-md"
+                        >
+                          <span>🔑 Autorizar y Vincular Cuenta Gmail</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 pt-2 border-t border-neutral-900">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="email"
+                            value={testEmailAddress}
+                            onChange={(e) => setTestEmailAddress(e.target.value)}
+                            placeholder="Email de destino para prueba (Ej: tuemail@unrn.edu.ar)"
+                            className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSendTestGmail}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer"
+                          >
+                            ✉️ Enviar Email de Prueba
+                          </button>
+                        </div>
+                        <div className="flex justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={handleDisconnectGmail}
+                            className="text-xs text-red-400 hover:text-red-300 font-semibold underline cursor-pointer"
+                          >
+                            Desvincular Cuenta Gmail
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-3 bg-neutral-900/50 p-4 rounded-xl border border-neutral-850">
