@@ -522,7 +522,7 @@ export default function CalendarPanel({
               onClick={() => setSelectedEvent(null)}
               aria-label="Cerrar detalles"
               type="button"
-              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary transition text-lg p-1.5 focus:outline-none"
+              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary transition text-lg p-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
             >
               ✕
             </button>
