@@ -1323,7 +1323,23 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       const res = await api("exportCourseToMoodleXml", { courseId: cid });
-      if (res?.xmlContent) {
+      if (res?.mbzBase64) {
+        const binaryStr = atob(res.mbzBase64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: "application/x-gzip" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = res.filename || "moodle_backup.mbz";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert("¡Archivo de Respaldo MBZ (Moodle 4.2) generado y descargado exitosamente!");
+      } else if (res?.xmlContent) {
         const blob = new Blob([res.xmlContent], { type: "application/xml" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -1336,7 +1352,7 @@ export default function DashboardPage() {
         alert("¡Respaldo XML de Moodle generado y descargado exitosamente!");
       }
     } catch (err: any) {
-      alert("Error al exportar curso a Moodle XML: " + err.message);
+      alert("Error al exportar curso a Moodle: " + err.message);
     } finally {
       setApiLoading(false);
     }

@@ -106,9 +106,12 @@ describe('Moodle Integration Expanded Actions', () => {
         expect(res.success).toBe(true);
     });
 
-    test('exportCourseToMoodleXml generates valid Moodle XML backup structure', async () => {
+    test('exportCourseToMoodleXml generates valid Moodle MBZ backup archive matching Moodle 4.2', async () => {
         const res = await exportCourseToMoodleXml({ courseId: 'c123' }, mockContext);
         expect(res.filename).toContain('moodle_backup');
+        expect(res.filename).toContain('.mbz');
+        expect(typeof res.mbzBase64).toBe('string');
+        expect(res.mbzBase64.length).toBeGreaterThan(100);
         expect(res.xmlContent).toContain('<moodle_backup>');
         expect(res.xmlContent).toContain('Algoritmos y Programación');
         expect(res.xmlContent).toContain('Introducción a Python');
