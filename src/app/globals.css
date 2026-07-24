@@ -195,3 +195,79 @@ html:not(.dark) .hover\:bg-neutral-900\/10:hover {
 html:not(.dark) .hover\:text-white:hover {
   color: var(--text-primary) !important;
 }
+
+/* DESIGN.md Institutional Academic Component Styles */
+.btn-primary {
+  background-color: #a10016;
+  color: #ffffff !important;
+  border-radius: 0.25rem; /* 4px radius per DESIGN.md */
+  font-family: var(--font-chivo);
+  font-weight: 600;
+  font-size: 14px;
+  min-height: 44px;
+  min-width: 120px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: #800012;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-custom);
+  border-radius: 0.25rem; /* 4px radius per DESIGN.md */
+  font-family: var(--font-chivo);
+  font-weight: 600;
+  font-size: 14px;
+  min-height: 44px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.card-academic {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-custom);
+  border-radius: 0.5rem; /* 8px radius per DESIGN.md */
+  padding: 16px;
+}
+
+.input-academic {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-custom);
+  border-radius: 0.25rem; /* 4px radius per DESIGN.md */
+  color: var(--text-primary);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: var(--font-chivo);
+  transition: border-color 0.2s ease;
+}
+
+.input-academic:focus {
+  outline: none;
+  border-color: #004ba4;
+}
+
+.chip-status {
+  border-radius: 9999px; /* strictly pill-shaped reserved for status tags per DESIGN.md */
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-chivo);
+  display: inline-flex;
+  align-items: center;
+}

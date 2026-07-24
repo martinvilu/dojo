@@ -48,40 +48,40 @@ export default function DirectEmailModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-2xl">
-        <div className="flex justify-between items-start border-b border-neutral-800 pb-3">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="card-academic max-w-lg w-full space-y-4 shadow-xl rounded-lg">
+        <div className="flex justify-between items-start border-b border-border-custom pb-3">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+            <h3 className="text-base font-bold text-text-primary flex items-center space-x-2">
               <span>✉️ Enviar Correo Directo a Alumno</span>
             </h3>
-            <p className="text-xs text-gray-400 mt-1">
-              Destinatario: <strong className="text-white">{student.full_name || "Estudiante"}</strong> ({student.email || "Sin email público"})
+            <p className="text-xs text-text-secondary mt-1">
+              Destinatario: <strong className="text-text-primary">{student.full_name || "Estudiante"}</strong> ({student.email || "Sin email público"})
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-sm font-bold">✕</button>
+          <button onClick={onClose} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer">✕</button>
         </div>
 
         <form onSubmit={handleSend} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Asunto</label>
+            <label className="block text-xs font-semibold text-text-secondary mb-1 uppercase tracking-wider">Asunto</label>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+              className="input-academic w-full font-mono text-xs"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Mensaje</label>
+            <label className="block text-xs font-semibold text-text-secondary mb-1 uppercase tracking-wider">Mensaje</label>
             <textarea
               value={messageBody}
               onChange={(e) => setMessageBody(e.target.value)}
               rows={6}
               placeholder="Escribí aquí tu mensaje directo para el estudiante..."
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-xs text-white focus:outline-none focus:border-blue-500 font-sans leading-relaxed"
+              className="input-academic w-full text-xs font-sans leading-relaxed"
               required
             />
           </div>
@@ -90,14 +90,14 @@ export default function DirectEmailModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-gray-300 text-xs font-bold rounded-xl transition"
+              className="btn-secondary"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={sending}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition flex items-center space-x-1 cursor-pointer"
+              className="btn-primary"
             >
               <span>{sending ? "Enviando..." : "✉️ Enviar Correo Directo"}</span>
             </button>

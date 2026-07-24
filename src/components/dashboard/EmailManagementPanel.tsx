@@ -168,14 +168,14 @@ export default function EmailManagementPanel({
 
         <div className="flex items-center space-x-3">
           {gmailStatus.connected ? (
-            <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-mono font-bold flex items-center space-x-2 chip-status">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
               <span>Gmail Conectado: {gmailStatus.email}</span>
             </span>
           ) : (
             <button
               onClick={onStartGmailAuth}
-              className="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow"
+              className="btn-primary shadow-sm"
             >
               <span>🔑 Autorizar Cuenta Gmail</span>
             </button>
@@ -184,27 +184,27 @@ export default function EmailManagementPanel({
       </div>
 
       {/* SUBTABS BAR */}
-      <div className="flex border-b border-neutral-800 space-x-2">
+      <div className="flex border-b border-border-custom space-x-2">
         <button
           onClick={() => setSubTab("scheduled")}
-          className={`px-4 py-2 text-xs font-bold rounded-t-xl transition cursor-pointer ${
-            subTab === "scheduled" ? "bg-neutral-850 text-white border-t-2 border-blue-500" : "text-gray-400 hover:text-white"
+          className={`px-4 py-2 text-xs font-semibold rounded-t transition cursor-pointer ${
+            subTab === "scheduled" ? "bg-bg-secondary text-text-primary border-t-2 border-[#a10016]" : "text-text-secondary hover:text-text-primary"
           }`}
         >
           ⏰ Correos Programados ({scheduledEmails.length})
         </button>
         <button
           onClick={() => setSubTab("templates")}
-          className={`px-4 py-2 text-xs font-bold rounded-t-xl transition cursor-pointer ${
-            subTab === "templates" ? "bg-neutral-850 text-white border-t-2 border-blue-500" : "text-gray-400 hover:text-white"
+          className={`px-4 py-2 text-xs font-semibold rounded-t transition cursor-pointer ${
+            subTab === "templates" ? "bg-bg-secondary text-text-primary border-t-2 border-[#a10016]" : "text-text-secondary hover:text-text-primary"
           }`}
         >
           📝 Plantillas Personalizadas
         </button>
         <button
           onClick={() => setSubTab("history")}
-          className={`px-4 py-2 text-xs font-bold rounded-t-xl transition cursor-pointer ${
-            subTab === "history" ? "bg-neutral-850 text-white border-t-2 border-blue-500" : "text-gray-400 hover:text-white"
+          className={`px-4 py-2 text-xs font-semibold rounded-t transition cursor-pointer ${
+            subTab === "history" ? "bg-bg-secondary text-text-primary border-t-2 border-[#a10016]" : "text-text-secondary hover:text-text-primary"
           }`}
         >
           📜 Historial de Envíos
@@ -215,39 +215,39 @@ export default function EmailManagementPanel({
       {subTab === "scheduled" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Cola de Correos Programados</h4>
+            <h4 className="text-sm font-bold text-text-primary uppercase tracking-wider">Cola de Correos Programados</h4>
             <button
               onClick={() => setShowScheduleModal(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
+              className="btn-primary"
             >
               <span>+ Programar Nuevo Correo</span>
             </button>
           </div>
 
           {loading ? (
-            <p className="text-xs text-gray-400 italic">Cargando correos programados...</p>
+            <p className="text-xs text-text-secondary italic">Cargando correos programados...</p>
           ) : scheduledEmails.length === 0 ? (
-            <div className="bg-neutral-900/50 border border-neutral-850 p-8 rounded-2xl text-center text-gray-400 text-xs">
-              <p className="font-semibold text-gray-300">No hay correos pendientes ni programados en este momento.</p>
+            <div className="card-academic text-center text-text-secondary text-xs">
+              <p className="font-semibold text-text-primary">No hay correos pendientes ni programados en este momento.</p>
               <p className="mt-1">Podés programar avisos de clase, recordatorios de entrega o alertas de inasistencias automáticas.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {scheduledEmails.map((item) => (
-                <div key={item.id} className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div key={item.id} className="card-academic flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-bold text-white">{item.title || item.subject}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase font-mono ${
-                        item.status === "pending" ? "bg-amber-500/10 text-amber-400 border border-amber-500/30" :
-                        item.status === "sent" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30" :
-                        "bg-red-500/10 text-red-400 border border-red-500/30"
+                      <span className="text-sm font-bold text-text-primary">{item.title || item.subject}</span>
+                      <span className={`chip-status text-[10px] uppercase font-mono ${
+                        item.status === "pending" ? "bg-amber-500/10 text-amber-600 border border-amber-500/30" :
+                        item.status === "sent" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30" :
+                        "bg-red-500/10 text-red-600 border border-red-500/30"
                       }`}>
                         {item.status === "pending" ? "⏳ Pendiente" : item.status === "sent" ? `✓ Enviado (${item.sent_count || 0})` : "❌ Cancelado"}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">Asunto: <span className="font-mono text-gray-300">{item.subject}</span></p>
-                    <p className="text-[11px] text-gray-500 mt-0.5">
+                    <p className="text-xs text-text-secondary mt-1">Asunto: <span className="font-mono text-text-primary">{item.subject}</span></p>
+                    <p className="text-[11px] text-text-muted mt-0.5">
                       Destinatarios: {item.recipient_type === "all_students" ? "Todos los alumnos" : "Alumnos en riesgo"} • Programado para: {new Date(item.send_at).toLocaleString("es-AR")}
                     </p>
                   </div>
@@ -256,13 +256,13 @@ export default function EmailManagementPanel({
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleTriggerNow(item.id)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                        className="btn-primary min-w-[100px]"
                       >
                         🚀 Enviar Ahora
                       </button>
                       <button
                         onClick={() => handleCancelScheduled(item.id)}
-                        className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-red-400 rounded-lg text-xs font-bold transition cursor-pointer"
+                        className="btn-secondary text-red-600"
                       >
                         Cancelar
                       </button>
