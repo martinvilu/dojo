@@ -671,8 +671,8 @@ export default function DashboardPage() {
             setTeacherMoodleEnabled(data.moodle_enabled || selectedCourse?.moodle_enabled || false);
             setTeacherExternalCalendars(Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || ""));
             setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
-            setTeacherCommissionsMapping(data.commissions_mapping || selectedCourse?.commissions_mapping || {});
-            setTeacherCommissions(data.commissions || selectedCourse?.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]);
+            const comms = Array.isArray(data.commissions) ? data.commissions : (Array.isArray(selectedCourse?.commissions) ? selectedCourse.commissions : ["Comisión A", "Comisión B"]);
+            setTeacherCommissions(comms);
             
             // Get other courses for cloning
             const otherCoursesRes = await api("getTeacherCourses");
@@ -4434,14 +4434,32 @@ export default function DashboardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-400 mb-1">GitHub Personal Token (Con permisos para crear repositorios)</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-xs font-semibold text-gray-400">GitHub Personal Access Token (PAT)</label>
+                      {teacherGithubToken && (
+                        <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded font-mono font-bold">
+                          ✓ Token Cargado (••••••••)
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="password"
                       value={teacherGithubToken}
                       onChange={(e) => setTeacherGithubToken(e.target.value)}
-                      placeholder="ghp_..."
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white"
+                      placeholder={teacherGithubToken ? "••••••••••••••••" : "ghp_..."}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono"
                     />
+                    <div className="mt-1 flex items-center justify-between text-[11px]">
+                      <span className="text-gray-400">¿Necesitás generar un token?</span>
+                      <a
+                        href="https://github.com/settings/tokens/new?description=NinjaDojo_PAT&scopes=repo,admin:org,read:user"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 font-semibold flex items-center space-x-1 underline"
+                      >
+                        <span>🔑 Generar PAT en GitHub con permisos necesarios (repo, admin:org) ↗</span>
+                      </a>
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-3 bg-neutral-900/50 p-4 rounded-xl border border-neutral-850">
@@ -4507,12 +4525,19 @@ export default function DashboardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-400 mb-1">Texto de Portada</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-xs font-semibold text-gray-400">Texto de Portada</label>
+                      {teacherCoverText && (
+                        <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded font-mono font-bold">
+                          ✓ Portada Cargada ({teacherCoverText.length} caracteres)
+                        </span>
+                      )}
+                    </div>
                     <textarea
                       value={teacherCoverText}
                       onChange={(e) => setTeacherCoverText(e.target.value)}
                       placeholder="Detalles sobre la cátedra..."
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white h-16"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white h-20"
                     />
                   </div>
 
