@@ -145,8 +145,12 @@ async function getTeacherCourses(payload, context) {
 async function getCourseSettings(payload, context) {
     const { uid, db } = context;
     const courseId = payload.courseId;
-    const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+    const profileSnap = await db.collection('profiles').doc(uid).get();
+    const isSysAdmin = profileSnap.exists && profileSnap.data().role === 'admin';
+    if (!isSysAdmin) {
+        const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+        if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+    }
     
     const cSnap = await db.collection('courses').doc(courseId).get();
     let data = cSnap.data();
@@ -184,9 +188,13 @@ async function getCourseSettings(payload, context) {
 async function updateCourseSettings(payload, context) {
     const { uid, db, admin } = context;
     const courseId = payload.courseId;
-    const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
-    if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
+    const profileSnap = await db.collection('profiles').doc(uid).get();
+    const isSysAdmin = profileSnap.exists && profileSnap.data().role === 'admin';
+    if (!isSysAdmin) {
+        const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+        if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+        if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
+    }
     
     await db.collection('courses').doc(courseId).update(payload.data);
 

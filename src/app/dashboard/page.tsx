@@ -698,6 +698,18 @@ export default function DashboardPage() {
 
           if (courseSubTab === "overview") {
             await loadOverviewData();
+          } else if (courseSubTab === "settings") {
+            const res = await api("getCourseSettings", { courseId: cid });
+            const data = (res && (res.start_date !== undefined || res.invite_code !== undefined)) ? res : (res?.data || selectedCourse || {});
+            setTeacherStartDate(data.start_date || selectedCourse?.start_date || "");
+            setTeacherDuration(data.duration_weeks ? data.duration_weeks.toString() : (selectedCourse?.duration_weeks ? selectedCourse.duration_weeks.toString() : ""));
+            setTeacherCoverText(data.cover_text || selectedCourse?.cover_text || "");
+            setTeacherGithubToken(data.github_token || selectedCourse?.github_token || "");
+            setTeacherMoodleEnabled(data.moodle_enabled || selectedCourse?.moodle_enabled || false);
+            setTeacherExternalCalendars(Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || ""));
+            setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
+            const comms = Array.isArray(data.commissions) ? data.commissions : (Array.isArray(selectedCourse?.commissions) ? selectedCourse.commissions : ["Comisión A", "Comisión B"]);
+            setTeacherCommissions(comms);
           } else if (courseSubTab === "assignments") {
             setAssignments(detailRes?.assignments || []);
           } else if (courseSubTab === "teachers") {
@@ -4403,8 +4415,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* SUBTAB 4. AJUSTES CÁTEDRA (TEACHERS ONLY) */}
-            {courseSubTab === "settings" && profile?.role === "teacher" && (
+            {/* SUBTAB 4. AJUSTES CÁTEDRA */}
+            {courseSubTab === "settings" && (profile?.role === "teacher" || profile?.role === "admin") && (
               <div className="space-y-6">
                 <form onSubmit={handleSaveTeacherSettings} className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
                   <h3 className="text-lg font-bold">Datos Generales</h3>
