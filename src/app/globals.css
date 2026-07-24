@@ -67,10 +67,10 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
 
-  --color-primary: var(--color-primary);
-  --color-on-primary: var(--color-on-primary);
-  --color-primary-container: var(--color-primary-container);
-  --color-on-primary-container: var(--color-on-primary-container);
+  --color-primary: #a10016;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #cb1424;
+  --color-on-primary-container: #ffdeda;
 
   --color-secondary: var(--color-secondary);
   --color-on-secondary: var(--color-on-secondary);
