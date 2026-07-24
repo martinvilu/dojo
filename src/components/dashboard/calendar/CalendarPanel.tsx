@@ -82,10 +82,12 @@ export default function CalendarPanel({
 
     // Classes on this date
     filteredClasses.forEach((c) => {
-      if (c.date === dateStr) {
+      if (!c.date) return;
+      const cDateStr = typeof c.date === "string" ? c.date.slice(0, 10) : "";
+      if (cDateStr === dateStr || c.date === dateStr || (typeof c.date === "string" && c.date.startsWith(dateStr))) {
         dayEvents.push({
           type: "class",
-          title: c.topic || c.type || `Clase ${c.classNumber}`,
+          title: c.topic || c.type || `Clase ${c.classNumber || ""}`,
           special_status: c.special_status || "Normal",
           details: c,
         });
@@ -94,7 +96,9 @@ export default function CalendarPanel({
 
     // Assignments on this date
     filteredAssignments.forEach((a) => {
-      if (a.due_date && a.due_date.startsWith(dateStr)) {
+      if (!a.due_date) return;
+      const aDateStr = typeof a.due_date === "string" ? a.due_date.slice(0, 10) : "";
+      if (aDateStr === dateStr || a.due_date === dateStr || (typeof a.due_date === "string" && a.due_date.startsWith(dateStr))) {
         dayEvents.push({
           type: "assignment",
           title: `📝 Tarea: ${a.title}`,

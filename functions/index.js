@@ -125,6 +125,9 @@ const actionModules = {
     
     // moodle
     moodleAutoEnroll: 'moodle',
+    exportCourseToMoodleXml: 'moodle',
+    syncMoodleCourseRoster: 'moodle',
+    exportGradesToMoodleWebservice: 'moodle',
     
     // courses
     getCourseDetails: 'courses',

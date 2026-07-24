@@ -224,6 +224,11 @@ export default function DashboardPage() {
   const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; email: string | null }>({ connected: false, email: null });
   const [testEmailAddress, setTestEmailAddress] = useState("");
 
+  // Expanded Moodle Integration states
+  const [moodleApiUrl, setMoodleApiUrl] = useState<string>("");
+  const [moodleWsToken, setMoodleWsToken] = useState<string>("");
+  const [moodleCourseId, setMoodleCourseId] = useState<string>("");
+
   // Teacher Central Dashboard states
   const [overviewSubmissionsList, setOverviewSubmissionsList] = useState<any[]>([]);
   const [loadingOverviewSubmissions, setLoadingOverviewSubmissions] = useState<boolean>(false);
@@ -502,17 +507,24 @@ export default function DashboardPage() {
             setAssignments(loadedAssignments);
 
             const allClassInstances: any[] = [];
-            safeCourses.forEach((c: any) => {
-              const cData = c.course || c;
-              const instances = cData.class_instances || [];
-              instances.forEach((inst: any) => {
-                allClassInstances.push({
-                  ...inst,
-                  course_id: cData.id || c.id,
-                  course_name: cData.name || c.name,
-                });
-              });
-            });
+            await Promise.all(
+              courseIds.map(async (cid: string) => {
+                try {
+                  const detail = await api("getCourseDetails", { courseId: cid });
+                  const cName = detail?.name || safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.name || "Cátedra";
+                  const instances = detail?.class_instances || [];
+                  instances.forEach((inst: any) => {
+                    allClassInstances.push({
+                      ...inst,
+                      course_id: cid,
+                      course_name: cName,
+                    });
+                  });
+                } catch (e) {
+                  console.error("Error fetching course details for calendar:", e);
+                }
+              })
+            );
             setTeacherClasses(allClassInstances);
           }
         } else if (activeTab === "profile" && profile) {
@@ -1296,6 +1308,78 @@ export default function DashboardPage() {
       setTestEmailAddress("");
     } catch (err: any) {
       alert("Error al enviar correo de prueba: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleExportMoodleXml = async () => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) return;
+    setApiLoading(true);
+    try {
+      const res = await api("exportCourseToMoodleXml", { courseId: cid });
+      if (res?.xmlContent) {
+        const blob = new Blob([res.xmlContent], { type: "application/xml" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = res.filename || "moodle_backup.xml";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert("¡Respaldo XML de Moodle generado y descargado exitosamente!");
+      }
+    } catch (err: any) {
+      alert("Error al exportar curso a Moodle XML: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleSyncMoodleRoster = async () => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) return;
+    if (!moodleApiUrl || !moodleWsToken || !moodleCourseId) {
+      alert("Por favor completá la URL de Moodle, el Token de Web Service y el ID del curso de Moodle.");
+      return;
+    }
+    setApiLoading(true);
+    try {
+      const res = await api("syncMoodleCourseRoster", {
+        courseId: cid,
+        moodleUrl: moodleApiUrl,
+        moodleToken: moodleWsToken,
+        moodleCourseId: moodleCourseId
+      });
+      alert(`¡Sincronización completada! ${res.syncedCount} estudiantes sincronizados desde un total de ${res.totalMoodleUsers} usuarios en Moodle.`);
+    } catch (err: any) {
+      alert("Error al sincronizar roster desde Moodle: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleExportGradesToMoodle = async (assignmentId: string) => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) return;
+    if (!moodleApiUrl || !moodleWsToken || !moodleCourseId) {
+      alert("Por favor completá los parámetros de conexión de Moodle en Ajustes de Cátedra.");
+      return;
+    }
+    setApiLoading(true);
+    try {
+      const res = await api("exportGradesToMoodleWebservice", {
+        courseId: cid,
+        moodleUrl: moodleApiUrl,
+        moodleToken: moodleWsToken,
+        moodleCourseId: moodleCourseId,
+        assignmentId: assignmentId
+      });
+      alert(`¡Notas enviadas a Moodle! ${res.pushedCount} calificaciones actualizadas en el Libro de Calificaciones de Moodle.`);
+    } catch (err: any) {
+      alert("Error al enviar notas a Moodle: " + err.message);
     } finally {
       setApiLoading(false);
     }
