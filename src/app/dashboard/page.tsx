@@ -663,16 +663,16 @@ export default function DashboardPage() {
             await loadOverviewData();
           } else if (courseSubTab === "settings") {
             const res = await api("getCourseSettings", { courseId: cid });
-            const data = res?.data || {};
-            setTeacherStartDate(data.start_date || "");
-            setTeacherDuration(data.duration_weeks?.toString() || "");
-            setTeacherCoverText(data.cover_text || "");
-            setTeacherGithubToken(data.github_token || "");
-            setTeacherMoodleEnabled(data.moodle_enabled || false);
-            setTeacherExternalCalendars((data.external_calendars || []).join(", "));
-            setTeacherSchedules(data.schedules || []);
-            setTeacherCommissionsMapping(data.commissions_mapping || {});
-            setTeacherCommissions(data.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]);
+            const data = (res && (res.start_date !== undefined || res.invite_code !== undefined)) ? res : (res?.data || selectedCourse || {});
+            setTeacherStartDate(data.start_date || selectedCourse?.start_date || "");
+            setTeacherDuration(data.duration_weeks ? data.duration_weeks.toString() : (selectedCourse?.duration_weeks ? selectedCourse.duration_weeks.toString() : ""));
+            setTeacherCoverText(data.cover_text || selectedCourse?.cover_text || "");
+            setTeacherGithubToken(data.github_token || selectedCourse?.github_token || "");
+            setTeacherMoodleEnabled(data.moodle_enabled || selectedCourse?.moodle_enabled || false);
+            setTeacherExternalCalendars(Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || ""));
+            setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
+            setTeacherCommissionsMapping(data.commissions_mapping || selectedCourse?.commissions_mapping || {});
+            setTeacherCommissions(data.commissions || selectedCourse?.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]);
             
             // Get other courses for cloning
             const otherCoursesRes = await api("getTeacherCourses");
