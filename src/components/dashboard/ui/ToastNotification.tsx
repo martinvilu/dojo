@@ -14,9 +14,10 @@ export default function ToastNotification({ message, type, onClose }: ToastNotif
       }`}></span>
       <p className="text-xs text-gray-200 font-medium leading-normal">{message}</p>
       <button 
+        aria-label="Cerrar notificación"
         type="button"
         onClick={onClose} 
-        className="text-gray-500 hover:text-white text-xs font-bold pl-2 cursor-pointer transition-colors"
+        className="text-gray-500 hover:text-white text-xs font-bold pl-2 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
       >
         ✕
       </button>
