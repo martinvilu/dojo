@@ -18,6 +18,8 @@ import AttendanceManager from "@/components/dashboard/attendance/AttendanceManag
 import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
 import QrScannerModal from "@/components/dashboard/attendance/QrScannerModal";
 import CalendarPanel from "@/components/dashboard/calendar/CalendarPanel";
+import EmailManagementPanel from "@/components/dashboard/EmailManagementPanel";
+import DirectEmailModal from "@/components/dashboard/DirectEmailModal";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -223,6 +225,7 @@ export default function DashboardPage() {
   // Gmail OAuth Integration states
   const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; email: string | null }>({ connected: false, email: null });
   const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [selectedDirectEmailStudent, setSelectedDirectEmailStudent] = useState<any | null>(null);
 
   // Expanded Moodle Integration states
   const [moodleApiUrl, setMoodleApiUrl] = useState<string>("");
@@ -2745,6 +2748,12 @@ export default function DashboardPage() {
           handleUpdateProfile={handleUpdateProfile}
           handleAddSecondaryEmail={handleAddSecondaryEmail}
           xpLogs={xpLogs}
+          gmailStatus={gmailStatus}
+          handleStartGmailAuth={handleStartGmailAuth}
+          handleDisconnectGmail={handleDisconnectGmail}
+          handleSendTestGmail={handleSendTestGmail}
+          testEmailAddress={testEmailAddress}
+          setTestEmailAddress={setTestEmailAddress}
         />
 
         {/* DETALLADA VISTA DE CÁTEDRA */}
@@ -2805,6 +2814,14 @@ export default function DashboardPage() {
                     className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "students" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                   >
                     👥 Alumnos y Alertas
+                  </button>
+                )}
+                {(profile?.role === "admin" || profile?.role === "teacher") && (
+                  <button
+                    onClick={() => setCourseSubTab("emails")}
+                    className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "emails" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
+                  >
+                    📧 Gestión Correos
                   </button>
                 )}
                 {(profile?.role === "admin" || profile?.role === "teacher") && (
@@ -4462,13 +4479,25 @@ export default function DashboardPage() {
                                 </div>
                               </td>
                               <td className="p-4">
-                                <span className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
-                                  isAtRisk
-                                    ? "bg-red-950/40 border border-red-900/30 text-red-400"
-                                    : "bg-emerald-950/40 border border-emerald-900/30 text-emerald-400"
-                                }`}>
-                                  {isAtRisk ? "EN RIESGO" : "REGULAR"}
-                                </span>
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                                    isAtRisk
+                                      ? "bg-red-950/40 border border-red-900/30 text-red-400"
+                                      : "bg-emerald-950/40 border border-emerald-900/30 text-emerald-400"
+                                  }`}>
+                                    {isAtRisk ? "EN RIESGO" : "REGULAR"}
+                                  </span>
+                                  {(profile?.role === "teacher" || profile?.role === "admin") && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedDirectEmailStudent(student)}
+                                      className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600 border border-blue-500/40 text-blue-300 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center space-x-1 cursor-pointer whitespace-nowrap shadow-sm"
+                                      title="Enviar correo directo a este estudiante"
+                                    >
+                                      <span>✉️ Email</span>
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -4986,6 +5015,17 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* SUBTAB GESTIÓN DE CORREOS */}
+            {courseSubTab === "emails" && (profile?.role === "teacher" || profile?.role === "admin") && (
+              <EmailManagementPanel
+                courseId={selectedCourse.id || selectedCourse.course?.id}
+                courseName={selectedCourse.name || "Cátedra"}
+                api={api}
+                gmailStatus={gmailStatus}
+                onStartGmailAuth={handleStartGmailAuth}
+              />
             )}
 
             {/* SUBTAB 5. DOCENTES (ADMIN & TEACHER) */}
@@ -5986,6 +6026,16 @@ export default function DashboardPage() {
         );
       })()}
       
+      {selectedDirectEmailStudent && (
+        <DirectEmailModal
+          student={selectedDirectEmailStudent}
+          courseName={selectedCourse?.name || "Cátedra"}
+          courseId={selectedCourse?.id || selectedCourse?.course?.id}
+          onClose={() => setSelectedDirectEmailStudent(null)}
+          api={api}
+        />
+      )}
+
       {toast && (
         <ToastNotification
           message={toast.message}

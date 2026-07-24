@@ -29,6 +29,12 @@ interface ProfilePanelProps {
   handleUpdateProfile: (e: React.FormEvent) => void;
   handleAddSecondaryEmail?: (email: string) => void;
   xpLogs?: any[];
+  gmailStatus?: { connected: boolean; email: string | null };
+  handleStartGmailAuth?: () => void;
+  handleDisconnectGmail?: () => void;
+  handleSendTestGmail?: () => void;
+  testEmailAddress?: string;
+  setTestEmailAddress?: (val: string) => void;
 }
 
 export default function ProfilePanel({
@@ -45,6 +51,12 @@ export default function ProfilePanel({
   handleUpdateProfile,
   handleAddSecondaryEmail,
   xpLogs = [],
+  gmailStatus = { connected: false, email: null },
+  handleStartGmailAuth,
+  handleDisconnectGmail,
+  handleSendTestGmail,
+  testEmailAddress = "",
+  setTestEmailAddress,
 }: ProfilePanelProps) {
   const [newSecondaryEmail, setNewSecondaryEmail] = useState("");
   const [newPrimaryEmail, setNewPrimaryEmail] = useState("");
@@ -199,6 +211,72 @@ export default function ProfilePanel({
           Guardar Cambios
         </button>
       </form>
+
+      {/* AUTORIZACIÓN GMAIL OAUTH (PERFIL DE USUARIO) */}
+      {(profile?.role === "teacher" || profile?.role === "admin") && (
+        <div className="bg-bg-secondary p-6 rounded-2xl border border-border-custom space-y-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border-custom pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center space-x-2">
+                <span>📧 Autorización de Gmail para Envíos (OAuth 2.0)</span>
+              </h3>
+              <p className="text-xs text-text-secondary mt-1">
+                Autorizá tu casilla de correo Gmail o Google Workspace personal/institucional para enviar avisos, correos a estudiantes y alertas de inasistencias.
+              </p>
+            </div>
+            {gmailStatus.connected ? (
+              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-xl text-xs font-mono font-bold whitespace-nowrap flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>Conectado: {gmailStatus.email}</span>
+              </span>
+            ) : (
+              <span className="bg-amber-500/10 text-amber-500 border border-amber-500/30 px-3 py-1 rounded-xl text-xs font-mono font-bold whitespace-nowrap">
+                ⚪ No Autorizado
+              </span>
+            )}
+          </div>
+
+          {!gmailStatus.connected ? (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleStartGmailAuth}
+                className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition flex items-center space-x-2 cursor-pointer shadow-md"
+              >
+                <span>🔑 Conectar y Autorizar Casilla Gmail</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3 pt-1">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="email"
+                  value={testEmailAddress}
+                  onChange={(e) => setTestEmailAddress && setTestEmailAddress(e.target.value)}
+                  placeholder="Email de destino para prueba (Ej: tuemail@unrn.edu.ar)"
+                  className="flex-1 bg-bg-primary border border-border-custom text-text-primary rounded-xl px-3 py-2 text-xs focus:outline-none font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={handleSendTestGmail}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer"
+                >
+                  ✉️ Enviar Correo de Prueba
+                </button>
+              </div>
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={handleDisconnectGmail}
+                  className="text-xs text-red-400 hover:text-red-300 font-semibold underline cursor-pointer"
+                >
+                  Desvincular Cuenta Gmail
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* DIRECCIONES DE EMAIL SECUNDARIAS */}
       <div className="bg-bg-secondary p-6 rounded-2xl border border-border-custom space-y-4 shadow-sm">

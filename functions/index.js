@@ -157,12 +157,24 @@ const actionModules = {
     logActivity: 'activity',
     getActivityLogs: 'activity',
     
-    // gmailAuth
+    // gmailAuth & Email Management
     getGmailAuthUrl: 'gmailAuth',
     saveGmailAuthCode: 'gmailAuth',
     getGmailAuthStatus: 'gmailAuth',
     disconnectGmailAuth: 'gmailAuth',
     sendGmailNotification: 'gmailAuth',
+    
+    // emailTemplates
+    getEmailTemplates: 'emailTemplates',
+    saveEmailTemplate: 'emailTemplates',
+    
+    // scheduledEmails
+    getScheduledEmails: 'scheduledEmails',
+    createScheduledEmail: 'scheduledEmails',
+    cancelScheduledEmail: 'scheduledEmails',
+    triggerScheduledEmailNow: 'scheduledEmails',
+    sendDirectStudentEmail: 'scheduledEmails',
+    getMailLogs: 'scheduledEmails',
     
     // schedule
     saveScheduleVersion: 'schedule',
