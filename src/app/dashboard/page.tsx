@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth, db, functions } from "@/lib/firebase/clientApp";
@@ -173,6 +173,14 @@ export default function DashboardPage() {
 
   // Assignments states
   const [assignments, setAssignments] = useState<any[]>([]);
+  const pastDueAssignments = useMemo(() => {
+    const now = new Date();
+    return new Set(
+      assignments
+        .filter((a) => a.due_date && now > new Date(a.due_date))
+        .map((a) => a.id)
+    );
+  }, [assignments]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [assignTitle, setAssignTitle] = useState("");
   const [assignTemplate, setAssignTemplate] = useState("");
@@ -1960,7 +1968,7 @@ export default function DashboardPage() {
         const studentSubmissions = courseSubmissions.filter(s => s.student_id === student.id);
         const hasMissingAssignments = assignments.some(a => {
           const hasSub = studentSubmissions.some(s => s.assignment_id === a.id);
-          const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+          const isPastDue = pastDueAssignments.has(a.id);
           return !hasSub && isPastDue;
         });
         
@@ -3007,7 +3015,7 @@ export default function DashboardPage() {
                       const studentSubmissions = courseSubmissions.filter((s) => s.student_id === student.id);
                       const hasMissingAssignments = assignments.some((a) => {
                         const hasSub = studentSubmissions.some((s) => s.assignment_id === a.id);
-                        const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+                        const isPastDue = pastDueAssignments.has(a.id);
                         return !hasSub && isPastDue;
                       });
 
@@ -3203,7 +3211,7 @@ export default function DashboardPage() {
                             const studentSubmissions = courseSubmissions.filter((s) => s.student_id === student.id);
                             const hasMissingAssignments = assignments.some((a) => {
                               const hasSub = studentSubmissions.some((s) => s.assignment_id === a.id);
-                              const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+                              const isPastDue = pastDueAssignments.has(a.id);
                               return !hasSub && isPastDue;
                             });
 
@@ -3222,7 +3230,7 @@ export default function DashboardPage() {
                             const studentSubmissions = courseSubmissions.filter((s) => s.student_id === student.id);
                             const hasMissingAssignments = assignments.some((a) => {
                               const hasSub = studentSubmissions.some((s) => s.assignment_id === a.id);
-                              const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+                              const isPastDue = pastDueAssignments.has(a.id);
                               return !hasSub && isPastDue;
                             });
 
@@ -3271,7 +3279,7 @@ export default function DashboardPage() {
                           const studentSubmissions = courseSubmissions.filter((s) => s.student_id === student.id);
                           const hasMissingAssignments = assignments.some((a) => {
                             const hasSub = studentSubmissions.some((s) => s.assignment_id === a.id);
-                            const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+                            const isPastDue = pastDueAssignments.has(a.id);
                             return !hasSub && isPastDue;
                           });
 
@@ -4422,7 +4430,7 @@ export default function DashboardPage() {
                             const totalAssignments = assignments.length;
                             const hasMissingAssignments = assignments.some(a => {
                               const hasSub = studentSubmissions.some(s => s.assignment_id === a.id);
-                              const isPastDue = a.due_date ? new Date() > new Date(a.due_date) : false;
+                              const isPastDue = pastDueAssignments.has(a.id);
                               return !hasSub && isPastDue;
                             });
 
