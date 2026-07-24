@@ -520,6 +520,8 @@ export default function CalendarPanel({
           <div className="bg-bg-secondary border border-border-custom p-6 rounded-3xl max-w-md w-full space-y-5 shadow-2xl relative text-left">
             <button
               onClick={() => setSelectedEvent(null)}
+              aria-label="Cerrar detalles"
+              type="button"
               className="absolute top-4 right-4 text-text-secondary hover:text-text-primary transition text-lg p-1.5 focus:outline-none"
             >
               ✕

@@ -139,6 +139,8 @@ export default function QrScannerModal({
       <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full text-center space-y-5 shadow-2xl relative">
         <button
           onClick={onClose}
+          aria-label="Cerrar modal"
+          type="button"
           className="absolute top-4 right-4 text-gray-500 hover:text-white transition text-lg p-1.5 focus:outline-none"
         >
           ✕
