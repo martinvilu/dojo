@@ -20,6 +20,7 @@ import QrScannerModal from "@/components/dashboard/attendance/QrScannerModal";
 import CalendarPanel from "@/components/dashboard/calendar/CalendarPanel";
 import EmailManagementPanel from "@/components/dashboard/EmailManagementPanel";
 import DirectEmailModal from "@/components/dashboard/DirectEmailModal";
+import MoodleIntegrationPanel from "@/components/dashboard/moodle/MoodleIntegrationPanel";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -3939,6 +3940,13 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex gap-1.5">
                               <button
+                                onClick={() => handleExportGradesToMoodle(a.id)}
+                                className="px-3 py-1.5 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 rounded-lg text-[11px] font-semibold text-purple-300 transition flex items-center space-x-1 cursor-pointer"
+                                title="Enviar calificaciones corregidas de esta tarea a Moodle Gradebook"
+                              >
+                                <span>📤 Moodle</span>
+                              </button>
+                              <button
                                 onClick={() => {
                                   setEditingAssignmentId(a.id);
                                   setAssignTitle(a.title);
@@ -4753,6 +4761,22 @@ export default function DashboardPage() {
                       🔌 Integración con Moodle Habilitada (LTI 1.3 & AGS Grade Sync)
                     </label>
                   </div>
+
+                  {teacherMoodleEnabled && (
+                    <MoodleIntegrationPanel
+                      courseId={selectedCourse.id || selectedCourse.course?.id}
+                      courseName={selectedCourse.name || "Cátedra"}
+                      api={api}
+                      onExportXml={handleExportMoodleXml}
+                      onSyncRoster={handleSyncMoodleRoster}
+                      moodleApiUrl={moodleApiUrl}
+                      setMoodleApiUrl={setMoodleApiUrl}
+                      moodleWsToken={moodleWsToken}
+                      setMoodleWsToken={setMoodleWsToken}
+                      moodleCourseId={moodleCourseId}
+                      setMoodleCourseId={setMoodleCourseId}
+                    />
+                  )}
 
                   {teacherMoodleEnabled && (
                     <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-850 space-y-2">

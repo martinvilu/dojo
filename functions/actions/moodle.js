@@ -216,6 +216,110 @@ async function exportGradesToMoodleWebservice(payload, context) {
     return { success: true, pushedCount };
 }
 
+/**
+ * Import course topics and activities from Moodle REST WS API (core_course_get_contents)
+ */
+async function syncMoodleCourseContents(payload, context) {
+    const { db } = context;
+    const { courseId, moodleUrl, moodleToken, moodleCourseId } = payload;
+
+    if (!courseId || !moodleUrl || !moodleToken || !moodleCourseId) {
+        throw new Error("Parámetros de conexión a Moodle incompletos.");
+    }
+
+    const endpoint = `${moodleUrl.replace(/\/$/, '')}/webservice/rest/server.php?wstoken=${moodleToken}&wsfunction=core_course_get_contents&moodlewsrestformat=json&courseid=${moodleCourseId}`;
+
+    const res = await fetch(endpoint);
+    const sections = await res.json();
+
+    if (sections.exception || sections.errorcode) {
+        throw new Error(`Error en Moodle WS: ${sections.message || sections.errorcode}`);
+    }
+
+    if (!Array.isArray(sections)) {
+        throw new Error("Respuesta inválida de Moodle Web Services");
+    }
+
+    const courseRef = db.collection('courses').doc(courseId);
+    const cSnap = await courseRef.get();
+    if (!cSnap.exists) throw new Error("Cátedra no encontrada.");
+
+    const currentClasses = cSnap.data().class_instances || [];
+    const newClasses = [...currentClasses];
+
+    let importedSectionsCount = 0;
+    sections.forEach((sec, idx) => {
+        if (!sec.name || sec.name.trim() === "") return;
+        const exists = newClasses.some(c => c.topic === sec.name);
+        if (!exists) {
+            newClasses.push({
+                classNumber: newClasses.length + 1,
+                topic: sec.name,
+                description: sec.summary ? sec.summary.replace(/<[^>]*>?/gm, '') : `Sección Moodle ${sec.section}`,
+                date: new Date().toISOString().split('T')[0],
+                type: "Teórica",
+                special_status: "Normal"
+            });
+            importedSectionsCount++;
+        }
+    });
+
+    await courseRef.update({ class_instances: newClasses });
+
+    return { success: true, importedSectionsCount, totalSections: sections.length };
+}
+
+/**
+ * Return LTI 1.3 Deep Linking Content Items JSON structure for Moodle integration
+ */
+async function getMoodleLtiDeepLinkContent(payload, context) {
+    const { db } = context;
+    const { courseId, baseUrl } = payload;
+    if (!courseId) throw new Error("Parámetro 'courseId' requerido.");
+
+    const appBaseUrl = baseUrl || "https://jutsu-classroom-mrtin.web.app";
+    const assignmentsSnap = await db.collection('assignments').where('course_id', '==', courseId).get();
+    const assignments = assignmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const courseSnap = await db.collection('courses').doc(courseId).get();
+    const course = courseSnap.exists ? courseSnap.data() : {};
+    const classes = course.class_instances || [];
+
+    const items = [];
+
+    // Add assignments as LTI LTIResourceLink
+    assignments.forEach(asg => {
+        items.push({
+            type: "ltiResourceLink",
+            title: `📝 Tarea Dojo: ${asg.title}`,
+            url: `${appBaseUrl}/dashboard?courseId=${courseId}&assignmentId=${asg.id}`,
+            custom: {
+                assignmentId: asg.id,
+                courseId: courseId
+            }
+        });
+    });
+
+    // Add classes as LTI LTIResourceLink
+    classes.forEach(ci => {
+        items.push({
+            type: "ltiResourceLink",
+            title: `📚 Clase: ${ci.topic || `Clase ${ci.classNumber}`}`,
+            url: `${appBaseUrl}/dashboard?courseId=${courseId}&classNumber=${ci.classNumber}`,
+            custom: {
+                classNumber: ci.classNumber,
+                courseId: courseId
+            }
+        });
+    });
+
+    return {
+        "@context": "http://purl.imsglobal.org/ctx/lti/v1/deeplinking",
+        "@type": "LtiDeepLinkingResponse",
+        "items": items
+    };
+}
+
 function escapeXml(unsafe) {
     if (!unsafe) return "";
     return unsafe.replace(/[<>&'"]/g, (c) => {
@@ -234,5 +338,8 @@ module.exports = {
     moodleAutoEnroll,
     exportCourseToMoodleXml,
     syncMoodleCourseRoster,
-    exportGradesToMoodleWebservice
+    exportGradesToMoodleWebservice,
+    syncMoodleCourseContents,
+    getMoodleLtiDeepLinkContent
 };
+

@@ -2,7 +2,9 @@ const {
     moodleAutoEnroll,
     exportCourseToMoodleXml,
     syncMoodleCourseRoster,
-    exportGradesToMoodleWebservice
+    exportGradesToMoodleWebservice,
+    syncMoodleCourseContents,
+    getMoodleLtiDeepLinkContent
 } = require('../actions/moodle');
 
 jest.mock('node-fetch');
@@ -146,5 +148,12 @@ describe('Moodle Integration Expanded Actions', () => {
 
         expect(res.success).toBe(true);
         expect(res.pushedCount).toBe(1);
+    });
+
+    test('getMoodleLtiDeepLinkContent returns valid LTI 1.3 Deep Linking structure', async () => {
+        const res = await getMoodleLtiDeepLinkContent({ courseId: 'c123' }, mockContext);
+        expect(res['@type']).toBe('LtiDeepLinkingResponse');
+        expect(Array.isArray(res.items)).toBe(true);
+        expect(res.items.length).toBeGreaterThan(0);
     });
 });

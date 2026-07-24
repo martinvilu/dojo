@@ -128,6 +128,8 @@ const actionModules = {
     exportCourseToMoodleXml: 'moodle',
     syncMoodleCourseRoster: 'moodle',
     exportGradesToMoodleWebservice: 'moodle',
+    syncMoodleCourseContents: 'moodle',
+    getMoodleLtiDeepLinkContent: 'moodle',
     
     // courses
     getCourseDetails: 'courses',
