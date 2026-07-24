@@ -2685,12 +2685,19 @@ export default function DashboardPage() {
               const hasSolucionador = studentComments.some(c => c.is_best_answer);
 
               return (
-                <div className="bg-gradient-to-r from-blue-955/20 via-neutral-900/60 to-purple-955/20 border border-neutral-800 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-lg animate-fade-in">
+                <div 
+                  onClick={() => setActiveTab("profile")}
+                  className="bg-gradient-to-r from-blue-955/20 via-neutral-900/60 to-purple-955/20 border border-neutral-800 hover:border-blue-500/50 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-lg animate-fade-in cursor-pointer transition group"
+                  title="Haz clic para ver tu bitácora de puntos de experiencia (XP) en Mi Perfil"
+                >
                   <div className="space-y-2.5 flex-1">
                     <div className="flex items-center space-x-2.5">
                       <span className="text-2xl animate-bounce">🥷</span>
                       <div>
-                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest font-sans">Rango Ninja de Cursada</h4>
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest font-sans">Rango Ninja de Cursada</h4>
+                          <span className="text-[10px] text-blue-400 group-hover:underline font-semibold">📜 Ver bitácora XP ↗</span>
+                        </div>
                         <div className="text-lg font-black text-blue-400">
                           Nivel {currentLevel} — {currentLevel >= 5 ? "Jōnin" : currentLevel >= 3 ? "Chūnin" : "Genin"}
                         </div>
