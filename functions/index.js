@@ -141,6 +141,19 @@ const actionModules = {
     getStudentCourses: 'courses',
     getCourseRoster: 'courses',
     
+    deleteCourse: 'courses',
+    updateRosterStudentStatus: 'courses',
+    syncGuaraniRoster: 'courses',
+    addSecondaryEmail: 'profile',
+    mergeProfiles: 'profile',
+    getXpLogs: 'profile',
+    deleteBackup: 'backups',
+    updateStudyGroupChatLinks: 'studyGroups',
+    postStudyGroupMessage: 'studyGroups',
+    getStudyGroupMessages: 'studyGroups',
+    logActivity: 'activity',
+    getActivityLogs: 'activity',
+    
     // schedule
     saveScheduleVersion: 'schedule',
     getScheduleVersions: 'schedule',
@@ -172,6 +185,7 @@ const actionModules = {
     getSystemBackups: 'backups',
     restoreBackupDocument: 'backups',
     downloadSystemBackup: 'backups',
+    deleteBackup: 'backups',
     
     // announcements
     createAnnouncement: 'announcements',
@@ -207,7 +221,14 @@ exports.api = onCall(async (request) => {
     const uid = request.auth.uid;
     const { action, payload } = request.data;
     
-    const getMyProfile = async () => (await db.collection('profiles').doc(uid).get()).data();
+    const getMyProfile = async () => {
+        try {
+            const snap = await db.collection('profiles').doc(uid).get();
+            return (snap && typeof snap.data === 'function') ? snap.data() : null;
+        } catch (e) {
+            return null;
+        }
+    };
     
     try {
         const moduleName = actionModules[action];
@@ -230,7 +251,27 @@ exports.api = onCall(async (request) => {
             syncGradeToMoodle
         };
         
-        return await handler(payload, context);
+        const result = await handler(payload || {}, context);
+
+        // Auto log write actions in activity_logs
+        if (action !== 'getProfile' && action !== 'getActivityLogs' && action !== 'getStudentNotifications' && !action.startsWith('get')) {
+            try {
+                const pData = await getMyProfile();
+                await db.collection('activity_logs').add({
+                    uid,
+                    user_name: pData ? (pData.full_name || pData.email) : 'Usuario',
+                    user_email: pData ? pData.email : '',
+                    user_role: pData ? pData.role : 'student',
+                    action: action,
+                    details: payload ? JSON.stringify(payload).substring(0, 200) : '',
+                    timestamp: admin.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (e) {
+                console.error("Error writing activity log:", e);
+            }
+        }
+
+        return result;
     } catch (e) {
         throw new HttpsError('internal', e.message);
     }
@@ -482,6 +523,48 @@ exports.exportGradesCsv = onRequest(async (req, res) => {
             res.set('Content-Type', 'text/csv; charset=utf-8');
             res.set('Content-Disposition', `attachment; filename="asistencia_${course.name.replace(/\s+/g, '_')}.csv"`);
             return res.status(200).send(attCsv);
+        }
+
+        if (type === 'roster' || type === 'alertas' || type === 'alumnos') {
+            const rosterSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
+            const classes = course.class_instances || [];
+            const totalClasses = classes.length || 1;
+
+            const assignSnap = await db.collection('assignments').where('course_id', '==', courseId).get();
+            const totalAssignments = assignSnap.docs.length || 1;
+
+            const escapeCsv = (str) => {
+                if (typeof str !== 'string') return '';
+                if (str.includes(';') || str.includes('"') || str.includes('\n')) return `"${str.replace(/"/g, '""')}"`;
+                return str;
+            };
+
+            let rosterCsv = "matricula;estudiante_nombre;estudiante_email;usuario_github;estado_roster;asistencia_porcentaje;entregas_completadas;estado_riesgo\n";
+
+            for (const doc of rosterSnap.docs) {
+                const rData = doc.data();
+                const sid = rData.student_id;
+                const pSnap = await db.collection('profiles').doc(sid).get();
+                const profile = pSnap.exists ? pSnap.data() : {};
+
+                // Calculate attendance
+                const attSnap = await db.collection('attendance').where('course_id', '==', courseId).where('student_id', '==', sid).get();
+                const presentCount = attSnap.docs.length;
+                const attRatio = Math.round((presentCount / Math.max(totalClasses, 1)) * 100);
+
+                // Calculate submissions
+                const subSnap = await db.collection('submissions').where('student_id', '==', sid).get();
+                const subCount = subSnap.docs.length;
+
+                let isRisk = (attRatio < 75 && totalClasses >= 3) || (subCount < Math.ceil(totalAssignments * 0.5));
+                let riskStr = isRisk ? "EN RIESGO" : "REGULAR";
+
+                rosterCsv += `${escapeCsv(profile.matricula_unrn || '')};${escapeCsv(profile.full_name || '')};${escapeCsv(profile.email || '')};${escapeCsv(profile.github_username || profile.github_user || '')};${escapeCsv(rData.status || 'approved')};${attRatio}%;${subCount}/${totalAssignments};${riskStr}\n`;
+            }
+
+            res.set('Content-Type', 'text/csv; charset=utf-8');
+            res.set('Content-Disposition', `attachment; filename="alumnos_alertas_${course.name.replace(/\s+/g, '_')}.csv"`);
+            return res.status(200).send(rosterCsv);
         }
 
         const aSnap = await db.collection('assignments').where('course_id', '==', courseId).get();

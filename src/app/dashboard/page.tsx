@@ -103,9 +103,12 @@ export default function DashboardPage() {
   const [matriculaError, setMatriculaError] = useState("");
 
   // Profile Edit state
+  const [profileName, setProfileName] = useState("");
   const [profileMatricula, setProfileMatricula] = useState("");
   const [profileCohorte, setProfileCohorte] = useState("");
   const [profileGithubUser, setProfileGithubUser] = useState("");
+  const [xpLogs, setXpLogs] = useState<any[]>([]);
+  const [collapsedClasses, setCollapsedClasses] = useState<Record<string, boolean>>({});
 
   // Data states
   const [courses, setCourses] = useState<any[]>([]);
@@ -509,9 +512,11 @@ export default function DashboardPage() {
             setTeacherClasses(allClassInstances);
           }
         } else if (activeTab === "profile" && profile) {
+          setProfileName(profile.full_name || "");
           setProfileMatricula(profile.matricula_unrn || "");
           setProfileCohorte(profile.cohorte || "");
           setProfileGithubUser(profile.github_user || "");
+          api("getXpLogs").then(logs => setXpLogs(logs || [])).catch(() => setXpLogs([]));
         }
       } catch (err: any) {
         console.error("Error loading tab data:", err);
@@ -1992,6 +1997,7 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       await api("updateProfile", { 
+        full_name: profileName,
         matricula_unrn: profileMatricula, 
         cohorte: profileCohorte,
         github_user: profileGithubUser 
@@ -2001,6 +2007,20 @@ export default function DashboardPage() {
       alert("Perfil actualizado correctamente.");
     } catch (err: any) {
       setError("Error al actualizar perfil: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleAddSecondaryEmail = async (email: string) => {
+    setApiLoading(true);
+    try {
+      await api("addSecondaryEmail", { email });
+      const profileRes = await api("getProfile");
+      setProfile(profileRes);
+      alert("Correo secundario vinculado exitosamente.");
+    } catch (err: any) {
+      alert("Error al vincular correo secundario: " + err.message);
     } finally {
       setApiLoading(false);
     }
@@ -2528,6 +2548,8 @@ export default function DashboardPage() {
         <ProfilePanel
           activeTab={activeTab}
           profile={profile}
+          profileName={profileName}
+          setProfileName={setProfileName}
           profileMatricula={profileMatricula}
           setProfileMatricula={setProfileMatricula}
           profileCohorte={profileCohorte}
@@ -2535,6 +2557,8 @@ export default function DashboardPage() {
           profileGithubUser={profileGithubUser}
           setProfileGithubUser={setProfileGithubUser}
           handleUpdateProfile={handleUpdateProfile}
+          handleAddSecondaryEmail={handleAddSecondaryEmail}
+          xpLogs={xpLogs}
         />
 
         {/* DETALLADA VISTA DE CÁTEDRA */}
@@ -3482,99 +3506,119 @@ export default function DashboardPage() {
                           <h4 className="text-lg font-bold text-blue-400">Semana {weekNum}</h4>
                           <div className="space-y-3">
                             {weeklyClassesGrouped[parseInt(weekNum)].map((ci, index) => {
-                              const d = new Date(ci.date);
-                              const ds = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
-                              
-                              let tagClass = "bg-neutral-800 text-gray-400";
-                              if (ci.special_status === "Clase Remota") tagClass = "bg-amber-950/60 text-amber-400 border border-amber-800/40";
-                              if (ci.special_status === "Examen") tagClass = "bg-purple-950/60 text-purple-400 border border-purple-800/40";
-                              if (ci.special_status === "Feriado") tagClass = "bg-red-950/60 text-red-400 border border-red-800/40";
-
-                              // Look up student attendance for this class
-                              const attDoc = courseAttendance.find(a => a.classNumber === (ci.classNumber || 0));
-                              const studentStatus = attDoc?.records?.[profile?.id || ""];
-
-                              return (
-                                <div
-                                  key={index}
-                                  className={`p-4 rounded-xl border border-neutral-800/50 bg-neutral-950/30 ${
-                                    ci.special_status === "Feriado" ? "opacity-60 line-through" : ""
-                                  }`}
-                                >
-                                  <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{ds}</span>
-                                    <div className="flex items-center space-x-2">
-                                      {studentStatus && (
-                                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                                          studentStatus === "present"
-                                            ? "bg-green-950/60 text-green-400 border border-green-800/40"
-                                            : studentStatus === "late"
-                                            ? "bg-amber-950/60 text-amber-400 border border-amber-800/40"
-                                            : "bg-red-950/60 text-red-400 border border-red-800/40"
-                                        }`}>
-                                          {studentStatus === "present" ? "Presente" : studentStatus === "late" ? "Tarde" : "Ausente"}
-                                        </span>
-                                      )}
-                                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${tagClass}`}>
-                                        {ci.special_status === "Normal" ? ci.type : ci.special_status}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <h5 className="font-semibold text-sm text-white">
-                                    {ci.topic || ci.type}
-                                  </h5>
-                                  {ci.description && (
-                                    <div 
-                                      className="text-xs text-gray-400 mt-2 bg-neutral-950 p-3 rounded-lg border border-neutral-900 markdown-body"
-                                      dangerouslySetInnerHTML={{ __html: marked.parse(ci.description) }}
-                                    />
-                                  )}
+                                  const d = new Date(ci.date);
+                                  const ds = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
                                   
-                                  <div className="mt-3 flex gap-4 text-xs font-semibold">
-                                    {ci.presentation_url && (
-                                      <a href={ci.presentation_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 underline">
-                                        Material de Clase ↗
-                                      </a>
-                                    )}
-                                    {ci.recording_url && (
-                                      <a href={ci.recording_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 underline">
-                                        Video Grabación ↗
-                                      </a>
-                                    )}
-                                    <button
-                                      onClick={() => toggleComments(ci.classNumber || 0)}
-                                      className="text-amber-500 hover:text-amber-400 underline font-semibold focus:outline-none cursor-pointer text-xs"
-                                    >
-                                      💬 Foro ({courseComments.filter(c => c.classNumber === (ci.classNumber || 0)).length})
-                                    </button>
-                                    <button
-                                      onClick={() => handleOpenFeedbackModal(ci.classNumber || 0)}
-                                      className="text-emerald-550 hover:text-emerald-400 underline font-semibold focus:outline-none cursor-pointer text-xs"
-                                    >
-                                      ✍️ Feedback Anónimo
-                                    </button>
-                                    {profile?.role === "student" && studentStatus !== "present" && studentStatus !== "late" && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setStudentActiveAttendanceClass(ci.classNumber || 0)}
-                                        className="text-emerald-500 hover:text-emerald-400 underline font-semibold focus:outline-none cursor-pointer text-xs"
-                                      >
-                                        📷 Firmar Presente QR
-                                      </button>
-                                    )}
-                                  </div>
+                                  let tagClass = "bg-neutral-800 text-gray-400";
+                                  if (ci.special_status === "Clase Remota") tagClass = "bg-amber-950/60 text-amber-400 border border-amber-800/40";
+                                  if (ci.special_status === "Examen") tagClass = "bg-purple-950/60 text-purple-400 border border-purple-800/40";
+                                  if (ci.special_status === "Feriado") tagClass = "bg-red-950/60 text-red-400 border border-red-800/40";
 
-                                  {/* Collapsible Comments Section */}
-                                  {expandedComments[ci.classNumber || 0] && (
-                                    <ClassCommentsThread
-                                      classNumber={ci.classNumber || 0}
-                                      courseId={selectedCourse.id || selectedCourse.course?.id}
-                                      courseComments={courseComments}
-                                      profile={profile}
-                                    />
-                                  )}
-                                </div>
-                              );
+                                  // Look up student attendance for this class
+                                  const attDoc = courseAttendance.find(a => a.classNumber === (ci.classNumber || 0));
+                                  const studentStatus = attDoc?.records?.[profile?.id || ""];
+
+                                  // Collapsible calculation
+                                  const today = new Date();
+                                  today.setHours(0, 0, 0, 0);
+                                  const isPast = d < today;
+                                  const classKey = `c_${weekNum}_${index}_${ci.date}`;
+                                  const isCollapsed = collapsedClasses[classKey] !== undefined ? collapsedClasses[classKey] : isPast;
+
+                                  const toggleCollapse = () => {
+                                    setCollapsedClasses(prev => ({ ...prev, [classKey]: !isCollapsed }));
+                                  };
+
+                                  const githubOrg = selectedCourse.github_org || "org";
+
+                                  return (
+                                    <div
+                                      key={index}
+                                      className={`p-4 rounded-xl border border-neutral-800/50 bg-neutral-950/30 ${
+                                        ci.special_status === "Feriado" ? "opacity-60 line-through" : ""
+                                      }`}
+                                    >
+                                      <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
+                                        <div className="flex items-center space-x-2">
+                                          <button
+                                            type="button"
+                                            onClick={toggleCollapse}
+                                            className="text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer flex items-center space-x-1"
+                                          >
+                                            <span>{isCollapsed ? "▶" : "▼"}</span>
+                                            <span className="uppercase tracking-widest text-[10px] text-gray-500 font-mono">{ds}</span>
+                                          </button>
+                                          {isPast && (
+                                            <span className="text-[9px] bg-neutral-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">Finalizada</span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          {studentStatus && (
+                                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                              studentStatus === "present"
+                                                ? "bg-green-950/60 text-green-400 border border-green-800/40"
+                                                : studentStatus === "late"
+                                                ? "bg-amber-950/60 text-amber-400 border border-amber-800/40"
+                                                : "bg-red-950/60 text-red-400 border border-red-800/40"
+                                            }`}>
+                                              {studentStatus === "present" ? "Presente" : studentStatus === "late" ? "Tarde" : "Ausente"}
+                                            </span>
+                                          )}
+                                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${tagClass}`}>
+                                            {ci.special_status === "Normal" ? ci.type : ci.special_status}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <h5 className="font-semibold text-sm text-white flex justify-between items-center">
+                                        <span>{ci.topic || ci.type}</span>
+                                        <button
+                                          type="button"
+                                          onClick={toggleCollapse}
+                                          className="text-[11px] text-blue-400 hover:underline cursor-pointer font-normal"
+                                        >
+                                          {isCollapsed ? "Ver detalles (+)" : "Colapsar (-)"}
+                                        </button>
+                                      </h5>
+
+                                      {!isCollapsed && (
+                                        <div className="mt-3 space-y-3 border-t border-neutral-900 pt-3 animate-fade-in">
+                                          {ci.description && (
+                                            <div 
+                                              className="text-xs text-gray-400 bg-neutral-950 p-3 rounded-lg border border-neutral-900 markdown-body"
+                                              dangerouslySetInnerHTML={{ __html: marked.parse(ci.description) }}
+                                            />
+                                          )}
+                                          
+                                          <div className="flex flex-wrap gap-4 text-xs font-semibold pt-1">
+                                            {ci.presentation_url && (
+                                              <a href={ci.presentation_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 underline">
+                                                Material de Clase ↗
+                                              </a>
+                                            )}
+                                            {ci.recording_url && (
+                                              <a href={ci.recording_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 underline">
+                                                Video Grabación ↗
+                                              </a>
+                                            )}
+                                            <a
+                                              href={`https://github.com/${githubOrg}/discussions/new`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-purple-400 hover:text-purple-300 underline font-semibold flex items-center space-x-1"
+                                            >
+                                              <span>💬 Preguntar en GitHub Discussions ↗</span>
+                                            </a>
+                                            <button
+                                              onClick={() => handleOpenFeedbackModal(ci.classNumber || 0)}
+                                              className="text-emerald-500 hover:text-emerald-400 underline font-semibold focus:outline-none cursor-pointer text-xs"
+                                            >
+                                              ✍️ Feedback Anónimo
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
                             })}
                           </div>
                         </div>
@@ -4080,6 +4124,33 @@ export default function DashboardPage() {
                         className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-blue-400 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
                       >
                         <span>📄 Descargar Reporte PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CSV ENDPOINT BLOCK FOR GOOGLE SHEETS =IMPORTDATA */}
+                  <div className="bg-neutral-950/60 p-4 rounded-xl border border-neutral-850 space-y-2">
+                    <span className="text-xs font-bold text-gray-300 block">📊 URL de Endpoint CSV para Planillas de Cálculo (Google Sheets / Excel)</span>
+                    <p className="text-[10px] text-gray-400">
+                      Conectá esta URL directamente en Google Sheets con <code className="text-emerald-400 font-mono font-bold">=IMPORTDATA(&quot;...&quot;)</code> para sincronizar automáticamente el roster y alertas de desempeño:
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-gray-300 select-all font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`;
+                          navigator.clipboard.writeText(url);
+                          alert("¡URL del Endpoint CSV de Alumnos copiada al portapapeles!");
+                        }}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
+                      >
+                        Copiar URL CSV
                       </button>
                     </div>
                   </div>

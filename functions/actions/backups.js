@@ -75,9 +75,21 @@ async function downloadSystemBackup(payload, context) {
     return doc.data();
 }
 
+async function deleteBackup(payload, context) {
+    const { db, getMyProfile } = context;
+    const profile = await getMyProfile();
+    if (profile.role !== 'admin') throw new Error("Acceso denegado");
+    
+    const { backupId } = payload;
+    if (!backupId) throw new Error("ID de respaldo requerido");
+    await db.collection('backups').doc(backupId).delete();
+    return { success: true };
+}
+
 module.exports = {
     createSystemBackup,
     getSystemBackups,
     restoreBackupDocument,
-    downloadSystemBackup
+    downloadSystemBackup,
+    deleteBackup
 };

@@ -64,23 +64,25 @@ export default function AdminPanel({
   };
 
   const formatDate = (val: any) => {
-    if (!val) return "-";
+    if (!val) return "Nunca / -";
     let date: Date;
-    if (val.seconds) {
-      date = new Date(val.seconds * 1000);
+    if (typeof val === "object" && typeof val.toDate === "function") {
+      date = val.toDate();
+    } else if (typeof val === "object" && (val.seconds || val._seconds)) {
+      date = new Date((val.seconds || val._seconds) * 1000);
     } else if (val instanceof Date) {
       date = val;
     } else {
       date = new Date(val);
     }
-    if (isNaN(date.getTime())) return "-";
+    if (isNaN(date.getTime())) return "Nunca / -";
     return date.toLocaleString("es-AR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    });
+    }) + " hs";
   };
 
   const sortedUsers = [...users].sort((a, b) => {
@@ -88,8 +90,8 @@ export default function AdminPanel({
     let bVal = b[sortField as keyof UserProfile];
 
     if (sortField === "created_at" || sortField === "last_login") {
-      const aTime = aVal ? (aVal.seconds ? aVal.seconds * 1000 : new Date(aVal).getTime()) : 0;
-      const bTime = bVal ? (bVal.seconds ? bVal.seconds * 1000 : new Date(bVal).getTime()) : 0;
+      const aTime = aVal ? (typeof aVal === "object" && (aVal.seconds || aVal._seconds) ? (aVal.seconds || aVal._seconds) * 1000 : new Date(aVal).getTime()) : 0;
+      const bTime = bVal ? (typeof bVal === "object" && (bVal.seconds || bVal._seconds) ? (bVal.seconds || bVal._seconds) * 1000 : new Date(bVal).getTime()) : 0;
       return sortDirection === "asc" ? aTime - bTime : bTime - aTime;
     }
 
@@ -105,12 +107,13 @@ export default function AdminPanel({
     if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
     return 0;
   });
+
   return (
     <>
       {/* 1. ADMIN COURSES */}
       {activeTab === "admin-courses" && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Gestión de Cátedras</h2>
+          <h2 className="text-2xl font-bold text-text-primary">Gestión de Cátedras</h2>
 
           {/* Create course */}
           <form onSubmit={handleCreateCourse} className="bg-bg-secondary p-6 rounded-2xl border border-border-custom grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -172,7 +175,7 @@ export default function AdminPanel({
       {/* 2. ADMIN USERS */}
       {activeTab === "admin-users" && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Usuarios Registrados</h2>
+          <h2 className="text-2xl font-bold text-text-primary">Usuarios Registrados</h2>
           <div className="overflow-x-auto bg-bg-secondary border border-border-custom rounded-2xl shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -208,7 +211,7 @@ export default function AdminPanel({
                 {sortedUsers.map((u) => (
                   <tr key={u.id} className="hover:bg-bg-primary/50 transition-colors">
                     <td className="p-4 font-medium text-text-primary">{u.full_name || "-"}</td>
-                    <td className="p-4">{u.email}</td>
+                    <td className="p-4 font-mono text-xs">{u.email || "Sin email"}</td>
                     <td className="p-4">
                       <select
                         value={u.role}
@@ -220,8 +223,8 @@ export default function AdminPanel({
                         <option value="student">Estudiante</option>
                       </select>
                     </td>
-                    <td className="p-4 font-mono">{u.matricula_unrn || "-"}</td>
-                    <td className="p-4">{u.cohorte || "-"}</td>
+                    <td className="p-4 font-mono text-xs">{u.matricula_unrn || "-"}</td>
+                    <td className="p-4 text-xs">{u.cohorte || "-"}</td>
                     <td className="p-4 text-xs font-mono text-text-secondary">{formatDate(u.created_at)}</td>
                     <td className="p-4 text-xs font-mono text-text-secondary">{formatDate(u.last_login)}</td>
                     <td className="p-4">
@@ -258,7 +261,7 @@ export default function AdminPanel({
       {/* 3. ADMIN SETTINGS */}
       {activeTab === "admin-settings" && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Configuración Global del Sistema</h2>
+          <h2 className="text-2xl font-bold text-text-primary">Configuración Global del Sistema</h2>
           <form onSubmit={handleSaveSettings} className="bg-bg-secondary p-6 rounded-2xl border border-border-custom space-y-4 max-w-xl">
             <div>
               <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">

@@ -103,10 +103,78 @@ async function findStudyBuddies(payload, context) {
     return matchedStudents;
 }
 
+async function updateStudyGroupChatLinks(payload, context) {
+    const { uid, db } = context;
+    const { groupId, whatsappUrl, telegramUrl, discordUrl } = payload;
+    const gRef = db.collection('study_groups').doc(groupId);
+    const gSnap = await gRef.get();
+    if (!gSnap.exists) throw new Error("Grupo no encontrado");
+
+    const members = gSnap.data().members || [];
+    if (!members.includes(uid)) throw new Error("Solo los miembros del grupo pueden actualizar los enlaces");
+
+    await gRef.update({
+        whatsapp_url: whatsappUrl || '',
+        telegram_url: telegramUrl || '',
+        discord_url: discordUrl || ''
+    });
+    return { success: true };
+}
+
+async function postStudyGroupMessage(payload, context) {
+    const { uid, db, admin } = context;
+    const { groupId, content } = payload;
+    if (!content || !content.trim()) throw new Error("El contenido del mensaje no puede estar vacío");
+
+    const gRef = db.collection('study_groups').doc(groupId);
+    const gSnap = await gRef.get();
+    if (!gSnap.exists) throw new Error("Grupo no encontrado");
+
+    const members = gSnap.data().members || [];
+    if (!members.includes(uid)) throw new Error("Solo los miembros del grupo pueden publicar mensajes");
+
+    const pSnap = await db.collection('profiles').doc(uid).get();
+    const authorName = pSnap.exists ? (pSnap.data().full_name || pSnap.data().email) : 'Miembro';
+
+    const msgRef = await gRef.collection('messages').add({
+        author_id: uid,
+        author_name: authorName,
+        content: content.trim(),
+        created_at: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { success: true, id: msgRef.id };
+}
+
+async function getStudyGroupMessages(payload, context) {
+    const { uid, db } = context;
+    const { groupId } = payload;
+    const gSnap = await db.collection('study_groups').doc(groupId).get();
+    if (!gSnap.exists) throw new Error("Grupo no encontrado");
+
+    const members = gSnap.data().members || [];
+    if (!members.includes(uid)) throw new Error("Solo los miembros del grupo pueden leer el tablón");
+
+    const mSnap = await db.collection('study_groups').doc(groupId).collection('messages').orderBy('created_at', 'asc').get();
+    return mSnap.docs.map(d => {
+        const data = d.data();
+        return {
+            id: d.id,
+            author_id: data.author_id,
+            author_name: data.author_name,
+            content: data.content,
+            created_at: data.created_at ? data.created_at.toDate().toISOString() : new Date().toISOString()
+        };
+    });
+}
+
 module.exports = {
     createStudyGroup,
     joinStudyGroup,
     leaveStudyGroup,
     getStudyGroups,
-    findStudyBuddies
+    findStudyBuddies,
+    updateStudyGroupChatLinks,
+    postStudyGroupMessage,
+    getStudyGroupMessages
 };

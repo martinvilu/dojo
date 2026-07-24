@@ -30,12 +30,20 @@ async function enrollCourse(payload, context) {
     const snap = await db.collection('courses').where('invite_code', '==', code).get();
     if (!snap.empty) {
         const courseId = snap.docs[0].id;
+        // Student enrolls with pending approval status (requirement 4)
         await db.collection('course_roster').doc(`${courseId}_${uid}`).set({
             course_id: courseId,
             student_id: uid,
+            status: 'pending',
             enrolled_at: admin.firestore.FieldValue.serverTimestamp()
         });
-        return { success: true };
+        await db.collection('enrollments').doc(`${uid}_${courseId}`).set({
+            course_id: courseId,
+            student_id: uid,
+            status: 'pending',
+            enrolled_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+        return { success: true, message: "Solicitud de inscripción enviada. Pendiente de aprobación por el docente." };
     }
 
     const tSnap = await db.collection('courses').where('teacher_invite_code', '==', code).get();
@@ -78,6 +86,14 @@ async function createCourse(payload, context) {
         created_at: admin.firestore.FieldValue.serverTimestamp()
     });
     return { id: ref.id };
+}
+
+async function deleteCourse(payload, context) {
+    const { db } = context;
+    const { courseId } = payload;
+    if (!courseId) throw new Error("ID de cátedra requerido");
+    await db.collection('courses').doc(courseId).delete();
+    return { success: true };
 }
 
 async function updateCourseName(payload, context) {
@@ -241,16 +257,137 @@ async function getCourseRoster(payload, context) {
     const snap = await db.collection('course_roster').where('course_id', '==', payload.courseId).get();
     const students = [];
     for (let doc of snap.docs) {
-        const pSnap = await db.collection('profiles').doc(doc.data().student_id).get();
-        if (pSnap.exists) students.push({ id: pSnap.id, ...pSnap.data() });
+        const data = doc.data();
+        const pSnap = await db.collection('profiles').doc(data.student_id).get();
+        if (pSnap.exists) {
+            students.push({
+                id: pSnap.id,
+                ...pSnap.data(),
+                roster_status: data.status || 'approved',
+                enrolled_at: data.enrolled_at
+            });
+        }
     }
     return students;
+}
+
+async function updateRosterStudentStatus(payload, context) {
+    const { db } = context;
+    const { courseId, studentId, status } = payload; // status: 'approved' | 'pending' | 'observador' | 'removed'
+    if (!courseId || !studentId) throw new Error("Faltan parámetros");
+    
+    if (status === 'removed') {
+        await db.collection('course_roster').doc(`${courseId}_${studentId}`).delete();
+        await db.collection('enrollments').doc(`${studentId}_${courseId}`).delete();
+    } else {
+        await db.collection('course_roster').doc(`${courseId}_${studentId}`).set({
+            course_id: courseId,
+            student_id: studentId,
+            status: status
+        }, { merge: true });
+        await db.collection('enrollments').doc(`${studentId}_${courseId}`).set({
+            course_id: courseId,
+            student_id: studentId,
+            status: status
+        }, { merge: true });
+    }
+    return { success: true };
+}
+
+async function syncGuaraniRoster(payload, context) {
+    const { db, admin } = context;
+    const { courseId, rows } = payload; // rows: array of { legajo, alumno, document, status, email }
+    if (!courseId || !Array.isArray(rows)) throw new Error("Datos de sincronización inválidos");
+
+    // Fetch existing roster
+    const existingSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
+    const existingMap = new Map(); // studentId -> doc
+    existingSnap.docs.forEach(doc => {
+        existingMap.set(doc.data().student_id, doc.data());
+    });
+
+    const newStudentIds = new Set();
+
+    for (const r of rows) {
+        const cleanEmail = (r.email || '').trim().toLowerCase();
+        const cleanLegajo = (r.legajo || '').trim();
+
+        if (!cleanEmail && !cleanLegajo) continue;
+
+        // Try to match existing profile by email or secondary_emails or legajo
+        let matchedUid = null;
+        if (cleanEmail) {
+            const pByEmail = await db.collection('profiles').where('email', '==', cleanEmail).get();
+            if (!pByEmail.empty) {
+                matchedUid = pByEmail.docs[0].id;
+            } else {
+                const pBySec = await db.collection('profiles').where('secondary_emails', 'array-contains', cleanEmail).get();
+                if (!pBySec.empty) matchedUid = pBySec.docs[0].id;
+            }
+        }
+
+        if (!matchedUid && cleanLegajo) {
+            const pByLeg = await db.collection('profiles').where('matricula_unrn', '==', cleanLegajo).get();
+            if (!pByLeg.empty) matchedUid = pByLeg.docs[0].id;
+        }
+
+        // If profile doesn't exist, create a placeholder profile doc so student can link later
+        if (!matchedUid) {
+            const newRef = db.collection('profiles').doc();
+            matchedUid = newRef.id;
+            await newRef.set({
+                id: matchedUid,
+                full_name: r.alumno || cleanEmail.split('@')[0] || 'Estudiante SIU',
+                email: cleanEmail,
+                matricula_unrn: cleanLegajo || '',
+                role: 'student',
+                account_status: 'approved',
+                created_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+        } else {
+            // Update matricula if present
+            if (cleanLegajo) {
+                await db.collection('profiles').doc(matchedUid).update({ matricula_unrn: cleanLegajo });
+            }
+        }
+
+        newStudentIds.add(matchedUid);
+
+        // Add or approve student in roster
+        await db.collection('course_roster').doc(`${courseId}_${matchedUid}`).set({
+            course_id: courseId,
+            student_id: matchedUid,
+            status: 'approved',
+            guarani_synced_at: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        await db.collection('enrollments').doc(`${matchedUid}_${courseId}`).set({
+            course_id: courseId,
+            student_id: matchedUid,
+            status: 'approved'
+        }, { merge: true });
+    }
+
+    // Students previously enrolled but NOT in the new SIU Guarani list -> set role to 'observador' (requirement 15)
+    for (const [prevSid, prevData] of existingMap.entries()) {
+        if (!newStudentIds.has(prevSid)) {
+            await db.collection('course_roster').doc(`${courseId}_${prevSid}`).update({
+                status: 'observador'
+            });
+            await db.collection('enrollments').doc(`${prevSid}_${courseId}`).update({
+                status: 'observador'
+            });
+        }
+    }
+
+    return { success: true, count: rows.length };
 }
 
 module.exports = {
     getCourseDetails,
     enrollCourse,
     createCourse,
+    deleteCourse,
     updateCourseName,
     getCourseTeachers,
     assignTeacher,
@@ -260,5 +397,8 @@ module.exports = {
     updateCourseSettings,
     cloneCourseExtraData,
     getStudentCourses,
-    getCourseRoster
+    getCourseRoster,
+    updateRosterStudentStatus,
+    syncGuaraniRoster
 };
+

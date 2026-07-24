@@ -92,6 +92,18 @@ async function submitQrAttendance(payload, context) {
             updated_by: 'system_qr'
         });
     }
+
+    // Award +10 XP and log XP action (requirement 5)
+    try {
+        await db.collection('profiles').doc(uid).collection('xp_logs').add({
+            action: 'asistencia',
+            description: `Asistencia firmada en Clase ${classNumber}`,
+            points: 10,
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+    } catch(e) {
+        console.error("Error logging XP:", e);
+    }
     
     return { success: true };
 }
