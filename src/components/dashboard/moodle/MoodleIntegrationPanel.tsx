@@ -68,6 +68,11 @@ export default function MoodleIntegrationPanel({
     }
   };
 
+  const [showGuideModal, setShowGuideModal] = useState(false);
+
+  const ltiToolUrl = typeof window !== "undefined" ? `${window.location.origin}/api/lti` : "https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/api/lti";
+  const ltiDeepLinkUrl = typeof window !== "undefined" ? `${window.location.origin}/api/lti/deeplink` : "https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/api/lti/deeplink";
+
   return (
     <div className="card-academic space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border-custom pb-4">
@@ -79,9 +84,18 @@ export default function MoodleIntegrationPanel({
             Vinculá la cátedra <strong>{courseName}</strong> con tu aula de Moodle para sincronizar estudiantes, tareas, notas y el calendario de la materia.
           </p>
         </div>
-        <span className="chip-status bg-tertiary-container/20 text-tertiary border border-tertiary/30 font-mono font-bold whitespace-nowrap">
-          ⚡ Moodle 4.2+ Ready
-        </span>
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setShowGuideModal(true)}
+            className="btn-secondary text-xs px-3 py-1.5 min-h-[36px]"
+          >
+            <span>📖 Guía de Registro LTI</span>
+          </button>
+          <span className="chip-status bg-tertiary-container/20 text-tertiary border border-tertiary/30 font-mono font-bold whitespace-nowrap">
+            ⚡ Moodle 4.2+ Ready
+          </span>
+        </div>
       </div>
 
       {/* WEB SERVICES CONFIGURATION CARD */}
@@ -176,8 +190,8 @@ export default function MoodleIntegrationPanel({
 
       {/* LTI DEEP LINKING MODAL */}
       {showDeepLinkModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="card-academic max-w-xl w-full space-y-4 shadow-xl rounded-lg">
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="card-academic max-w-xl w-full space-y-4 shadow-xl rounded-lg bg-bg-secondary border border-border-custom">
             <h3 className="text-base font-bold text-text-primary flex justify-between items-center">
               <span>🔗 Enlaces LTI 1.3 Deep Linking para Moodle</span>
               <button onClick={() => setShowDeepLinkModal(false)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer">✕</button>
@@ -204,6 +218,136 @@ export default function MoodleIntegrationPanel({
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOODLE LTI CONFIGURATION GUIDE MODAL */}
+      {showGuideModal && (
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="card-academic max-w-2xl w-full my-8 space-y-5 shadow-2xl rounded-lg bg-bg-secondary border border-border-custom text-left">
+            <div className="flex justify-between items-start border-b border-border-custom pb-3">
+              <div>
+                <h3 className="text-base font-bold text-text-primary flex items-center space-x-2">
+                  <span>📖 Guía paso a paso: Registro de Herramienta Externa en Moodle</span>
+                </h3>
+                <p className="text-xs text-text-secondary mt-1">
+                  Completá el formulario de <strong>Administración del sitio &gt; Plugins &gt; Herramientas externas &gt; Registrar herramienta externa</strong> en Moodle con estos parámetros exactos:
+                </p>
+              </div>
+              <button onClick={() => setShowGuideModal(false)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer">✕</button>
+            </div>
+
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-2 text-xs">
+              {/* SECTION 1: AJUSTES DE LA HERRAMIENTA */}
+              <div className="bg-bg-primary p-4 rounded border border-border-custom space-y-3">
+                <h4 className="font-bold text-text-primary uppercase tracking-wider text-xs border-b border-border-custom pb-1">
+                  1. Ajustes de la Herramienta
+                </h4>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-text-secondary">Nombre de la herramienta:</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(`Ninja Dojo - ${courseName}`)}
+                      className="text-tertiary hover:underline text-[11px] font-bold"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                  <input readOnly value={`Ninja Dojo - ${courseName}`} className="input-academic w-full font-mono text-[11px]" />
+
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="font-semibold text-text-secondary">URL de la herramienta:</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(ltiToolUrl)}
+                      className="text-tertiary hover:underline text-[11px] font-bold"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                  <input readOnly value={ltiToolUrl} className="input-academic w-full font-mono text-[11px]" />
+
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="font-semibold text-text-secondary">LTI Version:</span>
+                    <span className="chip-status text-[10px]">LTI 1.3 / Advantage (o LTI 1.0/1.1)</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <span className="font-semibold text-text-secondary block">Clave de cliente:</span>
+                      <input readOnly value="dojo_unrn" className="input-academic w-full font-mono text-[11px] mt-1" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-text-secondary block">Secreto compartido:</span>
+                      <input readOnly value="sec_dojo_unrn_2026" className="input-academic w-full font-mono text-[11px] mt-1" />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="font-semibold text-text-secondary">Parámetros personalizados:</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(`course_id=${courseId}`)}
+                      className="text-tertiary hover:underline text-[11px] font-bold"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                  <input readOnly value={`course_id=${courseId}`} className="input-academic w-full font-mono text-[11px]" />
+
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="font-semibold text-text-secondary">Contenedor de inicio por defecto:</span>
+                    <span className="font-semibold text-text-primary">Incrustar, sin bloques</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2 pt-1">
+                    <input type="checkbox" checked readOnly className="rounded" />
+                    <span className="font-semibold text-text-primary">Supports Deep Linking (Content-Item Message)</span>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="font-semibold text-text-secondary">Content Selection URL:</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(ltiDeepLinkUrl)}
+                      className="text-tertiary hover:underline text-[11px] font-bold"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                  <input readOnly value={ltiDeepLinkUrl} className="input-academic w-full font-mono text-[11px]" />
+                </div>
+              </div>
+
+              {/* SECTION 2: SERVICIOS */}
+              <div className="bg-bg-primary p-4 rounded border border-border-custom space-y-2">
+                <h4 className="font-bold text-text-primary uppercase tracking-wider text-xs border-b border-border-custom pb-1">
+                  2. Servicios
+                </h4>
+                <p className="text-text-secondary"><strong className="text-text-primary">IMS LTI Assignment and Grade Services:</strong> Use this service for grade sync and column management</p>
+                <p className="text-text-secondary"><strong className="text-text-primary">IMS LTI Names and Role Provisioning:</strong> Use this service to retrieve members' information as per privacy settings</p>
+                <p className="text-text-secondary"><strong className="text-text-primary">Tool Settings:</strong> Use this service</p>
+              </div>
+
+              {/* SECTION 3: PRIVACIDAD */}
+              <div className="bg-bg-primary p-4 rounded border border-border-custom space-y-2">
+                <h4 className="font-bold text-text-primary uppercase tracking-wider text-xs border-b border-border-custom pb-1">
+                  3. Privacidad
+                </h4>
+                <p className="text-text-secondary"><strong className="text-text-primary">Compartir el nombre del usuario:</strong> Siempre</p>
+                <p className="text-text-secondary"><strong className="text-text-primary">Compartir el e-mail del usuario:</strong> Siempre</p>
+                <p className="text-text-secondary"><strong className="text-text-primary">Aceptar calificaciones desde la herramienta:</strong> As specified in Deep Linking definition or Delegate to teacher</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-border-custom">
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                className="btn-primary"
+              >
+                Entendido
+              </button>
             </div>
           </div>
         </div>
