@@ -249,6 +249,10 @@ export default function DashboardPage() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [newAnnouncementMessage, setNewAnnouncementMessage] = useState("");
 
+  // CSV Endpoint collapsible state (normally hidden)
+  const [showCsvEndpoint, setShowCsvEndpoint] = useState(false);
+  const [showCsvGradingEndpoint, setShowCsvGradingEndpoint] = useState(false);
+
   // Calendar render state
   const [calendarViewMode, setCalendarViewMode] = useState<"list" | "grid">("list");
 
@@ -4370,31 +4374,47 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* CSV ENDPOINT BLOCK FOR GOOGLE SHEETS =IMPORTDATA */}
+                  {/* CSV ENDPOINT BLOCK FOR GOOGLE SHEETS =IMPORTDATA (NORMALLY COLLAPSED/HIDDEN) */}
                   <div className="bg-neutral-950/60 p-4 rounded-xl border border-neutral-850 space-y-2">
-                    <span className="text-xs font-bold text-gray-300 block">📊 URL de Endpoint CSV para Planillas de Cálculo (Google Sheets / Excel)</span>
-                    <p className="text-[10px] text-gray-400">
-                      Conectá esta URL directamente en Google Sheets con <code className="text-emerald-400 font-mono font-bold">=IMPORTDATA(&quot;...&quot;)</code> para sincronizar automáticamente el roster y alertas de desempeño:
-                    </p>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`}
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-gray-300 select-all font-mono"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`;
-                          navigator.clipboard.writeText(url);
-                          alert("¡URL del Endpoint CSV de Alumnos copiada al portapapeles!");
-                        }}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
-                      >
-                        Copiar URL CSV
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCsvEndpoint(!showCsvEndpoint)}
+                      className="w-full flex justify-between items-center text-xs font-bold text-gray-300 hover:text-white transition cursor-pointer select-none"
+                    >
+                      <span className="flex items-center space-x-2">
+                        <span>📊 URL de Endpoint CSV para Planillas de Cálculo (Google Sheets / Excel)</span>
+                      </span>
+                      <span className="text-[10px] bg-neutral-900 px-2.5 py-1 rounded-lg border border-neutral-800 text-gray-400 font-semibold">
+                        {showCsvEndpoint ? "▲ Ocultar URL" : "▼ Mostrar URL"}
+                      </span>
+                    </button>
+
+                    {showCsvEndpoint && (
+                      <div className="pt-3 space-y-2 border-t border-neutral-900 animate-in fade-in duration-200">
+                        <p className="text-[10px] text-gray-400 leading-relaxed">
+                          Conectá esta URL directamente en Google Sheets con <code className="text-emerald-400 font-mono font-bold">=IMPORTDATA(&quot;...&quot;)</code> para sincronizar automáticamente el roster y alertas de desempeño:
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`}
+                            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-gray-300 select-all font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`;
+                              navigator.clipboard.writeText(url);
+                              alert("¡URL del Endpoint CSV de Alumnos copiada al portapapeles!");
+                            }}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
+                          >
+                            Copiar URL CSV
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="overflow-x-auto bg-neutral-950/40 border border-neutral-850 rounded-2xl">
@@ -5022,18 +5042,45 @@ export default function DashboardPage() {
                   </button>
                 </form>
 
-                {/* CSV grading synchronization */}
-                <div className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
-                  <h3 className="text-lg font-bold">Sincronización de Planilla de Notas</h3>
-                  <p className="text-xs text-gray-400 leading-relaxed">
-                    Usa esta URL para sincronizar las notas de tus alumnos de esta cátedra directamente en tu planilla externa:
-                  </p>
-                  <input
-                    type="text"
-                    value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${selectedCourse.id || selectedCourse.course?.id}&token=${selectedCourse.sync_secret || "TOKEN"}`}
-                    disabled
-                    className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-amber-500 font-mono"
-                  />
+                {/* CSV grading synchronization (NORMALLY COLLAPSED/HIDDEN) */}
+                <div className="bg-neutral-900/60 p-5 rounded-2xl border border-neutral-800 space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowCsvGradingEndpoint(!showCsvGradingEndpoint)}
+                    className="w-full flex justify-between items-center text-sm font-bold text-gray-200 hover:text-white transition cursor-pointer select-none"
+                  >
+                    <span>📊 Sincronización de Planilla de Notas (CSV / Google Sheets)</span>
+                    <span className="text-[10px] bg-neutral-950 px-3 py-1 rounded-lg border border-neutral-800 text-gray-400 font-semibold">
+                      {showCsvGradingEndpoint ? "▲ Ocultar URL" : "▼ Mostrar URL"}
+                    </span>
+                  </button>
+
+                  {showCsvGradingEndpoint && (
+                    <div className="pt-3 space-y-3 border-t border-neutral-800/80 animate-in fade-in duration-200">
+                      <p className="text-xs text-gray-400 leading-relaxed">
+                        Usa esta URL para sincronizar las notas de tus alumnos de esta cátedra directamente en tu planilla externa:
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${selectedCourse.id || selectedCourse.course?.id}&token=${selectedCourse.sync_secret || "TOKEN"}`}
+                          className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-amber-400 font-mono select-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${selectedCourse.id || selectedCourse.course?.id}&token=${selectedCourse.sync_secret || "TOKEN"}`;
+                            navigator.clipboard.writeText(url);
+                            alert("¡URL del Endpoint CSV de Notas copiada al portapapeles!");
+                          }}
+                          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
+                        >
+                          Copiar
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Clone course settings from another course */}
