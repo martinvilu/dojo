@@ -1,4 +1,6 @@
 const runLoginTests = require("./login.test");
+const runModalsTests = require("./modals.test");
+const runDashboardTests = require("./dashboard.test");
 const runMoodleTests = require("./moodle.test");
 const runCalendarTests = require("./calendar.test");
 const runToastTests = require("./toast.test");
@@ -6,7 +8,7 @@ const { startMockServer } = require("./server");
 
 async function main() {
   console.log("==========================================================================");
-  console.log("🤖 NINJA DOJO - TEST SUITE E2E AUTOMATIZADA CON SELENIUM WEBDRIVER 🤖");
+  console.log("🤖 NINJA DOJO - SUITE EXTENDIDA DE TEST E2E AUTOMATIZADA CON SELENIUM 🤖");
   console.log("==========================================================================");
   
   const server = await startMockServer(3000);
@@ -21,6 +23,8 @@ async function main() {
 
   try {
     results.push(await runLoginTests());
+    results.push(await runModalsTests());
+    results.push(await runDashboardTests());
     results.push(await runMoodleTests());
     results.push(await runCalendarTests());
     results.push(await runToastTests());

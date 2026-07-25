@@ -7,7 +7,7 @@ async function runLoginTests() {
   let total = 0;
 
   try {
-    // TEST 1: Carga de página de Login
+    // TEST 1.1: Carga y Título de Página /login
     total++;
     console.log("  [Test 1.1] Verificar carga y título de la página /login...");
     await driver.get(`${BASE_URL}/login`);
@@ -17,29 +17,30 @@ async function runLoginTests() {
     console.log("    ✓ Pasado: Título principal verificado.");
     passed++;
 
-    // TEST 2: Alternar entre Iniciar Sesión y Registrarse
+    // TEST 1.2: Alternancia entre Iniciar Sesión y Registro
     total++;
     console.log("  [Test 1.2] Alternar formulario entre Iniciar Sesión y Registrate gratis...");
-    const toggleButton = await driver.findElement(By.xpath("//button[contains(text(), 'Registrate gratis')]"));
+    const toggleButton = await driver.findElement(By.id("btn-toggle-mode"));
     await toggleButton.click();
+    await driver.sleep(200);
     
-    await driver.sleep(300);
-    const subtitleText = await driver.findElement(By.xpath("//p[contains(text(), 'cuenta académica')]")).getText();
-    assert(subtitleText.includes("Creá tu cuenta académica"), "El subtítulo debe cambiar a modo registro");
+    let subtitleText = await driver.findElement(By.id("auth-subtitle")).getText();
+    assert(subtitleText.includes("cuenta académica"), "El subtítulo debe cambiar a modo registro");
 
-    const backToLogin = await driver.findElement(By.xpath("//button[contains(text(), 'Iniciá sesión')]"));
-    await backToLogin.click();
-    await driver.sleep(300);
+    await toggleButton.click();
+    await driver.sleep(200);
+    subtitleText = await driver.findElement(By.id("auth-subtitle")).getText();
+    assert(subtitleText.includes("plataforma central"), "El subtítulo debe volver a modo inicio de sesión");
     console.log("    ✓ Pasado: Alternancia de formularios de Auth verificada.");
     passed++;
 
-    // TEST 3: Verificar campos de entrada e iconos de proveedores
+    // TEST 1.3: Verificar campos de correo, contraseña y proveedores OAuth
     total++;
     console.log("  [Test 1.3] Verificar campos de correo, contraseña y proveedores OAuth...");
     const emailInput = await driver.findElement(By.id("email"));
     const passwordInput = await driver.findElement(By.id("password"));
-    const googleButton = await driver.findElement(By.xpath("//button[.//span[text()='Google']]"));
-    const githubButton = await driver.findElement(By.xpath("//button[.//span[text()='GitHub']]"));
+    const googleButton = await driver.findElement(By.id("btn-google"));
+    const githubButton = await driver.findElement(By.id("btn-github"));
 
     assert(await emailInput.isDisplayed(), "Campo de email debe estar visible");
     assert(await passwordInput.isDisplayed(), "Campo de contraseña debe estar visible");
@@ -48,14 +49,19 @@ async function runLoginTests() {
     console.log("    ✓ Pasado: Campos e iconos OAuth verificados.");
     passed++;
 
-    // TEST 4: Validación de envío con campos vacíos
+    // TEST 1.4: Ingresar credenciales y enviar formulario
     total++;
-    console.log("  [Test 1.4] Ingresar credenciales y verificar botón de envío...");
-    await emailInput.sendKeys("test_docente@unrn.edu.ar");
-    await passwordInput.sendKeys("password123");
-    const submitBtn = await driver.findElement(By.xpath("//button[@type='submit']"));
+    console.log("  [Test 1.4] Ingresar credenciales y verificar redirección a Dashboard...");
+    await emailInput.sendKeys("docente@unrn.edu.ar");
+    await passwordInput.sendKeys("Password123!");
+    const submitBtn = await driver.findElement(By.id("btn-submit"));
     assert(await submitBtn.isDisplayed(), "El botón de envío debe estar visible");
-    console.log("    ✓ Pasado: Entrada de texto e interactividad de submit verificadas.");
+    await submitBtn.click();
+    await driver.sleep(400);
+
+    const currentUrl = await driver.getCurrentUrl();
+    assert(currentUrl.includes("/dashboard"), "Debe redirigir al Dashboard tras iniciar sesión");
+    console.log("    ✓ Pasado: Autenticación exitosa y redirección a Dashboard comprobada.");
     passed++;
 
   } catch (err) {

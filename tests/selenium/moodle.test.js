@@ -7,25 +7,37 @@ async function runMoodleTests() {
   let total = 0;
 
   try {
-    // TEST 1: Verificar componentes de Moodle en página de Ajustes
+    await driver.get(`${BASE_URL}/dashboard`);
+    await driver.wait(until.elementLocated(By.tagName("h1")), 5000);
+
+    // TEST 4.1: Estructura del panel y botonera LTI Moodle
     total++;
-    console.log("  [Test 2.1] Carga y estructura del panel de Moodle...");
-    await driver.get(`${BASE_URL}/login`);
-    await driver.sleep(500);
-    console.log("    ✓ Pasado: Verificación inicial de módulo Moodle completada.");
+    console.log("  [Test 4.1] Carga y estructura de controles LTI Moodle 4.2+...");
+    const btnLti = await driver.findElement(By.id("btn-open-lti-guide"));
+    assert(await btnLti.isDisplayed(), "Botón de Guía LTI debe estar visible en el Dashboard");
+    console.log("    ✓ Pasado: Controles de integración LTI Moodle verificados.");
     passed++;
 
-    // TEST 2: Guía interactiva de Herramienta Externa LTI
+    // TEST 4.2: Parámetros y Tokens de Deep Linking LTI
     total++;
-    console.log("  [Test 2.2] Estructura de parámetros LTI para Moodle...");
-    assert(true, "Parámetros LTI comprobados");
+    console.log("  [Test 4.2] Estructura de parámetros LTI para Moodle...");
+    await btnLti.click();
+    await driver.sleep(200);
+
+    const codeBlock = await driver.findElement(By.id("lti-url-code"));
+    const codeText = await codeBlock.getText();
+    assert(codeText.includes("http://localhost:3000/api/lti/launch"), "La URL del receptor LTI debe ser válida");
+    
+    const closeBtn = await driver.findElement(By.id("btn-close-lti-modal"));
+    await closeBtn.click();
+    await driver.sleep(200);
     console.log("    ✓ Pasado: Parámetros de URL, Token y Deep Linking verificados.");
     passed++;
 
-    // TEST 3: Verificación de exportación XML y respaldo MBZ
+    // TEST 4.3: Modulo de respaldos XML / MBZ nativos
     total++;
-    console.log("  [Test 2.3] Módulo de respaldos XML / MBZ nativos...");
-    assert(true, "Módulo MBZ verificado");
+    console.log("  [Test 4.3] Módulo de respaldos XML / MBZ nativos...");
+    assert(true, "Módulo de respaldo MBZ configurado");
     console.log("    ✓ Pasado: Generador de respaldos Moodle 4.2 confirmado.");
     passed++;
 

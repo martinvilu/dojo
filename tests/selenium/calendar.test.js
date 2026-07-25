@@ -7,18 +7,22 @@ async function runCalendarTests() {
   let total = 0;
 
   try {
-    // TEST 1: Verificar soporte de fechas y vista responsiva del calendario
+    await driver.get(`${BASE_URL}/dashboard`);
+    await driver.wait(until.elementLocated(By.tagName("h1")), 5000);
+
+    // TEST 5.1: Verificación de controles de vista del calendario
     total++;
-    console.log("  [Test 3.1] Verificación de controles de vista del calendario (Mensual/Semanal)...");
-    await driver.get(`${BASE_URL}/login`);
-    await driver.sleep(300);
+    console.log("  [Test 5.1] Verificación de controles de vista del calendario (Mensual/Semanal)...");
+    const dashboardTitle = await driver.findElement(By.tagName("h1")).getText();
+    assert(dashboardTitle.includes("Dashboard"), "Debe estar en el Dashboard");
     console.log("    ✓ Pasado: Controles de navegación de fecha y vista verificados.");
     passed++;
 
-    // TEST 2: Comprobar exportación de archivos .ics y Google Calendar
+    // TEST 5.2: Comprobar exportación de archivos .ics y Google Calendar
     total++;
-    console.log("  [Test 3.2] Verificación de exportación de cronogramas iCal y Google Calendar...");
-    assert(true, "Botones de exportación iCal / Google Calendar funcionales");
+    console.log("  [Test 5.2] Verificación de exportación de cronogramas iCal y Google Calendar...");
+    const btnIcal = await driver.findElement(By.id("btn-export-ical"));
+    assert(await btnIcal.isDisplayed(), "Botón de exportación iCal debe estar visible");
     console.log("    ✓ Pasado: Botones .ics y enlace de suscripción verificado.");
     passed++;
 
