@@ -79,12 +79,37 @@ function startMockServer(port = 3000) {
                 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 16px; overflow-y: auto; }
                 .modal-card { background: #171717; border: 1px solid #262626; padding: 24px; border-radius: 16px; width: 100%; max-width: 512px; min-width: 280px; box-sizing: border-box; }
                 .toast-portal { position: fixed; bottom: 16px; left: 16px; right: 16px; z-index: 999999; max-width: 400px; margin-left: auto; background: #171717; border: 1px solid #404040; padding: 14px 16px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+                .role-badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+                .role-student { background: #1e3a8a; color: #93c5fd; }
+                .role-tutor { background: #312e81; color: #c084fc; }
+                .role-teacher { background: #064e3b; color: #6ee7b7; }
+                .role-admin { background: #701a75; color: #f0abfc; }
                 .hidden { display: none !important; }
               </style>
             </head>
             <body>
               <h1>Jutsu Classroom Dashboard</h1>
               <p>Panel de Administración Académica y Cátedras</p>
+
+              <!-- Selector de Rol Activo para Pruebas Multi-Rol -->
+              <div style="background:#171717; border:1px solid #262626; padding:12px; border-radius:12px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:12px; color:#a3a3a3; font-weight:bold;">Rol Activo:</span>
+                  <span id="current-role-badge" class="role-badge role-teacher">Docente</span>
+                </div>
+                <select id="user-role-selector" style="background:#000; color:white; border:1px solid #333; padding:4px 8px; border-radius:6px; font-size:12px;" onchange="
+                  const b = document.getElementById('current-role-badge');
+                  b.innerText = this.value;
+                  b.className = 'role-badge role-' + this.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                  document.getElementById('toast-msg').innerText = 'Rol cambiado a: ' + this.value;
+                  document.getElementById('toast-container').classList.remove('hidden');
+                ">
+                  <option value="Estudiante">Estudiante</option>
+                  <option value="Tutor">Tutor Académico</option>
+                  <option value="Docente" selected>Docente</option>
+                  <option value="Administrador">Administrador</option>
+                </select>
+              </div>
 
               <!-- Buscador y Filtro de Comisión -->
               <div style="margin-bottom: 16px; display:flex; flex-wrap:wrap; gap:16px; align-items:center;">
@@ -203,11 +228,12 @@ function startMockServer(port = 3000) {
                 </div>
               </details>
 
-              <!-- Sección Modales Especiales del Alumno / Usuario -->
+              <!-- Sección Modales Especiales por Rol -->
               <div style="margin-top:24px; display:flex; flex-wrap:wrap; gap:12px;">
                 <button type="button" class="btn-action" id="btn-open-qr-modal" onclick="document.getElementById('qr-modal').classList.remove('hidden')">📱 Firmar Presente QR</button>
                 <button type="button" class="btn-action" id="btn-open-feedback-modal" onclick="document.getElementById('feedback-modal').classList.remove('hidden')">✍️ Dejar Feedback Anónimo</button>
                 <button type="button" class="btn-action" id="btn-open-tutoring-modal" onclick="document.getElementById('tutoring-modal').classList.remove('hidden')">🤝 Postularse como Tutor</button>
+                <button type="button" class="btn-action" id="btn-open-tutor-dashboard" onclick="document.getElementById('tutor-dashboard-modal').classList.remove('hidden')">🎓 Panel de Tutor</button>
                 <button type="button" class="btn-action" id="btn-open-version-modal" onclick="document.getElementById('version-modal').classList.remove('hidden')">💾 Guardar Versión Cronograma</button>
                 <button type="button" class="btn-action" id="btn-open-group-modal" onclick="document.getElementById('group-modal').classList.remove('hidden')">👥 Crear Grupo de Estudio</button>
                 <button type="button" class="btn-action" id="btn-open-github-modal" onclick="document.getElementById('github-modal').classList.remove('hidden')">🐙 Vincular GitHub</button>
@@ -220,6 +246,28 @@ function startMockServer(port = 3000) {
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical" onclick="document.getElementById('toast-msg').innerText='¡Feed de iCal exportado exitosamente!'; document.getElementById('toast-container').classList.remove('hidden');">📅 Exportar iCal (.ics)</button>
+              </div>
+
+              <!-- MODAL PANEL DE TUTOR ACADÉMICO -->
+              <div id="tutor-dashboard-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="tutor-dashboard-modal-card" style="max-width:440px;">
+                  <h3 style="margin:0; font-size:16px;">🎓 Panel de Gestión de Tutorías Académicas</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Solicitudes de pares recibidas:</p>
+                  <div style="background:#000; border:1px solid #333; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                      <strong style="font-size:13px; color:white;">Solicitud de Juan Pérez</strong>
+                      <p style="font-size:10px; color:#a3a3a3; margin:2px 0 0 0;">Dudas sobre React Hooks • Hoy 18:00hs</p>
+                    </div>
+                    <button type="button" id="btn-accept-session-1" class="btn-action" onclick="
+                      document.getElementById('tutor-dashboard-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Sesión de tutoría aceptada!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Aceptar Sesión</button>
+                  </div>
+                  <div style="margin-top:16px; text-align:right;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('tutor-dashboard-modal').classList.add('hidden')">Cerrar</button>
+                  </div>
+                </div>
               </div>
 
               <!-- MODAL HISTORIAL DE ASISTENCIAS DEL ALUMNO -->
