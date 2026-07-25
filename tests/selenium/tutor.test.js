@@ -28,9 +28,28 @@ async function runTutorTests() {
     await saveBtn.click();
     await driver.sleep(200);
 
-    const toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    let toastMsg = await driver.findElement(By.id("toast-msg")).getText();
     assert(toastMsg.includes("Perfil de tutor actualizado"), "Debe confirmar la actualización del perfil del tutor");
     console.log("    ✓ Pasado: Configuración de materias habilitadas del tutor verificada.");
+    passed++;
+
+    // TEST 13.2: Rechazo o Reprogramación de Solicitud de Tutoría
+    total++;
+    console.log("  [Test 13.2] Rechazar o solicitar reprogramación de sesión de tutoría...");
+    const btnTutorDash = await driver.findElement(By.id("btn-open-tutor-dashboard"));
+    await btnTutorDash.click();
+    await driver.sleep(200);
+
+    const tutorModal = await driver.findElement(By.id("tutor-dashboard-modal"));
+    assert(await tutorModal.isDisplayed(), "El modal de panel de tutor debe estar visible");
+
+    const declineBtn = await driver.findElement(By.id("btn-decline-session-1"));
+    await declineBtn.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("rechazada o reprogramada"), "Debe notificar el rechazo o reprogramación de la tutoría");
+    console.log("    ✓ Pasado: Rechazo/reprogramación de tutoría verificado.");
     passed++;
 
   } catch (err) {

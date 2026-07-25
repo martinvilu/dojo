@@ -200,6 +200,25 @@ async function runStudentTests() {
     console.log("    ✓ Pasado: Ajustes y preferencias del usuario comprobadas.");
     passed++;
 
+    // TEST 10.11: Descarga de Constancia / Certificado de Alumno Regular
+    total++;
+    console.log("  [Test 10.11] Solicitud y descarga de Constancia de Alumno Regular...");
+    const btnCert = await driver.findElement(By.id("btn-open-certificate-modal"));
+    await btnCert.click();
+    await driver.sleep(200);
+
+    const certModal = await driver.findElement(By.id("certificate-modal"));
+    assert(await certModal.isDisplayed(), "Modal de certificado de alumno regular debe estar visible");
+
+    const downloadCertBtn = await driver.findElement(By.id("btn-download-certificate"));
+    await downloadCertBtn.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("Certificado descargado"), "Debe notificar la descarga del certificado");
+    console.log("    ✓ Pasado: Certificado digital de alumno regular verificado.");
+    passed++;
+
   } catch (err) {
     console.error("  ❌ FALLO en Student Test:", err.message);
   } finally {

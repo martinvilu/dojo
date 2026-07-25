@@ -237,6 +237,8 @@ function startMockServer(port = 3000) {
                   document.getElementById('teacher-qr-modal').classList.remove('hidden');
                 ">🎲 Generar Token QR Docente</button>
                 <button type="button" class="btn-action" id="btn-open-schedule-email-modal" onclick="document.getElementById('schedule-email-modal').classList.remove('hidden')">📅 Programar Email Masivo Docente</button>
+                <button type="button" class="btn-action" id="btn-open-grade-modal" onclick="document.getElementById('grade-modal').classList.remove('hidden')">📝 Calificar Entrega Docente</button>
+                <button type="button" class="btn-action" id="btn-open-certificate-modal" onclick="document.getElementById('certificate-modal').classList.remove('hidden')">📜 Certificado de Alumno</button>
                 <button type="button" class="btn-action" id="btn-open-feedback-modal" onclick="document.getElementById('feedback-modal').classList.remove('hidden')">✍️ Dejar Feedback Anónimo</button>
                 <button type="button" class="btn-action" id="btn-open-tutoring-modal" onclick="document.getElementById('tutoring-modal').classList.remove('hidden')">🤝 Postularse como Tutor</button>
                 <button type="button" class="btn-action" id="btn-open-tutor-profile-modal" onclick="document.getElementById('tutor-profile-modal').classList.remove('hidden')">⚙️ Perfil y Horarios Tutor</button>
@@ -253,6 +255,45 @@ function startMockServer(port = 3000) {
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical" onclick="document.getElementById('toast-msg').innerText='¡Feed de iCal exportado exitosamente!'; document.getElementById('toast-container').classList.remove('hidden');">📅 Exportar iCal (.ics)</button>
+              </div>
+
+              <!-- MODAL CALIFICAR ENTREGA DOCENTE -->
+              <div id="grade-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="grade-modal-card" style="max-width:380px;">
+                  <h3 style="margin:0; font-size:16px;">📝 Calificar Entrega de Alumno</h3>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Nota Numérica (1 al 10)</label>
+                    <input id="student-grade-input" type="number" min="1" max="10" value="9" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  </div>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('grade-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-submit-grade" style="background:#10b981;" onclick="
+                      document.getElementById('grade-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Calificación registrada con éxito!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Guardar Nota</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL CERTIFICADO DE ALUMNO -->
+              <div id="certificate-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="certificate-modal-card" style="max-width:400px; text-align:center;">
+                  <h3 style="margin:0; font-size:16px;">📜 Constancia de Alumno Regular</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Certificado digital verificado por Jutsu Classroom:</p>
+                  <div style="background:#000; border:1px solid #333; padding:12px; border-radius:8px; margin:12px 0;">
+                    <strong style="color:#60a5fa; font-size:14px;">Juan Pérez - Matrícula 2024-001</strong>
+                    <p style="font-size:10px; color:#a3a3a3; margin:4px 0 0 0;">Cátedra Programación I • Estado: REGULAR</p>
+                  </div>
+                  <div style="display:flex; justify-content:center; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('certificate-modal').classList.add('hidden')">Cerrar</button>
+                    <button type="button" id="btn-download-certificate" style="background:#2563eb;" onclick="
+                      document.getElementById('certificate-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Certificado descargado exitosamente!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Descargar Constancia PDF</button>
+                  </div>
+                </div>
               </div>
 
               <!-- MODAL GENERAR TOKEN QR DOCENTE -->
@@ -315,11 +356,18 @@ function startMockServer(port = 3000) {
                       <strong style="font-size:13px; color:white;">Solicitud de Juan Pérez</strong>
                       <p style="font-size:10px; color:#a3a3a3; margin:2px 0 0 0;">Dudas sobre React Hooks • Hoy 18:00hs</p>
                     </div>
-                    <button type="button" id="btn-accept-session-1" class="btn-action" onclick="
-                      document.getElementById('tutor-dashboard-modal').classList.add('hidden');
-                      document.getElementById('toast-msg').innerText='¡Sesión de tutoría aceptada!';
-                      document.getElementById('toast-container').classList.remove('hidden');
-                    ">Aceptar Sesión</button>
+                    <div style="display:flex; gap:6px;">
+                      <button type="button" id="btn-decline-session-1" class="btn-action" style="background:rgba(239,68,68,0.2); color:#fca5a5;" onclick="
+                        document.getElementById('tutor-dashboard-modal').classList.add('hidden');
+                        document.getElementById('toast-msg').innerText='Sesión de tutoría rechazada o reprogramada';
+                        document.getElementById('toast-container').classList.remove('hidden');
+                      ">Rechazar</button>
+                      <button type="button" id="btn-accept-session-1" class="btn-action" onclick="
+                        document.getElementById('tutor-dashboard-modal').classList.add('hidden');
+                        document.getElementById('toast-msg').innerText='¡Sesión de tutoría aceptada!';
+                        document.getElementById('toast-container').classList.remove('hidden');
+                      ">Aceptar</button>
+                    </div>
                   </div>
                   <div style="margin-top:16px; text-align:right;">
                     <button type="button" style="background:#262626;" onclick="document.getElementById('tutor-dashboard-modal').classList.add('hidden')">Cerrar</button>

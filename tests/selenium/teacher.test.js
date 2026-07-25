@@ -43,9 +43,32 @@ async function runTeacherTests() {
     await submitScheduleBtn.click();
     await driver.sleep(200);
 
-    const toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    let toastMsg = await driver.findElement(By.id("toast-msg")).getText();
     assert(toastMsg.includes("programado"), "Debe notificar la programación exitosa del envío masivo");
     console.log("    ✓ Pasado: Programación de envíos masivos por alerta temprana verificada.");
+    passed++;
+
+    // TEST 12.3: Calificación de Entregas y Registro de Nota Numérica
+    total++;
+    console.log("  [Test 12.3] Calificar entrega de alumno y registrar nota numérica...");
+    const btnGrade = await driver.findElement(By.id("btn-open-grade-modal"));
+    await btnGrade.click();
+    await driver.sleep(200);
+
+    const gradeModal = await driver.findElement(By.id("grade-modal"));
+    assert(await gradeModal.isDisplayed(), "El modal de calificación del docente debe estar visible");
+
+    const gradeInput = await driver.findElement(By.id("student-grade-input"));
+    await gradeInput.clear();
+    await gradeInput.sendKeys("10");
+
+    const submitGradeBtn = await driver.findElement(By.id("btn-submit-grade"));
+    await submitGradeBtn.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("Calificación registrada"), "Debe notificar el registro exitoso de la nota");
+    console.log("    ✓ Pasado: Calificación de tareas y registro de notas verificado.");
     passed++;
 
   } catch (err) {
