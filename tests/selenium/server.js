@@ -73,6 +73,7 @@ function startMockServer(port = 3000) {
                 .badge-alert-none { background: #171717; border: 1px solid #262626; color: #a3a3a3; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; text-transform: uppercase; display: inline-block; white-space: nowrap; }
                 .btn-action { padding: 6px 12px; background: rgba(37, 99, 235, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
                 .btn-action:hover { background: #2563eb; color: white; }
+                .btn-danger { padding: 6px 12px; background: rgba(153, 27, 27, 0.2); border: 1px solid rgba(220, 38, 38, 0.4); color: #fca5a5; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
                 details { background: #171717; border: 1px solid #262626; padding: 16px; border-radius: 12px; margin-top: 20px; }
                 summary { font-weight: bold; font-size: 14px; cursor: pointer; color: #60a5fa; }
                 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 16px; overflow-y: auto; }
@@ -107,6 +108,7 @@ function startMockServer(port = 3000) {
                     </td>
                     <td>
                       <button class="btn-action" id="btn-email-juan" onclick="document.getElementById('email-modal').classList.remove('hidden')">✉️ Email</button>
+                      <button class="btn-danger" id="btn-delete-juan" onclick="document.getElementById('delete-user-modal').classList.remove('hidden')">🗑️ Borrar</button>
                     </td>
                   </tr>
                   <tr id="student-row-2">
@@ -150,6 +152,7 @@ function startMockServer(port = 3000) {
                 <button type="button" class="btn-action" id="btn-open-feedback-modal" onclick="document.getElementById('feedback-modal').classList.remove('hidden')">✍️ Dejar Feedback Anónimo</button>
                 <button type="button" class="btn-action" id="btn-open-tutoring-modal" onclick="document.getElementById('tutoring-modal').classList.remove('hidden')">🤝 Postularse como Tutor</button>
                 <button type="button" class="btn-action" id="btn-open-version-modal" onclick="document.getElementById('version-modal').classList.remove('hidden')">💾 Guardar Versión Cronograma</button>
+                <button type="button" class="btn-action" id="btn-open-group-modal" onclick="document.getElementById('group-modal').classList.remove('hidden')">👥 Crear Grupo de Estudio</button>
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical">📅 Exportar iCal (.ics)</button>
@@ -176,6 +179,53 @@ function startMockServer(port = 3000) {
                       <button type="submit" id="btn-send-email-submit" style="width:auto; background:#2563eb; color:white;">✉️ Enviar Correo Directo</button>
                     </div>
                   </form>
+                </div>
+              </div>
+
+              <!-- MODAL ELIMINAR USUARIO -->
+              <div id="delete-user-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="delete-user-modal-card" style="max-width:420px;">
+                  <div style="display:flex; align-items:center; gap:8px; color:#ef4444;">
+                    <span style="font-size:24px;">⚠️</span>
+                    <h3 id="delete-user-title" style="margin:0; font-size:16px; color:white;">Advertencia: Borrar Usuario</h3>
+                  </div>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:12px;">Estás a punto de eliminar permanentemente a <strong style="color:white;">Juan Pérez</strong> del sistema.</p>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" id="btn-cancel-delete" style="background:#262626;" onclick="document.getElementById('delete-user-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-confirm-delete" style="background:#dc2626; color:white;" onclick="
+                      document.getElementById('student-row-1').remove();
+                      document.getElementById('delete-user-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='Usuario eliminado correctamente';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Eliminar Usuario</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL CREAR GRUPO DE ESTUDIO -->
+              <div id="group-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="group-modal-card" style="max-width:400px;">
+                  <h3 style="margin:0; font-size:16px;">👥 Crear Grupo de Estudio</h3>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Nombre del Grupo</label>
+                    <input id="group-name-input" type="text" placeholder="Grupo de estudio Algoritmos" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  </div>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Preferencia Horaria</label>
+                    <select id="group-schedule-select" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;">
+                      <option value="Mañana">Mañana</option>
+                      <option value="Tarde" selected>Tarde</option>
+                      <option value="Noche">Noche</option>
+                    </select>
+                  </div>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('group-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-submit-group" style="background:#2563eb;" onclick="
+                      document.getElementById('group-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Grupo de estudio creado exitosamente!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Crear Grupo</button>
+                  </div>
                 </div>
               </div>
 
