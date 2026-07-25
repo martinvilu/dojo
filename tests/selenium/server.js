@@ -86,8 +86,18 @@ function startMockServer(port = 3000) {
               <h1>Jutsu Classroom Dashboard</h1>
               <p>Panel de Administración Académica y Cátedras</p>
 
-              <!-- Filtro de Comisión y Medidores del Alumno -->
-              <div style="margin-bottom: 16px; display:flex; gap:16px; align-items:center;">
+              <!-- Buscador y Filtro de Comisión -->
+              <div style="margin-bottom: 16px; display:flex; flex-wrap:wrap; gap:16px; align-items:center;">
+                <input id="student-search-input" type="text" placeholder="🔍 Buscar por nombre o email..." style="background:#171717; color:white; border:1px solid #333; padding:8px 12px; border-radius:8px; font-size:12px; width:240px;" oninput="
+                  const q = this.value.toLowerCase();
+                  const r1 = document.getElementById('student-row-1');
+                  const r2 = document.getElementById('student-row-2');
+                  const r3 = document.getElementById('student-row-3');
+                  if (r1) r1.style.display = 'Juan Pérez'.toLowerCase().includes(q) || 'juan@unrn.edu.ar'.includes(q) ? '' : 'none';
+                  if (r2) r2.style.display = 'María González'.toLowerCase().includes(q) || 'maria@unrn.edu.ar'.includes(q) ? '' : 'none';
+                  if (r3) r3.style.display = 'Lucas Rodríguez'.toLowerCase().includes(q) || 'lucas@unrn.edu.ar'.includes(q) ? '' : 'none';
+                " />
+
                 <label style="font-size:12px; font-weight:bold; color:#a3a3a3;">Filtrar por Comisión:</label>
                 <select id="commission-filter-select" style="background:#171717; color:white; border:1px solid #333; padding:6px 12px; border-radius:8px; font-size:12px;" onchange="
                   const val = this.value;
@@ -205,9 +215,60 @@ function startMockServer(port = 3000) {
                 <button type="button" class="btn-action" id="btn-open-comment-modal" onclick="document.getElementById('comment-modal').classList.remove('hidden')">💬 Comentario de Entrega</button>
                 <button type="button" class="btn-action" id="btn-open-submit-assignment-modal" onclick="document.getElementById('submit-assignment-modal').classList.remove('hidden')">📤 Entregar Tarea (URL)</button>
                 <button type="button" class="btn-action" id="btn-open-join-group-modal" onclick="document.getElementById('join-group-modal').classList.remove('hidden')">🤝 Unirme a Grupo de Estudio</button>
+                <button type="button" class="btn-action" id="btn-open-attendance-history" onclick="document.getElementById('attendance-history-modal').classList.remove('hidden')">📋 Historial de Asistencias</button>
+                <button type="button" class="btn-action" id="btn-open-settings-modal" onclick="document.getElementById('settings-modal').classList.remove('hidden')">⚙️ Ajustes y Notificaciones</button>
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical" onclick="document.getElementById('toast-msg').innerText='¡Feed de iCal exportado exitosamente!'; document.getElementById('toast-container').classList.remove('hidden');">📅 Exportar iCal (.ics)</button>
+              </div>
+
+              <!-- MODAL HISTORIAL DE ASISTENCIAS DEL ALUMNO -->
+              <div id="attendance-history-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="attendance-history-modal-card" style="max-width:440px;">
+                  <h3 style="margin:0; font-size:16px;">📋 Mi Historial de Asistencias</h3>
+                  <div id="attendance-history-list" style="margin-top:12px; display:flex; flex-col; gap:8px;">
+                    <div style="background:#000; border:1px solid #333; padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between;">
+                      <span style="font-size:12px; color:white;">Clase 1 - Introducción</span>
+                      <span style="font-size:11px; color:#10b981; font-weight:bold;">PRESENTE</span>
+                    </div>
+                    <div style="background:#000; border:1px solid #333; padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between;">
+                      <span style="font-size:12px; color:white;">Clase 2 - Variables y Funciones</span>
+                      <span style="font-size:11px; color:#10b981; font-weight:bold;">PRESENTE</span>
+                    </div>
+                    <div style="background:#000; border:1px solid #333; padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between;">
+                      <span style="font-size:12px; color:white;">Clase 3 - Algoritmos</span>
+                      <span style="font-size:11px; color:#ef4444; font-weight:bold;">AUSENTE</span>
+                    </div>
+                  </div>
+                  <div style="margin-top:16px; text-align:right;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('attendance-history-modal').classList.add('hidden')">Cerrar</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL AJUSTES Y NOTIFICACIONES DEL ALUMNO -->
+              <div id="settings-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="settings-modal-card" style="max-width:400px;">
+                  <h3 style="margin:0; font-size:16px;">⚙️ Ajustes y Notificaciones</h3>
+                  <div style="margin-top:12px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:white; cursor:pointer;">
+                      <input id="chk-email-notif" type="checkbox" checked /> Notificaciones de Tareas por Email
+                    </label>
+                  </div>
+                  <div style="margin-top:8px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:white; cursor:pointer;">
+                      <input id="chk-push-notif" type="checkbox" checked /> Recordatorios de Clases y Presentismo
+                    </label>
+                  </div>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('settings-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-save-settings" style="background:#2563eb;" onclick="
+                      document.getElementById('settings-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Preferencias de usuario guardadas!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Guardar Ajustes</button>
+                  </div>
+                </div>
               </div>
 
               <!-- MODAL ENTREGAR TAREA (URL SOLUCIÓN) -->

@@ -80,13 +80,17 @@ async function runStudentTests() {
     total++;
     console.log("  [Test 10.4] Filtrado interactivo por Comisión...");
     const filterSelect = await driver.findElement(By.id("commission-filter-select"));
-    await filterSelect.sendKeys("Comisión 1");
+    await filterSelect.findElement(By.css("option[value='Comisión 1']")).click();
     await driver.sleep(200);
 
     const row1 = await driver.findElement(By.id("student-row-1"));
     const row2 = await driver.findElement(By.id("student-row-2"));
     assert(await row1.isDisplayed(), "La fila de Comisión 1 debe ser visible");
     assert(!(await row2.isDisplayed()), "La fila de Comisión 2 debe ser ocultada al filtrar");
+
+    // Reset filter to "Todas"
+    await filterSelect.findElement(By.css("option[value='Todas']")).click();
+    await driver.sleep(200);
     console.log("    ✓ Pasado: Filtro interactivo por Comisión comprobado.");
     passed++;
 
@@ -140,6 +144,60 @@ async function runStudentTests() {
     toastMsg = await driver.findElement(By.id("toast-msg")).getText();
     assert(toastMsg.includes("unido al grupo de estudio"), "Debe notificar el registro exitoso al grupo de estudio");
     console.log("    ✓ Pasado: Selección y unión a grupos de estudio entre pares verificada.");
+    passed++;
+
+    // TEST 10.8: Buscador en tiempo real por Nombre o Email
+    total++;
+    console.log("  [Test 10.8] Buscador en tiempo real por nombre o email de estudiante...");
+    const searchInput = await driver.findElement(By.id("student-search-input"));
+    await searchInput.sendKeys("María");
+    await driver.sleep(200);
+
+    assert(!(await row1.isDisplayed()), "La fila de Juan Pérez debe ocultarse al buscar 'María'");
+    assert(await row2.isDisplayed(), "La fila de María González debe permanecer visible");
+
+    await searchInput.clear();
+    await searchInput.sendKeys(" ");
+    await driver.sleep(200);
+    console.log("    ✓ Pasado: Búsqueda dinámica en tiempo real comprobada.");
+    passed++;
+
+    // TEST 10.9: Historial Detallado de Asistencias del Alumno
+    total++;
+    console.log("  [Test 10.9] Consulta del Historial Detallado de Asistencias...");
+    const btnHistory = await driver.findElement(By.id("btn-open-attendance-history"));
+    await btnHistory.click();
+    await driver.sleep(200);
+
+    const historyModal = await driver.findElement(By.id("attendance-history-modal"));
+    assert(await historyModal.isDisplayed(), "Modal de historial de asistencias debe estar visible");
+
+    const historyContent = await driver.findElement(By.id("attendance-history-list")).getText();
+    assert(historyContent.includes("PRESENTE") && historyContent.includes("AUSENTE"), "Debe detallar el registro de clases presentes y ausentes");
+
+    const closeHistoryBtn = await driver.findElement(By.css("#attendance-history-modal button"));
+    await closeHistoryBtn.click();
+    await driver.sleep(200);
+    console.log("    ✓ Pasado: Historial de asistencias del estudiante verificado.");
+    passed++;
+
+    // TEST 10.10: Ajustes y Preferencias de Notificaciones
+    total++;
+    console.log("  [Test 10.10] Configuración de Preferencias y Notificaciones del Usuario...");
+    const btnSettings = await driver.findElement(By.id("btn-open-settings-modal"));
+    await btnSettings.click();
+    await driver.sleep(200);
+
+    const settingsModal = await driver.findElement(By.id("settings-modal"));
+    assert(await settingsModal.isDisplayed(), "Modal de ajustes del estudiante debe estar visible");
+
+    const saveSettingsBtn = await driver.findElement(By.id("btn-save-settings"));
+    await saveSettingsBtn.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("Preferencias de usuario guardadas"), "Debe notificar el guardado de ajustes de notificación");
+    console.log("    ✓ Pasado: Ajustes y preferencias del usuario comprobadas.");
     passed++;
 
   } catch (err) {
