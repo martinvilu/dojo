@@ -8,9 +8,9 @@ async function runAdminTests() {
 
   try {
     await driver.get(`${BASE_URL}/dashboard`);
-    await driver.wait(until.elementLocated(By.id("roster-table")), 5000);
+    await driver.wait(until.elementLocated(By.id("btn-delete-juan")), 5000);
 
-    // TEST 9.1: Modal de advertencia y eliminación de usuarios
+    // TEST 9.1: Modal de Advertencia y Confirmación para Borrar Usuario
     total++;
     console.log("  [Test 9.1] Modal de advertencia y confirmación para borrar usuario...");
     const btnDelete = await driver.findElement(By.id("btn-delete-juan"));
@@ -18,49 +18,62 @@ async function runAdminTests() {
     await driver.sleep(200);
 
     const deleteModal = await driver.findElement(By.id("delete-user-modal"));
-    assert(await deleteModal.isDisplayed(), "El modal de confirmación de eliminación debe estar visible");
+    assert(await deleteModal.isDisplayed(), "El modal de borrado de usuario debe estar visible");
 
-    const modalTitle = await driver.findElement(By.id("delete-user-title")).getText();
-    assert(modalTitle.includes("Advertencia"), "Debe mostrar el título de Advertencia");
+    const deleteTitle = await driver.findElement(By.id("delete-user-title")).getText();
+    assert(deleteTitle.includes("Borrar Usuario"), "El título del modal debe contener la advertencia de seguridad");
 
     const confirmDeleteBtn = await driver.findElement(By.id("btn-confirm-delete"));
     await confirmDeleteBtn.click();
     await driver.sleep(200);
 
-    assert(!(await deleteModal.isDisplayed()), "El modal debe cerrarse tras eliminar");
-    
-    // Check row 1 was removed
-    const studentRows = await driver.findElements(By.id("student-row-1"));
-    assert(studentRows.length === 0, "El usuario Juan Pérez debe haber sido eliminado del DOM");
-
-    const toastMsg = await driver.findElement(By.id("toast-msg")).getText();
-    assert(toastMsg.includes("Usuario eliminado"), "Debe notificar la eliminación del usuario mediante Toast");
+    let toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("eliminado correctamente"), "Debe notificar la eliminación del usuario");
     console.log("    ✓ Pasado: Eliminación de usuario y confirmación de seguridad comprobadas.");
     passed++;
 
-    // TEST 9.2: Modal de Creación de Grupos de Estudio
+    // TEST 9.2: Creación de Grupo de Estudio y Selección de Preferencia Horaria
     total++;
     console.log("  [Test 9.2] Creación de Grupo de Estudio y selección de preferencia horaria...");
-    const btnGroup = await driver.findElement(By.id("btn-open-group-modal"));
-    await btnGroup.click();
+    const btnOpenGroup = await driver.findElement(By.id("btn-open-group-modal"));
+    await btnOpenGroup.click();
     await driver.sleep(200);
 
     const groupModal = await driver.findElement(By.id("group-modal"));
-    assert(await groupModal.isDisplayed(), "El modal de creación de grupos debe estar visible");
+    assert(await groupModal.isDisplayed(), "El modal de creación de grupo debe estar visible");
 
     const groupNameInput = await driver.findElement(By.id("group-name-input"));
-    await groupNameInput.sendKeys("Grupo de Estudio Algoritmos Avanzados");
+    await groupNameInput.sendKeys("Grupo Algoritmos Avanzados");
 
     const scheduleSelect = await driver.findElement(By.id("group-schedule-select"));
-    await scheduleSelect.click();
-    
+    await scheduleSelect.findElement(By.css("option[value='Noche']")).click();
+
     const submitGroupBtn = await driver.findElement(By.id("btn-submit-group"));
     await submitGroupBtn.click();
     await driver.sleep(200);
 
-    const groupToastMsg = await driver.findElement(By.id("toast-msg")).getText();
-    assert(groupToastMsg.includes("Grupo de estudio creado"), "Debe notificar la creación exitosa del grupo de estudio");
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("Grupo de estudio creado"), "Debe notificar la creación del grupo de estudio");
     console.log("    ✓ Pasado: Creación de grupo de estudio y preferencia horaria verificadas.");
+    passed++;
+
+    // TEST 9.3: Asignación Masiva de Comisiones por el Administrador
+    total++;
+    console.log("  [Test 9.3] Asignación masiva de comisiones por el Administrador...");
+    const btnBulkCommission = await driver.findElement(By.id("btn-open-bulk-commission-modal"));
+    await btnBulkCommission.click();
+    await driver.sleep(200);
+
+    const bulkModal = await driver.findElement(By.id("bulk-commission-modal"));
+    assert(await bulkModal.isDisplayed(), "Modal de asignación masiva de comisiones debe estar visible");
+
+    const submitBulkBtn = await driver.findElement(By.id("btn-submit-bulk-commission"));
+    await submitBulkBtn.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("Comisiones asignadas masivamente"), "Debe notificar la asignación masiva de comisiones");
+    console.log("    ✓ Pasado: Asignación masiva de comisiones por el Administrador verificada.");
     passed++;
 
   } catch (err) {

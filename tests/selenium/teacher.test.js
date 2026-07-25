@@ -45,6 +45,12 @@ async function runTeacherTests() {
 
     let toastMsg = await driver.findElement(By.id("toast-msg")).getText();
     assert(toastMsg.includes("programado"), "Debe notificar la programación exitosa del envío masivo");
+
+    // Dismiss toast
+    const closeToastBtn = await driver.findElement(By.id("btn-close-toast"));
+    await closeToastBtn.click();
+    await driver.sleep(200);
+
     console.log("    ✓ Pasado: Programación de envíos masivos por alerta temprana verificada.");
     passed++;
 
@@ -68,7 +74,24 @@ async function runTeacherTests() {
 
     toastMsg = await driver.findElement(By.id("toast-msg")).getText();
     assert(toastMsg.includes("Calificación registrada"), "Debe notificar el registro exitoso de la nota");
+
+    // Dismiss toast
+    await closeToastBtn.click();
+    await driver.sleep(200);
+
     console.log("    ✓ Pasado: Calificación de tareas y registro de notas verificado.");
+    passed++;
+
+    // TEST 12.4: Exportación de Reporte Académico en PDF para la Cátedra
+    total++;
+    console.log("  [Test 12.4] Exportación de Reporte Académico en PDF para la Cátedra...");
+    const btnPdf = await driver.findElement(By.id("btn-export-pdf-report"));
+    await btnPdf.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("Reporte de Cátedra en PDF"), "Debe notificar la generación del reporte PDF");
+    console.log("    ✓ Pasado: Exportación de reporte académico PDF de cátedra verificado.");
     passed++;
 
   } catch (err) {

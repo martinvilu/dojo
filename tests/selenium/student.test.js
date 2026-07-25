@@ -219,6 +219,25 @@ async function runStudentTests() {
     console.log("    ✓ Pasado: Certificado digital de alumno regular verificado.");
     passed++;
 
+    // TEST 10.12: Solicitud y Descarga de Acta de Examen Final / Aprobación
+    total++;
+    console.log("  [Test 10.12] Solicitud y descarga de Acta de Examen Final Aprobado...");
+    const btnExamCert = await driver.findElement(By.id("btn-open-exam-cert-modal"));
+    await btnExamCert.click();
+    await driver.sleep(200);
+
+    const examCertModal = await driver.findElement(By.id("exam-cert-modal"));
+    assert(await examCertModal.isDisplayed(), "Modal de acta de examen final debe estar visible");
+
+    const downloadExamCertBtn = await driver.findElement(By.id("btn-download-exam-cert"));
+    await downloadExamCertBtn.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("Acta de examen final descargada"), "Debe notificar la descarga del acta de examen final");
+    console.log("    ✓ Pasado: Acta de examen final de aprobación comprobada.");
+    passed++;
+
   } catch (err) {
     console.error("  ❌ FALLO en Student Test:", err.message);
   } finally {

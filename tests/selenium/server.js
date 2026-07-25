@@ -238,7 +238,13 @@ function startMockServer(port = 3000) {
                 ">🎲 Generar Token QR Docente</button>
                 <button type="button" class="btn-action" id="btn-open-schedule-email-modal" onclick="document.getElementById('schedule-email-modal').classList.remove('hidden')">📅 Programar Email Masivo Docente</button>
                 <button type="button" class="btn-action" id="btn-open-grade-modal" onclick="document.getElementById('grade-modal').classList.remove('hidden')">📝 Calificar Entrega Docente</button>
-                <button type="button" class="btn-action" id="btn-open-certificate-modal" onclick="document.getElementById('certificate-modal').classList.remove('hidden')">📜 Certificado de Alumno</button>
+                <button type="button" class="btn-action" id="btn-export-pdf-report" onclick="
+                  document.getElementById('toast-msg').innerText='¡Reporte de Cátedra en PDF generado!';
+                  document.getElementById('toast-container').classList.remove('hidden');
+                ">📄 Exportar Reporte PDF Cátedra</button>
+                <button type="button" class="btn-action" id="btn-open-bulk-commission-modal" onclick="document.getElementById('bulk-commission-modal').classList.remove('hidden')">⚙️ Asignar Comisiones Masivo Admin</button>
+                <button type="button" class="btn-action" id="btn-open-exam-cert-modal" onclick="document.getElementById('exam-cert-modal').classList.remove('hidden')">📜 Acta de Examen Final Alumno</button>
+                <button type="button" class="btn-action" id="btn-open-certificate-modal" onclick="document.getElementById('certificate-modal').classList.remove('hidden')">📜 Constancia de Alumno</button>
                 <button type="button" class="btn-action" id="btn-open-feedback-modal" onclick="document.getElementById('feedback-modal').classList.remove('hidden')">✍️ Dejar Feedback Anónimo</button>
                 <button type="button" class="btn-action" id="btn-open-tutoring-modal" onclick="document.getElementById('tutoring-modal').classList.remove('hidden')">🤝 Postularse como Tutor</button>
                 <button type="button" class="btn-action" id="btn-open-tutor-profile-modal" onclick="document.getElementById('tutor-profile-modal').classList.remove('hidden')">⚙️ Perfil y Horarios Tutor</button>
@@ -255,6 +261,46 @@ function startMockServer(port = 3000) {
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical" onclick="document.getElementById('toast-msg').innerText='¡Feed de iCal exportado exitosamente!'; document.getElementById('toast-container').classList.remove('hidden');">📅 Exportar iCal (.ics)</button>
+              </div>
+
+              <!-- MODAL ASIGNAR COMISIONES MASIVO ADMIN -->
+              <div id="bulk-commission-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="bulk-commission-modal-card" style="max-width:400px;">
+                  <h3 style="margin:0; font-size:16px;">⚙️ Asignación Masiva de Comisiones</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Seleccioná la comisión a asignar a los estudiantes seleccionados:</p>
+                  <select id="bulk-commission-select" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;">
+                    <option value="Comisión 1">Comisión 1 - Turno Mañana</option>
+                    <option value="Comisión 2" selected>Comisión 2 - Turno Noche</option>
+                  </select>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('bulk-commission-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-submit-bulk-commission" style="background:#2563eb;" onclick="
+                      document.getElementById('bulk-commission-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Comisiones asignadas masivamente!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Asignar Comisiones</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL ACTA DE EXAMEN FINAL ALUMNO -->
+              <div id="exam-cert-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="exam-cert-modal-card" style="max-width:400px; text-align:center;">
+                  <h3 style="margin:0; font-size:16px;">📜 Certificado de Examen Final Aprobado</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Acreditación oficial de la materia:</p>
+                  <div style="background:#000; border:1px solid #333; padding:12px; border-radius:8px; margin:12px 0;">
+                    <strong style="color:#10b981; font-size:14px;">Programación I • NOTA: 10 (Sobresaliente)</strong>
+                    <p style="font-size:10px; color:#a3a3a3; margin:4px 0 0 0;">Fecha: Julio 2026 • Libro 4, Folio 12</p>
+                  </div>
+                  <div style="display:flex; justify-content:center; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('exam-cert-modal').classList.add('hidden')">Cerrar</button>
+                    <button type="button" id="btn-download-exam-cert" style="background:#2563eb;" onclick="
+                      document.getElementById('exam-cert-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Acta de examen final descargada!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Descargar Acta PDF</button>
+                  </div>
+                </div>
               </div>
 
               <!-- MODAL CALIFICAR ENTREGA DOCENTE -->
