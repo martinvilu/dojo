@@ -146,16 +146,70 @@ function startMockServer(port = 3000) {
                 </div>
               </details>
 
-              <!-- Sección Modales Especiales: QR, Feedback, Tutorías y Cronogramas -->
+              <!-- Sección Modales Especiales del Alumno / Usuario -->
               <div style="margin-top:24px; display:flex; flex-wrap:wrap; gap:12px;">
                 <button type="button" class="btn-action" id="btn-open-qr-modal" onclick="document.getElementById('qr-modal').classList.remove('hidden')">📱 Firmar Presente QR</button>
                 <button type="button" class="btn-action" id="btn-open-feedback-modal" onclick="document.getElementById('feedback-modal').classList.remove('hidden')">✍️ Dejar Feedback Anónimo</button>
                 <button type="button" class="btn-action" id="btn-open-tutoring-modal" onclick="document.getElementById('tutoring-modal').classList.remove('hidden')">🤝 Postularse como Tutor</button>
                 <button type="button" class="btn-action" id="btn-open-version-modal" onclick="document.getElementById('version-modal').classList.remove('hidden')">💾 Guardar Versión Cronograma</button>
                 <button type="button" class="btn-action" id="btn-open-group-modal" onclick="document.getElementById('group-modal').classList.remove('hidden')">👥 Crear Grupo de Estudio</button>
+                <button type="button" class="btn-action" id="btn-open-github-modal" onclick="document.getElementById('github-modal').classList.remove('hidden')">🐙 Vincular GitHub</button>
+                <button type="button" class="btn-action" id="btn-open-team-modal" onclick="document.getElementById('team-modal').classList.remove('hidden')">🚩 Asignar Nombre Equipo</button>
+                <button type="button" class="btn-action" id="btn-open-comment-modal" onclick="document.getElementById('comment-modal').classList.remove('hidden')">💬 Comentario de Entrega</button>
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical">📅 Exportar iCal (.ics)</button>
+              </div>
+
+              <!-- MODAL VINCULAR GITHUB -->
+              <div id="github-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="github-modal-card" style="max-width:380px;">
+                  <h3 style="margin:0; font-size:16px;">Vincular cuenta de GitHub</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Ingresá tu usuario de GitHub para sincronizar repositorios:</p>
+                  <input id="github-username-input" type="text" placeholder="ej: usuario-github" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('github-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-submit-github" style="background:#2563eb;" onclick="
+                      document.getElementById('github-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Cuenta de GitHub vinculada con éxito!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Vincular GitHub</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL NOMBRE DE EQUIPO TAREA GRUPAL -->
+              <div id="team-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="team-modal-card" style="max-width:380px;">
+                  <h3 style="margin:0; font-size:16px;">Nombre del Equipo</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Esta es una tarea grupal. Ingresá el nombre de tu equipo:</p>
+                  <input id="team-name-input" type="text" placeholder="LosNinjas" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('team-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-submit-team" style="background:#2563eb;" onclick="
+                      document.getElementById('team-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Nombre de equipo asignado a la entrega!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Confirmar Equipo</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL COMENTARIO DE ENTREGA -->
+              <div id="comment-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="comment-modal-card" style="max-width:400px;">
+                  <h3 style="margin:0; font-size:16px;">Comentarios de la Entrega</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">¿Querés dejarle un comentario opcional al profesor?</p>
+                  <textarea id="submission-comment-input" rows="3" placeholder="Mensaje para el docente..." style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;"></textarea>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('comment-modal').classList.add('hidden')">Omitir</button>
+                    <button type="button" id="btn-submit-comment" style="background:#2563eb;" onclick="
+                      document.getElementById('comment-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Entrega y comentarios enviados!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Enviar Entrega</button>
+                  </div>
+                </div>
               </div>
 
               <!-- MODAL ENVIAR CORREO DIRECTO -->

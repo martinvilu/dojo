@@ -3,6 +3,7 @@ const runModalsTests = require("./modals.test");
 const runDashboardTests = require("./dashboard.test");
 const runAttendanceTests = require("./attendance.test");
 const runFeaturesTests = require("./features.test");
+const runStudentTests = require("./student.test");
 const runAdminTests = require("./admin.test");
 const runMoodleTests = require("./moodle.test");
 const runCalendarTests = require("./calendar.test");
@@ -30,6 +31,7 @@ async function main() {
     results.push(await runDashboardTests());
     results.push(await runAttendanceTests());
     results.push(await runFeaturesTests());
+    results.push(await runStudentTests());
     results.push(await runAdminTests());
     results.push(await runMoodleTests());
     results.push(await runCalendarTests());
