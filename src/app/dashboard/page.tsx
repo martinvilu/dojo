@@ -5408,8 +5408,8 @@ export default function DashboardPage() {
 
       {/* Student QR / Code Attendance Modal */}
       {studentActiveAttendanceClass !== null && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full text-center space-y-5 shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto text-center space-y-5 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-white">Firmar Presente (Clase {studentActiveAttendanceClass})</h3>
             <p className="text-xs text-gray-400">
               Ingresá el código de 6 caracteres que se muestra en la pantalla del profesor. Se requiere acceso a tu ubicación.
@@ -5458,8 +5458,8 @@ export default function DashboardPage() {
 
       {/* MODAL: SUBMIT ANONYMOUS FEEDBACK (STUDENT) */}
       {activeFeedbackClass !== null && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-md w-full min-w-[280px] sm:min-w-[420px] shrink-0 mx-auto p-6 space-y-6 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center space-x-2">
                 <span>✍️ Feedback Anónimo</span>
@@ -5560,8 +5560,8 @@ export default function DashboardPage() {
 
       {/* MODAL: VIEW ANONYMOUS FEEDBACK STATS (TEACHER) */}
       {viewingFeedbackClass !== null && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in font-sans">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-sans">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-lg w-full min-w-[280px] sm:min-w-[480px] shrink-0 mx-auto p-6 space-y-6 shadow-2xl relative z-10 max-h-[90vh] flex flex-col">
             <div className="border-b border-neutral-800 pb-3 flex justify-between items-center">
               <h3 className="text-lg font-bold text-white flex items-center space-x-2">
                 <span>📊 Feedback de Alumnos</span>
@@ -5663,8 +5663,8 @@ export default function DashboardPage() {
 
       {/* 📜 Historial de Versiones / Comparación Modal */}
       {isVersionModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-5xl w-full h-[85vh] flex flex-col justify-between shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-5xl w-full min-w-[280px] sm:min-w-[640px] shrink-0 mx-auto h-[85vh] flex flex-col justify-between shadow-2xl relative z-10">
             <div className="flex justify-between items-center pb-4 border-b border-neutral-800">
               <div>
                 <h3 className="text-lg font-bold text-white">Versiones de Cronograma & Comparación Interanual</h3>
@@ -5890,8 +5890,8 @@ export default function DashboardPage() {
 
       {/* 💾 Guardar Versión Modal */}
       {isSaveVersionModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full space-y-4 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-white">Guardar Versión de Cronograma</h3>
             <p className="text-xs text-gray-400">Esto creará un snapshot del cronograma en su estado actual.</p>
             <div>
@@ -5926,8 +5926,8 @@ export default function DashboardPage() {
 
       {/* 👥 Crear Grupo de Estudio Modal */}
       {isCreateGroupModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleCreateStudyGroup} className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full space-y-4 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <form onSubmit={handleCreateStudyGroup} className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-white">Crear Grupo de Estudio</h3>
             <div>
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Nombre del Grupo</label>
@@ -5985,8 +5985,8 @@ export default function DashboardPage() {
       {groupPromptModal?.isOpen && (() => {
         let inputVal = "";
         return (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full space-y-4 shadow-2xl relative">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Nombre del Equipo</h3>
               <p className="text-xs text-gray-400 font-sans">Esta es una tarea grupal. Ingresá el nombre de tu equipo (sin espacios ni caracteres raros):</p>
               <input
@@ -6039,8 +6039,8 @@ export default function DashboardPage() {
       {commentPromptModal?.isOpen && (() => {
         let inputVal = "";
         return (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full space-y-4 shadow-2xl relative">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Comentarios de la Entrega</h3>
               <p className="text-xs text-gray-400 font-sans">¿Querés dejarle algún comentario al profesor sobre esta entrega? (Opcional):</p>
               <textarea
@@ -6078,8 +6078,8 @@ export default function DashboardPage() {
       {githubPromptModal?.isOpen && (() => {
         let inputVal = "";
         return (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-55 p-4">
-            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full text-center space-y-5 shadow-2xl relative">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto text-center space-y-5 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Vincular cuenta de GitHub</h3>
               <p className="text-xs text-gray-400 font-sans">
                 ¡Hola! Has ingresado a Ninja Dojo desde Moodle por primera vez.<br/>

@@ -287,8 +287,8 @@ export default function AdminPanel({
 
       {/* MODAL DE ADVERTENCIA PARA BORRAR USUARIO */}
       {userToDelete && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-bg-secondary border border-border-custom p-6 rounded-3xl max-w-md w-full space-y-6 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 z-[99999] overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-md w-full min-w-[280px] sm:min-w-[420px] shrink-0 mx-auto space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="flex items-center space-x-3 text-red-500">
               <span className="text-3xl">⚠️</span>
               <h3 className="text-lg font-bold text-text-primary">Advertencia: Borrar Usuario</h3>

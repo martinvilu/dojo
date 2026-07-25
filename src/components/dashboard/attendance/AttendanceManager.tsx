@@ -245,8 +245,8 @@ export default function AttendanceManager({
 
       {/* QR Code Modal Overlay Overlay (nested inside Manager context) */}
       {activeQr && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-55 p-4">
-          <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl max-w-sm w-full text-center space-y-6 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 z-[99999] overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 sm:p-8 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto text-center space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto z-10">
             <h3 className="text-lg font-bold text-white">Presentismo por Código QR</h3>
             <p className="text-xs text-gray-400">
               Proyecta este código en pantalla para que los alumnos lo escaneen y firmen su presente.

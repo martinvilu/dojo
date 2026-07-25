@@ -296,10 +296,10 @@ export default function TutoringPanel({
 
       {/* MODAL: REGISTER AS TUTOR */}
       {isRegisterModalOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 z-[99999] overflow-y-auto">
           <form
             onSubmit={handleRegisterAsTutor}
-            className="bg-neutral-900 border border-neutral-800 w-full max-w-md p-6 rounded-2xl space-y-4 text-left shadow-2xl"
+            className="bg-neutral-900 border border-neutral-800 w-full max-w-md min-w-[280px] sm:min-w-[400px] shrink-0 mx-auto p-6 rounded-2xl space-y-4 text-left shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="font-bold text-white text-sm">🤝 Registro como Tutor Académico</h3>
             <p className="text-xs text-gray-400">
@@ -354,10 +354,10 @@ export default function TutoringPanel({
 
       {/* MODAL: BOOK TUTORING SESSION */}
       {isBookModalOpen && selectedTutor && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 z-[99999] overflow-y-auto">
           <form
             onSubmit={handleBookSession}
-            className="bg-neutral-900 border border-neutral-800 w-full max-w-md p-6 rounded-2xl space-y-4 text-left shadow-2xl"
+            className="bg-neutral-900 border border-neutral-800 w-full max-w-md min-w-[280px] sm:min-w-[400px] shrink-0 mx-auto p-6 rounded-2xl space-y-4 text-left shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="font-bold text-white text-sm">📅 Reservar Sesión de Mentoría</h3>
             <p className="text-xs text-gray-400">

@@ -190,8 +190,8 @@ export default function MoodleIntegrationPanel({
 
       {/* LTI DEEP LINKING MODAL */}
       {showDeepLinkModal && (
-        <div className="fixed inset-0 top-0 left-0 w-screen h-screen bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="card-academic max-w-xl w-full space-y-4 shadow-xl rounded-lg bg-bg-secondary border border-border-custom">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl max-w-xl w-full min-w-[280px] sm:min-w-[480px] shrink-0 mx-auto max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl relative z-10 text-left">
             <h3 className="text-base font-bold text-text-primary flex justify-between items-center">
               <span>🔗 Enlaces LTI 1.3 Deep Linking para Moodle</span>
               <button onClick={() => setShowDeepLinkModal(false)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer">✕</button>
@@ -225,8 +225,8 @@ export default function MoodleIntegrationPanel({
 
       {/* MOODLE LTI CONFIGURATION GUIDE MODAL */}
       {showGuideModal && (
-        <div className="fixed inset-0 top-0 left-0 w-screen h-screen bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="card-academic max-w-2xl w-full my-8 space-y-5 shadow-2xl rounded-lg bg-bg-secondary border border-border-custom text-left">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl max-w-2xl w-full min-w-[280px] sm:min-w-[540px] shrink-0 mx-auto max-h-[90vh] overflow-y-auto space-y-5 shadow-2xl relative z-10 text-left my-auto">
             <div className="flex justify-between items-start border-b border-border-custom pb-3">
               <div>
                 <h3 className="text-base font-bold text-text-primary flex items-center space-x-2">
