@@ -203,9 +203,50 @@ function startMockServer(port = 3000) {
                 <button type="button" class="btn-action" id="btn-open-github-modal" onclick="document.getElementById('github-modal').classList.remove('hidden')">🐙 Vincular GitHub</button>
                 <button type="button" class="btn-action" id="btn-open-team-modal" onclick="document.getElementById('team-modal').classList.remove('hidden')">🚩 Asignar Nombre Equipo</button>
                 <button type="button" class="btn-action" id="btn-open-comment-modal" onclick="document.getElementById('comment-modal').classList.remove('hidden')">💬 Comentario de Entrega</button>
+                <button type="button" class="btn-action" id="btn-open-submit-assignment-modal" onclick="document.getElementById('submit-assignment-modal').classList.remove('hidden')">📤 Entregar Tarea (URL)</button>
+                <button type="button" class="btn-action" id="btn-open-join-group-modal" onclick="document.getElementById('join-group-modal').classList.remove('hidden')">🤝 Unirme a Grupo de Estudio</button>
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical" onclick="document.getElementById('toast-msg').innerText='¡Feed de iCal exportado exitosamente!'; document.getElementById('toast-container').classList.remove('hidden');">📅 Exportar iCal (.ics)</button>
+              </div>
+
+              <!-- MODAL ENTREGAR TAREA (URL SOLUCIÓN) -->
+              <div id="submit-assignment-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="submit-assignment-modal-card" style="max-width:420px;">
+                  <h3 style="margin:0; font-size:16px;">📤 Entregar Tarea: Práctica 2</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Ingresá el enlace de tu solución en GitHub o Google Drive:</p>
+                  <input id="assignment-solution-url-input" type="url" placeholder="https://github.com/usuario/practica2" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('submit-assignment-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-confirm-submission" style="background:#10b981;" onclick="
+                      document.getElementById('submit-assignment-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Tarea entregada exitosamente!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Confirmar Entrega</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL UNIRSE A GRUPO DE ESTUDIO -->
+              <div id="join-group-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="join-group-modal-card" style="max-width:420px;">
+                  <h3 style="margin:0; font-size:16px;">🤝 Grupos de Estudio Disponibles</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Seleccioná un grupo de estudio al que desees sumarte:</p>
+                  <div style="background:#000; border:1px solid #333; padding:12px; border-radius:8px; margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                      <strong style="font-size:13px; color:white;">Grupo Algoritmos (Turno Noche)</strong>
+                      <p style="font-size:10px; color:#a3a3a3; margin:2px 0 0 0;">3 integrantes • Noche</p>
+                    </div>
+                    <button type="button" id="btn-confirm-join-group" class="btn-action" style="padding:4px 10px;" onclick="
+                      document.getElementById('join-group-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Te has unido al grupo de estudio!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Unirme</button>
+                  </div>
+                  <div style="margin-top:16px; text-align:right;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('join-group-modal').classList.add('hidden')">Cerrar</button>
+                  </div>
+                </div>
               </div>
 
               <!-- MODAL VINCULAR GITHUB -->

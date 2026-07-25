@@ -101,6 +101,47 @@ async function runStudentTests() {
     console.log("    ✓ Pasado: Visualización de métricas de progreso académico del estudiante verificadas.");
     passed++;
 
+    // TEST 10.6: Carga de URL de Solución y Confirmación de Entrega de Tareas
+    total++;
+    console.log("  [Test 10.6] Entregar tarea ingresando URL de repositorio solución...");
+    const btnOpenSubmit = await driver.findElement(By.id("btn-open-submit-assignment-modal"));
+    await btnOpenSubmit.click();
+    await driver.sleep(200);
+
+    const submitModal = await driver.findElement(By.id("submit-assignment-modal"));
+    assert(await submitModal.isDisplayed(), "Modal de entrega de tarea debe estar visible");
+
+    const solutionUrlInput = await driver.findElement(By.id("assignment-solution-url-input"));
+    await solutionUrlInput.sendKeys("https://github.com/alumno/practica2-solucion");
+
+    const confirmSubmissionBtn = await driver.findElement(By.id("btn-confirm-submission"));
+    await confirmSubmissionBtn.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("Tarea entregada exitosamente"), "Debe confirmar la entrega de la tarea");
+    console.log("    ✓ Pasado: Carga de URL solución y confirmación de entrega verificadas.");
+    passed++;
+
+    // TEST 10.7: Selección y Unirse a Grupos de Estudio Existentes
+    total++;
+    console.log("  [Test 10.7] Selección y unirse a grupo de estudio de compañeros...");
+    const btnOpenJoinGroup = await driver.findElement(By.id("btn-open-join-group-modal"));
+    await btnOpenJoinGroup.click();
+    await driver.sleep(200);
+
+    const joinGroupModal = await driver.findElement(By.id("join-group-modal"));
+    assert(await joinGroupModal.isDisplayed(), "Modal de grupos de estudio disponibles debe estar visible");
+
+    const confirmJoinGroupBtn = await driver.findElement(By.id("btn-confirm-join-group"));
+    await confirmJoinGroupBtn.click();
+    await driver.sleep(200);
+
+    toastMsg = await driver.findElement(By.id("toast-msg")).getText();
+    assert(toastMsg.includes("unido al grupo de estudio"), "Debe notificar el registro exitoso al grupo de estudio");
+    console.log("    ✓ Pasado: Selección y unión a grupos de estudio entre pares verificada.");
+    passed++;
+
   } catch (err) {
     console.error("  ❌ FALLO en Student Test:", err.message);
   } finally {
