@@ -11,6 +11,7 @@ const runRolesTests = require("./roles.test");
 const runMoodleTests = require("./moodle.test");
 const runCalendarTests = require("./calendar.test");
 const runToastTests = require("./toast.test");
+const runDesignSystemTests = require("./design-system.test");
 const { startMockServer } = require("./server");
 
 async function main() {
@@ -29,6 +30,7 @@ async function main() {
   const results = [];
 
   try {
+    results.push(await runDesignSystemTests());
     results.push(await runLoginTests());
     results.push(await runModalsTests());
     results.push(await runDashboardTests());
