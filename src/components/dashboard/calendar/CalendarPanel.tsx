@@ -76,6 +76,32 @@ export default function CalendarPanel({
     return localDate.toISOString().split("T")[0];
   };
 
+  // Helper: Format raw event dates into clean Spanish format
+  const formatEventDate = (rawDate?: string) => {
+    if (!rawDate) return "-";
+    try {
+      const dateParts = rawDate.split("T");
+      const [year, month, day] = dateParts[0].split("-").map(Number);
+      if (!year || !month || !day) return rawDate;
+      const d = new Date(Date.UTC(year, month - 1, day));
+      const formattedDate = d.toLocaleDateString("es-AR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+      const capitalized = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+      if (dateParts[1] && !dateParts[1].startsWith("00:00:00")) {
+        const timePart = dateParts[1].substring(0, 5);
+        return `${capitalized}, ${timePart} hs`;
+      }
+      return capitalized;
+    } catch (e) {
+      return rawDate;
+    }
+  };
+
   // Parsing event dates
   const getEventsForDate = (dateStr: string) => {
     const dayEvents: any[] = [];
@@ -516,29 +542,29 @@ export default function CalendarPanel({
 
       {/* EVENT DETAIL & BOOKMARKS MODAL */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-bg-secondary border border-border-custom p-6 rounded-3xl max-w-md w-full space-y-5 shadow-2xl relative text-left">
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="card-academic max-w-lg w-full min-w-[320px] sm:min-w-[460px] space-y-4 shadow-2xl relative text-left rounded-lg bg-bg-secondary border border-border-custom">
             <button
               onClick={() => setSelectedEvent(null)}
               aria-label="Cerrar detalles"
               type="button"
-              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary transition text-lg p-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary transition text-sm font-bold p-1 cursor-pointer"
             >
               ✕
             </button>
 
-            <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block">
+            <span className="chip-status text-[10px] font-bold uppercase font-mono tracking-wider bg-bg-primary text-text-secondary border border-border-custom">
               {selectedEvent.type === "assignment" ? "📝 Entrega de Tarea" : "📅 Sesión de Clase"}
             </span>
 
-            <div className="space-y-1">
-              <h3 className="text-base font-black text-text-primary">{selectedEvent.title}</h3>
+            <div className="space-y-1 pt-1">
+              <h3 className="text-lg font-bold text-text-primary leading-tight">{selectedEvent.title}</h3>
               {selectedEvent.type === "class" && (
-                <div className="flex gap-2 mt-1">
-                  <span className="px-2 py-0.5 rounded bg-bg-primary border border-border-custom text-[10px] font-bold text-text-secondary font-mono">
+                <div className="flex gap-2 mt-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded bg-bg-primary border border-border-custom text-[11px] font-bold text-text-secondary font-mono">
                     Clase {selectedEvent.details.classNumber}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-bg-primary border border-border-custom text-[10px] font-bold text-text-secondary">
+                  <span className="px-2 py-0.5 rounded bg-bg-primary border border-border-custom text-[11px] font-bold text-text-secondary">
                     Tipo: {selectedEvent.details.type || "Normal"}
                   </span>
                 </div>
@@ -548,10 +574,15 @@ export default function CalendarPanel({
             <div className="space-y-3 border-t border-border-custom pt-3 text-xs text-text-primary">
               {selectedEvent.type === "class" ? (
                 <>
-                  <p><strong>Fecha:</strong> {selectedEvent.details.date || "-"}</p>
+                  <p className="text-xs">
+                    <strong className="text-text-secondary">Fecha:</strong>{" "}
+                    <span className="font-semibold text-text-primary font-mono">
+                      {formatEventDate(selectedEvent.details.date)}
+                    </span>
+                  </p>
                   {selectedEvent.details.description && (
-                    <div className="bg-bg-primary p-3 rounded-xl border border-border-custom max-h-36 overflow-y-auto">
-                      <p className="text-[11px] text-text-secondary leading-relaxed">
+                    <div className="bg-bg-primary p-3 rounded border border-border-custom max-h-36 overflow-y-auto">
+                      <p className="text-xs text-text-secondary leading-relaxed">
                         {selectedEvent.details.description}
                       </p>
                     </div>
@@ -561,12 +592,12 @@ export default function CalendarPanel({
                   {selectedEvent.details.video_url && (
                     <div className="space-y-2 pt-2 border-t border-border-custom">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs">🎥 Grabación de la clase</span>
+                        <span className="font-bold text-xs text-text-primary">🎥 Grabación de la clase</span>
                         <a
                           href={selectedEvent.details.video_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs text-blue-500 hover:underline font-semibold"
+                          className="text-xs text-tertiary hover:underline font-semibold"
                         >
                           Ver Video ↗
                         </a>
@@ -582,9 +613,9 @@ export default function CalendarPanel({
                             {selectedEvent.details.bookmarks.map((bm: any, bIdx: number) => (
                               <div
                                 key={bIdx}
-                                className="flex justify-between items-center bg-bg-primary p-2 rounded-lg border border-border-custom text-[11px]"
+                                className="flex justify-between items-center bg-bg-primary p-2 rounded border border-border-custom text-[11px]"
                               >
-                                <span className="font-mono text-blue-400 font-bold">{bm.timestamp}</span>
+                                <span className="font-mono text-tertiary font-bold">{bm.timestamp}</span>
                                 <span className="text-text-secondary font-medium">{bm.label}</span>
                               </div>
                             ))}
@@ -601,18 +632,18 @@ export default function CalendarPanel({
                           value={newBookmarkTime}
                           onChange={(e) => setNewBookmarkTime(e.target.value)}
                           placeholder="Minuto (Ej: 12:45)"
-                          className="w-28 bg-bg-primary border border-border-custom text-text-primary rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                          className="input-academic w-28 text-[11px] font-mono"
                         />
                         <input
                           type="text"
                           value={newBookmarkLabel}
                           onChange={(e) => setNewBookmarkLabel(e.target.value)}
                           placeholder="Tema / Explicación"
-                          className="flex-1 bg-bg-primary border border-border-custom text-text-primary rounded-lg px-2 py-1 text-[11px] focus:outline-none"
+                          className="input-academic flex-1 text-[11px]"
                         />
                         <button
                           type="submit"
-                          className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded-lg transition"
+                          className="btn-primary min-w-[70px] min-h-[32px] text-xs py-1"
                         >
                           + Agregar
                         </button>
@@ -622,10 +653,15 @@ export default function CalendarPanel({
                 </>
               ) : (
                 <>
-                  <p><strong>Fecha Límite:</strong> {selectedEvent.details.due_date ? new Date(selectedEvent.details.due_date).toLocaleString("es-AR") : "-"}</p>
+                  <p className="text-xs">
+                    <strong className="text-text-secondary">Fecha Límite:</strong>{" "}
+                    <span className="font-semibold text-text-primary font-mono">
+                      {formatEventDate(selectedEvent.details.due_date)}
+                    </span>
+                  </p>
                   {selectedEvent.details.description && (
-                    <div className="bg-bg-primary p-3 rounded-xl border border-border-custom max-h-36 overflow-y-auto">
-                      <p className="text-[11px] text-text-secondary leading-relaxed">
+                    <div className="bg-bg-primary p-3 rounded border border-border-custom max-h-36 overflow-y-auto">
+                      <p className="text-xs text-text-secondary leading-relaxed">
                         {selectedEvent.details.description}
                       </p>
                     </div>
@@ -634,18 +670,18 @@ export default function CalendarPanel({
               )}
             </div>
 
-            <div className="flex flex-col gap-2 pt-2 border-t border-border-custom">
+            <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-border-custom">
               <button
                 type="button"
                 onClick={() => handleGoogleCalendarAddEvent(selectedEvent)}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center space-x-2 shadow-sm"
+                className="btn-primary flex-1 shadow-sm"
               >
-                <span>📅</span>
-                <span>Agregar este evento a Google Calendar</span>
+                <span>📅 Agregar a Google Calendar</span>
               </button>
               <button
+                type="button"
                 onClick={() => setSelectedEvent(null)}
-                className="w-full px-4 py-2.5 bg-bg-primary hover:bg-bg-tertiary text-text-primary border border-border-custom text-xs font-bold rounded-xl transition cursor-pointer"
+                className="btn-secondary min-w-[90px]"
               >
                 Cerrar
               </button>
