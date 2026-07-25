@@ -512,9 +512,9 @@ async function getMoodleLtiDeepLinkContent(payload, context) {
     });
 
     return {
-        "@context": "http://purl.imsglobal.org/ctx/lti/v1/deeplinking",
-        "@type": "LtiDeepLinkingResponse",
-        "items": items
+        context: "http://purl.imsglobal.org/ctx/lti/v1/deeplinking",
+        type: "LtiDeepLinkingResponse",
+        items: items
     };
 }
 
