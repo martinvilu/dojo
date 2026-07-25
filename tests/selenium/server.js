@@ -86,6 +86,30 @@ function startMockServer(port = 3000) {
               <h1>Jutsu Classroom Dashboard</h1>
               <p>Panel de Administración Académica y Cátedras</p>
 
+              <!-- Filtro de Comisión y Medidores del Alumno -->
+              <div style="margin-bottom: 16px; display:flex; gap:16px; align-items:center;">
+                <label style="font-size:12px; font-weight:bold; color:#a3a3a3;">Filtrar por Comisión:</label>
+                <select id="commission-filter-select" style="background:#171717; color:white; border:1px solid #333; padding:6px 12px; border-radius:8px; font-size:12px;" onchange="
+                  const val = this.value;
+                  const r1 = document.getElementById('student-row-1');
+                  const r2 = document.getElementById('student-row-2');
+                  const r3 = document.getElementById('student-row-3');
+                  if (val === 'Comisión 1') {
+                    if (r1) r1.classList.remove('hidden');
+                    if (r2) r2.classList.add('hidden');
+                    if (r3) r3.classList.add('hidden');
+                  } else {
+                    if (r1) r1.classList.remove('hidden');
+                    if (r2) r2.classList.remove('hidden');
+                    if (r3) r3.classList.remove('hidden');
+                  }
+                ">
+                  <option value="Todas">Todas las Comisiones</option>
+                  <option value="Comisión 1">Comisión 1</option>
+                  <option value="Comisión 2">Comisión 2</option>
+                </select>
+              </div>
+
               <!-- Sección Alertas y Roster -->
               <h2>Alertas Tempranas y Estudiantes</h2>
               <table id="roster-table">
@@ -93,6 +117,8 @@ function startMockServer(port = 3000) {
                   <tr>
                     <th>Estudiante</th>
                     <th>Matrícula</th>
+                    <th>Asistencia</th>
+                    <th>Tareas Entregadas</th>
                     <th>Alertas Tempranas</th>
                     <th>Acciones</th>
                   </tr>
@@ -101,6 +127,13 @@ function startMockServer(port = 3000) {
                   <tr id="student-row-1">
                     <td><strong>Juan Pérez</strong><br/><span style="color:#737373; font-size:11px;">juan@unrn.edu.ar</span></td>
                     <td>2024-001</td>
+                    <td><span id="attendance-pct-1" style="font-weight:bold; color:#ef4444;">65%</span></td>
+                    <td>
+                      <div style="width:100px; height:6px; background:#262626; border-radius:4px; overflow:hidden;">
+                        <div id="assignments-bar-1" style="width:50%; height:100%; background:#3b82f6;"></div>
+                      </div>
+                      <span style="font-size:10px; color:#a3a3a3;">2 / 4 Entregadas</span>
+                    </td>
                     <td>
                       <div class="badge-alert-critical" id="alert-badge-critical">
                         <span>⚠️</span><span>Asistencia Crítica (&lt;75%)</span>
@@ -114,6 +147,13 @@ function startMockServer(port = 3000) {
                   <tr id="student-row-2">
                     <td><strong>María González</strong><br/><span style="color:#737373; font-size:11px;">maria@unrn.edu.ar</span></td>
                     <td>2024-002</td>
+                    <td><span id="attendance-pct-2" style="font-weight:bold; color:#10b981;">90%</span></td>
+                    <td>
+                      <div style="width:100px; height:6px; background:#262626; border-radius:4px; overflow:hidden;">
+                        <div id="assignments-bar-2" style="width:25%; height:100%; background:#f59e0b;"></div>
+                      </div>
+                      <span style="font-size:10px; color:#a3a3a3;">1 / 4 Entregadas</span>
+                    </td>
                     <td>
                       <div class="badge-alert-warning" id="alert-badge-warning">
                         <span>⚠️</span><span>Tareas Atrasadas</span>
@@ -126,6 +166,13 @@ function startMockServer(port = 3000) {
                   <tr id="student-row-3">
                     <td><strong>Lucas Rodríguez</strong><br/><span style="color:#737373; font-size:11px;">lucas@unrn.edu.ar</span></td>
                     <td>2024-003</td>
+                    <td><span id="attendance-pct-3" style="font-weight:bold; color:#10b981;">100%</span></td>
+                    <td>
+                      <div style="width:100px; height:6px; background:#262626; border-radius:4px; overflow:hidden;">
+                        <div id="assignments-bar-3" style="width:100%; height:100%; background:#10b981;"></div>
+                      </div>
+                      <span style="font-size:10px; color:#a3a3a3;">4 / 4 Entregadas</span>
+                    </td>
                     <td>
                       <div class="badge-alert-none" id="alert-badge-none">Sin Alertas</div>
                     </td>
@@ -158,7 +205,7 @@ function startMockServer(port = 3000) {
                 <button type="button" class="btn-action" id="btn-open-comment-modal" onclick="document.getElementById('comment-modal').classList.remove('hidden')">💬 Comentario de Entrega</button>
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
-                <button type="button" class="btn-action" id="btn-export-ical">📅 Exportar iCal (.ics)</button>
+                <button type="button" class="btn-action" id="btn-export-ical" onclick="document.getElementById('toast-msg').innerText='¡Feed de iCal exportado exitosamente!'; document.getElementById('toast-container').classList.remove('hidden');">📅 Exportar iCal (.ics)</button>
               </div>
 
               <!-- MODAL VINCULAR GITHUB -->

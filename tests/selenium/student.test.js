@@ -76,6 +76,31 @@ async function runStudentTests() {
     console.log("    ✓ Pasado: Envío de entrega con comentarios para el docente verificado.");
     passed++;
 
+    // TEST 10.4: Filtro de Estudiantes por Comisión
+    total++;
+    console.log("  [Test 10.4] Filtrado interactivo por Comisión...");
+    const filterSelect = await driver.findElement(By.id("commission-filter-select"));
+    await filterSelect.sendKeys("Comisión 1");
+    await driver.sleep(200);
+
+    const row1 = await driver.findElement(By.id("student-row-1"));
+    const row2 = await driver.findElement(By.id("student-row-2"));
+    assert(await row1.isDisplayed(), "La fila de Comisión 1 debe ser visible");
+    assert(!(await row2.isDisplayed()), "La fila de Comisión 2 debe ser ocultada al filtrar");
+    console.log("    ✓ Pasado: Filtro interactivo por Comisión comprobado.");
+    passed++;
+
+    // TEST 10.5: Indicadores Visuales de Asistencia y Progreso de Tareas del Alumno
+    total++;
+    console.log("  [Test 10.5] Indicadores de porcentaje de Asistencia y Barra de Progreso...");
+    const attPct = await driver.findElement(By.id("attendance-pct-1")).getText();
+    assert(attPct.includes("65%"), "El porcentaje de asistencia debe reflejar la métrica del estudiante");
+
+    const bar = await driver.findElement(By.id("assignments-bar-1"));
+    assert(await bar.isDisplayed(), "La barra de progreso de tareas entregadas debe estar visible");
+    console.log("    ✓ Pasado: Visualización de métricas de progreso académico del estudiante verificadas.");
+    passed++;
+
   } catch (err) {
     console.error("  ❌ FALLO en Student Test:", err.message);
   } finally {
