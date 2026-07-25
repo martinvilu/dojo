@@ -194,7 +194,7 @@ export default function MoodleIntegrationPanel({
           <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl max-w-xl w-full min-w-[280px] sm:min-w-[480px] shrink-0 mx-auto max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl relative z-10 text-left">
             <h3 className="text-base font-bold text-text-primary flex justify-between items-center">
               <span>🔗 Enlaces LTI 1.3 Deep Linking para Moodle</span>
-              <button onClick={() => setShowDeepLinkModal(false)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer">✕</button>
+              <button onClick={() => setShowDeepLinkModal(false)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer" aria-label="Cerrar modal">✕</button>
             </h3>
             <p className="text-xs text-text-secondary">
               Copiá las URLs directas para agregarlas como Herramienta Externa en Moodle:
@@ -236,7 +236,7 @@ export default function MoodleIntegrationPanel({
                   Completá el formulario de <strong>Administración del sitio &gt; Plugins &gt; Herramientas externas &gt; Registrar herramienta externa</strong> en Moodle con estos parámetros exactos:
                 </p>
               </div>
-              <button onClick={() => setShowGuideModal(false)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer">✕</button>
+              <button onClick={() => setShowGuideModal(false)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer" aria-label="Cerrar modal">✕</button>
             </div>
 
             <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-2 text-xs">
