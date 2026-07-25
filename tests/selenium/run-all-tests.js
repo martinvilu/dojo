@@ -4,6 +4,8 @@ const runDashboardTests = require("./dashboard.test");
 const runAttendanceTests = require("./attendance.test");
 const runFeaturesTests = require("./features.test");
 const runStudentTests = require("./student.test");
+const runTeacherTests = require("./teacher.test");
+const runTutorTests = require("./tutor.test");
 const runAdminTests = require("./admin.test");
 const runRolesTests = require("./roles.test");
 const runMoodleTests = require("./moodle.test");
@@ -33,6 +35,8 @@ async function main() {
     results.push(await runAttendanceTests());
     results.push(await runFeaturesTests());
     results.push(await runStudentTests());
+    results.push(await runTeacherTests());
+    results.push(await runTutorTests());
     results.push(await runAdminTests());
     results.push(await runRolesTests());
     results.push(await runMoodleTests());

@@ -29,6 +29,12 @@ async function runFeaturesTests() {
 
     let toastMsg = await driver.findElement(By.id("toast-msg")).getText();
     assert(toastMsg.includes("Feedback anónimo enviado"), "Debe notificar el envío del feedback anónimo");
+    
+    // Dismiss toast to prevent intercepting lower screen buttons
+    const closeToastBtn = await driver.findElement(By.id("btn-close-toast"));
+    await closeToastBtn.click();
+    await driver.sleep(200);
+
     console.log("    ✓ Pasado: Feedback anónimo registrado exitosamente.");
     passed++;
 
@@ -50,6 +56,11 @@ async function runFeaturesTests() {
 
     toastMsg = await driver.findElement(By.id("toast-msg")).getText();
     assert(toastMsg.includes("tutor registrada"), "Debe confirmar la postulación de tutoría");
+
+    // Dismiss toast
+    await closeToastBtn.click();
+    await driver.sleep(200);
+
     console.log("    ✓ Pasado: Postulación de tutoría académica comprobada.");
     passed++;
 

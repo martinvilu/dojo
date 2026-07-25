@@ -231,8 +231,15 @@ function startMockServer(port = 3000) {
               <!-- Sección Modales Especiales por Rol -->
               <div style="margin-top:24px; display:flex; flex-wrap:wrap; gap:12px;">
                 <button type="button" class="btn-action" id="btn-open-qr-modal" onclick="document.getElementById('qr-modal').classList.remove('hidden')">📱 Firmar Presente QR</button>
+                <button type="button" class="btn-action" id="btn-generate-qr-code" onclick="
+                  const token = Math.random().toString(36).substring(2, 8).toUpperCase();
+                  document.getElementById('qr-generated-token').innerText = token;
+                  document.getElementById('teacher-qr-modal').classList.remove('hidden');
+                ">🎲 Generar Token QR Docente</button>
+                <button type="button" class="btn-action" id="btn-open-schedule-email-modal" onclick="document.getElementById('schedule-email-modal').classList.remove('hidden')">📅 Programar Email Masivo Docente</button>
                 <button type="button" class="btn-action" id="btn-open-feedback-modal" onclick="document.getElementById('feedback-modal').classList.remove('hidden')">✍️ Dejar Feedback Anónimo</button>
                 <button type="button" class="btn-action" id="btn-open-tutoring-modal" onclick="document.getElementById('tutoring-modal').classList.remove('hidden')">🤝 Postularse como Tutor</button>
+                <button type="button" class="btn-action" id="btn-open-tutor-profile-modal" onclick="document.getElementById('tutor-profile-modal').classList.remove('hidden')">⚙️ Perfil y Horarios Tutor</button>
                 <button type="button" class="btn-action" id="btn-open-tutor-dashboard" onclick="document.getElementById('tutor-dashboard-modal').classList.remove('hidden')">🎓 Panel de Tutor</button>
                 <button type="button" class="btn-action" id="btn-open-version-modal" onclick="document.getElementById('version-modal').classList.remove('hidden')">💾 Guardar Versión Cronograma</button>
                 <button type="button" class="btn-action" id="btn-open-group-modal" onclick="document.getElementById('group-modal').classList.remove('hidden')">👥 Crear Grupo de Estudio</button>
@@ -246,6 +253,56 @@ function startMockServer(port = 3000) {
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical" onclick="document.getElementById('toast-msg').innerText='¡Feed de iCal exportado exitosamente!'; document.getElementById('toast-container').classList.remove('hidden');">📅 Exportar iCal (.ics)</button>
+              </div>
+
+              <!-- MODAL GENERAR TOKEN QR DOCENTE -->
+              <div id="teacher-qr-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="teacher-qr-modal-card" style="max-width:380px; text-align:center;">
+                  <h3 style="margin:0; font-size:16px;">🎲 Token de Asistencia Generado</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Mostrá este código en pantalla para que los alumnos firmen presente:</p>
+                  <div id="qr-generated-token" style="font-size:32px; font-family:monospace; font-weight:bold; letter-spacing:6px; color:#f59e0b; margin:16px 0;">X8K2M9</div>
+                  <div style="margin-top:16px; text-align:center;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('teacher-qr-modal').classList.add('hidden')">Cerrar Proyección</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL PROGRAMAR EMAIL MASIVO DOCENTE -->
+              <div id="schedule-email-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="schedule-email-modal-card" style="max-width:420px;">
+                  <h3 style="margin:0; font-size:16px;">📅 Programar Email Masivo por Alerta</h3>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Fecha de Envío Automatizado</label>
+                    <input id="schedule-email-date" type="date" value="2026-08-01" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  </div>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('schedule-email-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-submit-schedule-email" style="background:#2563eb;" onclick="
+                      document.getElementById('schedule-email-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Envío masivo de emails programado!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Programar Envío</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL PERFIL Y HORARIOS DE TUTOR -->
+              <div id="tutor-profile-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="tutor-profile-modal-card" style="max-width:400px;">
+                  <h3 style="margin:0; font-size:16px;">⚙️ Ajustes de Perfil de Tutor</h3>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Materias Habilitadas</label>
+                    <input id="tutor-subjects-input" type="text" value="Programación I, Estructura de Datos" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  </div>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('tutor-profile-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-save-tutor-profile" style="background:#2563eb;" onclick="
+                      document.getElementById('tutor-profile-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Perfil de tutor actualizado!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Guardar Cambios</button>
+                  </div>
+                </div>
               </div>
 
               <!-- MODAL PANEL DE TUTOR ACADÉMICO -->
