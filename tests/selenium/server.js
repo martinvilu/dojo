@@ -75,7 +75,7 @@ function startMockServer(port = 3000) {
                 .btn-action:hover { background: #2563eb; color: white; }
                 details { background: #171717; border: 1px solid #262626; padding: 16px; border-radius: 12px; margin-top: 20px; }
                 summary { font-weight: bold; font-size: 14px; cursor: pointer; color: #60a5fa; }
-                .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; items-center: center; justify-content: center; z-index: 99999; padding: 16px; overflow-y: auto; }
+                .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 16px; overflow-y: auto; }
                 .modal-card { background: #171717; border: 1px solid #262626; padding: 24px; border-radius: 16px; width: 100%; max-width: 512px; min-width: 280px; box-sizing: border-box; }
                 .toast-portal { position: fixed; bottom: 16px; left: 16px; right: 16px; z-index: 999999; max-width: 400px; margin-left: auto; background: #171717; border: 1px solid #404040; padding: 14px 16px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
                 .hidden { display: none !important; }
@@ -144,8 +144,12 @@ function startMockServer(port = 3000) {
                 </div>
               </details>
 
-              <!-- Sección Moodle LTI & Calendario -->
-              <div style="margin-top:24px; display:flex; gap:12px;">
+              <!-- Sección Modales Especiales: QR, Feedback, Tutorías y Cronogramas -->
+              <div style="margin-top:24px; display:flex; flex-wrap:wrap; gap:12px;">
+                <button type="button" class="btn-action" id="btn-open-qr-modal" onclick="document.getElementById('qr-modal').classList.remove('hidden')">📱 Firmar Presente QR</button>
+                <button type="button" class="btn-action" id="btn-open-feedback-modal" onclick="document.getElementById('feedback-modal').classList.remove('hidden')">✍️ Dejar Feedback Anónimo</button>
+                <button type="button" class="btn-action" id="btn-open-tutoring-modal" onclick="document.getElementById('tutoring-modal').classList.remove('hidden')">🤝 Postularse como Tutor</button>
+                <button type="button" class="btn-action" id="btn-open-version-modal" onclick="document.getElementById('version-modal').classList.remove('hidden')">💾 Guardar Versión Cronograma</button>
                 <button type="button" class="btn-action" id="btn-open-lti-guide" onclick="document.getElementById('lti-modal').classList.remove('hidden')">🔗 Ver Guía LTI Moodle</button>
                 <button type="button" class="btn-action" id="btn-trigger-toast" onclick="document.getElementById('toast-container').classList.remove('hidden')">🔔 Probar Toast</button>
                 <button type="button" class="btn-action" id="btn-export-ical">📅 Exportar iCal (.ics)</button>
@@ -172,6 +176,95 @@ function startMockServer(port = 3000) {
                       <button type="submit" id="btn-send-email-submit" style="width:auto; background:#2563eb; color:white;">✉️ Enviar Correo Directo</button>
                     </div>
                   </form>
+                </div>
+              </div>
+
+              <!-- MODAL FIRMAR PRESENTISMO QR -->
+              <div id="qr-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="qr-modal-card" style="max-width:380px;">
+                  <h3 style="margin:0; font-size:16px;">📱 Firmar Presente (Clase 4)</h3>
+                  <p style="font-size:12px; color:#a3a3a3; margin-top:8px;">Ingresá el código de 6 caracteres del profesor:</p>
+                  <input id="qr-token-input" type="text" maxlength="6" placeholder="A7B9X2" style="text-align:center; font-size:20px; font-family:monospace; font-weight:bold; letter-spacing:4px; color:#f59e0b; background:#000; border:1px solid #333; border-radius:8px; padding:10px; width:100%; box-sizing:border-box;" oninput="
+                    const btn = document.getElementById('btn-confirm-qr');
+                    if (this.value.length === 6) { btn.removeAttribute('disabled'); } else { btn.setAttribute('disabled', 'true'); }
+                  " />
+                  <div style="margin-top:16px; display:flex; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('qr-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-confirm-qr" disabled style="background:#2563eb;" onclick="
+                      document.getElementById('qr-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Presente firmado correctamente!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Confirmar Presente</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL FEEDBACK ANÓNIMO -->
+              <div id="feedback-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="feedback-modal-card" style="max-width:420px;">
+                  <h3 style="margin:0; font-size:16px;">✍️ Feedback Anónimo (Clase 4)</h3>
+                  <p style="font-size:11px; color:#a3a3a3;">Tu opinión es anónima y ayuda a mejorar el curso.</p>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">¿Qué te pareció la clase?</label>
+                    <div style="font-size:24px; color:#fbbf24; cursor:pointer; margin-top:4px;">
+                      <span id="star-5" onclick="this.parentNode.setAttribute('data-rating', '5')">★★★★★</span>
+                    </div>
+                  </div>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Comentario Sugerido</label>
+                    <textarea id="feedback-comment-input" rows="3" placeholder="Excelente explicación de la práctica..." style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;"></textarea>
+                  </div>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('feedback-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-submit-feedback" style="background:#10b981;" onclick="
+                      document.getElementById('feedback-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Feedback anónimo enviado!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Enviar Feedback</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL POSTULARSE COMO TUTOR -->
+              <div id="tutoring-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="tutoring-modal-card" style="max-width:400px;">
+                  <h3 style="margin:0; font-size:16px;">🤝 Registro como Tutor Académico</h3>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Temas Fuertes</label>
+                    <input id="tutor-topics-input" type="text" placeholder="React, TypeScript, Algoritmos" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  </div>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Disponibilidad Horaria</label>
+                    <input id="tutor-avail-input" type="text" placeholder="Lunes y Miércoles 18hs" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  </div>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('tutoring-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-submit-tutor" style="background:#2563eb;" onclick="
+                      document.getElementById('tutoring-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Postulación de tutor registrada!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Postularme</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL GUARDAR VERSIÓN DE CRONOGRAMA -->
+              <div id="version-modal" class="modal-backdrop hidden">
+                <div class="modal-card" id="version-modal-card" style="max-width:380px;">
+                  <h3 style="margin:0; font-size:16px;">💾 Guardar Versión de Cronograma</h3>
+                  <p style="font-size:12px; color:#a3a3a3;">Crea un snapshot del estado actual.</p>
+                  <div style="margin-top:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#a3a3a3;">Nombre de la Versión</label>
+                    <input id="version-name-input" type="text" placeholder="Planificación Inicial 2026" style="width:100%; padding:8px; background:#000; border:1px solid #333; color:white; border-radius:8px; font-size:12px; box-sizing:border-box;" />
+                  </div>
+                  <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" style="background:#262626;" onclick="document.getElementById('version-modal').classList.add('hidden')">Cancelar</button>
+                    <button type="button" id="btn-save-version" style="background:#2563eb;" onclick="
+                      document.getElementById('version-modal').classList.add('hidden');
+                      document.getElementById('toast-msg').innerText='¡Snapshot de versión guardado!';
+                      document.getElementById('toast-container').classList.remove('hidden');
+                    ">Guardar Versión</button>
+                  </div>
                 </div>
               </div>
 
