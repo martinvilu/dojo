@@ -22,7 +22,7 @@ export default function ToastNotification({ message, type, onClose }: ToastNotif
     <div
       role="alert"
       aria-live="polite"
-      className="fixed bottom-6 right-6 z-[99999] flex items-center space-x-3 bg-bg-secondary border border-border-custom px-4 py-3.5 rounded-lg shadow-2xl max-w-[calc(100vw-3rem)] sm:max-w-md w-auto text-left pointer-events-auto transition-all"
+      className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[99999] flex items-center space-x-3 bg-bg-secondary border border-border-custom px-4 py-3.5 rounded-lg shadow-2xl sm:max-w-md w-auto text-left pointer-events-auto transition-all"
     >
       <span
         className={`w-2.5 h-2.5 rounded-full shrink-0 ${
@@ -33,7 +33,7 @@ export default function ToastNotification({ message, type, onClose }: ToastNotif
             : "bg-tertiary shadow-md shadow-tertiary/50"
         }`}
       ></span>
-      <p className="text-xs text-text-primary font-medium leading-normal break-words flex-1">
+      <p className="text-xs text-text-primary font-medium leading-normal break-words min-w-0 flex-1">
         {message}
       </p>
       <button
