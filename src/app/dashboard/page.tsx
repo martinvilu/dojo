@@ -4511,20 +4511,22 @@ export default function DashboardPage() {
                                   ></div>
                                 </div>
                               </td>
-                              <td className="p-4">
-                                <div className="flex flex-wrap gap-1.5">
+                              <td className="p-4 min-w-[170px]">
+                                <div className="flex flex-col gap-1.5">
                                   {hasCriticalAttendance && (
-                                    <span className="px-2 py-0.5 rounded-md bg-red-950/80 border border-red-800/40 text-red-400 text-[9px] font-bold uppercase tracking-wider animate-pulse">
-                                      ⚠️ Asistencia Crítica
+                                    <span className="px-3 py-1.5 rounded-xl bg-red-950/90 border border-red-700/60 text-red-300 text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 shadow-sm animate-pulse whitespace-nowrap">
+                                      <span>⚠️</span>
+                                      <span>Asistencia Crítica (&lt;75%)</span>
                                     </span>
                                   )}
                                   {hasMissingAssignments && (
-                                    <span className="px-2 py-0.5 rounded-md bg-amber-955/80 border border-amber-800/40 text-amber-400 text-[9px] font-bold uppercase tracking-wider">
-                                      ⚠️ Tareas Atrasadas
+                                    <span className="px-3 py-1.5 rounded-xl bg-amber-950/90 border border-amber-700/60 text-amber-300 text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
+                                      <span>⚠️</span>
+                                      <span>Tareas Atrasadas</span>
                                     </span>
                                   )}
                                   {!hasCriticalAttendance && !hasMissingAssignments && (
-                                    <span className="px-2 py-0.5 rounded-md bg-neutral-900 border border-neutral-800 text-gray-500 text-[9px] font-bold uppercase tracking-wider">
+                                    <span className="px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-gray-400 text-xs font-bold uppercase tracking-wider inline-block text-center whitespace-nowrap">
                                       Sin Alertas
                                     </span>
                                   )}
