@@ -26,6 +26,24 @@ async function runCalendarTests() {
     console.log("    ✓ Pasado: Botones .ics y enlace de suscripción verificado.");
     passed++;
 
+    // TEST 5.3: Endpoint HTTP /api/calendar iCal Feed (HTTP 200)
+    total++;
+    console.log("  [Test 5.3] Respuesta exitosa (HTTP 200) del Endpoint /api/calendar iCal...");
+    const fetchResponse = await driver.executeAsyncScript(async (done) => {
+      try {
+        const res = await fetch('/api/calendar');
+        const text = await res.text();
+        done({ status: res.status, text });
+      } catch (e) {
+        done({ status: 500, text: e.message });
+      }
+    });
+
+    assertEqual(fetchResponse.status, 200, "El status HTTP de /api/calendar debe ser 200 OK");
+    assert(fetchResponse.text.includes("VCALENDAR"), "El contenido del feed /api/calendar debe incluir la estructura VCALENDAR");
+    console.log("    ✓ Pasado: Endpoint /api/calendar respondiendo iCal VCALENDAR con éxito (HTTP 200).");
+    passed++;
+
   } catch (err) {
     console.error("  ❌ FALLO en Calendar Test:", err.message);
   } finally {

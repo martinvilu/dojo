@@ -246,7 +246,8 @@ export default function CalendarPanel({
   };
 
   const handleGoogleCalendarSubscribe = () => {
-    let feedUrl = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/calendar`;
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    let feedUrl = `${origin}/api/calendar`;
     if (selectedCourseFilter && selectedCourseFilter !== "all") {
       feedUrl += `?id=${selectedCourseFilter}`;
     }

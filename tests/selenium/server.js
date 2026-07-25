@@ -744,10 +744,14 @@ function startMockServer(port = 3000) {
             </body>
           </html>
         `);
+      } else if (req.url.startsWith("/api/calendar")) {
+        res.writeHead(200, { "Content-Type": "text/calendar; charset=utf-8" });
+        res.end("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Jutsu Classroom//Calendar Feed//ES\r\nBEGIN:VEVENT\r\nSUMMARY:[Clase] Algoritmos\r\nDTSTART;VALUE=DATE:20260810\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n");
       } else {
         res.writeHead(404);
         res.end("Not Found");
       }
+
     });
 
     server.listen(port, () => {
