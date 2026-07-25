@@ -392,14 +392,15 @@ export default function CalendarPanel({
 
       {/* MONTH VIEW GRID */}
       {viewMode === "month" && (
-        <div className="bg-bg-secondary border border-border-custom rounded-2xl overflow-hidden shadow-sm">
-          <div className="grid grid-cols-7 border-b border-border-custom bg-bg-primary/50 text-center py-2.5 text-xs font-semibold text-text-secondary select-none">
-            {weekdayNames.map((name) => (
-              <div key={name}>{name}</div>
-            ))}
-          </div>
+        <div className="bg-bg-secondary border border-border-custom rounded-2xl overflow-x-auto shadow-sm w-full">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-7 border-b border-border-custom bg-bg-primary/50 text-center py-2.5 text-xs font-semibold text-text-secondary select-none">
+              {weekdayNames.map((name) => (
+                <div key={name}>{name}</div>
+              ))}
+            </div>
 
-          <div className="grid grid-cols-7 grid-rows-6 divide-x divide-y divide-border-custom border-t border-border-custom">
+            <div className="grid grid-cols-7 grid-rows-6 divide-x divide-y divide-border-custom border-t border-border-custom">
             {getMonthDays().map(({ date, isCurrentMonth }, idx) => {
               const dateStr = toLocalDateString(date);
               const dayEvents = getEventsForDate(dateStr);
@@ -458,6 +459,7 @@ export default function CalendarPanel({
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
       )}
