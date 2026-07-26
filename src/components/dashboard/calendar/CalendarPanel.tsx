@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 export interface ClassInstance {
   id?: string;
@@ -59,15 +59,19 @@ export default function CalendarPanel({
   if (activeTab !== "calendar") return null;
 
   // Filter events by selected course
-  const filteredClasses = classes.filter((c) => {
-    if (selectedCourseFilter === "all") return true;
-    return c.course_id === selectedCourseFilter;
-  });
+  const filteredClasses = useMemo(() => {
+    return classes.filter((c) => {
+      if (selectedCourseFilter === "all") return true;
+      return c.course_id === selectedCourseFilter;
+    });
+  }, [classes, selectedCourseFilter]);
 
-  const filteredAssignments = assignments.filter((a) => {
-    if (selectedCourseFilter === "all") return true;
-    return a.course_id === selectedCourseFilter;
-  });
+  const filteredAssignments = useMemo(() => {
+    return assignments.filter((a) => {
+      if (selectedCourseFilter === "all") return true;
+      return a.course_id === selectedCourseFilter;
+    });
+  }, [assignments, selectedCourseFilter]);
 
   // Helper: Format date to YYYY-MM-DD local string
   const toLocalDateString = (date: Date) => {
@@ -102,16 +106,22 @@ export default function CalendarPanel({
     }
   };
 
-  // Parsing event dates
-  const getEventsForDate = (dateStr: string) => {
-    const dayEvents: any[] = [];
+  // Pre-compute events by date to optimize O(N) filtering on every calendar day
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, any[]>();
 
-    // Classes on this date
+    const addEventToMap = (dateStr: string, event: any) => {
+      if (!map.has(dateStr)) {
+        map.set(dateStr, []);
+      }
+      map.get(dateStr)!.push(event);
+    };
+
     filteredClasses.forEach((c) => {
       if (!c.date) return;
       const cDateStr = typeof c.date === "string" ? c.date.slice(0, 10) : "";
-      if (cDateStr === dateStr || c.date === dateStr || (typeof c.date === "string" && c.date.startsWith(dateStr))) {
-        dayEvents.push({
+      if (cDateStr) {
+        addEventToMap(cDateStr, {
           type: "class",
           title: c.topic || c.type || `Clase ${c.classNumber || ""}`,
           special_status: c.special_status || "Normal",
@@ -120,12 +130,11 @@ export default function CalendarPanel({
       }
     });
 
-    // Assignments on this date
     filteredAssignments.forEach((a) => {
       if (!a.due_date) return;
       const aDateStr = typeof a.due_date === "string" ? a.due_date.slice(0, 10) : "";
-      if (aDateStr === dateStr || a.due_date === dateStr || (typeof a.due_date === "string" && a.due_date.startsWith(dateStr))) {
-        dayEvents.push({
+      if (aDateStr) {
+        addEventToMap(aDateStr, {
           type: "assignment",
           title: `📝 Tarea: ${a.title}`,
           details: a,
@@ -133,7 +142,12 @@ export default function CalendarPanel({
       }
     });
 
-    return dayEvents;
+    return map;
+  }, [filteredClasses, filteredAssignments]);
+
+  // Parsing event dates
+  const getEventsForDate = (dateStr: string) => {
+    return eventsByDate.get(dateStr) || [];
   };
 
   // MONTH VIEW CALCULATION
