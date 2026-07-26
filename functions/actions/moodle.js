@@ -159,24 +159,88 @@ async function exportCourseToMoodleXml(payload, context) {
         backupXml += `        </activity>\n`;
     });
 
-    // Add assignments
+    const appBaseUrl = payload.baseUrl || "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+
+    // 6 LTI System Modules & Target Links for Moodle Backup MBZ
+    const systemLtiModules = [
+        {
+            targetModule: "calendar",
+            title: "📅 Calendario y Cronograma de Cátedra",
+            description: "Acceso interactivo al calendario, cronograma de clases y eventos de la cursada.",
+            secId: 90001
+        },
+        {
+            targetModule: "status",
+            title: "📊 Estado de Cursada, Asistencia y Alertas",
+            description: "Panel de control de porcentaje de presentismo, entregas y alertas tempranas.",
+            secId: 90001
+        },
+        {
+            targetModule: "announcements",
+            title: "📢 Tablero de Avisos y Novedades",
+            description: "Novedades oficiales, anuncios de la cátedra e información importante.",
+            secId: 90001
+        },
+        {
+            targetModule: "tutoring",
+            title: "🤝 Módulo de Tutorías y Mentorías Académicas",
+            description: "Espacio para solicitar mentorías entre pares y consultas académicas.",
+            secId: 90001
+        },
+        {
+            targetModule: "groups",
+            title: "👥 Grupos de Estudio y Emparejamiento",
+            description: "Organización de equipos de estudio y formación de grupos por afinidad horaria.",
+            secId: 90001
+        }
+    ];
+
+    // Add 5 System LTI activities
+    systemLtiModules.forEach(mod => {
+        const modId = activitySeqId++;
+        activityEntries.push({
+            modId,
+            secId: mod.secId,
+            type: 'lti',
+            title: mod.title,
+            dir: `activities/lti_${modId}`,
+            data: {
+                description: mod.description,
+                toolurl: `${appBaseUrl}/api/lti/launch?targetModule=${mod.targetModule}&courseId=${courseId}`,
+                customParams: `targetModule=${mod.targetModule}\ncourseId=${courseId}`
+            }
+        });
+        backupXml += `        <activity>\n`;
+        backupXml += `          <moduleid>${modId}</moduleid>\n`;
+        backupXml += `          <sectionid>${mod.secId}</sectionid>\n`;
+        backupXml += `          <modulename>lti</modulename>\n`;
+        backupXml += `          <title>${escapeXml(mod.title)}</title>\n`;
+        backupXml += `          <directory>activities/lti_${modId}</directory>\n`;
+        backupXml += `        </activity>\n`;
+    });
+
+    // Add LTI activities for individual assignments
     assignments.forEach((asg, idx) => {
         const modId = activitySeqId++;
         const secId = 90001;
         activityEntries.push({
             modId,
             secId,
-            type: 'assign',
-            title: asg.title || `Tarea ${idx + 1}`,
-            dir: `activities/assign_${modId}`,
-            data: asg
+            type: 'lti',
+            title: `📝 Actividad Individual: ${asg.title || `Tarea ${idx + 1}`}`,
+            dir: `activities/lti_${modId}`,
+            data: {
+                description: asg.description || "",
+                toolurl: `${appBaseUrl}/api/lti/launch?targetModule=activities&assignmentId=${asg.id}&courseId=${courseId}`,
+                customParams: `targetModule=activities\nassignmentId=${asg.id}\ncourseId=${courseId}`
+            }
         });
         backupXml += `        <activity>\n`;
         backupXml += `          <moduleid>${modId}</moduleid>\n`;
         backupXml += `          <sectionid>${secId}</sectionid>\n`;
-        backupXml += `          <modulename>assign</modulename>\n`;
-        backupXml += `          <title>${escapeXml(asg.title || "")}</title>\n`;
-        backupXml += `          <directory>activities/assign_${modId}</directory>\n`;
+        backupXml += `          <modulename>lti</modulename>\n`;
+        backupXml += `          <title>${escapeXml(`📝 Actividad Individual: ${asg.title || `Tarea ${idx + 1}`}`)}</title>\n`;
+        backupXml += `          <directory>activities/lti_${modId}</directory>\n`;
         backupXml += `        </activity>\n`;
     });
 
@@ -285,6 +349,19 @@ async function exportCourseToMoodleXml(payload, context) {
             assignXml += `  </assign>\n`;
             assignXml += `</activity>\n`;
             mbzFiles.push({ path: `${act.dir}/assign.xml`, content: assignXml, isDir: false });
+        } else if (act.type === 'lti') {
+            let ltiXml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+            ltiXml += `<activity id="${act.modId}" moduleid="${act.modId}" modulename="lti">\n`;
+            ltiXml += `  <lti id="${act.modId}">\n`;
+            ltiXml += `    <name>${escapeXml(act.title)}</name>\n`;
+            ltiXml += `    <intro>${escapeXml(act.data.description || act.title)}</intro>\n`;
+            ltiXml += `    <toolurl>${escapeXml(act.data.toolurl)}</toolurl>\n`;
+            ltiXml += `    <instructorcustomparameters>${escapeXml(act.data.customParams)}</instructorcustomparameters>\n`;
+            ltiXml += `    <typeid>0</typeid>\n`;
+            ltiXml += `    <launchcontainer>3</launchcontainer>\n`;
+            ltiXml += `  </lti>\n`;
+            ltiXml += `</activity>\n`;
+            mbzFiles.push({ path: `${act.dir}/lti.xml`, content: ltiXml, isDir: false });
         }
     });
 
