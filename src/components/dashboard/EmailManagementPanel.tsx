@@ -393,7 +393,7 @@ export default function EmailManagementPanel({
           <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl max-w-lg w-full min-w-[280px] sm:min-w-[480px] shrink-0 mx-auto max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl relative z-10">
             <h3 className="text-base font-bold text-white flex justify-between items-center">
               <span>⏰ Programar Nuevo Correo Automático</span>
-              <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-white" aria-label="Cerrar modal">✕</button>
             </h3>
 
             <div>
