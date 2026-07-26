@@ -78,7 +78,7 @@ function startMockServer(port = 3000) {
                 summary { font-weight: bold; font-size: 14px; cursor: pointer; color: #60a5fa; }
                 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 16px; overflow-y: auto; }
                 .modal-card { background: #171717; border: 1px solid #262626; padding: 24px; border-radius: 16px; width: 100%; max-width: 512px; min-width: 280px; box-sizing: border-box; }
-                .toast-portal { position: fixed; bottom: 16px; left: 16px; right: 16px; z-index: 999999; max-width: 400px; margin-left: auto; background: #171717; border: 1px solid #404040; padding: 14px 16px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+                .toast-portal { position: fixed; bottom: 16px; left: 16px; right: 16px; z-index: 9999999; max-width: calc(100vw - 32px); width: fit-content; margin-left: auto; margin-right: auto; background: #171717; border: 1px solid #404040; padding: 14px 16px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; }
                 .role-badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
                 .role-student { background: #1e3a8a; color: #93c5fd; }
                 .role-tutor { background: #312e81; color: #c084fc; }
