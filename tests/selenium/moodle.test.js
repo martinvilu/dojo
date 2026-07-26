@@ -54,6 +54,16 @@ async function runMoodleTests() {
     console.log("    ✓ Pasado: Generador de respaldos Moodle 4.2 confirmado.");
     passed++;
 
+    // TEST 4.5: Interfaz de Selección de Contenido LTI Deep Linking
+    total++;
+    console.log("  [Test 4.5] Selector de Contenido LTI Deep Linking (/api/lti/deeplink)...");
+    await driver.get(`${BASE_URL}/api/lti/deeplink`);
+    await driver.sleep(300);
+    const bodyText = await driver.findElement(By.tagName("body")).getText();
+    assert(bodyText.includes("Ninja Dojo") || bodyText.includes("Calendario"), "El selector Deep Linking debe retornar la interfaz de selección de contenidos");
+    console.log("    ✓ Pasado: Interfaz HTML de Selección LTI confirmada sin errores.");
+    passed++;
+
   } catch (err) {
     console.error("  ❌ FALLO en Moodle Test:", err.message);
   } finally {

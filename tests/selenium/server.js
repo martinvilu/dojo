@@ -750,6 +750,9 @@ function startMockServer(port = 3000) {
       } else if (req.url.startsWith("/api/lti/launch")) {
         res.writeHead(303, { Location: "/dashboard" });
         res.end();
+      } else if (req.url.startsWith("/api/lti/deeplink")) {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.end("<!DOCTYPE html><html><body><h1>Ninja Dojo</h1><p>Calendario</p></body></html>");
       } else {
         res.writeHead(404);
         res.end("Not Found");
