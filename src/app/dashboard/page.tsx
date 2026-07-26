@@ -864,6 +864,19 @@ export default function DashboardPage() {
     }
   };
 
+  const handleUpdateUserProfile = async (uid: string, data: any) => {
+    setApiLoading(true);
+    try {
+      await api("updateUserProfile", { userId: uid, data });
+      const res = await api("getAdminUsers");
+      setUsers(res || []);
+    } catch (err: any) {
+      setError("Error al actualizar perfil de usuario: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleAssignTeacher = async () => {
     if (!selectedCourse || !selectedNewTeacherId) return;
     const cid = selectedCourse.id || selectedCourse.course?.id;
@@ -2598,6 +2611,7 @@ export default function DashboardPage() {
             setNewCourseOrg={setNewCourseOrg}
             handleCreateCourse={handleCreateCourse}
             handleUpdateUserRole={handleUpdateUserRole}
+            handleUpdateUserProfile={handleUpdateUserProfile}
             handleApproveUser={handleApproveUser}
             handleDeleteUser={handleDeleteUser}
             handleSaveSettings={handleSaveSettings}

@@ -11,6 +11,7 @@ interface UserProfile {
   account_status: "pending" | "approved";
   matricula_unrn?: string;
   cohorte?: string;
+  commission?: string;
   created_at?: any;
   last_login?: any;
 }
@@ -27,6 +28,7 @@ interface AdminPanelProps {
   setNewCourseOrg: (val: string) => void;
   handleCreateCourse: (e: React.FormEvent) => void;
   handleUpdateUserRole: (uid: string, newRole: "admin" | "teacher" | "student") => void;
+  handleUpdateUserProfile?: (uid: string, data: any) => Promise<void> | void;
   handleApproveUser: (uid: string) => void;
   handleDeleteUser: (uid: string) => void;
   handleSaveSettings: (e: React.FormEvent) => void;
@@ -45,6 +47,7 @@ export default function AdminPanel({
   setNewCourseOrg,
   handleCreateCourse,
   handleUpdateUserRole,
+  handleUpdateUserProfile,
   handleApproveUser,
   handleDeleteUser,
   handleSaveSettings,
@@ -53,6 +56,42 @@ export default function AdminPanel({
   const [sortField, setSortField] = useState<string>("full_name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
+
+  // Edit User Modal Form States
+  const [editFullName, setEditFullName] = useState("");
+  const [editRole, setEditRole] = useState<"admin" | "teacher" | "student">("student");
+  const [editMatricula, setEditMatricula] = useState("");
+  const [editCohorte, setEditCohorte] = useState("");
+  const [editCommission, setEditCommission] = useState("");
+  const [editStatus, setEditStatus] = useState<"pending" | "approved">("approved");
+
+  const openEditModal = (u: UserProfile) => {
+    setUserToEdit(u);
+    setEditFullName(u.full_name || "");
+    setEditRole(u.role || "student");
+    setEditMatricula(u.matricula_unrn || "");
+    setEditCohorte(u.cohorte || "");
+    setEditCommission(u.commission || "");
+    setEditStatus(u.account_status || "approved");
+  };
+
+  const handleSaveEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userToEdit) return;
+    const data = {
+      full_name: editFullName,
+      role: editRole,
+      matricula_unrn: editMatricula,
+      cohorte: editCohorte,
+      commission: editCommission,
+      account_status: editStatus,
+    };
+    if (handleUpdateUserProfile) {
+      await handleUpdateUserProfile(userToEdit.id, data);
+    }
+    setUserToEdit(null);
+  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -175,7 +214,7 @@ export default function AdminPanel({
       {/* 2. ADMIN USERS */}
       {activeTab === "admin-users" && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-text-primary">Usuarios Registrados</h2>
+          <h2 className="text-2xl font-bold text-text-primary">Gestión de Usuarios y Perfiles</h2>
           <div className="overflow-x-auto bg-bg-secondary border border-border-custom rounded-2xl shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -189,22 +228,19 @@ export default function AdminPanel({
                   <th className="p-4 cursor-pointer hover:text-text-primary transition" onClick={() => handleSort("role")}>
                     Rol {sortField === "role" ? (sortDirection === "asc" ? " ▲" : " ▼") : ""}
                   </th>
+                  <th className="p-4 cursor-pointer hover:text-text-primary transition" onClick={() => handleSort("commission")}>
+                    Comisión {sortField === "commission" ? (sortDirection === "asc" ? " ▲" : " ▼") : ""}
+                  </th>
                   <th className="p-4 cursor-pointer hover:text-text-primary transition" onClick={() => handleSort("matricula_unrn")}>
                     Matrícula {sortField === "matricula_unrn" ? (sortDirection === "asc" ? " ▲" : " ▼") : ""}
                   </th>
                   <th className="p-4 cursor-pointer hover:text-text-primary transition" onClick={() => handleSort("cohorte")}>
                     Cohorte {sortField === "cohorte" ? (sortDirection === "asc" ? " ▲" : " ▼") : ""}
                   </th>
-                  <th className="p-4 cursor-pointer hover:text-text-primary transition" onClick={() => handleSort("created_at")}>
-                    Fecha Registro {sortField === "created_at" ? (sortDirection === "asc" ? " ▲" : " ▼") : ""}
-                  </th>
-                  <th className="p-4 cursor-pointer hover:text-text-primary transition" onClick={() => handleSort("last_login")}>
-                    Último Acceso {sortField === "last_login" ? (sortDirection === "asc" ? " ▲" : " ▼") : ""}
-                  </th>
                   <th className="p-4 cursor-pointer hover:text-text-primary transition" onClick={() => handleSort("account_status")}>
                     Estado {sortField === "account_status" ? (sortDirection === "asc" ? " ▲" : " ▼") : ""}
                   </th>
-                  <th className="p-4">Acción</th>
+                  <th className="p-4">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-custom text-sm text-text-secondary">
@@ -223,10 +259,21 @@ export default function AdminPanel({
                         <option value="student">Estudiante</option>
                       </select>
                     </td>
+                    <td className="p-4">
+                      <select
+                        value={u.commission || ""}
+                        onChange={(e) => handleUpdateUserProfile && handleUpdateUserProfile(u.id, { commission: e.target.value })}
+                        className="bg-bg-primary border border-border-custom rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-blue-500 text-text-primary cursor-pointer"
+                      >
+                        <option value="">Sin Comisión</option>
+                        <option value="Comisión 1">Comisión 1</option>
+                        <option value="Comisión 2">Comisión 2</option>
+                        <option value="Comisión 3">Comisión 3</option>
+                        <option value="Comisión 4">Comisión 4</option>
+                      </select>
+                    </td>
                     <td className="p-4 font-mono text-xs">{u.matricula_unrn || "-"}</td>
                     <td className="p-4 text-xs">{u.cohorte || "-"}</td>
-                    <td className="p-4 text-xs font-mono text-text-secondary">{formatDate(u.created_at)}</td>
-                    <td className="p-4 text-xs font-mono text-text-secondary">{formatDate(u.last_login)}</td>
                     <td className="p-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                         u.account_status === "approved" ? "bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400" : "bg-amber-100 dark:bg-amber-955/50 text-amber-700 dark:text-amber-400"
@@ -235,6 +282,13 @@ export default function AdminPanel({
                       </span>
                     </td>
                     <td className="p-4 flex items-center space-x-2">
+                      <button
+                        onClick={() => openEditModal(u)}
+                        className="bg-bg-tertiary hover:bg-bg-primary text-text-primary border border-border-custom text-xs font-semibold px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                        title="Editar Perfil"
+                      >
+                        ✏️ Editar
+                      </button>
                       {u.account_status === "pending" && (
                         <button
                           onClick={() => handleApproveUser(u.id)}
@@ -282,6 +336,110 @@ export default function AdminPanel({
               Guardar Configuración
             </button>
           </form>
+        </div>
+      )}
+
+      {/* MODAL DE EDICIÓN DE PERFIL DE USUARIO */}
+      {userToEdit && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 z-[99999] overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-lg w-full min-w-[280px] sm:min-w-[440px] shrink-0 mx-auto space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto text-left">
+            <div className="flex justify-between items-center border-b border-border-custom pb-3">
+              <h3 className="text-base font-bold text-text-primary flex items-center space-x-2">
+                <span>✏️ Editar Datos de Usuario ({userToEdit.email})</span>
+              </h3>
+              <button onClick={() => setUserToEdit(null)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEditUser} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-text-secondary mb-1">Nombre Completo</label>
+                <input
+                  type="text"
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  className="input-academic w-full"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-text-secondary mb-1">Rol</label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as any)}
+                    className="input-academic w-full cursor-pointer"
+                  >
+                    <option value="student">Estudiante</option>
+                    <option value="teacher">Profesor</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-text-secondary mb-1">Estado de Cuenta</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as any)}
+                    className="input-academic w-full cursor-pointer"
+                  >
+                    <option value="approved">Aprobado</option>
+                    <option value="pending">Pendiente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-text-secondary mb-1">Comisión</label>
+                  <select
+                    value={editCommission}
+                    onChange={(e) => setEditCommission(e.target.value)}
+                    className="input-academic w-full cursor-pointer"
+                  >
+                    <option value="">Sin Comisión</option>
+                    <option value="Comisión 1">Comisión 1</option>
+                    <option value="Comisión 2">Comisión 2</option>
+                    <option value="Comisión 3">Comisión 3</option>
+                    <option value="Comisión 4">Comisión 4</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-text-secondary mb-1">Matrícula</label>
+                  <input
+                    type="text"
+                    value={editMatricula}
+                    onChange={(e) => setEditMatricula(e.target.value)}
+                    className="input-academic w-full font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-text-secondary mb-1">Cohorte</label>
+                  <input
+                    type="text"
+                    value={editCohorte}
+                    onChange={(e) => setEditCohorte(e.target.value)}
+                    className="input-academic w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-border-custom">
+                <button
+                  type="button"
+                  onClick={() => setUserToEdit(null)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary flex-1"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
