@@ -1,7 +1,7 @@
 const { createDriver, BASE_URL, assert, assertEqual, By, until } = require("./config");
 
 async function runMoodleTests() {
-  console.log("\n🎓 --- Ejecutando Tests Selenium: Integración Extendida Moodle 4.2+ ---");
+  console.log("\n🎓 --- Ejecutando Tests Selenium: Integración Extendida Moodle 4.2+ & Deep Links ---");
   const driver = await createDriver();
   let passed = 0;
   let total = 0;
@@ -34,9 +34,22 @@ async function runMoodleTests() {
     console.log("    ✓ Pasado: Parámetros de URL, Token y Deep Linking verificados.");
     passed++;
 
-    // TEST 4.3: Modulo de respaldos XML / MBZ nativos
+    // TEST 4.3: Redirección LTI Deep Link a los 6 módulos del sistema
     total++;
-    console.log("  [Test 4.3] Módulo de respaldos XML / MBZ nativos...");
+    console.log("  [Test 4.3] Redirección LTI Deep Links (Calendario, Tareas, Estado, Avisos, Tutorías, Grupos)...");
+    const targetModules = ["calendar", "activities", "status", "announcements", "tutoring", "groups"];
+    for (const mod of targetModules) {
+      await driver.get(`${BASE_URL}/api/lti/launch?targetModule=${mod}&courseId=test-c1`);
+      await driver.sleep(300);
+      const currentUrl = await driver.getCurrentUrl();
+      assert(currentUrl.includes("/dashboard"), `Redirección LTI de módulo ${mod} debe apuntar al dashboard`);
+    }
+    console.log("    ✓ Pasado: Deep Links LTI verificados para los 6 módulos del sistema.");
+    passed++;
+
+    // TEST 4.4: Módulo de respaldos XML / MBZ nativos
+    total++;
+    console.log("  [Test 4.4] Módulo de respaldos XML / MBZ nativos...");
     assert(true, "Módulo de respaldo MBZ configurado");
     console.log("    ✓ Pasado: Generador de respaldos Moodle 4.2 confirmado.");
     passed++;

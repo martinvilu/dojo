@@ -483,15 +483,47 @@ async function getMoodleLtiDeepLinkContent(payload, context) {
     const course = courseSnap.exists ? courseSnap.data() : {};
     const classes = course.class_instances || [];
 
-    const items = [];
+    const items = [
+        {
+            type: "ltiResourceLink",
+            title: `📅 Calendario y Cronograma de Cátedra`,
+            url: `${appBaseUrl}/api/lti/launch?targetModule=calendar&courseId=${courseId}`,
+            custom: { targetModule: "calendar", courseId }
+        },
+        {
+            type: "ltiResourceLink",
+            title: `📊 Estado de Cursada, Asistencia y Alertas`,
+            url: `${appBaseUrl}/api/lti/launch?targetModule=status&courseId=${courseId}`,
+            custom: { targetModule: "status", courseId }
+        },
+        {
+            type: "ltiResourceLink",
+            title: `📢 Tablero de Avisos y Novedades`,
+            url: `${appBaseUrl}/api/lti/launch?targetModule=announcements&courseId=${courseId}`,
+            custom: { targetModule: "announcements", courseId }
+        },
+        {
+            type: "ltiResourceLink",
+            title: `🤝 Módulo de Tutorías y Mentorías Académicas`,
+            url: `${appBaseUrl}/api/lti/launch?targetModule=tutoring&courseId=${courseId}`,
+            custom: { targetModule: "tutoring", courseId }
+        },
+        {
+            type: "ltiResourceLink",
+            title: `👥 Grupos de Estudio y Emparejamiento`,
+            url: `${appBaseUrl}/api/lti/launch?targetModule=groups&courseId=${courseId}`,
+            custom: { targetModule: "groups", courseId }
+        }
+    ];
 
-    // Add assignments as LTI LTIResourceLink
+    // Add individual assignments as LTI LTIResourceLink
     assignments.forEach(asg => {
         items.push({
             type: "ltiResourceLink",
-            title: `📝 Tarea Dojo: ${asg.title}`,
-            url: `${appBaseUrl}/dashboard?courseId=${courseId}&assignmentId=${asg.id}`,
+            title: `📝 Actividad Individual: ${asg.title}`,
+            url: `${appBaseUrl}/api/lti/launch?targetModule=activities&assignmentId=${asg.id}&courseId=${courseId}`,
             custom: {
+                targetModule: "activities",
                 assignmentId: asg.id,
                 courseId: courseId
             }
@@ -503,8 +535,9 @@ async function getMoodleLtiDeepLinkContent(payload, context) {
         items.push({
             type: "ltiResourceLink",
             title: `📚 Clase: ${ci.topic || `Clase ${ci.classNumber}`}`,
-            url: `${appBaseUrl}/dashboard?courseId=${courseId}&classNumber=${ci.classNumber}`,
+            url: `${appBaseUrl}/api/lti/launch?targetModule=calendar&classNumber=${ci.classNumber}&courseId=${courseId}`,
             custom: {
+                targetModule: "calendar",
                 classNumber: ci.classNumber,
                 courseId: courseId
             }
@@ -517,6 +550,7 @@ async function getMoodleLtiDeepLinkContent(payload, context) {
         items: items
     };
 }
+
 
 function escapeXml(unsafe) {
     if (!unsafe) return "";
