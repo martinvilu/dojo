@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getBaseUrl } from "@/lib/url";
 
 export const dynamic = "force-dynamic";
 
@@ -48,9 +49,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const host = request.headers.get("host") || "dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
-    const protocol = request.headers.get("x-forwarded-proto") || "https";
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = getBaseUrl(request);
 
     // Map modules catalog
     const moduleCatalog: Record<string, { title: string; text: string; target: string }> = {

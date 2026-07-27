@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getBaseUrl } from "@/lib/url";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +88,8 @@ export async function POST(request: Request) {
       subtab = "groups";
     }
 
-    const redirectUrl = new URL("/dashboard", request.url);
+    const baseUrl = getBaseUrl(request);
+    const redirectUrl = new URL("/dashboard", baseUrl);
     redirectUrl.searchParams.set("lti_launch", "true");
     redirectUrl.searchParams.set("lti_email", email);
     redirectUrl.searchParams.set("lti_name", name);
