@@ -12,7 +12,7 @@ import StudentPanel from "@/components/dashboard/StudentPanel";
 import ProfilePanel from "@/components/dashboard/ProfilePanel";
 import TeacherPanel from "@/components/dashboard/TeacherPanel";
 import GithubActivityPanel from "@/components/dashboard/github/GithubActivityPanel";
-import ToastNotification from "@/components/dashboard/ui/ToastNotification";
+import ToastNotification, { AppToaster, showToast } from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/components/dashboard/tutoring/TutoringPanel";
 import AttendanceManager from "@/components/dashboard/attendance/AttendanceManager";
 import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
@@ -74,33 +74,40 @@ export default function DashboardPage() {
   const moodleLtiParams = useRef<{ outcomeUrl?: string, resultId?: string }>({});
 
   // Global toast override for non-intrusive alerts
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     const originalAlert = window.alert;
     window.alert = (message: string) => {
-      let type: "success" | "error" | "info" = "info";
+      let type: "success" | "error" | "info" | "warning" = "info";
       const lowercaseMsg = String(message || "").toLowerCase();
-      if (lowercaseMsg.includes("error") || lowercaseMsg.includes("falló") || lowercaseMsg.includes("inválido") || lowercaseMsg.includes("atención") || lowercaseMsg.includes("obligatorio")) {
+      if (
+        lowercaseMsg.includes("error") ||
+        lowercaseMsg.includes("falló") ||
+        lowercaseMsg.includes("inválido") ||
+        lowercaseMsg.includes("atención") ||
+        lowercaseMsg.includes("obligatorio") ||
+        lowercaseMsg.includes("no se pudo")
+      ) {
         type = "error";
-      } else if (lowercaseMsg.includes("éxito") || lowercaseMsg.includes("exitosamente") || lowercaseMsg.includes("correctamente") || lowercaseMsg.includes("guardada") || lowercaseMsg.includes("guardado") || lowercaseMsg.includes("creado") || lowercaseMsg.includes("copiad") || lowercaseMsg.includes("copiar")) {
+      } else if (
+        lowercaseMsg.includes("éxito") ||
+        lowercaseMsg.includes("exitosamente") ||
+        lowercaseMsg.includes("correctamente") ||
+        lowercaseMsg.includes("guardada") ||
+        lowercaseMsg.includes("guardado") ||
+        lowercaseMsg.includes("creado") ||
+        lowercaseMsg.includes("copiad") ||
+        lowercaseMsg.includes("copiar") ||
+        lowercaseMsg.includes("vinculad")
+      ) {
         type = "success";
       }
-      setToast({ message: String(message), type });
+      showToast(String(message || ""), type);
     };
     return () => {
       window.alert = originalAlert;
     };
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => {
-      setToast(null);
-    }, 4500);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   // Pending Matricula inputs
   const [matriculaInput, setMatriculaInput] = useState("");
@@ -6151,13 +6158,7 @@ export default function DashboardPage() {
         />
       )}
 
-      {toast && (
-        <ToastNotification
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      <AppToaster />
     </div>
   );
 }
