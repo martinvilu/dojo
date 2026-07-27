@@ -552,7 +552,7 @@ async function getMoodleLtiDeepLinkContent(payload, context) {
     const { courseId, baseUrl } = payload;
     if (!courseId) throw new Error("Parámetro 'courseId' requerido.");
 
-    const appBaseUrl = baseUrl || "https://jutsu-classroom-mrtin.web.app";
+    const appBaseUrl = baseUrl || "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
     const assignmentsSnap = await db.collection('assignments').where('course_id', '==', courseId).get();
     const assignments = assignmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
