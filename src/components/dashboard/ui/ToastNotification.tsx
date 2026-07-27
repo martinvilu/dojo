@@ -53,7 +53,7 @@ export default function ToastNotification({
       id={toastId}
       role="alert"
       aria-live="polite"
-      className="fixed bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6 max-w-[calc(100vw-2rem)] sm:max-w-md w-full sm:w-auto z-[9999999] flex items-center space-x-3 bg-neutral-900/95 border border-neutral-700/80 backdrop-blur-md p-4 rounded-2xl shadow-2xl text-left pointer-events-auto transition-all animate-in fade-in slide-in-from-bottom-4 box-border"
+      className="fixed bottom-4 left-4 right-4 sm:bottom-6 max-w-md w-[calc(100%-2rem)] mx-auto z-[9999999] flex items-center space-x-3 bg-neutral-900/95 border border-neutral-700/80 backdrop-blur-md p-4 rounded-2xl shadow-2xl text-left pointer-events-auto transition-all animate-in fade-in slide-in-from-bottom-4 box-border"
       style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
     >
       <span className={`w-3 h-3 rounded-full shrink-0 ${getTypeStyles()}`}></span>
@@ -65,7 +65,7 @@ export default function ToastNotification({
         aria-label="Cerrar notificación"
         type="button"
         onClick={onClose}
-        className="text-neutral-400 hover:text-white text-sm font-bold p-1 cursor-pointer transition-colors shrink-0 hover:bg-neutral-800 rounded-lg"
+        className="text-neutral-400 hover:text-white text-sm font-bold p-1 cursor-pointer transition-colors shrink-0 hover:bg-neutral-800 rounded-lg min-w-[28px] min-h-[28px] flex items-center justify-center"
       >
         ✕
       </button>
