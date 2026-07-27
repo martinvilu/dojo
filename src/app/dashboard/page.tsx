@@ -2384,7 +2384,27 @@ export default function DashboardPage() {
     return weeks;
   };
 
-  const weeklyClassesGrouped = getWeeklyClasses(teacherClasses);
+  // ⚡ Bolt: Memoize grouped classes and O(1) lookups to avoid O(N^2) render overhead
+  const weeklyClassesGrouped = useMemo(() => {
+    return getWeeklyClasses(teacherClasses);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teacherClasses]);
+
+  // Hoist today calculation outside of inner loops, but don't memoize to avoid stale dates
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  const attendanceByClassNumber = useMemo(() => {
+    const map = new Map<number, any>();
+    // Iterate backwards so the first match wins, matching original .find() behavior
+    for (let i = courseAttendance.length - 1; i >= 0; i--) {
+      const a = courseAttendance[i];
+      if (a.classNumber !== undefined) {
+        map.set(a.classNumber, a);
+      }
+    }
+    return map;
+  }, [courseAttendance]);
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col md:flex-row transition-colors duration-200">
@@ -3767,14 +3787,12 @@ export default function DashboardPage() {
                                   if (ci.special_status === "Examen") tagClass = "bg-purple-950/60 text-purple-400 border border-purple-800/40";
                                   if (ci.special_status === "Feriado") tagClass = "bg-red-950/60 text-red-400 border border-red-800/40";
 
-                                  // Look up student attendance for this class
-                                  const attDoc = courseAttendance.find(a => a.classNumber === (ci.classNumber || 0));
+                                  // Look up student attendance for this class (⚡ Bolt: O(1) map lookup)
+                                  const attDoc = attendanceByClassNumber.get(ci.classNumber || 0);
                                   const studentStatus = attDoc?.records?.[profile?.id || ""];
 
-                                  // Collapsible calculation
-                                  const today = new Date();
-                                  today.setHours(0, 0, 0, 0);
-                                  const isPast = d < today;
+                                  // Collapsible calculation (⚡ Bolt: Re-use memoized todayMidnight)
+                                  const isPast = d < todayMidnight;
                                   const classKey = `c_${weekNum}_${index}_${ci.date}`;
                                   const isCollapsed = collapsedClasses[classKey] !== undefined ? collapsedClasses[classKey] : isPast;
 
