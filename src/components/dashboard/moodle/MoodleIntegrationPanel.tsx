@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface MoodleIntegrationPanelProps {
   courseId: string;
@@ -70,8 +71,8 @@ export default function MoodleIntegrationPanel({
 
   const [showGuideModal, setShowGuideModal] = useState(false);
 
-  const ltiToolUrl = typeof window !== "undefined" ? `${window.location.origin}/api/lti` : "https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/api/lti";
-  const ltiDeepLinkUrl = typeof window !== "undefined" ? `${window.location.origin}/api/lti/deeplink` : "https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/api/lti/deeplink";
+  const ltiToolUrl = typeof window !== "undefined" ? `${window.location.origin}/api/lti/launch` : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/lti/launch";
+  const ltiDeepLinkUrl = typeof window !== "undefined" ? `${window.location.origin}/api/lti/deeplink` : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/lti/deeplink";
 
   return (
     <div className="card-academic space-y-6">
@@ -208,9 +209,9 @@ export default function MoodleIntegrationPanel({
                     <p className="text-[10px] text-text-muted font-mono truncate max-w-xs">{item.url}</p>
                   </div>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(item.url);
-                      alert("¡Enlace LTI copiado al portapapeles!");
+                    onClick={async () => {
+                      const ok = await copyToClipboard(item.url);
+                      alert(ok ? "¡Enlace LTI copiado al portapapeles con éxito!" : "No se pudo copiar el enlace LTI automáticamente.");
                     }}
                     className="btn-primary min-w-[80px] min-h-[32px] text-xs py-1"
                   >
@@ -250,7 +251,10 @@ export default function MoodleIntegrationPanel({
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-text-secondary">Nombre de la herramienta:</span>
                     <button
-                      onClick={() => navigator.clipboard.writeText(`Ninja Dojo - ${courseName}`)}
+                      onClick={async () => {
+                        const ok = await copyToClipboard(`Ninja Dojo - ${courseName}`);
+                        alert(ok ? "¡Nombre de la herramienta copiado con éxito!" : "No se pudo copiar el texto.");
+                      }}
                       className="text-tertiary hover:underline text-[11px] font-bold"
                     >
                       Copiar
@@ -261,7 +265,10 @@ export default function MoodleIntegrationPanel({
                   <div className="flex justify-between items-center pt-1">
                     <span className="font-semibold text-text-secondary">URL de la herramienta:</span>
                     <button
-                      onClick={() => navigator.clipboard.writeText(ltiToolUrl)}
+                      onClick={async () => {
+                        const ok = await copyToClipboard(ltiToolUrl);
+                        alert(ok ? "¡URL de la herramienta copiada con éxito!" : "No se pudo copiar la URL.");
+                      }}
                       className="text-tertiary hover:underline text-[11px] font-bold"
                     >
                       Copiar
@@ -288,7 +295,10 @@ export default function MoodleIntegrationPanel({
                   <div className="flex justify-between items-center pt-1">
                     <span className="font-semibold text-text-secondary">Parámetros personalizados:</span>
                     <button
-                      onClick={() => navigator.clipboard.writeText(`course_id=${courseId}`)}
+                      onClick={async () => {
+                        const ok = await copyToClipboard(`course_id=${courseId}`);
+                        alert(ok ? "¡Parámetros copiados con éxito!" : "No se pudo copiar los parámetros.");
+                      }}
                       className="text-tertiary hover:underline text-[11px] font-bold"
                     >
                       Copiar
@@ -309,7 +319,10 @@ export default function MoodleIntegrationPanel({
                   <div className="flex justify-between items-center pt-1">
                     <span className="font-semibold text-text-secondary">Content Selection URL:</span>
                     <button
-                      onClick={() => navigator.clipboard.writeText(ltiDeepLinkUrl)}
+                      onClick={async () => {
+                        const ok = await copyToClipboard(ltiDeepLinkUrl);
+                        alert(ok ? "¡URL de selección copiada con éxito!" : "No se pudo copiar la URL.");
+                      }}
                       className="text-tertiary hover:underline text-[11px] font-bold"
                     >
                       Copiar

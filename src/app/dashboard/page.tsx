@@ -21,6 +21,7 @@ import CalendarPanel from "@/components/dashboard/calendar/CalendarPanel";
 import EmailManagementPanel from "@/components/dashboard/EmailManagementPanel";
 import DirectEmailModal from "@/components/dashboard/DirectEmailModal";
 import MoodleIntegrationPanel from "@/components/dashboard/moodle/MoodleIntegrationPanel";
+import { copyToClipboard } from "@/lib/clipboard";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -83,7 +84,7 @@ export default function DashboardPage() {
       const lowercaseMsg = String(message || "").toLowerCase();
       if (lowercaseMsg.includes("error") || lowercaseMsg.includes("falló") || lowercaseMsg.includes("inválido") || lowercaseMsg.includes("atención") || lowercaseMsg.includes("obligatorio")) {
         type = "error";
-      } else if (lowercaseMsg.includes("éxito") || lowercaseMsg.includes("exitosamente") || lowercaseMsg.includes("correctamente") || lowercaseMsg.includes("guardada") || lowercaseMsg.includes("guardado") || lowercaseMsg.includes("creado")) {
+      } else if (lowercaseMsg.includes("éxito") || lowercaseMsg.includes("exitosamente") || lowercaseMsg.includes("correctamente") || lowercaseMsg.includes("guardada") || lowercaseMsg.includes("guardado") || lowercaseMsg.includes("creado") || lowercaseMsg.includes("copiad") || lowercaseMsg.includes("copiar")) {
         type = "success";
       }
       setToast({ message: String(message), type });
@@ -4417,10 +4418,10 @@ export default function DashboardPage() {
                           />
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`;
-                              navigator.clipboard.writeText(url);
-                              alert("¡URL del Endpoint CSV de Alumnos copiada al portapapeles!");
+                              const ok = await copyToClipboard(url);
+                              alert(ok ? "¡URL del Endpoint CSV de Alumnos copiada al portapapeles con éxito!" : "No se pudo copiar la URL.");
                             }}
                             className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
                           >
@@ -4848,14 +4849,16 @@ export default function DashboardPage() {
                         <input
                           type="text"
                           readOnly
-                          value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/calendar?id=${selectedCourse.id || selectedCourse.course?.id}`}
+                          value={typeof window !== "undefined" ? `${window.location.origin}/api/calendar?id=${selectedCourse.id || selectedCourse.course?.id}` : `https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/calendar?id=${selectedCourse.id || selectedCourse.course?.id}`}
                           className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-gray-300 select-all font-mono"
                         />
                         <button
                           type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/calendar?id=${selectedCourse.id || selectedCourse.course?.id}`);
-                            alert("¡Enlace de calendario copiado!");
+                          onClick={async () => {
+                            const cid = selectedCourse.id || selectedCourse.course?.id || "";
+                            const url = typeof window !== "undefined" ? `${window.location.origin}/api/calendar?id=${cid}` : `https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/calendar?id=${cid}`;
+                            const ok = await copyToClipboard(url);
+                            alert(ok ? "¡Enlace de calendario copiado con éxito al portapapeles!" : "No se pudo copiar automáticamente.");
                           }}
                           className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer"
                         >
@@ -4864,7 +4867,8 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            const feedUrl = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/calendar?id=${selectedCourse.id || selectedCourse.course?.id}`;
+                            const cid = selectedCourse.id || selectedCourse.course?.id || "";
+                            const feedUrl = typeof window !== "undefined" ? `${window.location.origin}/api/calendar?id=${cid}` : `https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/calendar?id=${cid}`;
                             window.open(`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`, "_blank");
                           }}
                           className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1 whitespace-nowrap"
@@ -5085,10 +5089,10 @@ export default function DashboardPage() {
                         />
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
                             const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${selectedCourse.id || selectedCourse.course?.id}&token=${selectedCourse.sync_secret || "TOKEN"}`;
-                            navigator.clipboard.writeText(url);
-                            alert("¡URL del Endpoint CSV de Notas copiada al portapapeles!");
+                            const ok = await copyToClipboard(url);
+                            alert(ok ? "¡URL del Endpoint CSV de Notas copiada al portapapeles con éxito!" : "No se pudo copiar la URL.");
                           }}
                           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
                         >
