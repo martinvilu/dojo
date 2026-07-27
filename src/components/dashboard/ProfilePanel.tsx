@@ -104,8 +104,9 @@ export default function ProfilePanel({
         <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider border-b border-border-custom pb-2">Información Personal</h3>
         
         <div>
-          <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Nombre Completo</label>
+          <label htmlFor="profileName" className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Nombre Completo</label>
           <input
+            id="profileName"
             type="text"
             value={profileName}
             onChange={(e) => setProfileName(e.target.value)}
@@ -117,8 +118,9 @@ export default function ProfilePanel({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Correo Primario</label>
+          <label htmlFor="profileEmail" className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Correo Primario</label>
           <input
+            id="profileEmail"
             type="text"
             value={profile?.email || "Sin email registrado"}
             disabled
@@ -169,8 +171,9 @@ export default function ProfilePanel({
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Usuario de GitHub</label>
+          <label htmlFor="profileGithubUser" className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Usuario de GitHub</label>
           <input
+            id="profileGithubUser"
             type="text"
             value={profileGithubUser}
             onChange={(e) => setProfileGithubUser(e.target.value)}
@@ -183,8 +186,9 @@ export default function ProfilePanel({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Matrícula UNRN</label>
+            <label htmlFor="profileMatricula" className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Matrícula UNRN</label>
             <input
+              id="profileMatricula"
               type="text"
               value={profileMatricula}
               onChange={(e) => setProfileMatricula(e.target.value)}
@@ -193,8 +197,9 @@ export default function ProfilePanel({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Cohorte / Año de Ingreso</label>
+            <label htmlFor="profileCohorte" className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Cohorte / Año de Ingreso</label>
             <input
+              id="profileCohorte"
               type="text"
               value={profileCohorte}
               onChange={(e) => setProfileCohorte(e.target.value)}
