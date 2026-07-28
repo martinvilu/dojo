@@ -13,6 +13,17 @@ interface StudentPanelProps {
   onOpenQrScanner?: () => void;
 }
 
+// ⚡ Bolt Performance Optimization:
+// Cache Intl.DateTimeFormat outside the component to avoid
+// expensive instantiation on every render and every map iteration
+const dateFormatter = new Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 export default function StudentPanel({
   activeTab,
   courses,
@@ -24,6 +35,8 @@ export default function StudentPanel({
   onOpenQrScanner,
 }: StudentPanelProps) {
   if (activeTab !== "student-courses") return null;
+
+  const fallbackDate = new Date();
 
   return (
     <div className="space-y-6">
@@ -77,20 +90,8 @@ export default function StudentPanel({
 
           const updatedAtRaw = c.updated_at || c.created_at;
           const updatedAtStr = updatedAtRaw
-            ? new Date(updatedAtRaw).toLocaleString("es-AR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }) + " hs"
-            : new Date().toLocaleString("es-AR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }) + " hs";
+            ? dateFormatter.format(new Date(updatedAtRaw)) + " hs"
+            : dateFormatter.format(fallbackDate) + " hs";
 
           return (
             <div
