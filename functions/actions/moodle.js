@@ -1,6 +1,25 @@
 const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
 
+function getCanonicalAppBaseUrl(providedUrl) {
+    const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    if (!providedUrl || typeof providedUrl !== "string") {
+        return CANONICAL;
+    }
+    const clean = providedUrl.trim().replace(/\/$/, "");
+    if (
+        clean.includes("0.0.0.0") ||
+        clean.includes("127.0.0.1") ||
+        clean.includes("localhost") ||
+        clean.includes(":8080") ||
+        clean.includes(":3000") ||
+        !clean.startsWith("http")
+    ) {
+        return CANONICAL;
+    }
+    return clean;
+}
+
 async function moodleAutoEnroll(payload, context) {
     const { uid, db, admin } = context;
     const { courseId } = payload;
@@ -160,7 +179,7 @@ async function exportCourseToMoodleXml(payload, context) {
         backupXml += `        </activity>\n`;
     });
 
-    const appBaseUrl = payload.baseUrl || "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    const appBaseUrl = getCanonicalAppBaseUrl(payload.baseUrl);
 
     // 6 LTI System Modules & Target Links for Moodle Backup MBZ
     const systemLtiModules = [
@@ -553,7 +572,7 @@ async function getMoodleLtiDeepLinkContent(payload, context) {
     const { courseId, baseUrl } = payload;
     if (!courseId) throw new Error("Parámetro 'courseId' requerido.");
 
-    const appBaseUrl = baseUrl || "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    const appBaseUrl = getCanonicalAppBaseUrl(baseUrl || payload.baseUrl);
     const assignmentsSnap = await db.collection('assignments').where('course_id', '==', courseId).get();
     const assignments = assignmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 

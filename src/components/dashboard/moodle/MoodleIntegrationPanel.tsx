@@ -55,10 +55,28 @@ export default function MoodleIntegrationPanel({
     }
   };
 
+  const getPublicBaseUrl = () => {
+    const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    if (typeof window === "undefined") return CANONICAL;
+    const origin = window.location.origin;
+    if (
+      !origin ||
+      origin.includes("0.0.0.0") ||
+      origin.includes("127.0.0.1") ||
+      origin.includes("localhost") ||
+      origin.includes(":8080") ||
+      origin.includes(":3000")
+    ) {
+      return CANONICAL;
+    }
+    return origin;
+  };
+
   const handleFetchDeepLinks = async () => {
+    if (!courseId) return;
     setLoading(true);
     try {
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const baseUrl = getPublicBaseUrl();
       const res = await api("getMoodleLtiDeepLinkContent", { courseId, baseUrl });
       setDeepLinkItems(res.items || []);
       setShowDeepLinkModal(true);
@@ -71,8 +89,8 @@ export default function MoodleIntegrationPanel({
 
   const [showGuideModal, setShowGuideModal] = useState(false);
 
-  const ltiToolUrl = typeof window !== "undefined" ? `${window.location.origin}/api/lti/launch` : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/lti/launch";
-  const ltiDeepLinkUrl = typeof window !== "undefined" ? `${window.location.origin}/api/lti/deeplink` : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/lti/deeplink";
+  const ltiToolUrl = `${getPublicBaseUrl()}/api/lti/launch`;
+  const ltiDeepLinkUrl = `${getPublicBaseUrl()}/api/lti/deeplink`;
 
   return (
     <div className="card-academic space-y-6">
