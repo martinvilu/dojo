@@ -68,14 +68,18 @@ async function getTeacherAssignments(payload, context) {
 
 async function createAssignment(payload, context) {
     const { db, admin } = context;
+    const courseId = payload.course_id || payload.courseId || payload.course;
+    if (!courseId) {
+        throw new Error("El parámetro course_id es requerido para crear una tarea.");
+    }
     const ref = await db.collection('assignments').add({
-        course_id: payload.courseId,
-        title: payload.title,
+        course_id: courseId,
+        title: payload.title || payload.name || 'Sin título',
         description: payload.description || '',
-        due_date: payload.due_date || '',
-        template_repo: payload.template_repo || '',
-        is_group: payload.is_group || false,
-        create_feedback_pr: payload.create_feedback_pr || false,
+        due_date: payload.due_date || payload.dueDate || '',
+        template_repo: payload.template_repo || payload.templateRepo || '',
+        is_group: Boolean(payload.is_group || payload.isGroup),
+        create_feedback_pr: Boolean(payload.create_feedback_pr || payload.createFeedbackPr),
         is_archived: false,
         sync_secret: Math.random().toString(36).substring(2, 10).toUpperCase(),
         created_at: admin.firestore.FieldValue.serverTimestamp()

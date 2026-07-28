@@ -1749,7 +1749,8 @@ export default function DashboardPage() {
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignTitle || !assignTemplate) return alert("Título y Repositorio Plantilla son obligatorios.");
-    const cid = selectedCourse.id || selectedCourse.course?.id;
+    const cid = typeof selectedCourse === "string" ? selectedCourse : (selectedCourse?.id || selectedCourse?.course_id || selectedCourse?.course?.id || "");
+    if (!cid) return alert("Debe seleccionar una materia para crear la tarea.");
     setApiLoading(true);
     try {
       if (editingAssignmentId) {
@@ -1767,6 +1768,7 @@ export default function DashboardPage() {
       } else {
         await api("createAssignment", {
           course_id: cid,
+          courseId: cid,
           title: assignTitle,
           template_repo: assignTemplate,
           create_feedback_pr: assignPr,
