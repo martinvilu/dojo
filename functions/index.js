@@ -1,5 +1,6 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
@@ -7,7 +8,7 @@ const db = admin.firestore();
 
 async function syncGradeToMoodle(previousData, grade, feedback) {
     if (!previousData.moodle_lis_outcome_service_url || !previousData.moodle_lis_result_sourcedid) {
-        console.log("No Moodle LTI sync parameters found for submission:", previousData.id || "unknown");
+        logger.info("No Moodle LTI sync parameters found for submission:", previousData.id || "unknown");
         return;
     }
 
@@ -21,13 +22,13 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
                 if (courseDoc.exists) {
                     const course = courseDoc.data();
                     if (!course.moodle_enabled) {
-                        console.log("Moodle integration is disabled for this course:", course.name);
+                        logger.info("Moodle integration is disabled for this course:", course.name);
                         return;
                     }
                 }
             }
         } catch (e) {
-            console.error("Error verifying moodle_enabled setting in course:", e);
+            logger.error("Error verifying moodle_enabled setting in course:", e);
         }
     }
 
@@ -47,7 +48,7 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
     if (numericGrade > 1.0) numericGrade = 1.0;
     if (numericGrade < 0.0) numericGrade = 0.0;
 
-    console.log(`Sincronizando nota ${numericGrade} con Moodle URL: ${outcomeUrl}`);
+    logger.info(`Sincronizando nota ${numericGrade} con Moodle URL: ${outcomeUrl}`);
 
     const xmlPayload = `<?xml version="1.0" encoding="UTF-8"?>
 <imsx_POXEnvelopeRequest xmlns="http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
@@ -86,7 +87,7 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
         });
         
         const resText = await response.text();
-        console.log("Respuesta de sincronización con Moodle:", response.status, resText);
+        logger.info("Respuesta de sincronización con Moodle:", response.status, resText);
         
         await db.collection('audit_logs').add({
             action: 'moodle_grade_sync',
@@ -98,7 +99,7 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
             created_at: admin.firestore.FieldValue.serverTimestamp()
         });
     } catch (err) {
-        console.error("Error al sincronizar nota con Moodle:", err);
+        logger.error("Error al sincronizar nota con Moodle:", err);
     }
 }
 
@@ -291,7 +292,7 @@ exports.api = onCall(async (request) => {
                     timestamp: admin.firestore.FieldValue.serverTimestamp()
                 });
             } catch (e) {
-                console.error("Error writing activity log:", e);
+                logger.error("Error writing activity log:", e);
             }
         }
 
@@ -391,7 +392,7 @@ exports.calendar = onRequest(async (req, res) => {
                         }
                     }
                 } catch (err) {
-                    console.error("Error fetching external calendar:", url, err);
+                    logger.error("Error fetching external calendar:", url, err);
                 }
             }
         }
@@ -632,7 +633,7 @@ exports.exportGradesCsv = onRequest(async (req, res) => {
         res.status(200).send(csv);
 
     } catch (e) {
-        console.error(e);
+        logger.error("Error exporting grades CSV:", e);
         res.status(500).send("Error interno: " + e.message);
     }
 });
@@ -730,7 +731,7 @@ exports.exportAttendanceCsv = onRequest(async (req, res) => {
         res.status(200).send(csv);
 
     } catch (e) {
-        console.error(e);
+        logger.error("Error exporting attendance CSV:", e);
         res.status(500).send("Error interno: " + e.message);
     }
 });
@@ -868,9 +869,9 @@ exports.sendDailySummaries = onSchedule({ schedule: 'every day 20:00', timeZone:
         }
         
         await Promise.all(promises);
-        console.log(`Sent daily summaries to ${Object.keys(byStudent).length} students.`);
+        logger.info(`Sent daily summaries to ${Object.keys(byStudent).length} students.`);
     } catch (e) {
-        console.error('Error sending daily summaries:', e);
+        logger.error('Error sending daily summaries:', e);
     }
     return null;
 });

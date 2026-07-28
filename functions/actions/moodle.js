@@ -1,4 +1,5 @@
-const fetch = require('node-fetch');
+const fetch = global.fetch || require('node-fetch');
+const logger = require("firebase-functions/logger");
 
 async function moodleAutoEnroll(payload, context) {
     const { uid, db, admin } = context;
@@ -483,7 +484,7 @@ async function exportGradesToMoodleWebservice(payload, context) {
                 await fetch(endpoint, { method: 'POST', body: params });
                 pushedCount++;
             } catch (e) {
-                console.error(`Error enviando nota de usuario Moodle ${moodleUserId}:`, e);
+                logger.error(`Error enviando nota de usuario Moodle ${moodleUserId}:`, e);
             }
         }
     }

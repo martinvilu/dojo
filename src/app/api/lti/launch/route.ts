@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBaseUrl } from "@/lib/url";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
               resultId = agsClaim.lineitem ? "ags-lineitem" : resultId;
             }
           } catch (e) {
-            console.error("Error decoding LTI token parts:", e);
+            logger.error("Error decoding LTI token parts", e);
           }
         }
       }
@@ -124,9 +125,10 @@ export async function POST(request: Request) {
       .replace(/https?:\/\/127\.0\.0\.1:\d+/g, CANONICAL)
       .replace(/https?:\/\/localhost:\d+/g, CANONICAL);
 
-    console.log("[LTI Launch] baseUrl:", baseUrl, "-> redirect:", finalUrl);
+    logger.info("[LTI Launch] Redirecting", { baseUrl, finalUrl, targetModule, courseId });
     return NextResponse.redirect(finalUrl, 303);
   } catch (error: any) {
+    logger.error("Error procesando LTI Launch", error);
     return NextResponse.json({ error: "Error procesando LTI Launch: " + error.message }, { status: 500 });
   }
 }

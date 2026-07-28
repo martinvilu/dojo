@@ -1,3 +1,5 @@
+const logger = require("firebase-functions/logger");
+
 async function markAttendance(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, classId } = payload;
@@ -102,7 +104,7 @@ async function submitQrAttendance(payload, context) {
             timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
     } catch(e) {
-        console.error("Error logging XP:", e);
+        logger.error("Error logging XP:", e);
     }
     
     return { success: true };

@@ -1,4 +1,5 @@
 const fetch = global.fetch || require('node-fetch');
+const logger = require("firebase-functions/logger");
 
 async function archiveAssignment(payload, context) {
     const { uid, db } = context;
@@ -146,7 +147,7 @@ async function gradeSubmission(payload, context) {
     // Trigger background grade sync with Moodle LTI if applicable
     if (previousData.moodle_lis_outcome_service_url && typeof syncGradeToMoodle === 'function') {
         syncGradeToMoodle({ id: submissionId, ...previousData }, grade, feedback).catch(e => {
-            console.error("Error trigger syncGradeToMoodle:", e);
+            logger.error("Error trigger syncGradeToMoodle:", e);
         });
     }
     
@@ -252,7 +253,7 @@ async function acceptAssignment(payload, context) {
                     github_user: profile.github_user,
                     repo_url: `https://github.com/${orgName}/${repoName}`
                 })
-            }).catch(e => console.error("Webhook error:", e));
+            }).catch(e => logger.error("Webhook error:", e));
         } catch(e) {}
     }
 
@@ -332,7 +333,7 @@ async function getStudentGithubActivity(payload, context) {
             });
         }
     } catch (e) {
-        console.error("Error fetching commits:", e);
+        logger.error("Error fetching commits:", e);
     }
 
     let pullRequests = [];
@@ -352,7 +353,7 @@ async function getStudentGithubActivity(payload, context) {
             }));
         }
     } catch (e) {
-        console.error("Error fetching pull requests:", e);
+        logger.error("Error fetching pull requests:", e);
     }
 
     let comments = [];
@@ -371,7 +372,7 @@ async function getStudentGithubActivity(payload, context) {
             }));
         }
     } catch (e) {
-        console.error("Error fetching repo comments:", e);
+        logger.error("Error fetching repo comments:", e);
     }
 
     return { commits, pullRequests, comments };

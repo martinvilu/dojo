@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBaseUrl } from "@/lib/url";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
             const customParams = payload["https://purl.imsglobal.org/spec/lti/claim/custom"] || {};
             courseId = customParams.courseId || customParams.course_id || courseId;
           } catch (e) {
-            console.error("Error decoding LTI id_token:", e);
+            logger.error("Error decoding LTI id_token:", e);
           }
         }
       }

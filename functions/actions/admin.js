@@ -1,3 +1,5 @@
+const logger = require("firebase-functions/logger");
+
 async function approveUser(payload, context) {
     const { db, getMyProfile } = context;
     const { targetUid } = payload;
@@ -120,7 +122,7 @@ async function deleteUser(payload, context) {
     try {
         await admin.auth().deleteUser(targetUid);
     } catch (authErr) {
-        console.warn("User did not exist in Firebase Auth or failed to delete:", authErr.message);
+        logger.warn("User did not exist in Firebase Auth or failed to delete:", authErr.message);
     }
 
     // 2. Delete profile document from Firestore

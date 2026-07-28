@@ -1,5 +1,7 @@
 const { sendGmailNotification } = require('./gmailAuth');
 
+const logger = require("firebase-functions/logger");
+
 async function getScheduledEmails(payload, context) {
     const { db } = context;
     const { courseId } = payload;
@@ -107,7 +109,7 @@ async function triggerScheduledEmailNow(payload, context) {
             }, context);
             sentCount++;
         } catch (e) {
-            console.error(`Error enviando correo programado a ${r.email}:`, e);
+            logger.error(`Error enviando correo programado a ${r.email}:`, e);
             failedCount++;
         }
     }

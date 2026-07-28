@@ -1,4 +1,5 @@
-const fetch = require('node-fetch');
+const fetch = global.fetch || require('node-fetch');
+const logger = require("firebase-functions/logger");
 
 // Environment variables or fallback credentials
 const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID || "MOCK_CLIENT_ID.apps.googleusercontent.com";
@@ -61,7 +62,7 @@ async function saveGmailAuthCode(payload, context) {
             const userInfo = await userInfoRes.json();
             if (userInfo.email) email = userInfo.email;
         } catch (e) {
-            console.error("Error al obtener email de usuario Gmail:", e);
+            logger.error("Error al obtener email de usuario Gmail:", e);
         }
     }
 
