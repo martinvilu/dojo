@@ -116,7 +116,16 @@ export async function POST(request: Request) {
       redirectUrl.searchParams.set("lis_result_sourcedid", resultId);
     }
 
-    return NextResponse.redirect(redirectUrl.toString(), 303);
+    // Safety net: ensure final redirect URL never contains internal addresses
+    let finalUrl = redirectUrl.toString();
+    const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    finalUrl = finalUrl
+      .replace(/https?:\/\/0\.0\.0\.0:\d+/g, CANONICAL)
+      .replace(/https?:\/\/127\.0\.0\.1:\d+/g, CANONICAL)
+      .replace(/https?:\/\/localhost:\d+/g, CANONICAL);
+
+    console.log("[LTI Launch] baseUrl:", baseUrl, "-> redirect:", finalUrl);
+    return NextResponse.redirect(finalUrl, 303);
   } catch (error: any) {
     return NextResponse.json({ error: "Error procesando LTI Launch: " + error.message }, { status: 500 });
   }

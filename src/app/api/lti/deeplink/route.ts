@@ -49,7 +49,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const baseUrl = getBaseUrl(request);
+    const rawBaseUrl = getBaseUrl(request);
+    // Safety net: ensure URLs emitted to Moodle NEVER contain internal addresses
+    const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    const baseUrl = rawBaseUrl
+      .replace(/https?:\/\/0\.0\.0\.0:\d+/g, CANONICAL)
+      .replace(/https?:\/\/127\.0\.0\.1:\d+/g, CANONICAL)
+      .replace(/https?:\/\/localhost:\d+/g, CANONICAL);
 
     // Map modules catalog
     const moduleCatalog: Record<string, { title: string; text: string; target: string }> = {
