@@ -1,0 +1,56 @@
+
+> ninja-dojo@0.1.0 dev /app
+> next dev
+
+⚠ Port 3000 is in use by an unknown process, using available port 3001 instead.
+▲ Next.js 16.2.11 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.2:3001
+✓ Ready in 672ms
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          52945
+- Dir:          /app
+- Log:          .next/dev/logs/next-development.log
+
+Run kill 52945 to stop it.
+[?25h
+ ELIFECYCLE  Command○ Compiling /dashboard ...
+ GET /dashboard 200 in 10.6s (next.js: 9.1s, application-code: 1512ms)
+[browser] [2026-07-28T23:40:05.906Z]  @firebase/firestore: Firestore (12.16.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead. (src/lib/firebase/clientApp.ts:22:29)
+ GET /login 200 in 1267ms (next.js: 1207ms, application-code: 61ms)
+ GET /login 200 in 146ms (next.js: 7ms, application-code: 139ms)
+[browser] [2026-07-28T23:41:00.546Z]  @firebase/firestore: Firestore (12.16.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead. (src/lib/firebase/clientApp.ts:22:29)
+[browser] FirebaseError: Firebase: Error (auth/invalid-credential).
+    at async handleEmailAuth (src/app/login/page.tsx:48:9)
+  46 |         router.push("/dashboard");
+  47 |       } else {
+> 48 |         await signInWithEmailAndPassword(auth, email, password);
+     |         ^
+  49 |         router.push("/dashboard");
+  50 |       }
+  51 |     } catch (err: any) { (src/app/login/page.tsx:52:15)
+ GET /login 200 in 80ms (next.js: 5ms, application-code: 75ms)
+[browser] [2026-07-28T23:41:52.800Z]  @firebase/firestore: Firestore (12.16.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead. (src/lib/firebase/clientApp.ts:22:29)
+[browser] FirebaseError: Firebase: Error (auth/invalid-credential).
+    at async handleEmailAuth (src/app/login/page.tsx:48:9)
+  46 |         router.push("/dashboard");
+  47 |       } else {
+> 48 |         await signInWithEmailAndPassword(auth, email, password);
+     |         ^
+  49 |         router.push("/dashboard");
+  50 |       }
+  51 |     } catch (err: any) { (src/app/login/page.tsx:52:15)
+ GET /login 200 in 78ms (next.js: 6ms, application-code: 72ms)
+[browser] [2026-07-28T23:42:11.146Z]  @firebase/firestore: Firestore (12.16.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead. (src/lib/firebase/clientApp.ts:22:29)
+[browser] FirebaseError: Firebase: Error (auth/invalid-credential).
+    at async handleEmailAuth (src/app/login/page.tsx:48:9)
+  46 |         router.push("/dashboard");
+  47 |       } else {
+> 48 |         await signInWithEmailAndPassword(auth, email, password);
+     |         ^
+  49 |         router.push("/dashboard");
+  50 |       }
+  51 |     } catch (err: any) { (src/app/login/page.tsx:52:15)
+ GET /test-profile 200 in 899ms (next.js: 718ms, application-code: 181ms)
