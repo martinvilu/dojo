@@ -276,3 +276,27 @@ html:not(.dark) .hover\:text-white:hover {
   display: inline-flex;
   align-items: center;
 }
+
+/* nextjs-toast-notify: fix broken centering (library ships conflicting transforms) */
+.toast-container[class*="-center"] {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  max-width: calc(100vw - 2rem) !important;
+}
+
+.toast-container[class*="bottom-"] {
+  bottom: 1rem !important;
+}
+
+/* Ensure toast stays within viewport on mobile */
+@media (max-width: 480px) {
+  .toast-container {
+    min-width: unset !important;
+    width: calc(100vw - 2rem) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
+}
+
