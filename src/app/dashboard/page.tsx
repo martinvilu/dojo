@@ -17,7 +17,7 @@ import TutoringPanel from "@/components/dashboard/tutoring/TutoringPanel";
 import AttendanceManager from "@/components/dashboard/attendance/AttendanceManager";
 import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
 import QrScannerModal from "@/components/dashboard/attendance/QrScannerModal";
-import CalendarPanel from "@/components/dashboard/calendar/CalendarPanel";
+import CalendarPanel from "@/modules/calendar/components/CalendarPanel";
 import EmailManagementPanel from "@/modules/mail/components/EmailManagementPanel";
 import DirectEmailModal from "@/modules/mail/components/DirectEmailModal";
 import MoodleIntegrationPanel from "@/components/dashboard/moodle/MoodleIntegrationPanel";
