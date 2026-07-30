@@ -56,6 +56,26 @@ El objetivo es migrar la lógica y los componentes desde archivos monolíticos (
 * **Backend:**
   * Archivo migrado: `functions/src/modules/study_groups/studyGroups.js`.
 
+### 8. Módulo de Asistencia (`attendance`)
+**Responsabilidad:** Registro de asistencia manual y por código QR.
+* **Backend:** Archivo `functions/actions/attendance.js` -> `functions/src/modules/attendance/attendance.js`
+
+### 9. Módulo de Anuncios (`announcements`)
+**Responsabilidad:** Creación y visualización de anuncios del curso con acuse de recibo.
+* **Backend:** Archivo `functions/actions/announcements.js` -> `functions/src/modules/course/announcements.js` (Parte de course)
+
+### 10. Módulo de Notificaciones (`notifications`)
+**Responsabilidad:** Sistema de alertas in-app, notificaciones de riesgo y resúmenes diarios.
+* **Backend:** Archivos `functions/actions/notifications.js` y `sendDailySummaries` en `index.js` -> `functions/src/modules/notifications/notifications.js`
+
+### 11. Módulo Moodle (`moodle`)
+**Responsabilidad:** Integración de exportación, LTI deep linking, sincronización de notas y roster.
+* **Backend:** Archivo `functions/actions/moodle.js` -> `functions/src/modules/integrations/moodle.js`
+
+### 12. Módulo Backups y Logs (`system`)
+**Responsabilidad:** Copias de seguridad de la base de datos y registro de auditoría (activity logs).
+* **Backend:** Archivos `functions/actions/backups.js` y `functions/actions/activity.js` -> `functions/src/modules/system/backups.js`, `functions/src/modules/system/activity.js`
+
 ---
 
 ## Estrategia de Ejecución Continua
