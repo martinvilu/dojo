@@ -1,5 +1,5 @@
-import { showToast } from "@/components/dashboard/ui/ToastNotification";
 "use client";
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
