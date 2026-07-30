@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 "use client";
 
 import React, { useState } from "react";
@@ -27,7 +28,7 @@ export default function DirectEmailModal({
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageBody.trim()) {
-      alert("Ingresá el mensaje a enviar.");
+      showToast("Ingresá el mensaje a enviar.", "success");
       return;
     }
 
@@ -39,10 +40,10 @@ export default function DirectEmailModal({
         subject,
         bodyHtml: messageBody
       });
-      alert(`¡Email enviado exitosamente a ${student.full_name || student.email}!`);
+      showToast(`¡Email enviado exitosamente a ${student.full_name || student.email}!`, "success");
       onClose();
     } catch (err: any) {
-      alert("Error al enviar email directo: " + err.message);
+      showToast("Error al enviar email directo: " + err.message, "error");
     } finally {
       setSending(false);
     }

@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -86,10 +87,10 @@ export default function EmailManagementPanel({
         subject: editTemplateSubject,
         bodyHtml: editTemplateBody
       });
-      alert("¡Plantilla de correo guardada exitosamente!");
+      showToast("¡Plantilla de correo guardada exitosamente!", "success");
       loadData();
     } catch (err: any) {
-      alert("Error al guardar plantilla: " + err.message);
+      showToast("Error al guardar plantilla: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export default function EmailManagementPanel({
   const handleCreateScheduledEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newScheduleSubject || !newScheduleBody) {
-      alert("Completá el asunto y contenido del correo.");
+      showToast("Completá el asunto y contenido del correo.", "success");
       return;
     }
     setLoading(true);
@@ -112,14 +113,14 @@ export default function EmailManagementPanel({
         bodyHtml: newScheduleBody,
         sendAt
       });
-      alert("¡Correo programado con éxito!");
+      showToast("¡Correo programado con éxito!", "success");
       setShowScheduleModal(false);
       setNewScheduleTitle("");
       setNewScheduleSubject("");
       setNewScheduleBody("");
       loadData();
     } catch (err: any) {
-      alert("Error al programar correo: " + err.message);
+      showToast("Error al programar correo: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -130,10 +131,10 @@ export default function EmailManagementPanel({
     setLoading(true);
     try {
       const res = await api("triggerScheduledEmailNow", { emailId, courseId });
-      alert(`¡Correo enviado! ${res.sentCount} correos entregados exitosamente.`);
+      showToast(`¡Correo enviado! ${res.sentCount} correos entregados exitosamente.`, "success");
       loadData();
     } catch (err: any) {
-      alert("Error al ejecutar envío: " + err.message);
+      showToast("Error al ejecutar envío: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -144,10 +145,10 @@ export default function EmailManagementPanel({
     setLoading(true);
     try {
       await api("cancelScheduledEmail", { emailId });
-      alert("Correo programado cancelado.");
+      showToast("Correo programado cancelado.", "success");
       loadData();
     } catch (err: any) {
-      alert("Error al cancelar: " + err.message);
+      showToast("Error al cancelar: " + err.message, "error");
     } finally {
       setLoading(false);
     }

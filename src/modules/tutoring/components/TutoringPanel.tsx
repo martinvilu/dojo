@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import React, { useState } from "react";
 
 interface Tutor {
@@ -55,7 +56,7 @@ export default function TutoringPanel({
   const handleRegisterAsTutor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tutorTopics.trim() || !tutorAvailability.trim()) {
-      alert("Por favor completa los temas y la disponibilidad.");
+      showToast("Por favor completa los temas y la disponibilidad.", "success");
       return;
     }
     setLoading(true);
@@ -65,7 +66,7 @@ export default function TutoringPanel({
         topics: tutorTopics,
         availability: tutorAvailability,
       });
-      alert("Te registraste como tutor exitosamente.");
+      showToast("Te registraste como tutor exitosamente.", "success");
       setTutorTopics("");
       setTutorAvailability("");
       setIsRegisterModalOpen(false);
@@ -73,7 +74,7 @@ export default function TutoringPanel({
       const tutorsList = await api("getCourseTutors", { courseId });
       setTutors(tutorsList || []);
     } catch (err: any) {
-      alert("Error al registrarse como tutor: " + err.message);
+      showToast("Error al registrarse como tutor: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,7 @@ export default function TutoringPanel({
     e.preventDefault();
     if (!selectedTutor) return;
     if (!bookingDateTime || !bookingTopic.trim()) {
-      alert("Por favor especifica la fecha/hora y el tema.");
+      showToast("Por favor especifica la fecha/hora y el tema.", "success");
       return;
     }
     setLoading(true);
@@ -94,7 +95,7 @@ export default function TutoringPanel({
         dateTime: bookingDateTime,
         topic: bookingTopic,
       });
-      alert("Mentoría reservada con éxito. Se ha generado un enlace a la sala.");
+      showToast("Mentoría reservada con éxito. Se ha generado un enlace a la sala.", "success");
       setBookingDateTime("");
       setBookingTopic("");
       setSelectedTutor(null);
@@ -106,7 +107,7 @@ export default function TutoringPanel({
         .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
-      alert("Error al reservar sesión: " + err.message);
+      showToast("Error al reservar sesión: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -116,7 +117,7 @@ export default function TutoringPanel({
     setLoading(true);
     try {
       await api("updateTutoringSessionStatus", { sessionId, status: newStatus });
-      alert(`Sesión de mentoría ${newStatus === "confirmed" ? "confirmada" : "cancelada"}.`);
+      showToast(`Sesión de mentoría ${newStatus === "confirmed" ? "confirmada" : "cancelada"}.`, "success");
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
@@ -124,7 +125,7 @@ export default function TutoringPanel({
         .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
-      alert("Error al actualizar estado: " + err.message);
+      showToast("Error al actualizar estado: " + err.message, "error");
     } finally {
       setLoading(false);
     }

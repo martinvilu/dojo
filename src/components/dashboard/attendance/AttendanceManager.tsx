@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import React, { useState, useEffect } from "react";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
@@ -103,7 +104,7 @@ export default function AttendanceManager({
         expiresIn: 30,
       });
     } catch (err: any) {
-      alert("Error al generar QR de asistencia: " + err.message);
+      showToast("Error al generar QR de asistencia: " + err.message, "error");
     } finally {
       setQrLoading(false);
     }
@@ -121,10 +122,10 @@ export default function AttendanceManager({
         },
         { merge: true }
       );
-      alert("Asistencia guardada con éxito.");
+      showToast("Asistencia guardada con éxito.", "success");
       onClose();
     } catch (err: any) {
-      alert("Error al guardar asistencia: " + err.message);
+      showToast("Error al guardar asistencia: " + err.message, "error");
     } finally {
       setSaving(false);
     }

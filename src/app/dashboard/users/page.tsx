@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -70,7 +71,7 @@ export default function UsersPage() {
       const uRes = await api("getAdminUsers");
       setUsers(uRes || []);
     } catch (err: any) {
-      alert("Error al cambiar rol: " + err.message);
+      showToast("Error al cambiar rol: " + err.message, "error");
     } finally {
       setUpdatingUid(null);
     }
@@ -83,7 +84,7 @@ export default function UsersPage() {
       const uRes = await api("getAdminUsers");
       setUsers(uRes || []);
     } catch (err: any) {
-      alert("Error al aprobar usuario: " + err.message);
+      showToast("Error al aprobar usuario: " + err.message, "error");
     } finally {
       setUpdatingUid(null);
     }

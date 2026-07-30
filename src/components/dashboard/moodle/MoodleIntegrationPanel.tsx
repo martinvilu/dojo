@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 "use client";
 
 import React, { useState } from "react";
@@ -36,7 +37,7 @@ export default function MoodleIntegrationPanel({
 
   const handleSyncContents = async () => {
     if (!moodleApiUrl || !moodleWsToken || !moodleCourseId) {
-      alert("Completá los parámetros de conexión de Moodle.");
+      showToast("Completá los parámetros de conexión de Moodle.", "success");
       return;
     }
     setLoading(true);
@@ -47,9 +48,9 @@ export default function MoodleIntegrationPanel({
         moodleToken: moodleWsToken,
         moodleCourseId
       });
-      alert(`¡Contenidos importados! ${res.importedSectionsCount} nuevas secciones/clases creadas desde Moodle.`);
+      showToast(`¡Contenidos importados! ${res.importedSectionsCount} nuevas secciones/clases creadas desde Moodle.`, "success");
     } catch (err: any) {
-      alert("Error al importar contenidos de Moodle: " + err.message);
+      showToast("Error al importar contenidos de Moodle: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -81,7 +82,7 @@ export default function MoodleIntegrationPanel({
       setDeepLinkItems(res.items || []);
       setShowDeepLinkModal(true);
     } catch (err: any) {
-      alert("Error al obtener enlaces LTI Deep Linking: " + err.message);
+      showToast("Error al obtener enlaces LTI Deep Linking: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -229,7 +230,7 @@ export default function MoodleIntegrationPanel({
                   <button
                     onClick={async () => {
                       const ok = await copyToClipboard(item.url);
-                      alert(ok ? "¡Enlace LTI copiado al portapapeles con éxito!" : "No se pudo copiar el enlace LTI automáticamente.");
+                      showToast(ok ? "¡Enlace LTI copiado al portapapeles con éxito!" : "No se pudo copiar el enlace LTI automáticamente.", "success");
                     }}
                     className="btn-primary min-w-[80px] min-h-[32px] text-xs py-1"
                   >
@@ -271,7 +272,7 @@ export default function MoodleIntegrationPanel({
                     <button
                       onClick={async () => {
                         const ok = await copyToClipboard(`Ninja Dojo - ${courseName}`);
-                        alert(ok ? "¡Nombre de la herramienta copiado con éxito!" : "No se pudo copiar el texto.");
+                        showToast(ok ? "¡Nombre de la herramienta copiado con éxito!" : "No se pudo copiar el texto.", "success");
                       }}
                       className="text-tertiary hover:underline text-[11px] font-bold"
                     >
@@ -285,7 +286,7 @@ export default function MoodleIntegrationPanel({
                     <button
                       onClick={async () => {
                         const ok = await copyToClipboard(ltiToolUrl);
-                        alert(ok ? "¡URL de la herramienta copiada con éxito!" : "No se pudo copiar la URL.");
+                        showToast(ok ? "¡URL de la herramienta copiada con éxito!" : "No se pudo copiar la URL.", "success");
                       }}
                       className="text-tertiary hover:underline text-[11px] font-bold"
                     >
@@ -315,7 +316,7 @@ export default function MoodleIntegrationPanel({
                     <button
                       onClick={async () => {
                         const ok = await copyToClipboard(`course_id=${courseId}`);
-                        alert(ok ? "¡Parámetros copiados con éxito!" : "No se pudo copiar los parámetros.");
+                        showToast(ok ? "¡Parámetros copiados con éxito!" : "No se pudo copiar los parámetros.", "success");
                       }}
                       className="text-tertiary hover:underline text-[11px] font-bold"
                     >
@@ -339,7 +340,7 @@ export default function MoodleIntegrationPanel({
                     <button
                       onClick={async () => {
                         const ok = await copyToClipboard(ltiDeepLinkUrl);
-                        alert(ok ? "¡URL de selección copiada con éxito!" : "No se pudo copiar la URL.");
+                        showToast(ok ? "¡URL de selección copiada con éxito!" : "No se pudo copiar la URL.", "success");
                       }}
                       className="text-tertiary hover:underline text-[11px] font-bold"
                     >

@@ -278,20 +278,20 @@ html:not(.dark) .hover\:text-white:hover {
 }
 
 /* nextjs-toast-notify: fix broken centering (library ships conflicting transforms) */
-.toast-container[class*="-center"] {
+div[class*="Toast"][class*="-center"], div[class*="toast"][class*="-center"] {
   left: 50% !important;
   right: auto !important;
   transform: translateX(-50%) !important;
   max-width: calc(100vw - 2rem) !important;
 }
 
-.toast-container[class*="bottom-"] {
+div[class*="Toast"][class*="bottom-"], div[class*="toast"][class*="bottom-"] {
   bottom: 1rem !important;
 }
 
 /* Ensure toast stays within viewport on mobile */
 @media (max-width: 480px) {
-  .toast-container {
+  div[class*="Toast"], div[class*="toast"] {
     min-width: unset !important;
     width: calc(100vw - 2rem) !important;
     left: 50% !important;

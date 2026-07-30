@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 "use client";
 
 import React, { useState } from "react";
@@ -68,23 +69,23 @@ export default function ProfilePanel({
   const handleSendVerification = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPrimaryEmail || !newPrimaryEmail.includes("@")) {
-      alert("Por favor ingresá un email válido.");
+      showToast("Por favor ingresá un email válido.", "success");
       return;
     }
     setVerificationSent(true);
-    alert(`Código de verificación enviado a ${newPrimaryEmail}. Para demostración, el código de prueba es 123456.`);
+    showToast(`Código de verificación enviado a ${newPrimaryEmail}. Para demostración, el código de prueba es 123456.`, "success");
   };
 
   const handleVerifyEmail = (e: React.FormEvent) => {
     e.preventDefault();
     if (verificationCode.trim() === "123456" || verificationCode.trim().length === 6) {
       if (handleAddSecondaryEmail) handleAddSecondaryEmail(newPrimaryEmail);
-      alert("¡Email verificado y asociado exitosamente!");
+      showToast("¡Email verificado y asociado exitosamente!", "success");
       setVerificationSent(false);
       setNewPrimaryEmail("");
       setVerificationCode("");
     } else {
-      alert("Código de verificación incorrecto.");
+      showToast("Código de verificación incorrecto.", "success");
     }
   };
 

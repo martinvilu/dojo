@@ -74,42 +74,7 @@ export default function DashboardPage() {
   const hasProcessedParams = useRef(false);
   const moodleLtiParams = useRef<{ outcomeUrl?: string, resultId?: string }>({});
 
-  // Global toast override for non-intrusive alerts
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const originalAlert = window.alert;
-    window.alert = (message: string) => {
-      let type: "success" | "error" | "info" | "warning" = "info";
-      const lowercaseMsg = String(message || "").toLowerCase();
-      if (
-        lowercaseMsg.includes("error") ||
-        lowercaseMsg.includes("falló") ||
-        lowercaseMsg.includes("inválido") ||
-        lowercaseMsg.includes("atención") ||
-        lowercaseMsg.includes("obligatorio") ||
-        lowercaseMsg.includes("no se pudo")
-      ) {
-        type = "error";
-      } else if (
-        lowercaseMsg.includes("éxito") ||
-        lowercaseMsg.includes("exitosamente") ||
-        lowercaseMsg.includes("correctamente") ||
-        lowercaseMsg.includes("guardada") ||
-        lowercaseMsg.includes("guardado") ||
-        lowercaseMsg.includes("creado") ||
-        lowercaseMsg.includes("copiad") ||
-        lowercaseMsg.includes("copiar") ||
-        lowercaseMsg.includes("vinculad")
-      ) {
-        type = "success";
-      }
-      showToast(String(message || ""), type);
-    };
-    return () => {
-      window.alert = originalAlert;
-    };
-  }, []);
-
+  
   // Pending Matricula inputs
   const [matriculaInput, setMatriculaInput] = useState("");
   const [matriculaError, setMatriculaError] = useState("");
@@ -398,11 +363,11 @@ export default function DashboardPage() {
         lat,
         lng
       });
-      alert("¡Asistencia registrada con éxito! Ya estás presente.");
+      showToast("¡Asistencia registrada con éxito! Ya estás presente.", "success");
       setStudentActiveAttendanceClass(null);
       setStudentQrToken("");
     } catch (err: any) {
-      alert("Error al registrar asistencia: " + err.message);
+      showToast("Error al registrar asistencia: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -637,9 +602,9 @@ export default function DashboardPage() {
               const cleanedUser = githubUser.trim();
               await api("updateProfile", { github_user: cleanedUser });
               setProfile((prev: any) => prev ? { ...prev, github_user: cleanedUser } : null);
-              alert("¡Tu usuario de GitHub ha sido vinculado correctamente!");
+              showToast("¡Tu usuario de GitHub ha sido vinculado correctamente!", "success");
             } else {
-              alert("⚠️ Atención: Debes vincular tu usuario de GitHub desde la pestaña Mi Perfil antes de poder entregar tareas.");
+              showToast("⚠️ Atención: Debes vincular tu usuario de GitHub desde la pestaña Mi Perfil antes de poder entregar tareas.", "success");
             }
           }
         } catch (e) {
@@ -962,7 +927,7 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       await api("saveGlobalSettings", { globalCalendarIcsUrl: globalCalendarUrl });
-      alert("Configuración guardada.");
+      showToast("Configuración guardada.", "success");
     } catch (err: any) {
       setError("Error al guardar configuraciones: " + err.message);
     } finally {
@@ -980,9 +945,9 @@ export default function DashboardPage() {
       setEnrollCode("");
       const res = await api("getStudentCourses");
       setCourses(res || []);
-      alert("¡Te has enrolado con éxito!");
+      showToast("¡Te has enrolado con éxito!", "success");
     } catch (err: any) {
-      alert("Error al enrolarse: " + err.message);
+      showToast("Error al enrolarse: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1005,14 +970,14 @@ export default function DashboardPage() {
         moodle_lis_outcome_service_url: moodleLtiParams.current.outcomeUrl || "",
         moodle_lis_result_sourcedid: moodleLtiParams.current.resultId || ""
       });
-      alert("¡Repositorio de GitHub creado con éxito!");
+      showToast("¡Repositorio de GitHub creado con éxito!", "success");
       // Reload assignments
       const cid = selectedCourse.id || selectedCourse.course?.id;
       const aRes = await api("getStudentAssignments", { courseIds: [cid] });
       setAssignments(aRes.assignments || []);
       setSubmissions(aRes.submissions || []);
     } catch (err: any) {
-      alert("Error al aceptar la tarea: " + err.message);
+      showToast("Error al aceptar la tarea: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1026,13 +991,13 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       await api("submitAssignment", { submissionId, message: msg });
-      alert("¡Entrega enviada exitosamente!");
+      showToast("¡Entrega enviada exitosamente!", "success");
       const cid = selectedCourse.id || selectedCourse.course?.id;
       const aRes = await api("getStudentAssignments", { courseIds: [cid] });
       setAssignments(aRes.assignments || []);
       setSubmissions(aRes.submissions || []);
     } catch (err: any) {
-      alert("Error al enviar la entrega: " + err.message);
+      showToast("Error al enviar la entrega: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1051,7 +1016,7 @@ export default function DashboardPage() {
       setStudentGithubActivity(res || { commits: [], pullRequests: [], comments: [] });
       setVisibleCommitsSubId(submissionId);
     } catch (err: any) {
-      alert("Error al cargar actividad de GitHub: " + err.message);
+      showToast("Error al cargar actividad de GitHub: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1059,7 +1024,7 @@ export default function DashboardPage() {
 
   // Teacher Schedule settings manipulation
   const handleAddSchedule = () => {
-    if (!scheduleTime) return alert("Poné una hora válida.");
+    if (!scheduleTime) return showToast("Poné una hora válida.", "success");
     setTeacherSchedules([...teacherSchedules, { day: scheduleDay, time: scheduleTime, type: scheduleType }]);
     setScheduleTime("");
   };
@@ -1070,7 +1035,7 @@ export default function DashboardPage() {
 
   const handleGenerateClasses = () => {
     if (!teacherStartDate || !teacherDuration || teacherSchedules.length === 0) {
-      alert("Primero configurá la fecha de inicio, duración en semanas y al menos un horario.");
+      showToast("Primero configurá la fecha de inicio, duración en semanas y al menos un horario.", "success");
       return;
     }
     if (!confirm("¿Seguro querés regenerar? Vas a perder los temas, links y estados especiales ya cargados.")) return;
@@ -1167,9 +1132,9 @@ export default function DashboardPage() {
         return c;
       }));
 
-      alert("Configuración de cátedra guardada.");
+      showToast("Configuración de cátedra guardada.", "success");
     } catch (err: any) {
-      alert("Error al guardar configuración: " + err.message);
+      showToast("Error al guardar configuración: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1194,9 +1159,9 @@ export default function DashboardPage() {
       setTeacherSchedules(data.schedules || []);
       setTeacherCommissionsMapping(data.commissions_mapping || {});
       setTeacherCommissions(data.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]);
-      alert("Configuración clonada exitosamente.");
+      showToast("Configuración clonada exitosamente.", "success");
     } catch (err: any) {
-      alert("Error al clonar configuración: " + err.message);
+      showToast("Error al clonar configuración: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1230,9 +1195,9 @@ export default function DashboardPage() {
         courseId: cid,
         data: { class_instances: teacherClasses }
       });
-      alert("Cronograma de clases guardado correctamente.");
+      showToast("Cronograma de clases guardado correctamente.", "success");
     } catch (err: any) {
-      alert("Error al guardar cronograma: " + err.message);
+      showToast("Error al guardar cronograma: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1255,9 +1220,9 @@ export default function DashboardPage() {
         courseId: cid,
         data: { class_instances: updatedInstances }
       });
-      alert("⚡ Archivo optimizado con éxito. Reducción de ancho de banda estimada: 45%.");
+      showToast("⚡ Archivo optimizado con éxito. Reducción de ancho de banda estimada: 45%.", "success");
     } catch (err: any) {
-      alert("Error al optimizar material: " + err.message);
+      showToast("Error al optimizar material: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1272,11 +1237,11 @@ export default function DashboardPage() {
         try {
           const redirectUri = window.location.origin + window.location.pathname;
           const res = await api("saveGmailAuthCode", { code, redirectUri });
-          alert(`¡Cuenta de Gmail (${res.email}) vinculada exitosamente!`);
+          showToast(`¡Cuenta de Gmail (${res.email}, "success") vinculada exitosamente!`);
           window.history.replaceState({}, document.title, window.location.pathname);
           setGmailStatus({ connected: true, email: res.email });
         } catch (err: any) {
-          alert("Error al vincular cuenta de Gmail: " + err.message);
+          showToast("Error al vincular cuenta de Gmail: " + err.message, "error");
         } finally {
           setApiLoading(false);
         }
@@ -1294,7 +1259,7 @@ export default function DashboardPage() {
         window.location.href = res.authUrl;
       }
     } catch (err: any) {
-      alert("Error al iniciar autorización con Gmail: " + err.message);
+      showToast("Error al iniciar autorización con Gmail: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1306,9 +1271,9 @@ export default function DashboardPage() {
     try {
       await api("disconnectGmailAuth");
       setGmailStatus({ connected: false, email: null });
-      alert("Cuenta de Gmail desvinculada.");
+      showToast("Cuenta de Gmail desvinculada.", "success");
     } catch (err: any) {
-      alert("Error al desvincular Gmail: " + err.message);
+      showToast("Error al desvincular Gmail: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1316,7 +1281,7 @@ export default function DashboardPage() {
 
   const handleSendTestGmail = async () => {
     if (!testEmailAddress || !testEmailAddress.includes("@")) {
-      alert("Ingresá un correo de destino válido.");
+      showToast("Ingresá un correo de destino válido.", "success");
       return;
     }
     setApiLoading(true);
@@ -1332,10 +1297,10 @@ export default function DashboardPage() {
           </div>
         `
       });
-      alert(`¡Correo de prueba enviado exitosamente a ${testEmailAddress} desde ${res.emailSentFrom}!`);
+      showToast(`¡Correo de prueba enviado exitosamente a ${testEmailAddress} desde ${res.emailSentFrom}!`, "success");
       setTestEmailAddress("");
     } catch (err: any) {
-      alert("Error al enviar correo de prueba: " + err.message);
+      showToast("Error al enviar correo de prueba: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1362,7 +1327,7 @@ export default function DashboardPage() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert("¡Archivo de Respaldo MBZ (Moodle 4.2) generado y descargado exitosamente!");
+        showToast("¡Archivo de Respaldo MBZ (Moodle 4.2, "success") generado y descargado exitosamente!");
       } else if (res?.xmlContent) {
         const blob = new Blob([res.xmlContent], { type: "application/xml" });
         const url = URL.createObjectURL(blob);
@@ -1373,10 +1338,10 @@ export default function DashboardPage() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert("¡Respaldo XML de Moodle generado y descargado exitosamente!");
+        showToast("¡Respaldo XML de Moodle generado y descargado exitosamente!", "success");
       }
     } catch (err: any) {
-      alert("Error al exportar curso a Moodle: " + err.message);
+      showToast("Error al exportar curso a Moodle: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1386,7 +1351,7 @@ export default function DashboardPage() {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
     if (!moodleApiUrl || !moodleWsToken || !moodleCourseId) {
-      alert("Por favor completá la URL de Moodle, el Token de Web Service y el ID del curso de Moodle.");
+      showToast("Por favor completá la URL de Moodle, el Token de Web Service y el ID del curso de Moodle.", "success");
       return;
     }
     setApiLoading(true);
@@ -1397,9 +1362,9 @@ export default function DashboardPage() {
         moodleToken: moodleWsToken,
         moodleCourseId: moodleCourseId
       });
-      alert(`¡Sincronización completada! ${res.syncedCount} estudiantes sincronizados desde un total de ${res.totalMoodleUsers} usuarios en Moodle.`);
+      showToast(`¡Sincronización completada! ${res.syncedCount} estudiantes sincronizados desde un total de ${res.totalMoodleUsers} usuarios en Moodle.`, "success");
     } catch (err: any) {
-      alert("Error al sincronizar roster desde Moodle: " + err.message);
+      showToast("Error al sincronizar roster desde Moodle: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1409,7 +1374,7 @@ export default function DashboardPage() {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
     if (!moodleApiUrl || !moodleWsToken || !moodleCourseId) {
-      alert("Por favor completá los parámetros de conexión de Moodle en Ajustes de Cátedra.");
+      showToast("Por favor completá los parámetros de conexión de Moodle en Ajustes de Cátedra.", "success");
       return;
     }
     setApiLoading(true);
@@ -1421,9 +1386,9 @@ export default function DashboardPage() {
         moodleCourseId: moodleCourseId,
         assignmentId: assignmentId
       });
-      alert(`¡Notas enviadas a Moodle! ${res.pushedCount} calificaciones actualizadas en el Libro de Calificaciones de Moodle.`);
+      showToast(`¡Notas enviadas a Moodle! ${res.pushedCount} calificaciones actualizadas en el Libro de Calificaciones de Moodle.`, "success");
     } catch (err: any) {
-      alert("Error al enviar notas a Moodle: " + err.message);
+      showToast("Error al enviar notas a Moodle: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1440,14 +1405,14 @@ export default function DashboardPage() {
       const res = await api("getScheduleVersions", { courseId: cid });
       setScheduleVersions(res || []);
     } catch (err: any) {
-      alert("Error al cargar versiones: " + err.message);
+      showToast("Error al cargar versiones: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
   };
 
   const handleSaveVersion = async () => {
-    if (!newVersionName.trim()) return alert("El nombre de la versión es obligatorio.");
+    if (!newVersionName.trim()) return showToast("El nombre de la versión es obligatorio.", "success");
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
     setApiLoading(true);
@@ -1457,12 +1422,12 @@ export default function DashboardPage() {
         versionName: newVersionName,
         classInstances: teacherClasses
       });
-      alert("Versión guardada correctamente.");
+      showToast("Versión guardada correctamente.", "success");
       setNewVersionName("");
       setIsSaveVersionModalOpen(false);
       handleLoadVersions();
     } catch (err: any) {
-      alert("Error al guardar versión: " + err.message);
+      showToast("Error al guardar versión: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1476,10 +1441,10 @@ export default function DashboardPage() {
     try {
       const res = await api("restoreScheduleVersion", { courseId: cid, versionId });
       setTeacherClasses(res.class_instances || []);
-      alert("Versión restaurada con éxito. Recordá presionar 'Guardar Cronograma' para confirmar definitivamente.");
+      showToast("Versión restaurada con éxito. Recordá presionar 'Guardar Cronograma' para confirmar definitivamente.", "success");
       setIsVersionModalOpen(false);
     } catch (err: any) {
-      alert("Error al restaurar versión: " + err.message);
+      showToast("Error al restaurar versión: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1491,7 +1456,7 @@ export default function DashboardPage() {
       const res = await api("getComparisonCourses");
       setComparisonCourses(res || []);
     } catch (err: any) {
-      alert("Error al cargar cursos para comparación: " + err.message);
+      showToast("Error al cargar cursos para comparación: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1504,11 +1469,11 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       const res = await api("createSystemBackup");
-      alert("Respaldo creado correctamente con ID: " + res.backupId);
+      showToast("Respaldo creado correctamente con ID: " + res.backupId, "success");
       const backupsRes = await api("getSystemBackups");
       setSystemBackups(backupsRes || []);
     } catch (err: any) {
-      alert("Error al crear respaldo: " + err.message);
+      showToast("Error al crear respaldo: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1529,7 +1494,7 @@ export default function DashboardPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert("Error al descargar respaldo: " + err.message);
+      showToast("Error al descargar respaldo: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1540,9 +1505,9 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       await api("restoreBackupDocument", { backupId, collectionName, docId });
-      alert("Documento restaurado con éxito.");
+      showToast("Documento restaurado con éxito.", "success");
     } catch (err: any) {
-      alert("Error al restaurar documento: " + err.message);
+      showToast("Error al restaurar documento: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1554,9 +1519,9 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       const res = await api("checkAndAlertStudentsAtRisk", { courseId: cid });
-      alert(`Verificación completada. Se dispararon alertas para ${res.alertsTriggeredCount} alumnos.`);
+      showToast(`Verificación completada. Se dispararon alertas para ${res.alertsTriggeredCount} alumnos.`, "success");
     } catch (err: any) {
-      alert("Error al verificar alertas: " + err.message);
+      showToast("Error al verificar alertas: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1568,7 +1533,7 @@ export default function DashboardPage() {
     const courseName = selectedCourse?.name || selectedCourse?.course?.name || "Reporte";
     
     const printWindow = window.open("", "_blank");
-    if (!printWindow) return alert("Por favor habilita las ventanas emergentes para descargar el reporte.");
+    if (!printWindow) return showToast("Por favor habilita las ventanas emergentes para descargar el reporte.", "success");
     
     const rosterHtml = roster
       .filter(s => s.role === "student")
@@ -1666,9 +1631,9 @@ export default function DashboardPage() {
   // Teacher Assignments Actions
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignTitle || !assignTemplate) return alert("Título y Repositorio Plantilla son obligatorios.");
+    if (!assignTitle || !assignTemplate) return showToast("Título y Repositorio Plantilla son obligatorios.", "success");
     const cid = typeof selectedCourse === "string" ? selectedCourse : (selectedCourse?.id || selectedCourse?.course_id || selectedCourse?.course?.id || "");
-    if (!cid) return alert("Debe seleccionar una materia para crear la tarea.");
+    if (!cid) return showToast("Debe seleccionar una materia para crear la tarea.", "success");
     setApiLoading(true);
     try {
       if (editingAssignmentId) {
@@ -1682,7 +1647,7 @@ export default function DashboardPage() {
           }
         });
         setEditingAssignmentId(null);
-        alert("Tarea modificada.");
+        showToast("Tarea modificada.", "success");
       } else {
         await api("createAssignment", {
           course_id: cid,
@@ -1692,7 +1657,7 @@ export default function DashboardPage() {
           create_feedback_pr: assignPr,
           is_group: assignGroup
         });
-        alert("Tarea creada exitosamente.");
+        showToast("Tarea creada exitosamente.", "success");
       }
       setAssignTitle("");
       setAssignTemplate("");
@@ -1702,7 +1667,7 @@ export default function DashboardPage() {
       const res = await api("getTeacherAssignments");
       setAssignments((res.data || []).filter((a: any) => a.course_id === cid));
     } catch (err: any) {
-      alert("Error al gestionar tarea: " + err.message);
+      showToast("Error al gestionar tarea: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1713,12 +1678,12 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       const res = await api("archiveAssignment", { assignmentId: id });
-      alert(`¡Tarea archivada! Permisos modificados en ${res.data.count} repositorios.`);
+      showToast(`¡Tarea archivada! Permisos modificados en ${res.data.count} repositorios.`, "success");
       const cid = selectedCourse.id || selectedCourse.course?.id;
       const r = await api("getTeacherAssignments");
       setAssignments((r.data || []).filter((a: any) => a.course_id === cid));
     } catch (err: any) {
-      alert("Error al archivar la tarea: " + err.message);
+      showToast("Error al archivar la tarea: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1744,7 +1709,7 @@ export default function DashboardPage() {
       setEditingGrades(prev => ({ ...prev, ...grades }));
       setEditingFeedbacks(prev => ({ ...prev, ...feedbacks }));
     } catch (err: any) {
-      alert("Error al cargar entregas: " + err.message);
+      showToast("Error al cargar entregas: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1763,7 +1728,7 @@ export default function DashboardPage() {
       const res = await api("getStudentGithubActivity", { submissionId });
       setGithubActivityData(res || { commits: [], pullRequests: [], comments: [] });
     } catch (err: any) {
-      alert("Error al cargar actividad de GitHub: " + err.message);
+      showToast("Error al cargar actividad de GitHub: " + err.message, "error");
       setGithubActivitySubmissionId(null);
       setGithubActivityData(null);
     } finally {
@@ -1777,11 +1742,11 @@ export default function DashboardPage() {
     setApiLoading(true);
     try {
       await api("gradeSubmission", { submissionId, grade, feedback });
-      alert("Calificación guardada con éxito.");
+      showToast("Calificación guardada con éxito.", "success");
       const res = await api("getAssignmentSubmissions", { assignmentId });
       setGraderSubmissions(prev => ({ ...prev, [assignmentId]: res || [] }));
     } catch (err: any) {
-      alert("Error al guardar calificación: " + err.message);
+      showToast("Error al guardar calificación: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1807,7 +1772,7 @@ export default function DashboardPage() {
       const logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setExpandedAuditLogs(prev => ({ ...prev, [submissionId]: logs }));
     } catch (err: any) {
-      alert("Error al cargar auditoría: " + err.message);
+      showToast("Error al cargar auditoría: " + err.message, "error");
     }
   };
 
@@ -1842,7 +1807,7 @@ export default function DashboardPage() {
     try {
       const res = await api("getCourseRoster", { courseId: cid });
       if (!res || res.length === 0) {
-        alert("No hay alumnos inscriptos en esta materia todavía.");
+        showToast("No hay alumnos inscriptos en esta materia todavía.", "success");
         return;
       }
       let csv = "Matricula,Email,Usuario_Github,Nota,Feedback\n";
@@ -1857,7 +1822,7 @@ export default function DashboardPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert("Error al generar plantilla: " + err.message);
+      showToast("Error al generar plantilla: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -1867,7 +1832,7 @@ export default function DashboardPage() {
     const cid = selectedCourse.id || selectedCourse.course?.id;
     if (!cid) return;
     if (roster.length === 0) {
-      alert("No hay alumnos inscriptos en esta materia todavía.");
+      showToast("No hay alumnos inscriptos en esta materia todavía.", "success");
       return;
     }
     
@@ -1939,7 +1904,7 @@ export default function DashboardPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert("Error al exportar planilla: " + err.message);
+      showToast("Error al exportar planilla: " + err.message, "error");
     }
   };
 
@@ -1965,7 +1930,7 @@ export default function DashboardPage() {
         return s;
       }));
     } catch (err: any) {
-      alert("Error al asignar comisión: " + err.message);
+      showToast("Error al asignar comisión: " + err.message, "error");
     }
   };
 
@@ -2053,10 +2018,10 @@ export default function DashboardPage() {
         comment: feedbackComment,
         created_at: serverTimestamp()
       });
-      alert("¡Feedback enviado de forma anónima! Muchas gracias.");
+      showToast("¡Feedback enviado de forma anónima! Muchas gracias.", "success");
       setActiveFeedbackClass(null);
     } catch (err: any) {
-      alert("Error al enviar feedback: " + err.message);
+      showToast("Error al enviar feedback: " + err.message, "error");
     } finally {
       setLoadingFeedback(false);
     }
@@ -2104,7 +2069,7 @@ export default function DashboardPage() {
         comments
       });
     } catch (err: any) {
-      alert("Error al cargar feedback: " + err.message);
+      showToast("Error al cargar feedback: " + err.message, "error");
     } finally {
       setLoadingFeedback(false);
     }
@@ -2142,9 +2107,9 @@ export default function DashboardPage() {
       setNewAnnouncementMessage("");
       const res = await api("getTeacherAnnouncements");
       setAnnouncements((res || []).filter((a: any) => a.course_id === cid));
-      alert("Aviso enviado a la cátedra.");
+      showToast("Aviso enviado a la cátedra.", "success");
     } catch (err: any) {
-      alert("Error al enviar aviso: " + err.message);
+      showToast("Error al enviar aviso: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -2163,7 +2128,7 @@ export default function DashboardPage() {
       });
       const profileRes = await api("getProfile");
       setProfile(profileRes);
-      alert("Perfil actualizado correctamente.");
+      showToast("Perfil actualizado correctamente.", "success");
     } catch (err: any) {
       setError("Error al actualizar perfil: " + err.message);
     } finally {
@@ -2177,9 +2142,9 @@ export default function DashboardPage() {
       await api("addSecondaryEmail", { email });
       const profileRes = await api("getProfile");
       setProfile(profileRes);
-      alert("Correo secundario vinculado exitosamente.");
+      showToast("Correo secundario vinculado exitosamente.", "success");
     } catch (err: any) {
-      alert("Error al vincular correo secundario: " + err.message);
+      showToast("Error al vincular correo secundario: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -2219,7 +2184,7 @@ export default function DashboardPage() {
         setCourseSubTab("schedules");
       }
     } catch (err: any) {
-      alert("Error al cargar detalles de la cátedra: " + err.message);
+      showToast("Error al cargar detalles de la cátedra: " + err.message, "error");
     } finally {
       setApiLoading(false);
     }
@@ -4348,7 +4313,7 @@ export default function DashboardPage() {
                             onClick={async () => {
                               const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`;
                               const ok = await copyToClipboard(url);
-                              alert(ok ? "¡URL del Endpoint CSV de Alumnos copiada al portapapeles con éxito!" : "No se pudo copiar la URL.");
+                              showToast(ok ? "¡URL del Endpoint CSV de Alumnos copiada al portapapeles con éxito!" : "No se pudo copiar la URL.", "success");
                             }}
                             className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
                           >
@@ -4785,7 +4750,7 @@ export default function DashboardPage() {
                             const cid = selectedCourse.id || selectedCourse.course?.id || "";
                             const url = typeof window !== "undefined" ? `${window.location.origin}/api/calendar?id=${cid}` : `https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/calendar?id=${cid}`;
                             const ok = await copyToClipboard(url);
-                            alert(ok ? "¡Enlace de calendario copiado con éxito al portapapeles!" : "No se pudo copiar automáticamente.");
+                            showToast(ok ? "¡Enlace de calendario copiado con éxito al portapapeles!" : "No se pudo copiar automáticamente.", "success");
                           }}
                           className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer"
                         >
@@ -4923,7 +4888,7 @@ export default function DashboardPage() {
                           const name = newCommissionInput.trim();
                           if (!name) return;
                           if (teacherCommissions.includes(name)) {
-                            alert("Esa comisión ya existe.");
+                            showToast("Esa comisión ya existe.", "success");
                             return;
                           }
                           setTeacherCommissions(prev => [...prev, name]);
@@ -5019,7 +4984,7 @@ export default function DashboardPage() {
                           onClick={async () => {
                             const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${selectedCourse.id || selectedCourse.course?.id}&token=${selectedCourse.sync_secret || "TOKEN"}`;
                             const ok = await copyToClipboard(url);
-                            alert(ok ? "¡URL del Endpoint CSV de Notas copiada al portapapeles con éxito!" : "No se pudo copiar la URL.");
+                            showToast(ok ? "¡URL del Endpoint CSV de Notas copiada al portapapeles con éxito!" : "No se pudo copiar la URL.", "success");
                           }}
                           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
                         >
@@ -5211,9 +5176,9 @@ export default function DashboardPage() {
                 lat,
                 lng
               });
-              alert("¡Asistencia registrada con éxito! Ya estás presente.");
+              showToast("¡Asistencia registrada con éxito! Ya estás presente.", "success");
             } catch (err: any) {
-              alert("Error al registrar asistencia: " + err.message);
+              showToast("Error al registrar asistencia: " + err.message, "error");
             } finally {
               setApiLoading(false);
             }
@@ -5799,7 +5764,7 @@ export default function DashboardPage() {
                       groupPromptModal.resolve(val);
                       setGroupPromptModal(null);
                     } else {
-                      alert("Por favor ingresa un nombre válido.");
+                      showToast("Por favor ingresa un nombre válido.", "success");
                     }
                   }}
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans"
@@ -5886,7 +5851,7 @@ export default function DashboardPage() {
                       githubPromptModal.resolve(val);
                       setGithubPromptModal(null);
                     } else {
-                      alert("Por favor ingresa un usuario válido.");
+                      showToast("Por favor ingresa un usuario válido.", "success");
                     }
                   }}
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans"

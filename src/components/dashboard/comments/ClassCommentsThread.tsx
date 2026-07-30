@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import React, { useState } from "react";
 import {
   collection,
@@ -70,7 +71,7 @@ export default function ClassCommentsThread({
       });
       setNewCommentText("");
     } catch (err: any) {
-      alert("Error al enviar comentario: " + err.message);
+      showToast("Error al enviar comentario: " + err.message, "error");
     } finally {
       setSubmitting(false);
     }
@@ -118,7 +119,7 @@ export default function ClassCommentsThread({
 
       await batch.commit();
     } catch (err: any) {
-      alert("Error al marcar mejor respuesta: " + err.message);
+      showToast("Error al marcar mejor respuesta: " + err.message, "error");
     }
   };
 

@@ -1,3 +1,4 @@
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 "use client";
 
 import React, { useState } from "react";
@@ -46,7 +47,7 @@ export default function StudyGroupsPanel({
       setMatchedBuddies(matches || []);
     } catch (e: any) {
       console.error(e);
-      alert(e.message || "Error al buscar compañeros");
+      showToast(e.message || "Error al buscar compañeros", "error");
     } finally {
       setSearchingBuddies(false);
     }
@@ -68,7 +69,7 @@ export default function StudyGroupsPanel({
       const groupsList = await api("getStudyGroups", { courseId });
       setStudyGroups(groupsList || []);
     } catch (e: any) {
-      alert("Error creando grupo: " + (e.message || e));
+      showToast("Error creando grupo: " + (e.message || e), "error");
     }
   };
 
@@ -79,7 +80,7 @@ export default function StudyGroupsPanel({
       const groupsList = await api("getStudyGroups", { courseId });
       setStudyGroups(groupsList || []);
     } catch (e: any) {
-      alert("Error: " + (e.message || e));
+      showToast("Error: " + (e.message || e), "error");
     }
   };
 
@@ -90,7 +91,7 @@ export default function StudyGroupsPanel({
       const groupsList = await api("getStudyGroups", { courseId });
       setStudyGroups(groupsList || []);
     } catch (e: any) {
-      alert("Error: " + (e.message || e));
+      showToast("Error: " + (e.message || e), "error");
     }
   };
 
