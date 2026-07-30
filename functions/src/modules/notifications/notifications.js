@@ -154,3 +154,48 @@ module.exports = {
     getStudentNotifications,
     markNotificationsRead
 };
+
+exports.sendDailySummaries = async (event) => {
+    const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+    const logger = require("firebase-functions/logger");
+    const db = getFirestore();
+
+    try {
+        const snap = await db.collection('notifications').where('is_daily_pending', '==', true).get();
+        if (snap.empty) return null;
+        
+        const byStudent = {};
+        for (let doc of snap.docs) {
+            const data = doc.data();
+            const studentId = data.student_id;
+            if (!byStudent[studentId]) byStudent[studentId] = [];
+            byStudent[studentId].push({ id: doc.id, ...data });
+        }
+        
+        const promises = [];
+        for (const [studentId, notifs] of Object.entries(byStudent)) {
+            const batch = db.batch();
+            
+            for (const n of notifs) {
+                batch.delete(db.collection('notifications').doc(n.id));
+            }
+            
+            const summaryRef = db.collection('notifications').doc();
+            batch.set(summaryRef, {
+                student_id: studentId,
+                message: `Resumen Diario: Tenés ${notifs.length} nuevas actualizaciones (calificaciones, cambios de clase, etc.)`,
+                link: '/estudiante/notificaciones',
+                read: false,
+                created_at: FieldValue.serverTimestamp()
+            });
+            
+            promises.push(batch.commit());
+        }
+        
+        await Promise.all(promises);
+        logger.info(`Sent daily summaries to ${Object.keys(byStudent).length} students.`);
+    } catch (e) {
+        logger.error('Error sending daily summaries:', e);
+    }
+    return null;
+};
