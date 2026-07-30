@@ -14,7 +14,9 @@ export function CourseOverviewPanel({
   roster,
   courseAttendance,
   courseSubmissions,
-  pastDueAssignments
+  pastDueAssignments,
+  setCourseSubTab,
+  courseComments
 }: any) {
   return (
     <>
@@ -169,7 +171,7 @@ export function CourseOverviewPanel({
                       {courseComments
                         .filter((c: any) => c.user_role !== "teacher" && !c.is_best_answer)
                         .slice(0, 5)
-                        .map((comment) => (
+                        .map((comment: any) => (
                           <div
                             key={comment.id}
                             className="bg-neutral-950/60 border border-neutral-850 p-4 rounded-xl flex flex-col space-y-2 hover:border-neutral-700 transition"
