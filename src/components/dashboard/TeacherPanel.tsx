@@ -2,6 +2,15 @@
 
 import React from "react";
 
+// Pre-instantiate DateTimeFormat for better performance in map loops
+const dateFormatter = new Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 interface TeacherPanelProps {
   activeTab: string;
   courses: any[];
@@ -29,20 +38,8 @@ export default function TeacherPanel({
 
           const updatedAtRaw = c.updated_at || c.created_at;
           const updatedAtStr = updatedAtRaw
-            ? new Date(updatedAtRaw).toLocaleString("es-AR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }) + " hs"
-            : new Date().toLocaleString("es-AR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }) + " hs";
+            ? dateFormatter.format(new Date(updatedAtRaw)) + " hs"
+            : dateFormatter.format(new Date()) + " hs";
 
           return (
             <div
