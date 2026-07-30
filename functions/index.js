@@ -110,15 +110,15 @@ const actionModules = {
     submitMatricula: 'profile',
     
     // admin
-    approveUser: 'admin',
-    updateUserRole: 'admin',
-    updateUserProfile: 'admin',
-    getAdminUsers: 'admin',
-    getAdminCourses: 'admin',
-    getGlobalSettings: 'admin',
-    saveGlobalSettings: 'admin',
-    getAdminCourseDetails: 'admin',
-    deleteUser: 'admin',
+    approveUser: '../src/modules/course/admin',
+    updateUserRole: '../src/modules/course/admin',
+    updateUserProfile: '../src/modules/course/admin',
+    getAdminUsers: '../src/modules/course/admin',
+    getAdminCourses: '../src/modules/course/admin',
+    getGlobalSettings: '../src/modules/course/admin',
+    saveGlobalSettings: '../src/modules/course/admin',
+    getAdminCourseDetails: '../src/modules/course/admin',
+    deleteUser: '../src/modules/course/admin',
     
     // attendance
     markAttendance: 'attendance',
@@ -133,23 +133,22 @@ const actionModules = {
     getMoodleLtiDeepLinkContent: 'moodle',
     
     // courses
-    getCourseDetails: 'courses',
-    enrollCourse: 'courses',
-    createCourse: 'courses',
-    updateCourseName: 'courses',
-    getCourseTeachers: 'courses',
-    assignTeacher: 'courses',
-    removeTeacher: 'courses',
-    getTeacherCourses: 'courses',
-    getCourseSettings: 'courses',
-    updateCourseSettings: 'courses',
-    cloneCourseExtraData: 'courses',
-    getStudentCourses: 'courses',
-    getCourseRoster: 'courses',
-    
-    deleteCourse: 'courses',
-    updateRosterStudentStatus: 'courses',
-    syncGuaraniRoster: 'courses',
+    getCourseDetails: '../src/modules/course/courses',
+    enrollCourse: '../src/modules/course/courses',
+    createCourse: '../src/modules/course/courses',
+    updateCourseName: '../src/modules/course/courses',
+    getCourseTeachers: '../src/modules/course/courses',
+    assignTeacher: '../src/modules/course/courses',
+    removeTeacher: '../src/modules/course/courses',
+    getTeacherCourses: '../src/modules/course/courses',
+    getCourseSettings: '../src/modules/course/courses',
+    updateCourseSettings: '../src/modules/course/courses',
+    cloneCourseExtraData: '../src/modules/course/courses',
+    getStudentCourses: '../src/modules/course/courses',
+    getCourseRoster: '../src/modules/course/courses',
+    deleteCourse: '../src/modules/course/courses',
+    updateRosterStudentStatus: '../src/modules/course/courses',
+    syncGuaraniRoster: '../src/modules/course/courses',
     addSecondaryEmail: 'profile',
     mergeProfiles: 'profile',
     getXpLogs: 'profile',
@@ -180,10 +179,10 @@ const actionModules = {
     getMailLogs: '../src/modules/mail/scheduledEmails',
     
     // schedule
-    saveScheduleVersion: 'schedule',
-    getScheduleVersions: 'schedule',
-    restoreScheduleVersion: 'schedule',
-    getComparisonCourses: 'schedule',
+    saveScheduleVersion: '../src/modules/course/schedule',
+    getScheduleVersions: '../src/modules/course/schedule',
+    restoreScheduleVersion: '../src/modules/course/schedule',
+    getComparisonCourses: '../src/modules/course/schedule',
     
     // studyGroups
     createStudyGroup: 'studyGroups',
@@ -220,8 +219,8 @@ const actionModules = {
     getAnnouncementAcknowledgements: 'announcements',
     
     // stats
-    getTeacherDashboardStats: 'stats',
-    getCourseDashboardStats: 'stats',
+    getTeacherDashboardStats: '../src/modules/course/stats',
+    getCourseDashboardStats: '../src/modules/course/stats',
     
     // assignments
     archiveAssignment: '../src/modules/github/assignments',
