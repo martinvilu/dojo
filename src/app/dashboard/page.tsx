@@ -8,30 +8,25 @@ import { httpsCallable } from "firebase/functions";
 import { marked } from "marked";
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc, updateDoc, getDoc, getDocs, writeBatch, arrayUnion, arrayRemove } from "firebase/firestore";
 import AdminPanel from "@/modules/course/components/AdminPanel";
-import StudentPanel from "@/components/dashboard/StudentPanel";
-import ProfilePanel from "@/components/dashboard/ProfilePanel";
+import StudentPanel from "@/modules/course/components/StudentPanel";
+import ProfilePanel from "@/modules/auth/components/ProfilePanel";
 import TeacherPanel from "@/modules/course/components/TeacherPanel";
 import StudyGroupsPanel from "@/modules/study_groups/components/StudyGroupsPanel";
 import GithubActivityPanel from "@/modules/github/components/GithubActivityPanel";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/modules/tutoring/components/TutoringPanel";
-import AttendanceManager from "@/components/dashboard/attendance/AttendanceManager";
-import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
-import QrScannerModal from "@/components/dashboard/attendance/QrScannerModal";
+import AttendanceManager from "@/modules/attendance/components/AttendanceManager";
+import ClassCommentsThread from "@/modules/course/components/comments/ClassCommentsThread";
+import QrScannerModal from "@/modules/attendance/components/QrScannerModal";
 import CalendarPanel from "@/modules/calendar/components/CalendarPanel";
 import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
 import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard";
 import EmailManagementPanel from "@/modules/mail/components/EmailManagementPanel";
 import DirectEmailModal from "@/modules/mail/components/DirectEmailModal";
-import MoodleIntegrationPanel from "@/components/dashboard/moodle/MoodleIntegrationPanel";
+import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegrationPanel";
 import { copyToClipboard } from "@/lib/clipboard";
 
-// Callable API helper
-const apiCall = httpsCallable(functions, "api");
-const api = async (action: string, payload: any = {}) => {
-  const res = await apiCall({ action, payload });
-  return res.data as any;
-};
+import { api } from "@/lib/api";
 
 interface UserProfile {
   id: string;
