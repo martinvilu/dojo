@@ -5,13 +5,12 @@ El objetivo es migrar la lógica y los componentes desde archivos monolíticos (
 
 ## Estructura de Módulos (Frontend: `src/modules/`, Backend: `functions/src/modules/`)
 
-### 1. Módulo Autenticación (`auth`)
+### 1. Módulo Autenticación (`auth`) - ✅ COMPLETADO
 **Responsabilidad:** Autenticación de usuarios por email, OAuth con Google y GitHub, y gestión de sesión.
 * **Frontend:**
-  * Componentes de Login/Registro.
-  * Contextos o Hooks para la sesión del usuario.
+  * Componentes de Login/Registro extraídos a `AuthScreen.tsx`.
 * **Backend:**
-  * Triggers de creación/eliminación de usuarios (`auth.onCreate`, `auth.onDelete` si aplican).
+  * Triggers y lógica de perfil movidos a `profile.js`.
 
 ### 2. Módulo Correo (`mail`)
 **Responsabilidad:** Envío de correos electrónicos, programación de envío, autenticación OAuth para Gmail, plantillas de correo.
@@ -50,12 +49,12 @@ El objetivo es migrar la lógica y los componentes desde archivos monolíticos (
 * **Backend:**
   * Archivo a migrar: `tutoring.js`.
 
-### 7. Módulo Grupos de Estudio (`study_groups`)
+### 7. Módulo Grupos de Estudio (`study_groups`) ✅
 **Responsabilidad:** Creación, unión y gestión de grupos de estudio entre pares.
 * **Frontend:**
-  * Componentes específicos para grupos de estudio (actualmente en StudentPanel u otros).
+  * Componentes específicos para grupos de estudio (`StudyGroupsPanel.tsx`).
 * **Backend:**
-  * Archivo a migrar: `studyGroups.js`.
+  * Archivo migrado: `functions/src/modules/study_groups/studyGroups.js`.
 
 ---
 

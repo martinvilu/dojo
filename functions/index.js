@@ -105,9 +105,9 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
 
 const actionModules = {
     // profile
-    getProfile: 'profile',
-    updateProfile: 'profile',
-    submitMatricula: 'profile',
+    getProfile: '../src/modules/auth/profile',
+    updateProfile: '../src/modules/auth/profile',
+    submitMatricula: '../src/modules/auth/profile',
     
     // admin
     approveUser: '../src/modules/course/admin',
@@ -149,9 +149,9 @@ const actionModules = {
     deleteCourse: '../src/modules/course/courses',
     updateRosterStudentStatus: '../src/modules/course/courses',
     syncGuaraniRoster: '../src/modules/course/courses',
-    addSecondaryEmail: 'profile',
-    mergeProfiles: 'profile',
-    getXpLogs: 'profile',
+    addSecondaryEmail: '../src/modules/auth/profile',
+    mergeProfiles: '../src/modules/auth/profile',
+    getXpLogs: '../src/modules/auth/profile',
     deleteBackup: 'backups',
 
     logActivity: 'activity',
