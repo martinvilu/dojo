@@ -13,7 +13,7 @@ import ProfilePanel from "@/components/dashboard/ProfilePanel";
 import TeacherPanel from "@/modules/course/components/TeacherPanel";
 import GithubActivityPanel from "@/modules/github/components/GithubActivityPanel";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
-import TutoringPanel from "@/components/dashboard/tutoring/TutoringPanel";
+import TutoringPanel from "@/modules/tutoring/components/TutoringPanel";
 import AttendanceManager from "@/components/dashboard/attendance/AttendanceManager";
 import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
 import QrScannerModal from "@/components/dashboard/attendance/QrScannerModal";

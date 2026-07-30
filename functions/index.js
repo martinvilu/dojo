@@ -192,11 +192,11 @@ const actionModules = {
     findStudyBuddies: 'studyGroups',
     
     // tutoring
-    registerAsTutor: 'tutoring',
-    getCourseTutors: 'tutoring',
-    bookTutoringSession: 'tutoring',
-    getTutoringSessions: 'tutoring',
-    updateTutoringSessionStatus: 'tutoring',
+    registerAsTutor: '../src/modules/tutoring/tutoring',
+    getCourseTutors: '../src/modules/tutoring/tutoring',
+    bookTutoringSession: '../src/modules/tutoring/tutoring',
+    getTutoringSessions: '../src/modules/tutoring/tutoring',
+    updateTutoringSessionStatus: '../src/modules/tutoring/tutoring',
     
     // notifications
     notifyCourseStudents: 'notifications',
