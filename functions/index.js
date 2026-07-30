@@ -153,9 +153,7 @@ const actionModules = {
     mergeProfiles: 'profile',
     getXpLogs: 'profile',
     deleteBackup: 'backups',
-    updateStudyGroupChatLinks: 'studyGroups',
-    postStudyGroupMessage: 'studyGroups',
-    getStudyGroupMessages: 'studyGroups',
+
     logActivity: 'activity',
     getActivityLogs: 'activity',
     
@@ -185,11 +183,14 @@ const actionModules = {
     getComparisonCourses: '../src/modules/course/schedule',
     
     // studyGroups
-    createStudyGroup: 'studyGroups',
-    joinStudyGroup: 'studyGroups',
-    leaveStudyGroup: 'studyGroups',
-    getStudyGroups: 'studyGroups',
-    findStudyBuddies: 'studyGroups',
+    createStudyGroup: '../src/modules/study_groups/studyGroups',
+    joinStudyGroup: '../src/modules/study_groups/studyGroups',
+    leaveStudyGroup: '../src/modules/study_groups/studyGroups',
+    getStudyGroups: '../src/modules/study_groups/studyGroups',
+    findStudyBuddies: '../src/modules/study_groups/studyGroups',
+    updateStudyGroupChatLinks: '../src/modules/study_groups/studyGroups',
+    postStudyGroupMessage: '../src/modules/study_groups/studyGroups',
+    getStudyGroupMessages: '../src/modules/study_groups/studyGroups',
     
     // tutoring
     registerAsTutor: '../src/modules/tutoring/tutoring',

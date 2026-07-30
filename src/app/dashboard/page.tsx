@@ -11,6 +11,7 @@ import AdminPanel from "@/modules/course/components/AdminPanel";
 import StudentPanel from "@/components/dashboard/StudentPanel";
 import ProfilePanel from "@/components/dashboard/ProfilePanel";
 import TeacherPanel from "@/modules/course/components/TeacherPanel";
+import StudyGroupsPanel from "@/modules/study_groups/components/StudyGroupsPanel";
 import GithubActivityPanel from "@/modules/github/components/GithubActivityPanel";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/modules/tutoring/components/TutoringPanel";
@@ -315,16 +316,6 @@ export default function DashboardPage() {
 
   // Study Groups states
   const [studyGroups, setStudyGroups] = useState<any[]>([]);
-  const [loadingStudyGroups, setLoadingStudyGroups] = useState(false);
-  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
-  const [newGroupDescription, setNewGroupDescription] = useState("");
-  const [newGroupSchedulePrefs, setNewGroupSchedulePrefs] = useState("Mañana");
-  const [matchedBuddies, setMatchedBuddies] = useState<any[]>([]);
-  const [buddySearchSchedulePrefs, setBuddySearchSchedulePrefs] = useState("Mañana");
-  const [searchingBuddies, setSearchingBuddies] = useState(false);
-
-  // Tutoring Sessions states
   const [tutors, setTutors] = useState<any[]>([]);
   const courseCommissions = (selectedCourse?.commissions || selectedCourse?.course?.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]) as string[];
   const [loadingTutors, setLoadingTutors] = useState(false);
@@ -1503,79 +1494,6 @@ export default function DashboardPage() {
       alert("Error al cargar cursos para comparación: " + err.message);
     } finally {
       setApiLoading(false);
-    }
-  };
-
-  // Study Groups actions
-  const handleCreateStudyGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newGroupName.trim()) return alert("El nombre del grupo es obligatorio.");
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid) return;
-    setApiLoading(true);
-    try {
-      await api("createStudyGroup", {
-        courseId: cid,
-        name: newGroupName,
-        description: newGroupDescription,
-        schedulePrefs: newGroupSchedulePrefs
-      });
-      alert("Grupo creado correctamente.");
-      setNewGroupName("");
-      setNewGroupDescription("");
-      setIsCreateGroupModalOpen(false);
-      // Reload
-      const groupsList = await api("getStudyGroups", { courseId: cid });
-      setStudyGroups(groupsList || []);
-    } catch (err: any) {
-      alert("Error al crear grupo: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleJoinStudyGroup = async (groupId: string) => {
-    setApiLoading(true);
-    try {
-      await api("joinStudyGroup", { groupId });
-      alert("Te uniste al grupo con éxito.");
-      const cid = selectedCourse?.id || selectedCourse?.course?.id;
-      const groupsList = await api("getStudyGroups", { courseId: cid });
-      setStudyGroups(groupsList || []);
-    } catch (err: any) {
-      alert("Error al unirse al grupo: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleLeaveStudyGroup = async (groupId: string) => {
-    if (!confirm("¿Seguro que querés salir de este grupo?")) return;
-    setApiLoading(true);
-    try {
-      await api("leaveStudyGroup", { groupId });
-      alert("Saliste del grupo.");
-      const cid = selectedCourse?.id || selectedCourse?.course?.id;
-      const groupsList = await api("getStudyGroups", { courseId: cid });
-      setStudyGroups(groupsList || []);
-    } catch (err: any) {
-      alert("Error al salir del grupo: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleFindStudyBuddies = async () => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid) return;
-    setSearchingBuddies(true);
-    try {
-      const res = await api("findStudyBuddies", { courseId: cid, schedulePrefs: buddySearchSchedulePrefs });
-      setMatchedBuddies(res || []);
-    } catch (err: any) {
-      alert("Error al buscar compañeros: " + err.message);
-    } finally {
-      setSearchingBuddies(false);
     }
   };
 
@@ -5232,127 +5150,13 @@ export default function DashboardPage() {
 
             {/* SUBTAB: GRUPOS DE ESTUDIO */}
             {courseSubTab === "study_groups" && (
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Grupos de Estudio Auto-organizados</h3>
-                    <p className="text-xs text-gray-400">Formá grupos de estudio con tus compañeros de cursada.</p>
-                  </div>
-                  <button
-                    onClick={() => setIsCreateGroupModalOpen(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-                  >
-                    ✨ Crear Nuevo Grupo
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Matching Engine Panel */}
-                  <div className="lg:col-span-1 bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
-                    <h4 className="font-bold text-white text-sm">🔍 Emparejamiento Inteligente</h4>
-                    <p className="text-xs text-gray-400">
-                      Buscá compañeros de cursada que estudien en tus mismos horarios para armar grupos de trabajo.
-                    </p>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Mi Preferencia Horaria</label>
-                        <select
-                          value={buddySearchSchedulePrefs}
-                          onChange={(e) => setBuddySearchSchedulePrefs(e.target.value)}
-                          className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="Mañana">Mañana (08:00 - 12:00)</option>
-                          <option value="Tarde">Tarde (12:00 - 18:00)</option>
-                          <option value="Noche">Noche (18:00 - 22:00)</option>
-                        </select>
-                      </div>
-                      <button
-                        onClick={handleFindStudyBuddies}
-                        className="w-full px-4 py-2 bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 text-white text-xs font-semibold rounded-xl transition cursor-pointer"
-                      >
-                        {searchingBuddies ? "Buscando..." : "Buscar Compañeros Afines"}
-                      </button>
-                    </div>
-
-                    {matchedBuddies.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t border-neutral-850">
-                        <h5 className="text-xs font-bold text-amber-500">Alumnos encontrados ({matchedBuddies.length}):</h5>
-                        <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
-                          {matchedBuddies.map((buddy) => (
-                            <div key={buddy.id} className="bg-neutral-950/80 p-3 rounded-xl border border-neutral-850 text-xs">
-                              <p className="font-semibold text-white">{buddy.full_name || buddy.email}</p>
-                              <p className="text-[10px] text-gray-400">{buddy.email}</p>
-                              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-900/40 text-blue-400 rounded text-[9px] font-bold">
-                                {buddy.schedule_pref}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {matchedBuddies.length === 0 && !searchingBuddies && (
-                      <p className="text-xs text-gray-500 text-center pt-2">No se buscaron compañeros aún o no hay coincidencias.</p>
-                    )}
-                  </div>
-
-                  {/* Groups list */}
-                  <div className="lg:col-span-2 space-y-4">
-                    <h4 className="font-bold text-white text-sm">Grupos Activos ({studyGroups.length})</h4>
-                    {studyGroups.map((g) => {
-                      const isMember = g.members?.includes(currentUser?.uid);
-                      return (
-                        <div key={g.id} className="bg-neutral-900/40 p-6 rounded-2xl border border-neutral-800 space-y-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h5 className="text-base font-bold text-white">{g.name}</h5>
-                              <p className="text-xs text-gray-400 mt-1">{g.description || "Sin descripción."}</p>
-                            </div>
-                            <span className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] font-bold">
-                              ⌚ Horario: {g.schedule_prefs}
-                            </span>
-                          </div>
-
-                          <div className="space-y-2">
-                            <h6 className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Integrantes ({g.members?.length || 0}):</h6>
-                            <div className="flex flex-wrap gap-2">
-                              {g.member_profiles?.map((member: any) => (
-                                <div key={member.id} className="flex items-center gap-1.5 bg-neutral-950 px-2.5 py-1 rounded-full border border-neutral-850">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                  <span className="text-[11px] text-gray-300">{member.full_name || member.email}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-end pt-2 border-t border-neutral-850">
-                            {isMember ? (
-                              <button
-                                onClick={() => handleLeaveStudyGroup(g.id)}
-                                className="px-4 py-1.5 bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/25 rounded-xl text-xs font-semibold transition cursor-pointer"
-                              >
-                                Abandonar Grupo
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleJoinStudyGroup(g.id)}
-                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer"
-                              >
-                                Unirme al Grupo
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {studyGroups.length === 0 && (
-                      <div className="bg-neutral-900/10 border border-dashed border-neutral-800 p-8 rounded-2xl text-center text-gray-500">
-                        No hay grupos activos en esta cátedra. ¡Creá el primero!
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <StudyGroupsPanel
+                courseId={selectedCourse.id || selectedCourse.course?.id}
+                studyGroups={studyGroups}
+                setStudyGroups={setStudyGroups}
+                currentUser={currentUser}
+                api={api}
+              />
             )}
 
             {/* SUBTAB: TUTORÍAS */}
@@ -5951,61 +5755,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 👥 Crear Grupo de Estudio Modal */}
-      {isCreateGroupModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <form onSubmit={handleCreateStudyGroup} className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-white">Crear Grupo de Estudio</h3>
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Nombre del Grupo</label>
-              <input
-                type="text"
-                placeholder="Ej: Grupo de estudio Algoritmos"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Descripción</label>
-              <textarea
-                placeholder="Ej: Para juntarnos a resolver las prácticas..."
-                value={newGroupDescription}
-                onChange={(e) => setNewGroupDescription(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 min-h-20"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Preferencia Horaria</label>
-              <select
-                value={newGroupSchedulePrefs}
-                onChange={(e) => setNewGroupSchedulePrefs(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
-              >
-                <option value="Mañana">Mañana</option>
-                <option value="Tarde">Tarde</option>
-                <option value="Noche">Noche</option>
-              </select>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsCreateGroupModalOpen(false)}
-                className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-              >
-                Crear Grupo
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Modals are handled inside components now */}
 
