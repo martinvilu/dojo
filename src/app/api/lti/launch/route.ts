@@ -121,12 +121,12 @@ export async function POST(request: Request) {
     let finalUrl = redirectUrl.toString();
     const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
     finalUrl = finalUrl
-      .replace(/https?:\/\/0\.0\.0\.0:\d+/g, CANONICAL)
-      .replace(/https?:\/\/127\.0\.0\.1:\d+/g, CANONICAL)
-      .replace(/https?:\/\/localhost:\d+/g, CANONICAL);
+      .replace(/https?:\/\/0\.0\.0\.0(:\d+)?/g, CANONICAL)
+      .replace(/https?:\/\/127\.0\.0\.1(:\d+)?/g, CANONICAL)
+      .replace(/https?:\/\/localhost(:\d+)?/g, CANONICAL);
 
     logger.info("[LTI Launch] Redirecting", { baseUrl, finalUrl, targetModule, courseId });
-    return NextResponse.redirect(finalUrl, 303);
+    return NextResponse.redirect(new URL(finalUrl), 303);
   } catch (error: any) {
     logger.error("Error procesando LTI Launch", error);
     return NextResponse.json({ error: "Error procesando LTI Launch: " + error.message }, { status: 500 });
