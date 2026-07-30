@@ -21,12 +21,15 @@ import ProfilePanel from "@/modules/auth/components/ProfilePanel";
 import TeacherPanel from "@/modules/course/components/TeacherPanel";
 import StudyGroupsPanel from "@/modules/study_groups/components/StudyGroupsPanel";
 import AssignmentsPanel from "@/modules/github/components/AssignmentsPanel";
+import { GithubPromptModal } from "@/modules/github/components/GithubPromptModal";
 import GithubActivityPanel from "@/modules/github/components/GithubActivityPanel";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/modules/tutoring/components/TutoringPanel";
 import AttendanceManager from "@/modules/attendance/components/AttendanceManager";
 import ClassCommentsThread from "@/modules/course/components/comments/ClassCommentsThread";
+import { FeedbackModals } from "@/modules/course/components/FeedbackModals";
 import QrScannerModal from "@/modules/attendance/components/QrScannerModal";
+import { StudentAttendanceModals } from "@/modules/attendance/components/StudentAttendanceModals";
 import CalendarPanel from "@/modules/calendar/components/CalendarPanel";
 import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
 import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard";
@@ -2280,322 +2283,40 @@ export default function DashboardPage() {
 
       {/* Teacher QR Modal is handled inside AttendanceManager */}
 
-      {/* Student live QR Scanner Modal */}
-      {isQrScannerOpen && (
-        <QrScannerModal
-          onClose={() => setIsQrScannerOpen(false)}
-          onScanSuccess={async (scannedData) => {
-            setIsQrScannerOpen(false);
-            setApiLoading(true);
-            setStudentAttendanceGeoLoading(true);
-            
-            let lat: number | null = null;
-            let lng: number | null = null;
-            
-            if (navigator.geolocation) {
-              try {
-                const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-                  navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-                });
-                lat = pos.coords.latitude;
-                lng = pos.coords.longitude;
-              } catch (err) {
-                console.warn("Geolocation unavailable or denied:", err);
-              }
-            }
-            
-            setStudentAttendanceGeoLoading(false);
-            
-            try {
-              await api("submitQrAttendance", {
-                courseId: scannedData.courseId,
-                classNumber: scannedData.classNumber,
-                token: scannedData.token,
-                lat,
-                lng
-              });
-              showToast("¡Asistencia registrada con éxito! Ya estás presente.", "success");
-            } catch (err: any) {
-              showToast("Error al registrar asistencia: " + err.message, "error");
-            } finally {
-              setApiLoading(false);
-            }
-          }}
-        />
-      )}
+      <StudentAttendanceModals
+        profile={profile}
+        isQrScannerOpen={isQrScannerOpen}
+        setIsQrScannerOpen={setIsQrScannerOpen}
+        setApiLoading={setApiLoading}
+        setStudentAttendanceGeoLoading={setStudentAttendanceGeoLoading}
+        api={api}
+        showToast={showToast}
+        studentActiveAttendanceClass={studentActiveAttendanceClass}
+        setStudentActiveAttendanceClass={setStudentActiveAttendanceClass}
+        studentQrToken={studentQrToken}
+        setStudentQrToken={setStudentQrToken}
+        selectedCourse={selectedCourse}
+        studentAttendanceGeoLoading={studentAttendanceGeoLoading}
+        handleSubmitStudentAttendanceQr={handleSubmitStudentAttendanceQr}
+      />
 
-      {/* Floating Action Button (FAB) for student QR scanner */}
-      {profile?.role === "student" && !isQrScannerOpen && (
-        <button
-          type="button"
-          onClick={() => setIsQrScannerOpen(true)}
-          className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 z-40 border border-emerald-500/30 group cursor-pointer"
-          title="Escanear QR de Asistencia"
-          aria-label="Escanear QR de Asistencia"
-        >
-          <span className="text-xl">📷</span>
-          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-bold font-sans ml-0 group-hover:ml-2 whitespace-nowrap">
-            Escanear Asistencia
-          </span>
-        </button>
-      )}
+            <FeedbackModals
+        activeFeedbackClass={activeFeedbackClass}
+        setActiveFeedbackClass={setActiveFeedbackClass}
+        loadingFeedback={loadingFeedback}
+        feedbackRating={feedbackRating}
+        setFeedbackRating={setFeedbackRating}
+        feedbackUnderstanding={feedbackUnderstanding}
+        setFeedbackUnderstanding={setFeedbackUnderstanding}
+        feedbackComment={feedbackComment}
+        setFeedbackComment={setFeedbackComment}
+        handleSubmitFeedback={handleSubmitFeedback}
+        viewingFeedbackClass={viewingFeedbackClass}
+        setViewingFeedbackClass={setViewingFeedbackClass}
+        feedbackStats={feedbackStats}
+      />
 
-      {/* Student QR / Code Attendance Modal */}
-      {studentActiveAttendanceClass !== null && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto text-center space-y-5 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-white">Firmar Presente (Clase {studentActiveAttendanceClass})</h3>
-            <p className="text-xs text-gray-400">
-              Ingresá el código de 6 caracteres que se muestra en la pantalla del profesor. Se requiere acceso a tu ubicación.
-            </p>
-            
-            <div className="space-y-4">
-              <input
-                type="text"
-                maxLength={6}
-                value={studentQrToken}
-                onChange={(e) => setStudentQrToken(e.target.value.toUpperCase())}
-                placeholder="Ej: A7B9X2"
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-center text-xl font-mono font-bold tracking-widest text-amber-400 focus:outline-none focus:border-blue-500"
-              />
-              
-              {studentAttendanceGeoLoading && (
-                <p className="text-[10px] text-blue-400 animate-pulse font-semibold">
-                  🌍 Obteniendo ubicación GPS del dispositivo...
-                </p>
-              )}
-            </div>
-            
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setStudentActiveAttendanceClass(null);
-                  setStudentQrToken("");
-                }}
-                className="flex-1 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-750 text-gray-300 border border-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={studentQrToken.length < 6 || studentAttendanceGeoLoading}
-                onClick={() => handleSubmitStudentAttendanceQr(studentActiveAttendanceClass)}
-                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-              >
-                Confirmar Presente
-              </button>
-            </div>
-            </div>
-          </div>
-        )}
-
-      {/* MODAL: SUBMIT ANONYMOUS FEEDBACK (STUDENT) */}
-      {activeFeedbackClass !== null && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-md w-full min-w-[280px] sm:min-w-[420px] shrink-0 mx-auto p-6 space-y-6 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
-            <div>
-              <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-                <span>✍️ Feedback Anónimo</span>
-                <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-md font-mono">
-                  Clase {activeFeedbackClass}
-                </span>
-              </h3>
-              <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
-                Tu opinión es completamente anónima. El sistema genera un identificador único encriptado para evitar duplicados sin almacenar tu identidad.
-              </p>
-            </div>
-
-            {loadingFeedback ? (
-              <div className="py-8 flex flex-col items-center justify-center space-y-2">
-                <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[10px] text-gray-550 font-semibold">Cargando datos...</span>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Stars Rating */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest font-sans">¿Qué te pareció la clase?</label>
-                  <div className="flex space-x-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setFeedbackRating(star)}
-                        className={`text-2xl transition-transform hover:scale-125 cursor-pointer focus:outline-none ${
-                          star <= feedbackRating ? "text-amber-400" : "text-neutral-750"
-                        }`}
-                      >
-                        ★
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Understanding */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest font-sans">Nivel de Comprensión</label>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {[
-                      { val: "Entendí todo", style: "border-emerald-800/40 text-emerald-400 bg-emerald-950/20" },
-                      { val: "Entendí la mayor parte", style: "border-blue-800/40 text-blue-400 bg-blue-955/20" },
-                      { val: "Tengo dudas", style: "border-amber-800/40 text-amber-400 bg-amber-955/20" },
-                      { val: "No entendí nada", style: "border-red-800/40 text-red-400 bg-red-950/20" }
-                    ].map((opt) => (
-                      <button
-                        key={opt.val}
-                        type="button"
-                        onClick={() => setFeedbackUnderstanding(opt.val)}
-                        className={`p-2.5 rounded-xl border text-center transition cursor-pointer font-semibold ${
-                          feedbackUnderstanding === opt.val
-                            ? opt.style + " border-opacity-100 ring-1 ring-emerald-500"
-                            : "border-neutral-800 text-gray-400 bg-neutral-950/40 hover:text-white"
-                        }`}
-                      >
-                        {opt.val}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Optional Comment */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest font-sans">Comentarios / Sugerencias (Opcional)</label>
-                  <textarea
-                    value={feedbackComment}
-                    onChange={(e) => setFeedbackComment(e.target.value)}
-                    placeholder="Escribe sugerencias constructivas sobre el ritmo, temario o explicaciones de la clase..."
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 h-20 resize-none font-sans"
-                  />
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveFeedbackClass(null)}
-                    className="flex-1 py-2.5 bg-neutral-800 hover:bg-neutral-750 text-gray-300 text-xs font-bold rounded-xl transition border border-neutral-700 cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmitFeedback}
-                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-                  >
-                    Enviar Feedback
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: VIEW ANONYMOUS FEEDBACK STATS (TEACHER) */}
-      {viewingFeedbackClass !== null && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-sans">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-lg w-full min-w-[280px] sm:min-w-[480px] shrink-0 mx-auto p-6 space-y-6 shadow-2xl relative z-10 max-h-[90vh] flex flex-col">
-            <div className="border-b border-neutral-800 pb-3 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-                <span>📊 Feedback de Alumnos</span>
-                <span className="text-xs bg-blue-955 text-blue-300 border border-blue-800 px-2 py-0.5 rounded-md font-mono">
-                  Clase {viewingFeedbackClass}
-                </span>
-              </h3>
-              <button
-                onClick={() => setViewingFeedbackClass(null)}
-                className="text-gray-500 hover:text-white transition font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            {loadingFeedback ? (
-              <div className="py-12 flex flex-col items-center justify-center space-y-2 flex-1">
-                <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[10px] text-gray-550 font-semibold animate-pulse">Analizando respuestas anónimas...</span>
-              </div>
-            ) : feedbackStats ? (
-              <div className="space-y-6 overflow-y-auto flex-1 pr-1.5 custom-scrollbar text-xs">
-                {/* Summary Score Card */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-neutral-950/60 border border-neutral-850 p-4 rounded-2xl text-center space-y-1.5">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest font-sans">Valoración Promedio</span>
-                    <div className="text-2xl font-black text-amber-400">
-                      {feedbackStats.avgRating.toFixed(1)} <span className="text-lg">★</span>
-                    </div>
-                  </div>
-                  <div className="bg-neutral-950/60 border border-neutral-850 p-4 rounded-2xl text-center space-y-1.5">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest font-sans">Encuestas Completadas</span>
-                    <div className="text-2xl font-black text-white">
-                      {feedbackStats.count} <span className="text-xs text-gray-500 font-semibold font-sans">alumnos</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Understanding Distribution */}
-                <div className="bg-neutral-950/40 border border-neutral-850 p-4 rounded-2xl space-y-3">
-                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest font-sans">Nivel de Comprensión General</h4>
-                  <div className="space-y-2">
-                    {[
-                      { label: "Entendí todo", key: "Entendí todo", barBg: "bg-emerald-500", textClass: "text-emerald-400" },
-                      { label: "Entendí la mayor parte", key: "Entendí la mayor parte", barBg: "bg-blue-500", textClass: "text-blue-400" },
-                      { label: "Tengo dudas", key: "Tengo dudas", barBg: "bg-amber-500", textClass: "text-amber-400" },
-                      { label: "No entendí nada", key: "No entendí nada", barBg: "bg-red-500", textClass: "text-red-400" }
-                    ].map((row) => {
-                      const count = feedbackStats.understandingDist[row.key] || 0;
-                      const pct = feedbackStats.count > 0 ? (count / feedbackStats.count) * 100 : 0;
-                      return (
-                        <div key={row.key} className="space-y-1">
-                          <div className="flex justify-between text-[10px] font-semibold">
-                            <span className={row.textClass}>{row.label}</span>
-                            <span className="text-gray-500">{count} ({pct.toFixed(0)}%)</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-neutral-950 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${row.barBg}`} style={{ width: `${pct}%` }}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Written Comments */}
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest font-sans">Sugerencias y Comentarios Escritos</h4>
-                  <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-                    {feedbackStats.comments.map((cmt, cIdx) => (
-                      <div key={cIdx} className="bg-neutral-950/80 border border-neutral-850 p-3 rounded-xl text-xs text-gray-300 leading-relaxed italic">
-                        "{cmt}"
-                      </div>
-                    ))}
-                    {feedbackStats.comments.length === 0 && (
-                      <p className="text-xs text-gray-500 italic text-center py-4 bg-neutral-950/20 rounded-xl border border-neutral-850 border-dashed">
-                        No se registraron comentarios escritos para esta clase.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 italic py-6">No se pudieron cargar las estadísticas.</p>
-            )}
-
-            <div className="border-t border-neutral-800 pt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setViewingFeedbackClass(null)}
-                className="px-5 py-2 bg-neutral-800 hover:bg-neutral-750 text-gray-300 text-xs font-bold rounded-xl transition border border-neutral-700 cursor-pointer"
-              >
-                Cerrar Panel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 📜 Historial de Versiones / Comparación Modal */}
+            {/* 📜 Historial de Versiones / Comparación Modal */}
 
       {/* 💾 Guardar Versión Modal */}
 
@@ -2603,53 +2324,7 @@ export default function DashboardPage() {
       {/* Modals are handled inside components now */}
 
 
-      {githubPromptModal?.isOpen && (() => {
-        let inputVal = "";
-        return (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto text-center space-y-5 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-bold text-white font-sans">Vincular cuenta de GitHub</h3>
-              <p className="text-xs text-gray-400 font-sans">
-                ¡Hola! Has ingresado a Ninja Dojo desde Moodle por primera vez.<br/>
-                Para poder crear y sincronizar tu repositorio de tareas, por favor ingresa tu usuario de GitHub:
-              </p>
-              <input
-                type="text"
-                placeholder="Nombre de usuario de GitHub"
-                className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans"
-                onChange={(e) => { inputVal = e.target.value; }}
-              />
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    githubPromptModal.resolve(null);
-                    setGithubPromptModal(null);
-                  }}
-                  className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer font-sans"
-                >
-                  Omitir por ahora
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const val = inputVal.trim();
-                    if (val) {
-                      githubPromptModal.resolve(val);
-                      setGithubPromptModal(null);
-                    } else {
-                      showToast("Por favor ingresa un usuario válido.", "success");
-                    }
-                  }}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans"
-                >
-                  Vincular Perfil
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      <GithubPromptModal githubPromptModal={githubPromptModal} setGithubPromptModal={setGithubPromptModal} showToast={showToast} />
       
       {selectedDirectEmailStudent && (
         <DirectEmailModal
