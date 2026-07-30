@@ -45,7 +45,9 @@ export function CourseSchedulesPanel({
   courseAttendance,
   roster,
   activeAttendanceClass,
-  courseComments
+  courseComments,
+  toggleComments,
+  handleLoadClassFeedback
 }: any) {
   const [scheduleViewMode, setScheduleViewMode] = useState<"list" | "kanban">("list");
   const [scheduleVersions, setScheduleVersions] = useState<any[]>([]);
@@ -294,7 +296,7 @@ export function CourseSchedulesPanel({
 
                     {scheduleViewMode === "list" ? (
                       <div className="space-y-4">
-                        {teacherClasses.map((ci, idx) => {
+                        {teacherClasses.map((ci: any, idx: number) => {
                         const dateObj = new Date(ci.date);
                         const dateStr = dateObj.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
                         const timeStr = dateObj.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
@@ -402,7 +404,7 @@ export function CourseSchedulesPanel({
                                     onClick={() => toggleComments(ci.classNumber || (idx + 1))}
                                     className="text-amber-500 hover:text-amber-400 underline text-xs font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5"
                                   >
-                                    💬 Foro ({courseComments.filter(c => c.classNumber === (ci.classNumber || (idx + 1))).length})
+                                    💬 Foro ({courseComments.filter((c: any) => c.classNumber === (ci.classNumber || (idx + 1))).length})
                                   </button>
                                   <button
                                     type="button"
@@ -683,7 +685,7 @@ export function CourseSchedulesPanel({
                                   if (ci.special_status === "Feriado") tagClass = "bg-red-950/60 text-red-400 border border-red-800/40";
 
                                   // Look up student attendance for this class
-                                  const attDoc = courseAttendance.find(a => a.classNumber === (ci.classNumber || 0));
+                                  const attDoc = courseAttendance.find((a: any) => a.classNumber === (ci.classNumber || 0));
                                   const studentStatus = attDoc?.records?.[profile?.id || ""];
 
                                   // Collapsible calculation
@@ -694,7 +696,7 @@ export function CourseSchedulesPanel({
                                   const isCollapsed = collapsedClasses[classKey] !== undefined ? collapsedClasses[classKey] : isPast;
 
                                   const toggleCollapse = () => {
-                                    setCollapsedClasses(prev => ({ ...prev, [classKey]: !isCollapsed }));
+                                    setCollapsedClasses((prev: any) => ({ ...prev, [classKey]: !isCollapsed }));
                                   };
 
                                   const githubOrg = selectedCourse.github_org || "org";

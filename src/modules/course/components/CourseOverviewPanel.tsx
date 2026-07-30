@@ -16,7 +16,8 @@ export function CourseOverviewPanel({
   courseSubmissions,
   pastDueAssignments,
   setCourseSubTab,
-  courseComments
+  courseComments,
+  setExpandedComments
 }: any) {
   return (
     <>
@@ -194,7 +195,7 @@ export function CourseOverviewPanel({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setExpandedComments((prev) => ({ ...prev, [comment.classNumber]: true }));
+                                  setExpandedComments((prev: any) => ({ ...prev, [comment.classNumber]: true }));
                                   setCourseSubTab("schedules");
                                 }}
                                 className="text-[10px] text-amber-500 hover:text-amber-400 font-bold underline focus:outline-none cursor-pointer font-sans"

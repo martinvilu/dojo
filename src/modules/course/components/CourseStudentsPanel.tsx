@@ -1,6 +1,9 @@
 "use client";
 import React from 'react';
 import { api } from '@/lib/api';
+import { db } from '@/lib/firebase/clientApp';
+import { doc, updateDoc } from 'firebase/firestore';
+import { copyToClipboard } from '@/lib/clipboard';
 
 export function CourseStudentsPanel({
   profile,
@@ -15,7 +18,11 @@ export function CourseStudentsPanel({
   setApiLoading,
   commissionFilter,
   setCommissionFilter,
-  setSelectedDirectEmailStudent
+  setSelectedDirectEmailStudent,
+  teacherClasses,
+  courseCommissions,
+  showCsvEndpoint,
+  setShowCsvEndpoint
 }: any) {
   const handleCheckAndAlertStudentsAtRisk = async () => {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
@@ -40,9 +47,9 @@ export function CourseStudentsPanel({
     if (!printWindow) return showToast("Por favor habilita las ventanas emergentes para descargar el reporte.", "success");
     
     const rosterHtml = roster
-      .filter(s => s.role === "student")
-      .map(s => {
-        const presentCount = courseAttendance.filter(a => a.student_id === s.student_id && ["present", "late"].includes(a.status)).length;
+      .filter((s: any) => s.role === "student")
+      .map((s: any) => {
+        const presentCount = courseAttendance.filter((a: any) => a.student_id === s.student_id && ["present", "late"].includes(a.status)).length;
         const totalClasses = teacherClasses.length;
         const attendancePercent = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 100;
         
@@ -93,15 +100,15 @@ export function CourseStudentsPanel({
             <div class="metric-box">
               <strong>Promedio General Asistencia</strong><br/>
               <span style="font-size: 24px; font-weight: bold; color: #10b981;">
-                ${roster.length > 0 ? Math.round(roster.reduce((acc, curr) => {
-                  const present = courseAttendance.filter(a => a.student_id === curr.student_id && ["present", "late"].includes(a.status)).length;
+                ${roster.length > 0 ? Math.round(roster.reduce((acc: any, curr: any) => {
+                  const present = courseAttendance.filter((a: any) => a.student_id === curr.student_id && ["present", "late"].includes(a.status)).length;
                   return acc + (teacherClasses.length > 0 ? (present / teacherClasses.length) : 1);
                 }, 0) / roster.length * 100) : 100}%
               </span>
             </div>
             <div class="metric-box">
               <strong>Clases Dictadas</strong><br/>
-              <span style="font-size: 24px; font-weight: bold; color: #db2777;">${teacherClasses.filter(c => !c.special_status || c.special_status === "Normal").length}</span>
+              <span style="font-size: 24px; font-weight: bold; color: #db2777;">${teacherClasses.filter((c: any) => !c.special_status || c.special_status === "Normal").length}</span>
             </div>
           </div>
 
@@ -141,12 +148,12 @@ export function CourseStudentsPanel({
     
     try {
       let csv = "Nombre,Email,Matricula,";
-      assignments.forEach(a => {
+      assignments.forEach((a: any) => {
         csv += `"${a.title.replace(/"/g, '""')}",`;
       });
       csv += "Promedio,Asistencia,Alertas,Condicion\n";
       
-      roster.forEach(student => {
+      roster.forEach((student: any) => {
         if (student.role !== "student") return;
         // Name, Email, Matricula
         csv += `"${(student.full_name || "").replace(/"/g, '""')}","${student.email || ""}","${student.matricula_unrn || ""}",`;
@@ -155,8 +162,8 @@ export function CourseStudentsPanel({
         let gradesCount = 0;
         
         // Assignments columns
-        assignments.forEach(a => {
-          const sub = courseSubmissions.find(s => s.student_id === student.id && s.assignment_id === a.id);
+        assignments.forEach((a: any) => {
+          const sub = courseSubmissions.find((s: any) => s.student_id === student.id && s.assignment_id === a.id);
           const gradeVal = sub ? sub.grade : "";
           csv += `"${(gradeVal || "").replace(/"/g, '""')}",`;
           
@@ -171,16 +178,16 @@ export function CourseStudentsPanel({
         const avg = gradesCount > 0 ? (totalGradesSum / gradesCount).toFixed(2) : "-";
         
         // Attendance percentage
-        const studentAtts = courseAttendance.filter(c => c.records && c.records[student.id]);
+        const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
         const recordedCount = studentAtts.length;
-        const presentOrLate = studentAtts.filter(c => c.records[student.id] === "present" || c.records[student.id] === "late").length;
+        const presentOrLate = studentAtts.filter((c: any) => c.records[student.id] === "present" || c.records[student.id] === "late").length;
         const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
         const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
         
         // Missing assignments
-        const studentSubmissions = courseSubmissions.filter(s => s.student_id === student.id);
-        const hasMissingAssignments = assignments.some(a => {
-          const hasSub = studentSubmissions.some(s => s.assignment_id === a.id);
+        const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
+        const hasMissingAssignments = assignments.some((a: any) => {
+          const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
           const isPastDue = pastDueAssignments.has(a.id);
           return !hasSub && isPastDue;
         });
@@ -220,7 +227,7 @@ export function CourseStudentsPanel({
         [`commissions.${cid}`]: commission
       });
       // Update local state instantly
-      setRoster(prev => prev.map(s => {
+      setRoster((prev: any) => prev.map((s: any) => {
         if (s.id === studentId) {
           return {
             ...s,
@@ -257,7 +264,7 @@ export function CourseStudentsPanel({
                           className="bg-transparent text-xs text-gray-300 focus:outline-none cursor-pointer font-semibold"
                         >
                           <option value="Todas">Todas</option>
-                          {courseCommissions.map(comm => (
+                          {courseCommissions.map((comm: any) => (
                             <option key={comm} value={comm}>{comm}</option>
                           ))}
                           <option value="Sin Comisión">Sin Comisión</option>
@@ -353,17 +360,17 @@ export function CourseStudentsPanel({
                             return studentComm === commissionFilter;
                           })
                           .map((student: any) => {
-                            const studentAtts = courseAttendance.filter(c => c.records && c.records[student.id]);
+                            const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
                             const recordedCount = studentAtts.length;
-                            const presentOrLate = studentAtts.filter(c => c.records[student.id] === "present" || c.records[student.id] === "late").length;
+                            const presentOrLate = studentAtts.filter((c: any) => c.records[student.id] === "present" || c.records[student.id] === "late").length;
                             const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
                             const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
 
-                            const studentSubmissions = courseSubmissions.filter(s => s.student_id === student.id);
+                            const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
                             const submittedCount = studentSubmissions.length;
                             const totalAssignments = assignments.length;
-                            const hasMissingAssignments = assignments.some(a => {
-                              const hasSub = studentSubmissions.some(s => s.assignment_id === a.id);
+                            const hasMissingAssignments = assignments.some((a: any) => {
+                              const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
                               const isPastDue = pastDueAssignments.has(a.id);
                               return !hasSub && isPastDue;
                             });
@@ -383,7 +390,7 @@ export function CourseStudentsPanel({
                                         className="bg-neutral-950 border border-neutral-800 text-[9px] rounded px-1.5 py-0.5 text-gray-400 focus:outline-none focus:border-blue-500 cursor-pointer font-semibold font-sans"
                                       >
                                         <option value="">Sin Comisión</option>
-                                        {courseCommissions.map(comm => (
+                                        {courseCommissions.map((comm: any) => (
                                           <option key={comm} value={comm}>{comm}</option>
                                         ))}
                                       </select>

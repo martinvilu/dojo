@@ -2199,6 +2199,12 @@ export default function DashboardPage() {
                 setApiLoading={setApiLoading}
                 commissionFilter={commissionFilter}
                 setCommissionFilter={setCommissionFilter}
+                teacherClasses={teacherClasses}
+                courseCommissions={courseCommissions}
+                courseComments={courseComments}
+                setSelectedDirectEmailStudent={setSelectedDirectEmailStudent}
+                showCsvEndpoint={showCsvEndpoint}
+                setShowCsvEndpoint={setShowCsvEndpoint}
               />
             )}
 
