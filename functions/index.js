@@ -5,6 +5,7 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 const db = admin.firestore();
+db.settings({ ignoreUndefinedProperties: true });
 
 async function syncGradeToMoodle(previousData, grade, feedback) {
     if (!previousData.moodle_lis_outcome_service_url || !previousData.moodle_lis_result_sourcedid) {
@@ -259,6 +260,7 @@ exports.api = onCall(async (request) => {
         const moduleName = actionModules[action];
         if (!moduleName) throw new HttpsError('invalid-argument', `Acción desconocida: ${action}`);
         
+        logger.info(`[API Call] Iniciando acción: ${action}`, { uid, payload_keys: Object.keys(payload || {}) });
         const modulePath = `./actions/${moduleName}`;
         const actionModule = require(modulePath);
         
@@ -296,8 +298,10 @@ exports.api = onCall(async (request) => {
             }
         }
 
+        logger.info(`[API Call] Acción completada: ${action}`, { uid });
         return result;
     } catch (e) {
+        logger.error(`[API Error] Error en acción: ${action}`, { uid, error: e.message, stack: e.stack });
         throw new HttpsError('internal', e.message);
     }
 });
