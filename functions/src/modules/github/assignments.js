@@ -72,8 +72,9 @@ async function createAssignment(payload, context) {
     if (!courseId) {
         throw new Error("El parámetro course_id es requerido para crear una tarea.");
     }
-    const ref = await db.collection('assignments').add({
-        course_id: courseId,
+    
+    const assignmentData = {
+        course_id: String(courseId),
         title: payload.title || payload.name || 'Sin título',
         description: payload.description || '',
         due_date: payload.due_date || payload.dueDate || '',
@@ -83,7 +84,12 @@ async function createAssignment(payload, context) {
         is_archived: false,
         sync_secret: Math.random().toString(36).substring(2, 10).toUpperCase(),
         created_at: admin.firestore.FieldValue.serverTimestamp()
-    });
+    };
+
+    // Remove any undefined properties just in case
+    Object.keys(assignmentData).forEach(key => assignmentData[key] === undefined && delete assignmentData[key]);
+
+    const ref = await db.collection('assignments').add(assignmentData);
     return { id: ref.id };
 }
 
@@ -443,7 +449,9 @@ async function submitAssignment(payload, context) {
 
 async function updateAssignment(payload, context) {
     const { db } = context;
-    await db.collection('assignments').doc(payload.assignmentId).update(payload.data);
+    const dataToUpdate = { ...payload.data };
+    Object.keys(dataToUpdate).forEach(key => dataToUpdate[key] === undefined && delete dataToUpdate[key]);
+    await db.collection('assignments').doc(payload.assignmentId).update(dataToUpdate);
     return { success: true };
 }
 

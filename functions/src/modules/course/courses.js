@@ -222,10 +222,14 @@ async function cloneCourseExtraData(payload, context) {
     for (let doc of assingmentsSnap.docs) {
         const data = doc.data();
         delete data.created_at;
-        await db.collection('assignments').add({
+        
+        const assignmentData = {
             ...data,
-            course_id: newCourseId
-        });
+            course_id: String(newCourseId)
+        };
+        Object.keys(assignmentData).forEach(k => assignmentData[k] === undefined && delete assignmentData[k]);
+        
+        await db.collection('assignments').add(assignmentData);
     }
     
     const settingsSnap = await db.collection('courses').doc(courseId).get();
