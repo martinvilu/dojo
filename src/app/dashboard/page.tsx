@@ -11,7 +11,7 @@ import AdminPanel from "@/components/dashboard/AdminPanel";
 import StudentPanel from "@/components/dashboard/StudentPanel";
 import ProfilePanel from "@/components/dashboard/ProfilePanel";
 import TeacherPanel from "@/components/dashboard/TeacherPanel";
-import GithubActivityPanel from "@/components/dashboard/github/GithubActivityPanel";
+import GithubActivityPanel from "@/modules/github/components/GithubActivityPanel";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/components/dashboard/tutoring/TutoringPanel";
 import AttendanceManager from "@/components/dashboard/attendance/AttendanceManager";
