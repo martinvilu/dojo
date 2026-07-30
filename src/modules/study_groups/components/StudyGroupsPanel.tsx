@@ -221,6 +221,7 @@ export default function StudyGroupsPanel({
 
       {isCreateGroupModalOpen && (
         <BaseModal
+          title="Crear Grupo de Estudio"
           isOpen={isCreateGroupModalOpen}
           onClose={() => setIsCreateGroupModalOpen(false)}
         >
