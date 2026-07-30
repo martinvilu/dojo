@@ -18,8 +18,8 @@ import AttendanceManager from "@/components/dashboard/attendance/AttendanceManag
 import ClassCommentsThread from "@/components/dashboard/comments/ClassCommentsThread";
 import QrScannerModal from "@/components/dashboard/attendance/QrScannerModal";
 import CalendarPanel from "@/components/dashboard/calendar/CalendarPanel";
-import EmailManagementPanel from "@/components/dashboard/EmailManagementPanel";
-import DirectEmailModal from "@/components/dashboard/DirectEmailModal";
+import EmailManagementPanel from "@/modules/mail/components/EmailManagementPanel";
+import DirectEmailModal from "@/modules/mail/components/DirectEmailModal";
 import MoodleIntegrationPanel from "@/components/dashboard/moodle/MoodleIntegrationPanel";
 import { copyToClipboard } from "@/lib/clipboard";
 

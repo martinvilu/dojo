@@ -161,23 +161,23 @@ const actionModules = {
     getActivityLogs: 'activity',
     
     // gmailAuth & Email Management
-    getGmailAuthUrl: 'gmailAuth',
-    saveGmailAuthCode: 'gmailAuth',
-    getGmailAuthStatus: 'gmailAuth',
-    disconnectGmailAuth: 'gmailAuth',
-    sendGmailNotification: 'gmailAuth',
+    getGmailAuthUrl: '../src/modules/mail/gmailAuth',
+    saveGmailAuthCode: '../src/modules/mail/gmailAuth',
+    getGmailAuthStatus: '../src/modules/mail/gmailAuth',
+    disconnectGmailAuth: '../src/modules/mail/gmailAuth',
+    sendGmailNotification: '../src/modules/mail/gmailAuth',
     
     // emailTemplates
-    getEmailTemplates: 'emailTemplates',
-    saveEmailTemplate: 'emailTemplates',
+    getEmailTemplates: '../src/modules/mail/emailTemplates',
+    saveEmailTemplate: '../src/modules/mail/emailTemplates',
     
     // scheduledEmails
-    getScheduledEmails: 'scheduledEmails',
-    createScheduledEmail: 'scheduledEmails',
-    cancelScheduledEmail: 'scheduledEmails',
-    triggerScheduledEmailNow: 'scheduledEmails',
-    sendDirectStudentEmail: 'scheduledEmails',
-    getMailLogs: 'scheduledEmails',
+    getScheduledEmails: '../src/modules/mail/scheduledEmails',
+    createScheduledEmail: '../src/modules/mail/scheduledEmails',
+    cancelScheduledEmail: '../src/modules/mail/scheduledEmails',
+    triggerScheduledEmailNow: '../src/modules/mail/scheduledEmails',
+    sendDirectStudentEmail: '../src/modules/mail/scheduledEmails',
+    getMailLogs: '../src/modules/mail/scheduledEmails',
     
     // schedule
     saveScheduleVersion: 'schedule',

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { BaseModal } from "./ui";
+import { BaseModal } from "@/components/dashboard/ui";
 
 interface DirectEmailModalProps {
   student: { id: string; full_name?: string; email?: string; matricula_unrn?: string } | null;
