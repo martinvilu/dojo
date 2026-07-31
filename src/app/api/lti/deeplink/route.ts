@@ -60,35 +60,50 @@ export async function POST(request: Request) {
 
     // Map modules catalog
     const moduleCatalog: Record<string, { title: string; text: string; target: string }> = {
-      calendar: {
-        title: "📅 Calendario y Cronograma de Cátedra",
-        text: "Acceso al calendario interactivo, cronograma de clases y eventos de la cursada.",
-        target: "calendar"
+      course: {
+        title: "📚 Vista General de la Cátedra",
+        text: "Acceso al panel principal, docentes y planificación general.",
+        target: "overview"
       },
-      status: {
-        title: "📊 Estado de Cursada, Asistencia y Alertas",
-        text: "Panel de control de porcentaje de presentismo, entregas y alertas tempranas.",
-        target: "status"
+      calendar: {
+        title: "📅 Calendario y Cronograma",
+        text: "Acceso al calendario interactivo, cronograma de clases y eventos de la cursada.",
+        target: "schedules"
+      },
+      github: {
+        title: "💻 Prácticas y Entregas (GitHub)",
+        text: "Módulo de gestión de tareas prácticas y repositorios en GitHub.",
+        target: "assignments"
+      },
+      mail: {
+        title: "📧 Gestión de Correos Electrónicos",
+        text: "Envío y programación de correos a estudiantes de la cátedra.",
+        target: "emails"
+      },
+      auth: {
+        title: "🔐 Autenticación y Perfil",
+        text: "Acceso a la gestión de cuenta, OAuth y tokens personales.",
+        target: "profile"
+      },
+      tutoring: {
+        title: "🤝 Módulo de Tutorías y Mentorías",
+        text: "Espacio para solicitar mentorías entre pares y consultas académicas.",
+        target: "tutorias"
+      },
+      study_groups: {
+        title: "👥 Grupos de Estudio",
+        text: "Organización de equipos de estudio y emparejamiento inteligente.",
+        target: "study_groups"
+      },
+      students: {
+        title: "📊 Estado de Cursada y Alumnos",
+        text: "Panel de control de presentismo, entregas y progreso.",
+        target: "students"
       },
       announcements: {
         title: "📢 Tablero de Avisos y Novedades",
-        text: "Novedades oficiales, anuncios de la cátedra e información importante.",
+        text: "Novedades oficiales e información importante de la cátedra.",
         target: "announcements"
-      },
-      tutoring: {
-        title: "🤝 Módulo de Tutorías y Mentorías Académicas",
-        text: "Espacio para solicitar mentorías entre pares y consultas académicas.",
-        target: "tutoring"
-      },
-      groups: {
-        title: "👥 Grupos de Estudio y Emparejamiento",
-        text: "Organización de equipos de estudio y formación de grupos por afinidad horaria.",
-        target: "groups"
-      },
-      activities: {
-        title: "📝 Actividades e Integraciones Individuales",
-        text: "Gestión de tareas individuales y proyectos de la cursada.",
-        target: "activities"
       }
     };
 

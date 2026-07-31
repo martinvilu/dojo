@@ -80,21 +80,26 @@ export async function POST(request: Request) {
     let subtab = "";
 
     const cleanTarget = targetModule.toLowerCase();
-    if (cleanTarget === "calendar") {
-      mainTab = "calendar";
-      subtab = "schedule";
-    } else if (cleanTarget === "activities" || cleanTarget === "assignments" || assignmentId) {
+    if (cleanTarget === "schedules" || cleanTarget === "calendar") {
+      subtab = "schedules";
+    } else if (cleanTarget === "assignments" || cleanTarget === "activities" || assignmentId) {
       subtab = "assignments";
-    } else if (cleanTarget === "status" || cleanTarget === "overview" || cleanTarget === "roster" || cleanTarget === "alerts") {
+    } else if (cleanTarget === "overview" || cleanTarget === "status" || cleanTarget === "roster" || cleanTarget === "alerts") {
       subtab = "overview";
     } else if (cleanTarget === "announcements" || cleanTarget === "avisos") {
       subtab = "announcements";
-    } else if (cleanTarget === "tutoring" || cleanTarget === "tutorias") {
-      mainTab = "tutoring";
-      subtab = "tutoring";
-    } else if (cleanTarget === "groups" || cleanTarget === "grupos") {
-      mainTab = "groups";
-      subtab = "groups";
+    } else if (cleanTarget === "tutorias" || cleanTarget === "tutoring") {
+      subtab = "tutorias";
+    } else if (cleanTarget === "study_groups" || cleanTarget === "groups" || cleanTarget === "grupos") {
+      subtab = "study_groups";
+    } else if (cleanTarget === "emails" || cleanTarget === "mail") {
+      subtab = "emails";
+    } else if (cleanTarget === "profile" || cleanTarget === "auth") {
+      mainTab = "profile";
+    } else if (cleanTarget === "students") {
+      subtab = "students";
+    } else if (cleanTarget) {
+      subtab = cleanTarget; // fallback
     }
 
     const baseUrl = getBaseUrl(request);
@@ -105,7 +110,7 @@ export async function POST(request: Request) {
     redirectUrl.searchParams.set("lti_role", roles.some(r => r.includes("Instructor") || r.includes("Administrator")) ? "teacher" : "student");
     
     if (mainTab) redirectUrl.searchParams.set("tab", mainTab);
-    if (subtab) redirectUrl.searchParams.set("subtab", subtab);
+    if (subtab) redirectUrl.searchParams.set("subTab", subtab);
     if (targetModule) redirectUrl.searchParams.set("targetModule", targetModule);
     if (courseId) redirectUrl.searchParams.set("courseId", courseId);
     if (assignmentId) redirectUrl.searchParams.set("assignmentId", assignmentId);
