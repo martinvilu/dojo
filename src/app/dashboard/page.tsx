@@ -101,7 +101,16 @@ export default function DashboardPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [globalSettings, setGlobalSettings] = useState<any>({});
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
-  const [courseSubTab, setCourseSubTab] = useState("schedules"); // schedules, settings, assignments, announcements
+  const [courseSubTab, setCourseSubTab] = useState("schedules");
+
+  const handleSetCourseSubTab = (tab: string) => {
+    setCourseSubTab(tab);
+    if (selectedCourse?.id || selectedCourse?.course?.id) {
+      const cid = selectedCourse.id || selectedCourse.course.id;
+      window.history.pushState(null, "", `/dashboard/courses/${cid}/${tab}`);
+    }
+  };
+
 
   // Form states
   const [theme, setTheme] = useState<"light" | "dark">("dark");
@@ -386,7 +395,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        router.push("/login");
+        router.push("/login?redirect=" + encodeURIComponent(window.location.pathname + window.location.search));
         return;
       }
       setCurrentUser(user);
@@ -547,6 +556,7 @@ export default function DashboardPage() {
     const assignmentId = params.get("assignmentId");
     const userId = params.get("userId");
     const tab = params.get("tab");
+    const subTab = params.get("subTab");
 
     const processParams = async () => {
       hasProcessedParams.current = true;
@@ -559,6 +569,9 @@ export default function DashboardPage() {
       }
       if (tab) {
         setActiveTab(tab);
+      }
+      if (subTab) {
+        setCourseSubTab(subTab);
       }
       
       let updatedCourses = courses;
@@ -610,7 +623,7 @@ export default function DashboardPage() {
         }
         if (matchedCourse) {
           await viewCourseDetails(matchedCourse);
-          setCourseSubTab("assignments");
+          handleSetCourseSubTab("assignments");
         }
       }
       if (userId && profile?.role === "admin") {
@@ -1409,9 +1422,9 @@ export default function DashboardPage() {
         setSelectedCourse({ id: courseId, name: course.name, ...res });
       }
       if (profile?.role === "teacher" || profile?.role === "admin") {
-        setCourseSubTab("overview");
+        handleSetCourseSubTab("overview");
       } else {
-        setCourseSubTab("schedules");
+        handleSetCourseSubTab("schedules");
       }
     } catch (err: any) {
       showToast("Error al cargar detalles de la cátedra: " + err.message, "error");
@@ -1942,33 +1955,33 @@ export default function DashboardPage() {
               <div className="flex bg-neutral-900 border border-neutral-800 rounded-xl p-1 text-xs font-medium flex-wrap gap-1">
                 {(profile?.role === "admin" || profile?.role === "teacher") && (
                   <button
-                    onClick={() => setCourseSubTab("overview")}
+                    onClick={() => handleSetCourseSubTab("overview")}
                     className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "overview" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                   >
                     📊 Resumen
                   </button>
                 )}
                 <button
-                  onClick={() => setCourseSubTab("schedules")}
+                  onClick={() => handleSetCourseSubTab("schedules")}
                   className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "schedules" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                 >
                   Cronograma
                 </button>
                 <button
-                  onClick={() => setCourseSubTab("assignments")}
+                  onClick={() => handleSetCourseSubTab("assignments")}
                   className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "assignments" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                 >
                   Tareas
                 </button>
                 <button
-                  onClick={() => setCourseSubTab("announcements")}
+                  onClick={() => handleSetCourseSubTab("announcements")}
                   className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "announcements" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                 >
                   Avisos
                 </button>
                 {profile?.role === "teacher" && (
                   <button
-                    onClick={() => setCourseSubTab("settings")}
+                    onClick={() => handleSetCourseSubTab("settings")}
                     className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "settings" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                   >
                     Ajustes Cátedra
@@ -1976,7 +1989,7 @@ export default function DashboardPage() {
                 )}
                 {(profile?.role === "admin" || profile?.role === "teacher") && (
                   <button
-                    onClick={() => setCourseSubTab("students")}
+                    onClick={() => handleSetCourseSubTab("students")}
                     className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "students" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                   >
                     👥 Alumnos y Alertas
@@ -1984,7 +1997,7 @@ export default function DashboardPage() {
                 )}
                 {(profile?.role === "admin" || profile?.role === "teacher") && (
                   <button
-                    onClick={() => setCourseSubTab("emails")}
+                    onClick={() => handleSetCourseSubTab("emails")}
                     className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "emails" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                   >
                     📧 Gestión Correos
@@ -1992,20 +2005,20 @@ export default function DashboardPage() {
                 )}
                 {(profile?.role === "admin" || profile?.role === "teacher") && (
                   <button
-                    onClick={() => setCourseSubTab("teachers")}
+                    onClick={() => handleSetCourseSubTab("teachers")}
                     className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "teachers" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                   >
                     Docentes
                   </button>
                 )}
                 <button
-                  onClick={() => setCourseSubTab("tutorias")}
+                  onClick={() => handleSetCourseSubTab("tutorias")}
                   className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "tutorias" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                 >
                   🎓 Tutorías
                 </button>
                 <button
-                  onClick={() => setCourseSubTab("study_groups")}
+                  onClick={() => handleSetCourseSubTab("study_groups")}
                   className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "study_groups" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
                 >
                   👥 Grupos de Estudio
@@ -2231,7 +2244,7 @@ export default function DashboardPage() {
                 announcementAcks={announcementAcks}
               />
 <CourseSettingsPanel {...{
-    profile, selectedCourse, setSelectedCourse, setApiLoading, showToast, teacherGithubToken, setTeacherGithubToken, teacherMoodleEnabled, setTeacherMoodleEnabled, teacherExternalCalendars, setTeacherExternalCalendars, teacherSchedules, setTeacherSchedules, teacherClasses, teacherCommissions, setTeacherCommissions, teacherCommissionsMapping, setTeacherCommissionsMapping, cloneSourceId, setCloneSourceId, moodleApiUrl, setMoodleApiUrl, moodleWsToken, setMoodleWsToken, moodleCourseId, setMoodleCourseId, showCsvEndpoint, setShowCsvEndpoint, showCsvGradingEndpoint, setShowCsvGradingEndpoint, scheduleDay, setScheduleDay, scheduleTime, setScheduleTime, scheduleType, setScheduleType, otherTeacherCourses, setCourseSubTab, courseSubTab, newCommissionInput, setNewCommissionInput, teacherCoverText, setTeacherCoverText, teacherStartDate, setTeacherStartDate, teacherDuration, setTeacherDuration, gmailStatus, handleStartGmailAuth, handleDisconnectGmail, handleSendTestGmail, courseTeachers,
+    profile, selectedCourse, setSelectedCourse, setApiLoading, showToast, teacherGithubToken, setTeacherGithubToken, teacherMoodleEnabled, setTeacherMoodleEnabled, teacherExternalCalendars, setTeacherExternalCalendars, teacherSchedules, setTeacherSchedules, teacherClasses, teacherCommissions, setTeacherCommissions, teacherCommissionsMapping, setTeacherCommissionsMapping, cloneSourceId, setCloneSourceId, moodleApiUrl, setMoodleApiUrl, moodleWsToken, setMoodleWsToken, moodleCourseId, setMoodleCourseId, showCsvEndpoint, setShowCsvEndpoint, showCsvGradingEndpoint, setShowCsvGradingEndpoint, scheduleDay, setScheduleDay, scheduleTime, setScheduleTime, scheduleType, setScheduleType, otherTeacherCourses, setCourseSubTab: handleSetCourseSubTab, courseSubTab, newCommissionInput, setNewCommissionInput, teacherCoverText, setTeacherCoverText, teacherStartDate, setTeacherStartDate, teacherDuration, setTeacherDuration, gmailStatus, handleStartGmailAuth, handleDisconnectGmail, handleSendTestGmail, courseTeachers,
     handleAddSchedule, handleRemoveSchedule, handleSaveTeacherSettings, handleExportMoodleXml, handleSyncMoodleRoster, handleCloneCourseConfig
   }} />
             {courseSubTab === "emails" && (profile?.role === "teacher" || profile?.role === "admin") && (

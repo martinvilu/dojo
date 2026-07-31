@@ -2,13 +2,17 @@
 import React, { useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 
-export default function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function CourseDetailPage({ params }: { params: Promise<{ id: string, slug?: string[] }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
 
   useEffect(() => {
-    router.push(`/dashboard?courseId=${resolvedParams.id}`);
-  }, [resolvedParams.id, router]);
+    let url = `/dashboard?courseId=${resolvedParams.id}`;
+    if (resolvedParams.slug && resolvedParams.slug.length > 0) {
+      url += `&subTab=${resolvedParams.slug[0]}`;
+    }
+    router.push(url);
+  }, [resolvedParams.id, resolvedParams.slug, router]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">

@@ -9,11 +9,14 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged
 } from "firebase/auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { auth } from "@/lib/firebase/clientApp";
 
-export default function AuthScreen() {
+function AuthScreenContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -24,7 +27,7 @@ export default function AuthScreen() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        router.push("/dashboard");
+        router.push(redirectUrl);
       } else {
         setCheckingAuth(false);
       }
@@ -43,10 +46,10 @@ export default function AuthScreen() {
     try {
       if (isRegistering) {
         await createUserWithEmailAndPassword(auth, email, password);
-        router.push("/dashboard");
+        router.push(redirectUrl);
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        router.push("/dashboard");
+        router.push(redirectUrl);
       }
     } catch (err: any) {
       console.error(err);
@@ -70,7 +73,7 @@ export default function AuthScreen() {
     const provider = providerName === "google" ? new GoogleAuthProvider() : new GithubAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      router.push("/dashboard");
+      router.push(redirectUrl);
     } catch (err: any) {
       console.error(err);
       const msg = err.message || "";
@@ -341,5 +344,14 @@ export default function AuthScreen() {
         <p>© 2026 Ninja Dojo (Jutsu Classroom). Todos los derechos reservados.</p>
       </footer>
     </div>
+  );
+}
+
+
+export default function AuthScreen() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center"><div className="w-12 h-12 border-4 border-t-blue-500 border-blue-900 rounded-full animate-spin"></div></div>}>
+      <AuthScreenContent />
+    </Suspense>
   );
 }
