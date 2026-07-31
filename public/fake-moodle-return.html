@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Moodle Return Simulator</title>
+  <style>
+    body { font-family: system-ui; background: #0a0a0a; color: white; padding: 2rem; }
+    pre { background: #171717; padding: 1rem; border-radius: 8px; border: 1px solid #333; overflow-x: auto; color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <h1>Fake Moodle: Item Received!</h1>
+  <p>The Dojo successfully sent the Deep Linking response back to "Moodle".</p>
+  
+  <h3>Form Data Received:</h3>
+  <pre id="output"></pre>
+
+  <script>
+    // Extract POST data from URL if any, or just display search params for local HTML testing 
+    // Since this is a static file, we can't intercept POST data purely with HTML/JS easily 
+    // without a server, but we can instruct the user.
+    document.getElementById("output").innerText = "Success! The module was selected.\n\nIn a real LMS, Moodle intercepts the POST request containing 'content_items' (the JSON configuration) and saves it.";
+  </script>
+</body>
+</html>

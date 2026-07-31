@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:selenium": "node tests/selenium/run-all-tests.js"
+    "test:selenium": "node tests/selenium/run-all-tests.js",
+    "test:local": "./scripts/test-local.sh"
   },
   "dependencies": {
     "firebase": "^12.14.0",

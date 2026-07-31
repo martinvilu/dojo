@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ninja Dojo LTI Simulator</title>
+  <style>
+    body { font-family: system-ui; background: #0a0a0a; color: white; padding: 2rem; }
+    .card { background: #171717; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #333; }
+    h2 { margin-top: 0; color: #60a5fa; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.5rem; color: #a3a3a3; font-size: 0.9rem; }
+    input, select { width: 100%; padding: 0.5rem; background: #262626; border: 1px solid #404040; color: white; border-radius: 4px; }
+    button { background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    button:hover { background: #3b82f6; }
+  </style>
+</head>
+<body>
+  <h1>🥷 LTI Simulator (Local)</h1>
+  <p>Use this tool to simulate Moodle LTI payloads hitting the local Next.js server.</p>
+
+  <div class="card">
+    <h2>1. Test LTI Deep Linking (Teacher selecting a module)</h2>
+    <form action="http://localhost:3000/api/lti/deeplink" method="POST" target="_blank">
+      <div class="form-group">
+        <label>Course ID</label>
+        <input type="text" name="courseId" value="local-dev-course-123">
+      </div>
+      <div class="form-group">
+        <label>Return URL (Where Dojo redirects after selection)</label>
+        <input type="text" name="deep_link_return_url" value="http://localhost:3000/fake-moodle-return.html">
+      </div>
+      <button type="submit">Simulate Deep Link Request</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>2. Test LTI Launch (Student/Teacher clicking the link in Moodle)</h2>
+    <form action="http://localhost:3000/api/lti/launch" method="POST" target="_blank">
+      <div class="form-group">
+        <label>Target Module</label>
+        <select name="targetModule">
+          <option value="calendar">Calendar & Schedules (calendar)</option>
+          <option value="github">GitHub Assignments (github)</option>
+          <option value="course">Course Overview (course)</option>
+          <option value="students">Students Progress (students)</option>
+          <option value="mail">Mail & Emails (mail)</option>
+          <option value="tutoring">Tutoring (tutoring)</option>
+          <option value="study_groups">Study Groups (study_groups)</option>
+          <option value="announcements">Announcements (announcements)</option>
+          <option value="auth">Profile (auth)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Course ID</label>
+        <input type="text" name="courseId" value="local-dev-course-123">
+      </div>
+      <div class="form-group">
+        <label>User Email</label>
+        <input type="text" name="ext_user_username" value="test-student@example.com">
+      </div>
+      <div class="form-group">
+        <label>User Full Name</label>
+        <input type="text" name="lis_person_name_full" value="Local Test User">
+      </div>
+      <button type="submit">Simulate LTI Launch</button>
+    </form>
+  </div>
+</body>
+</html>
