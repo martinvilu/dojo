@@ -187,39 +187,57 @@ export async function POST(request: Request) {
   </div>
 
   <div class="grid">
-    <div class="card" onclick="selectItem('calendar')">
-      <h3>📅 Calendario y Cronograma de Cátedra</h3>
-      <p>Acceso al calendario interactivo, cronograma de clases y eventos síncronos de la cursada.</p>
+    <div class="card" onclick="selectItem('course')">
+      <h3>📚 Vista General de la Cátedra</h3>
+      <p>Acceso al panel principal, docentes y planificación general.</p>
       <button type="button" class="btn-select">Agregar Módulo LTI</button>
     </div>
 
-    <div class="card" onclick="selectItem('status')">
-      <h3>📊 Estado de Cursada, Asistencia y Alertas</h3>
-      <p>Panel de control de porcentaje de presentismo, entregas y alertas tempranas de riesgo académico.</p>
+    <div class="card" onclick="selectItem('calendar')">
+      <h3>📅 Calendario y Cronograma</h3>
+      <p>Acceso al calendario interactivo, cronograma de clases y eventos de la cursada.</p>
+      <button type="button" class="btn-select">Agregar Módulo LTI</button>
+    </div>
+
+    <div class="card" onclick="selectItem('github')">
+      <h3>💻 Prácticas y Entregas (GitHub)</h3>
+      <p>Módulo de gestión de tareas prácticas y repositorios en GitHub.</p>
+      <button type="button" class="btn-select">Agregar Módulo LTI</button>
+    </div>
+
+    <div class="card" onclick="selectItem('mail')">
+      <h3>📧 Gestión de Correos Electrónicos</h3>
+      <p>Envío y programación de correos a estudiantes de la cátedra.</p>
+      <button type="button" class="btn-select">Agregar Módulo LTI</button>
+    </div>
+
+    <div class="card" onclick="selectItem('students')">
+      <h3>📊 Estado de Cursada y Alumnos</h3>
+      <p>Panel de control de presentismo, entregas y progreso.</p>
       <button type="button" class="btn-select">Agregar Módulo LTI</button>
     </div>
 
     <div class="card" onclick="selectItem('announcements')">
       <h3>📢 Tablero de Avisos y Novedades</h3>
-      <p>Novedades oficiales, anuncios de la cátedra e información importante de comunicación.</p>
+      <p>Novedades oficiales e información importante de la cátedra.</p>
       <button type="button" class="btn-select">Agregar Módulo LTI</button>
     </div>
 
     <div class="card" onclick="selectItem('tutoring')">
-      <h3>🤝 Módulo de Tutorías y Mentorías Académicas</h3>
-      <p>Espacio para solicitar mentorías entre pares y consultas académicas con tutores habilitados.</p>
+      <h3>🤝 Módulo de Tutorías y Mentorías</h3>
+      <p>Espacio para solicitar mentorías entre pares y consultas académicas.</p>
       <button type="button" class="btn-select">Agregar Módulo LTI</button>
     </div>
 
-    <div class="card" onclick="selectItem('groups')">
-      <h3>👥 Grupos de Estudio y Emparejamiento</h3>
-      <p>Organización de equipos de estudio y formación de grupos por coincidencia horaria.</p>
+    <div class="card" onclick="selectItem('study_groups')">
+      <h3>👥 Grupos de Estudio</h3>
+      <p>Organización de equipos de estudio y emparejamiento inteligente.</p>
       <button type="button" class="btn-select">Agregar Módulo LTI</button>
     </div>
 
-    <div class="card" onclick="selectItem('activities')">
-      <h3>📝 Actividades e Integraciones Individuales</h3>
-      <p>Gestión de entregas de tareas individuales, repositorios de GitHub y calificaciones.</p>
+    <div class="card" onclick="selectItem('auth')">
+      <h3>🔐 Autenticación y Perfil</h3>
+      <p>Acceso a la gestión de cuenta, OAuth y tokens personales.</p>
       <button type="button" class="btn-select">Agregar Módulo LTI</button>
     </div>
   </div>
