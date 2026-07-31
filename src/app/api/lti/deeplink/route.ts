@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getBaseUrl } from "@/lib/url";
+
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -50,13 +50,9 @@ export async function POST(request: Request) {
       }
     }
 
-    const rawBaseUrl = getBaseUrl(request);
-    // Safety net: ensure URLs emitted to Moodle NEVER contain internal addresses
+    // Always use the canonical public URL — never expose internal container addresses
     const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
-    const baseUrl = rawBaseUrl
-      .replace(/https?:\/\/0\.0\.0\.0:\d+/g, CANONICAL)
-      .replace(/https?:\/\/127\.0\.0\.1:\d+/g, CANONICAL)
-      .replace(/https?:\/\/localhost:\d+/g, CANONICAL);
+    const baseUrl = CANONICAL;
 
     // Map modules catalog
     const moduleCatalog: Record<string, { title: string; text: string; target: string }> = {

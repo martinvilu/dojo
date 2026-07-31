@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getBaseUrl } from "@/lib/url";
+
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -102,8 +102,10 @@ export async function POST(request: Request) {
       subtab = cleanTarget; // fallback
     }
 
-    const baseUrl = getBaseUrl(request);
-    const redirectUrl = new URL("/dashboard", baseUrl);
+    // Always use the canonical public URL for redirects — never trust the
+    // internal container address that Cloud Run / App Hosting exposes.
+    const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    const redirectUrl = new URL("/dashboard", CANONICAL);
     redirectUrl.searchParams.set("lti_launch", "true");
     redirectUrl.searchParams.set("lti_email", email);
     redirectUrl.searchParams.set("lti_name", name);
@@ -122,16 +124,9 @@ export async function POST(request: Request) {
       redirectUrl.searchParams.set("lis_result_sourcedid", resultId);
     }
 
-    // Safety net: ensure final redirect URL never contains internal addresses
-    let finalUrl = redirectUrl.toString();
-    const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
-    finalUrl = finalUrl
-      .replace(/https?:\/\/0\.0\.0\.0(:\d+)?/g, CANONICAL)
-      .replace(/https?:\/\/127\.0\.0\.1(:\d+)?/g, CANONICAL)
-      .replace(/https?:\/\/localhost(:\d+)?/g, CANONICAL);
-
-    logger.info("[LTI Launch] Redirecting", { baseUrl, finalUrl, targetModule, courseId });
-    return NextResponse.redirect(new URL(finalUrl), 303);
+    const finalUrl = redirectUrl.toString();
+    logger.info("[LTI Launch] Redirecting", { finalUrl, targetModule, courseId });
+    return NextResponse.redirect(finalUrl, 303);
   } catch (error: any) {
     logger.error("Error procesando LTI Launch", error);
     return NextResponse.json({ error: "Error procesando LTI Launch: " + error.message }, { status: 500 });
