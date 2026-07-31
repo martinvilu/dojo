@@ -126,7 +126,31 @@ export async function POST(request: Request) {
 
     const finalUrl = redirectUrl.toString();
     logger.info("[LTI Launch] Redirecting", { finalUrl, targetModule, courseId });
-    return NextResponse.redirect(finalUrl, 303);
+
+    // Return an HTML page that performs the redirect client-side.
+    // We cannot use NextResponse.redirect() because Firebase App Hosting's
+    // adapter (x-fah-adapter) rewrites the Location header against the
+    // internal container address (0.0.0.0:8080), breaking the redirect.
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(finalUrl)}">
+  <title>Redireccionando al Dojo...</title>
+</head>
+<body style="background:#0a0a0a;color:#f5f5f5;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;">
+  <div style="text-align:center;">
+    <div style="width:40px;height:40px;border:3px solid #1e3a5f;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;"></div>
+    <p>Redireccionando al Dojo...</p>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  <script>window.location.replace(${JSON.stringify(finalUrl)});</script>
+</body>
+</html>`;
+    return new NextResponse(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
   } catch (error: any) {
     logger.error("Error procesando LTI Launch", error);
     return NextResponse.json({ error: "Error procesando LTI Launch: " + error.message }, { status: 500 });
@@ -135,4 +159,18 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   return POST(request);
+}
+
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return "";
+  return unsafe.replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#039;';
+      default: return c;
+    }
+  });
 }
