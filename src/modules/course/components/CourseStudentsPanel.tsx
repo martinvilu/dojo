@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useMemo } from 'react';
 import { api } from '@/lib/api';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -24,6 +24,40 @@ export function CourseStudentsPanel({
   showCsvEndpoint,
   setShowCsvEndpoint
 }: any) {
+  // Precompute attendance by student for O(1) lookups
+  // ⚡ Bolt: This avoids O(N*M) where N is roster size and M is total attendance records
+  const attendanceByStudent = useMemo(() => {
+    const map = new Map<string, { total: number; presentOrLate: number }>();
+    courseAttendance.forEach((c: any) => {
+      if (c.records) {
+        Object.entries(c.records).forEach(([studentId, status]) => {
+          const current = map.get(studentId) || { total: 0, presentOrLate: 0 };
+          current.total += 1;
+          if (status === "present" || status === "late") {
+            current.presentOrLate += 1;
+          }
+          map.set(studentId, current);
+        });
+      }
+    });
+    return map;
+  }, [courseAttendance]);
+
+  // Precompute submissions by student and assignment for O(1) lookups
+  // ⚡ Bolt: Replaces nested array `.find()` and `.filter()` operations
+  const submissionsByStudent = useMemo(() => {
+    const map = new Map<string, Map<string, any>>();
+    courseSubmissions.forEach((s: any) => {
+      const studentId = s.student_id;
+      const assignmentId = s.assignment_id;
+      if (!map.has(studentId)) {
+        map.set(studentId, new Map<string, any>());
+      }
+      map.get(studentId)!.set(assignmentId, s);
+    });
+    return map;
+  }, [courseSubmissions]);
+
   const handleCheckAndAlertStudentsAtRisk = async () => {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
@@ -162,8 +196,9 @@ export function CourseStudentsPanel({
         let gradesCount = 0;
         
         // Assignments columns
+        const studentSubs = submissionsByStudent.get(student.id) || new Map();
         assignments.forEach((a: any) => {
-          const sub = courseSubmissions.find((s: any) => s.student_id === student.id && s.assignment_id === a.id);
+          const sub = studentSubs.get(a.id);
           const gradeVal = sub ? sub.grade : "";
           csv += `"${(gradeVal || "").replace(/"/g, '""')}",`;
           
@@ -178,16 +213,14 @@ export function CourseStudentsPanel({
         const avg = gradesCount > 0 ? (totalGradesSum / gradesCount).toFixed(2) : "-";
         
         // Attendance percentage
-        const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-        const recordedCount = studentAtts.length;
-        const presentOrLate = studentAtts.filter((c: any) => c.records[student.id] === "present" || c.records[student.id] === "late").length;
-        const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
+        const attendanceStats = attendanceByStudent.get(student.id) || { total: 0, presentOrLate: 0 };
+        const recordedCount = attendanceStats.total;
+        const attendanceRate = recordedCount > 0 ? (attendanceStats.presentOrLate / recordedCount) * 100 : 100;
         const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
         
         // Missing assignments
-        const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
         const hasMissingAssignments = assignments.some((a: any) => {
-          const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
+          const hasSub = studentSubs.has(a.id);
           const isPastDue = pastDueAssignments.has(a.id);
           return !hasSub && isPastDue;
         });
@@ -360,17 +393,16 @@ export function CourseStudentsPanel({
                             return studentComm === commissionFilter;
                           })
                           .map((student: any) => {
-                            const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                            const recordedCount = studentAtts.length;
-                            const presentOrLate = studentAtts.filter((c: any) => c.records[student.id] === "present" || c.records[student.id] === "late").length;
-                            const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
+                            const attendanceStats = attendanceByStudent.get(student.id) || { total: 0, presentOrLate: 0 };
+                            const recordedCount = attendanceStats.total;
+                            const attendanceRate = recordedCount > 0 ? (attendanceStats.presentOrLate / recordedCount) * 100 : 100;
                             const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
 
-                            const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                            const submittedCount = studentSubmissions.length;
+                            const studentSubs = submissionsByStudent.get(student.id) || new Map();
+                            const submittedCount = studentSubs.size;
                             const totalAssignments = assignments.length;
                             const hasMissingAssignments = assignments.some((a: any) => {
-                              const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
+                              const hasSub = studentSubs.has(a.id);
                               const isPastDue = pastDueAssignments.has(a.id);
                               return !hasSub && isPastDue;
                             });
@@ -406,7 +438,7 @@ export function CourseStudentsPanel({
                               <td className="p-4 font-mono text-gray-400">{student.matricula_unrn || "No provista"}</td>
                               <td className="p-4 space-y-1">
                                 <div className="flex items-center justify-between text-[10px]">
-                                  <span>{presentOrLate} / {recordedCount} clases</span>
+                                  <span>{attendanceStats.presentOrLate} / {recordedCount} clases</span>
                                   <span className={attendanceRate < 75 ? "text-red-400 font-bold" : "text-emerald-400 font-bold"}>
                                     {attendanceRate.toFixed(0)}%
                                   </span>
