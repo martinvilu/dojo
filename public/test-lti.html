@@ -15,19 +15,19 @@
   </style>
 </head>
 <body>
-  <h1>🥷 LTI Simulator (Local)</h1>
-  <p>Use this tool to simulate Moodle LTI payloads hitting the local Next.js server.</p>
+  <h1>🥷 LTI Simulator</h1>
+  <p>Use this tool to simulate Moodle LTI payloads hitting this server (Local or Production).</p>
 
   <div class="card">
     <h2>1. Test LTI Deep Linking (Teacher selecting a module)</h2>
-    <form action="http://localhost:3000/api/lti/deeplink" method="POST" target="_blank">
+    <form id="deeplink-form" action="/api/lti/deeplink" method="POST" target="_blank">
       <div class="form-group">
         <label>Course ID</label>
-        <input type="text" name="courseId" value="local-dev-course-123">
+        <input type="text" name="courseId" value="global">
       </div>
       <div class="form-group">
         <label>Return URL (Where Dojo redirects after selection)</label>
-        <input type="text" name="deep_link_return_url" value="http://localhost:3000/fake-moodle-return.html">
+        <input type="text" id="returnUrlInput" name="deep_link_return_url" value="/fake-moodle-return.html">
       </div>
       <button type="submit">Simulate Deep Link Request</button>
     </form>
@@ -35,7 +35,7 @@
 
   <div class="card">
     <h2>2. Test LTI Launch (Student/Teacher clicking the link in Moodle)</h2>
-    <form action="http://localhost:3000/api/lti/launch" method="POST" target="_blank">
+    <form action="/api/lti/launch" method="POST" target="_blank">
       <div class="form-group">
         <label>Target Module</label>
         <select name="targetModule">
@@ -52,7 +52,7 @@
       </div>
       <div class="form-group">
         <label>Course ID</label>
-        <input type="text" name="courseId" value="local-dev-course-123">
+        <input type="text" name="courseId" value="global">
       </div>
       <div class="form-group">
         <label>User Email</label>
@@ -60,10 +60,19 @@
       </div>
       <div class="form-group">
         <label>User Full Name</label>
-        <input type="text" name="lis_person_name_full" value="Local Test User">
+        <input type="text" name="lis_person_name_full" value="Test User">
       </div>
       <button type="submit">Simulate LTI Launch</button>
     </form>
   </div>
+
+  <script>
+    if (typeof window !== "undefined") {
+      const returnInput = document.getElementById("returnUrlInput");
+      if (returnInput) {
+        returnInput.value = window.location.origin + "/fake-moodle-return.html";
+      }
+    }
+  </script>
 </body>
 </html>
