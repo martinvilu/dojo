@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { api } from '@/lib/api';
 import { marked } from 'marked';
 import ClassCommentsThread from '@/modules/course/components/comments/ClassCommentsThread';
@@ -232,6 +232,26 @@ export function CourseSchedulesPanel({
       setApiLoading(false);
     }
   };
+
+  // Pre-calculate 'today' outside the render loops
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  // Pre-calculate attendance lookup map to avoid O(N) searching inside map loop
+  const attendanceByClass = useMemo(() => {
+    const map = new Map<number, any>();
+    if (Array.isArray(courseAttendance)) {
+      courseAttendance.forEach((a: any) => {
+        if (a.classNumber !== undefined) {
+          map.set(a.classNumber, a);
+        }
+      });
+    }
+    return map;
+  }, [courseAttendance]);
 
   return (
     <>
@@ -685,12 +705,10 @@ export function CourseSchedulesPanel({
                                   if (ci.special_status === "Feriado") tagClass = "bg-red-950/60 text-red-400 border border-red-800/40";
 
                                   // Look up student attendance for this class
-                                  const attDoc = courseAttendance.find((a: any) => a.classNumber === (ci.classNumber || 0));
+                                  const attDoc = attendanceByClass.get(ci.classNumber || 0);
                                   const studentStatus = attDoc?.records?.[profile?.id || ""];
 
                                   // Collapsible calculation
-                                  const today = new Date();
-                                  today.setHours(0, 0, 0, 0);
                                   const isPast = d < today;
                                   const classKey = `c_${weekNum}_${index}_${ci.date}`;
                                   const isCollapsed = collapsedClasses[classKey] !== undefined ? collapsedClasses[classKey] : isPast;

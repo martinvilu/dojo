@@ -5,3 +5,6 @@
 ## 2026-07-25 - O(N) array filtering within calendar grid render
 **Learning:** In a calendar view that renders ~35-42 days, calling `getEventsForDate(dateStr)` which iterates over all events ((N)$) for every single day results in (N 	imes D)$ operations on every render. This was discovered in `src/components/dashboard/calendar/CalendarPanel.tsx`.
 **Action:** Pre-compute an `eventsByDate` hash map using `useMemo` ((N)$) so that event lookups per day become (1)$, reducing overall complexity to (N + D)$.
+## 2025-02-18 - Repeated Date instantiations in functional components
+**Learning:** Instantiating `new Date()` within nested `map` iterations causes an $O(N \times M)$ overhead for simple comparisons (e.g. checking if assignments are past due or classes passed) and can cause memory leaks / performance degradation in large lists.
+**Action:** Always extract and memoize date instantiations or complex data processing that relies on invariant state during a single render cycle, using `useMemo` and Set/Map lookups for $O(1)$ performance in inner loops.
