@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useMemo } from 'react';
 import { api } from '@/lib/api';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -24,6 +24,36 @@ export function CourseStudentsPanel({
   showCsvEndpoint,
   setShowCsvEndpoint
 }: any) {
+  // Memoize attendance and submissions to prevent O(N*M) loop inside student render
+  const { attendanceStatsMap, submissionsMap } = useMemo(() => {
+    const attMap = new Map<string, { recorded: number; presentOrLate: number }>();
+    const subMap = new Map<string, any[]>();
+
+    (courseAttendance || []).forEach((c: any) => {
+      if (c.records) {
+        Object.entries(c.records).forEach(([studentId, status]) => {
+          const strId = String(studentId);
+          if (!attMap.has(strId)) {
+            attMap.set(strId, { recorded: 0, presentOrLate: 0 });
+          }
+          const stats = attMap.get(strId)!;
+          stats.recorded++;
+          if (status === "present" || status === "late") {
+            stats.presentOrLate++;
+          }
+        });
+      }
+    });
+
+    (courseSubmissions || []).forEach((s: any) => {
+      const strId = String(s.student_id);
+      if (!subMap.has(strId)) subMap.set(strId, []);
+      subMap.get(strId)!.push(s);
+    });
+
+    return { attendanceStatsMap: attMap, submissionsMap: subMap };
+  }, [courseAttendance, courseSubmissions]);
+
   const handleCheckAndAlertStudentsAtRisk = async () => {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
@@ -360,13 +390,14 @@ export function CourseStudentsPanel({
                             return studentComm === commissionFilter;
                           })
                           .map((student: any) => {
-                            const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                            const recordedCount = studentAtts.length;
-                            const presentOrLate = studentAtts.filter((c: any) => c.records[student.id] === "present" || c.records[student.id] === "late").length;
+                            const strId = String(student.id);
+                            const attStats = attendanceStatsMap.get(strId) || { recorded: 0, presentOrLate: 0 };
+                            const recordedCount = attStats.recorded;
+                            const presentOrLate = attStats.presentOrLate;
                             const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
                             const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
 
-                            const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
+                            const studentSubmissions = submissionsMap.get(strId) || [];
                             const submittedCount = studentSubmissions.length;
                             const totalAssignments = assignments.length;
                             const hasMissingAssignments = assignments.some((a: any) => {

@@ -5,3 +5,7 @@
 ## 2026-07-25 - O(N) array filtering within calendar grid render
 **Learning:** In a calendar view that renders ~35-42 days, calling `getEventsForDate(dateStr)` which iterates over all events ((N)$) for every single day results in (N 	imes D)$ operations on every render. This was discovered in `src/components/dashboard/calendar/CalendarPanel.tsx`.
 **Action:** Pre-compute an `eventsByDate` hash map using `useMemo` ((N)$) so that event lookups per day become (1)$, reducing overall complexity to (N + D)$.
+
+## 2025-02-18 - Object key type coercion causing strict equality map lookup failures
+**Learning:** When using `Object.entries()` to iterate over object keys (like `c.records`), JavaScript coerces keys to strings. If these keys are used to perform `.get()` lookups on a `Map` where the expected keys are numbers (e.g. `student.id`), the strict equality check of the `Map` will silently fail.
+**Action:** When building and querying Maps from object keys, enforce explicit and consistent type coercion (e.g. `String(student.id)`) on both Map insertion and retrieval.
