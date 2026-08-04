@@ -58,6 +58,17 @@ export function CourseSchedulesPanel({
   const [selectedVersionForDiff, setSelectedVersionForDiff] = useState<any | null>(null);
   const [selectedCourseForComparison, setSelectedCourseForComparison] = useState<any | null>(null);
 
+  // Pre-compute comment counts to avoid O(N * M) filtering in render
+  const commentCountsByClass = useMemo(() => {
+    const counts = new Map<number, number>();
+    (courseComments || []).forEach((c: any) => {
+      if (c.classNumber) {
+        counts.set(c.classNumber, (counts.get(c.classNumber) || 0) + 1);
+      }
+    });
+    return counts;
+  }, [courseComments]);
+
   const handleGenerateClasses = () => {
     if (!teacherStartDate || !teacherDuration || teacherSchedules.length === 0) {
       showToast("Primero configurá la fecha de inicio, duración en semanas y al menos un horario.", "success");
@@ -424,7 +435,7 @@ export function CourseSchedulesPanel({
                                     onClick={() => toggleComments(ci.classNumber || (idx + 1))}
                                     className="text-amber-500 hover:text-amber-400 underline text-xs font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5"
                                   >
-                                    💬 Foro ({courseComments.filter((c: any) => c.classNumber === (ci.classNumber || (idx + 1))).length})
+                                    💬 Foro ({commentCountsByClass.get(ci.classNumber || (idx + 1)) || 0})
                                   </button>
                                   <button
                                     type="button"
