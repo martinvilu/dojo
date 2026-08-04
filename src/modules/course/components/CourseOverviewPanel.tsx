@@ -2,6 +2,8 @@
 import React from 'react';
 import { api } from '@/lib/api';
 
+import { useMemo } from 'react';
+
 export function CourseOverviewPanel({
   profile,
   selectedCourse,
@@ -19,6 +21,39 @@ export function CourseOverviewPanel({
   courseComments,
   setExpandedComments
 }: any) {
+
+  const studentsAtRisk = useMemo(() => {
+    return roster
+      .reduce((acc: any[], student: any) => {
+        if (student.role !== "student") return acc;
+
+        const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
+        const recordedCount = studentAtts.length;
+        const presentOrLate = studentAtts.filter(
+          (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
+        ).length;
+        const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
+        const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
+
+        const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
+        const hasMissingAssignments = assignments.some((a: any) => {
+          const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
+          const isPastDue = pastDueAssignments.has(a.id);
+          return !hasSub && isPastDue;
+        });
+
+        if (hasCriticalAttendance || hasMissingAssignments) {
+          acc.push({
+            ...student,
+            attendanceRate,
+            hasCriticalAttendance,
+            hasMissingAssignments,
+          });
+        }
+        return acc;
+      }, []);
+  }, [roster, courseAttendance, courseSubmissions, assignments, pastDueAssignments]);
+
   return (
     <>
               <div className="space-y-6 animate-fade-in font-sans">
@@ -44,42 +79,16 @@ export function CourseOverviewPanel({
                   })()}
 
                   {/* Card 2: Students At Risk */}
-                  {(() => {
-                    let atRiskCount = 0;
-                    roster.forEach((student: any) => {
-                      const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                      const recordedCount = studentAtts.length;
-                      const presentOrLate = studentAtts.filter(
-                        (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-                      ).length;
-                      const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                      const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
-
-                      const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                      const hasMissingAssignments = assignments.some((a: any) => {
-                        const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-                        const isPastDue = pastDueAssignments.has(a.id);
-                        return !hasSub && isPastDue;
-                      });
-
-                      if (hasCriticalAttendance || hasMissingAssignments) {
-                        atRiskCount++;
-                      }
-                    });
-
-                    return (
-                      <div className="bg-neutral-900/60 border border-neutral-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
-                        <div className="space-y-1">
-                          <span className="text-[10px] text-gray-550 font-bold uppercase tracking-widest font-sans">Alumnos en Riesgo</span>
-                          <div className="text-3xl font-black text-red-500 font-mono">{atRiskCount}</div>
-                          <p className="text-[10px] text-gray-400">Por inasistencias o entregas vencidas.</p>
-                        </div>
-                        <div className="text-3xl bg-red-950/40 border border-red-900/30 p-3 rounded-xl text-red-400 animate-pulse">
-                          ⚠️
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  <div className="bg-neutral-900/60 border border-neutral-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-gray-550 font-bold uppercase tracking-widest font-sans">Alumnos en Riesgo</span>
+                      <div className="text-3xl font-black text-red-500 font-mono">{studentsAtRisk.length}</div>
+                      <p className="text-[10px] text-gray-400">Por inasistencias o entregas vencidas.</p>
+                    </div>
+                    <div className="text-3xl bg-red-950/40 border border-red-900/30 p-3 rounded-xl text-red-400 animate-pulse">
+                      ⚠️
+                    </div>
+                  </div>
 
                   {/* Card 3: Total Deliveries */}
                   <div className="bg-neutral-900/60 border border-neutral-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
@@ -239,94 +248,40 @@ export function CourseOverviewPanel({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-900 text-gray-300">
-                        {roster
-                          .filter((student: any) => {
-                            if (student.role !== "student") return false;
-                            const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                            const recordedCount = studentAtts.length;
-                            const presentOrLate = studentAtts.filter(
-                              (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-                            ).length;
-                            const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                            const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
-
-                            const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                            const hasMissingAssignments = assignments.some((a: any) => {
-                              const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-                              const isPastDue = pastDueAssignments.has(a.id);
-                              return !hasSub && isPastDue;
-                            });
-
-                            return hasCriticalAttendance || hasMissingAssignments;
-                          })
+                        {studentsAtRisk
                           .slice(0, 5)
-                          .map((student: any) => {
-                            const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                            const recordedCount = studentAtts.length;
-                            const presentOrLate = studentAtts.filter(
-                              (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-                            ).length;
-                            const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                            const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
-
-                            const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                            const hasMissingAssignments = assignments.some((a: any) => {
-                              const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-                              const isPastDue = pastDueAssignments.has(a.id);
-                              return !hasSub && isPastDue;
-                            });
-
-                            return (
-                              <tr key={student.id} className="hover:bg-neutral-950/20 transition-colors">
-                                <td className="py-3 font-semibold text-white font-sans">
-                                  {student.full_name}
-                                  <div className="text-[10px] text-gray-500 font-normal">{student.email}</div>
-                                </td>
-                                <td className="py-3 text-gray-400 font-mono">
-                                  {student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "Sin Comisión"}
-                                </td>
-                                <td className="py-3 font-semibold text-gray-400 font-mono">
-                                  {attendanceRate.toFixed(0)}%
-                                </td>
-                                <td className="py-3 space-x-1.5">
-                                  {hasCriticalAttendance && (
-                                    <span className="px-2 py-0.5 rounded-md bg-red-950 border border-red-800/40 text-red-400 text-[8px] font-bold uppercase tracking-wider font-mono">
-                                      Asistencia Crítica
-                                    </span>
-                                  )}
-                                  {hasMissingAssignments && (
-                                    <span className="px-2 py-0.5 rounded-md bg-amber-955 border border-amber-800/40 text-amber-400 text-[8px] font-bold uppercase tracking-wider font-mono">
-                                      Tareas Atrasadas
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="py-3 text-right">
-                                  <span className="px-2 py-0.5 rounded bg-red-950 border border-red-900/40 text-red-400 text-[9px] font-bold uppercase font-mono">
-                                    EN RIESGO
+                          .map((student: any) => (
+                            <tr key={student.id} className="hover:bg-neutral-950/20 transition-colors">
+                              <td className="py-3 font-semibold text-white font-sans">
+                                {student.full_name}
+                                <div className="text-[10px] text-gray-500 font-normal">{student.email}</div>
+                              </td>
+                              <td className="py-3 text-gray-400 font-mono">
+                                {student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "Sin Comisión"}
+                              </td>
+                              <td className="py-3 font-semibold text-gray-400 font-mono">
+                                {student.attendanceRate.toFixed(0)}%
+                              </td>
+                              <td className="py-3 space-x-1.5">
+                                {student.hasCriticalAttendance && (
+                                  <span className="px-2 py-0.5 rounded-md bg-red-950 border border-red-800/40 text-red-400 text-[8px] font-bold uppercase tracking-wider font-mono">
+                                    Asistencia Crítica
                                   </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        {roster.filter((student: any) => {
-                          if (student.role !== "student") return false;
-                          const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                          const recordedCount = studentAtts.length;
-                          const presentOrLate = studentAtts.filter(
-                            (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-                          ).length;
-                          const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                          const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
-
-                          const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                          const hasMissingAssignments = assignments.some((a: any) => {
-                            const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-                            const isPastDue = pastDueAssignments.has(a.id);
-                            return !hasSub && isPastDue;
-                          });
-
-                          return hasCriticalAttendance || hasMissingAssignments;
-                        }).length === 0 && (
+                                )}
+                                {student.hasMissingAssignments && (
+                                  <span className="px-2 py-0.5 rounded-md bg-amber-955 border border-amber-800/40 text-amber-400 text-[8px] font-bold uppercase tracking-wider font-mono">
+                                    Tareas Atrasadas
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 text-right">
+                                <span className="px-2 py-0.5 rounded bg-red-950 border border-red-900/40 text-red-400 text-[9px] font-bold uppercase font-mono">
+                                  EN RIESGO
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        {studentsAtRisk.length === 0 && (
                           <tr>
                             <td colSpan={5} className="py-6 text-center text-gray-500 italic font-sans">
                               💚 Todos los alumnos se encuentran al día con sus asistencias y entregas.
