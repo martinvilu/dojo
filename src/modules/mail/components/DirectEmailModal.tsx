@@ -64,8 +64,9 @@ export default function DirectEmailModal({
     >
       <form onSubmit={handleSend} className="space-y-4 w-full">
         <div className="w-full">
-          <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Asunto</label>
+          <label htmlFor="subject" className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Asunto</label>
           <input
+            id="subject"
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
@@ -75,8 +76,9 @@ export default function DirectEmailModal({
         </div>
 
         <div className="w-full">
-          <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Mensaje</label>
+          <label htmlFor="messageBody" className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Mensaje</label>
           <textarea
+            id="messageBody"
             value={messageBody}
             onChange={(e) => setMessageBody(e.target.value)}
             rows={6}
