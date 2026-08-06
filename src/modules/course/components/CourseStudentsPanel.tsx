@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, updateDoc } from 'firebase/firestore';
 import { copyToClipboard } from '@/lib/clipboard';
+import { useMemo } from 'react';
 
 export function CourseStudentsPanel({
   profile,
@@ -24,6 +25,35 @@ export function CourseStudentsPanel({
   showCsvEndpoint,
   setShowCsvEndpoint
 }: any) {
+  // Pre-compute attendance and submissions statistics for O(1) lookups during render and export
+  // This avoids O(N) array filtering/finding inside maps across hundreds of rows
+  const { attendanceStats, submissionsByStudent } = useMemo(() => {
+    const attStats = new Map();
+    (courseAttendance || []).forEach((att: any) => {
+      if (!att.records) return;
+      Object.entries(att.records).forEach(([studentId, status]) => {
+        if (!attStats.has(studentId)) {
+          attStats.set(studentId, { recordedCount: 0, presentOrLate: 0 });
+        }
+        const stats = attStats.get(studentId);
+        stats.recordedCount++;
+        if (status === "present" || status === "late") {
+          stats.presentOrLate++;
+        }
+      });
+    });
+
+    const subsByStudent = new Map();
+    (courseSubmissions || []).forEach((sub: any) => {
+      if (!subsByStudent.has(sub.student_id)) {
+        subsByStudent.set(sub.student_id, new Map());
+      }
+      subsByStudent.get(sub.student_id).set(sub.assignment_id, sub);
+    });
+
+    return { attendanceStats: attStats, submissionsByStudent: subsByStudent };
+  }, [courseAttendance, courseSubmissions]);
+
   const handleCheckAndAlertStudentsAtRisk = async () => {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
@@ -49,7 +79,8 @@ export function CourseStudentsPanel({
     const rosterHtml = roster
       .filter((s: any) => s.role === "student")
       .map((s: any) => {
-        const presentCount = courseAttendance.filter((a: any) => a.student_id === s.student_id && ["present", "late"].includes(a.status)).length;
+        const attStats = attendanceStats.get(s.student_id) || { recordedCount: 0, presentOrLate: 0 };
+        const presentCount = attStats.presentOrLate;
         const totalClasses = teacherClasses.length;
         const attendancePercent = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 100;
         
@@ -101,7 +132,8 @@ export function CourseStudentsPanel({
               <strong>Promedio General Asistencia</strong><br/>
               <span style="font-size: 24px; font-weight: bold; color: #10b981;">
                 ${roster.length > 0 ? Math.round(roster.reduce((acc: any, curr: any) => {
-                  const present = courseAttendance.filter((a: any) => a.student_id === curr.student_id && ["present", "late"].includes(a.status)).length;
+                  const attStats = attendanceStats.get(curr.student_id) || { presentOrLate: 0 };
+                  const present = attStats.presentOrLate;
                   return acc + (teacherClasses.length > 0 ? (present / teacherClasses.length) : 1);
                 }, 0) / roster.length * 100) : 100}%
               </span>
@@ -161,9 +193,11 @@ export function CourseStudentsPanel({
         let totalGradesSum = 0;
         let gradesCount = 0;
         
+        const studentSubsMap = submissionsByStudent.get(student.id) || new Map();
+
         // Assignments columns
         assignments.forEach((a: any) => {
-          const sub = courseSubmissions.find((s: any) => s.student_id === student.id && s.assignment_id === a.id);
+          const sub = studentSubsMap.get(a.id);
           const gradeVal = sub ? sub.grade : "";
           csv += `"${(gradeVal || "").replace(/"/g, '""')}",`;
           
@@ -178,16 +212,15 @@ export function CourseStudentsPanel({
         const avg = gradesCount > 0 ? (totalGradesSum / gradesCount).toFixed(2) : "-";
         
         // Attendance percentage
-        const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-        const recordedCount = studentAtts.length;
-        const presentOrLate = studentAtts.filter((c: any) => c.records[student.id] === "present" || c.records[student.id] === "late").length;
+        const attStats = attendanceStats.get(student.id) || { recordedCount: 0, presentOrLate: 0 };
+        const recordedCount = attStats.recordedCount;
+        const presentOrLate = attStats.presentOrLate;
         const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
         const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
         
         // Missing assignments
-        const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
         const hasMissingAssignments = assignments.some((a: any) => {
-          const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
+          const hasSub = studentSubsMap.has(a.id);
           const isPastDue = pastDueAssignments.has(a.id);
           return !hasSub && isPastDue;
         });
@@ -360,17 +393,17 @@ export function CourseStudentsPanel({
                             return studentComm === commissionFilter;
                           })
                           .map((student: any) => {
-                            const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                            const recordedCount = studentAtts.length;
-                            const presentOrLate = studentAtts.filter((c: any) => c.records[student.id] === "present" || c.records[student.id] === "late").length;
+                            const attStats = attendanceStats.get(student.id) || { recordedCount: 0, presentOrLate: 0 };
+                            const recordedCount = attStats.recordedCount;
+                            const presentOrLate = attStats.presentOrLate;
                             const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
                             const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
 
-                            const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                            const submittedCount = studentSubmissions.length;
+                            const studentSubsMap = submissionsByStudent.get(student.id) || new Map();
+                            const submittedCount = studentSubsMap.size;
                             const totalAssignments = assignments.length;
                             const hasMissingAssignments = assignments.some((a: any) => {
-                              const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
+                              const hasSub = studentSubsMap.has(a.id);
                               const isPastDue = pastDueAssignments.has(a.id);
                               return !hasSub && isPastDue;
                             });
