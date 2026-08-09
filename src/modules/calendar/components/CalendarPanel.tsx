@@ -145,6 +145,10 @@ export default function CalendarPanel({
     return map;
   }, [filteredClasses, filteredAssignments]);
 
+  // ⚡ Bolt Optimization: Precompute today's date string once per render
+  // Avoids O(N) Date instantiations and conversions inside the .map loops (up to 42 times per month view render).
+  const todayStr = toLocalDateString(new Date());
+
   // Parsing event dates
   const getEventsForDate = (dateStr: string) => {
     return eventsByDate.get(dateStr) || [];
@@ -419,7 +423,7 @@ export default function CalendarPanel({
             {getMonthDays().map(({ date, isCurrentMonth }, idx) => {
               const dateStr = toLocalDateString(date);
               const dayEvents = getEventsForDate(dateStr);
-              const isToday = toLocalDateString(new Date()) === dateStr;
+              const isToday = todayStr === dateStr;
 
               return (
                 <div
@@ -485,7 +489,7 @@ export default function CalendarPanel({
           {getWeekDays().map((date, idx) => {
             const dateStr = toLocalDateString(date);
             const dayEvents = getEventsForDate(dateStr);
-            const isToday = toLocalDateString(new Date()) === dateStr;
+            const isToday = todayStr === dateStr;
 
             return (
               <div
