@@ -19,6 +19,37 @@ export function CourseOverviewPanel({
   courseComments,
   setExpandedComments
 }: any) {
+  // Memoize student risk calculations to avoid O(R * (A + S)) recomputations on every render
+  const studentsRiskData = React.useMemo(() => {
+    const data = new Map();
+    roster.forEach((student: any) => {
+      if (student.role !== "student") return;
+
+      const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
+      const recordedCount = studentAtts.length;
+      const presentOrLate = studentAtts.filter(
+        (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
+      ).length;
+      const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
+      const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
+
+      const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
+      const hasMissingAssignments = assignments.some((a: any) => {
+        const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
+        const isPastDue = pastDueAssignments.has(a.id);
+        return !hasSub && isPastDue;
+      });
+
+      data.set(student.id, {
+        hasCriticalAttendance,
+        hasMissingAssignments,
+        attendanceRate,
+        isAtRisk: hasCriticalAttendance || hasMissingAssignments
+      });
+    });
+    return data;
+  }, [roster, courseAttendance, courseSubmissions, assignments, pastDueAssignments]);
+
   return (
     <>
               <div className="space-y-6 animate-fade-in font-sans">
@@ -46,23 +77,8 @@ export function CourseOverviewPanel({
                   {/* Card 2: Students At Risk */}
                   {(() => {
                     let atRiskCount = 0;
-                    roster.forEach((student: any) => {
-                      const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                      const recordedCount = studentAtts.length;
-                      const presentOrLate = studentAtts.filter(
-                        (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-                      ).length;
-                      const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                      const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
-
-                      const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                      const hasMissingAssignments = assignments.some((a: any) => {
-                        const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-                        const isPastDue = pastDueAssignments.has(a.id);
-                        return !hasSub && isPastDue;
-                      });
-
-                      if (hasCriticalAttendance || hasMissingAssignments) {
+                    studentsRiskData.forEach((riskData) => {
+                      if (riskData.isAtRisk) {
                         atRiskCount++;
                       }
                     });
@@ -241,40 +257,16 @@ export function CourseOverviewPanel({
                       <tbody className="divide-y divide-neutral-900 text-gray-300">
                         {roster
                           .filter((student: any) => {
-                            if (student.role !== "student") return false;
-                            const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                            const recordedCount = studentAtts.length;
-                            const presentOrLate = studentAtts.filter(
-                              (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-                            ).length;
-                            const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                            const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
-
-                            const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                            const hasMissingAssignments = assignments.some((a: any) => {
-                              const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-                              const isPastDue = pastDueAssignments.has(a.id);
-                              return !hasSub && isPastDue;
-                            });
-
-                            return hasCriticalAttendance || hasMissingAssignments;
+                            const riskData = studentsRiskData.get(student.id);
+                            return riskData ? riskData.isAtRisk : false;
                           })
                           .slice(0, 5)
                           .map((student: any) => {
-                            const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                            const recordedCount = studentAtts.length;
-                            const presentOrLate = studentAtts.filter(
-                              (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-                            ).length;
-                            const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                            const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
-
-                            const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                            const hasMissingAssignments = assignments.some((a: any) => {
-                              const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-                              const isPastDue = pastDueAssignments.has(a.id);
-                              return !hasSub && isPastDue;
-                            });
+                            const riskData = studentsRiskData.get(student.id) || {
+                              hasCriticalAttendance: false,
+                              hasMissingAssignments: false,
+                              attendanceRate: 100
+                            };
 
                             return (
                               <tr key={student.id} className="hover:bg-neutral-950/20 transition-colors">
@@ -286,15 +278,15 @@ export function CourseOverviewPanel({
                                   {student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "Sin Comisión"}
                                 </td>
                                 <td className="py-3 font-semibold text-gray-400 font-mono">
-                                  {attendanceRate.toFixed(0)}%
+                                  {riskData.attendanceRate.toFixed(0)}%
                                 </td>
                                 <td className="py-3 space-x-1.5">
-                                  {hasCriticalAttendance && (
+                                  {riskData.hasCriticalAttendance && (
                                     <span className="px-2 py-0.5 rounded-md bg-red-950 border border-red-800/40 text-red-400 text-[8px] font-bold uppercase tracking-wider font-mono">
                                       Asistencia Crítica
                                     </span>
                                   )}
-                                  {hasMissingAssignments && (
+                                  {riskData.hasMissingAssignments && (
                                     <span className="px-2 py-0.5 rounded-md bg-amber-955 border border-amber-800/40 text-amber-400 text-[8px] font-bold uppercase tracking-wider font-mono">
                                       Tareas Atrasadas
                                     </span>
@@ -309,23 +301,8 @@ export function CourseOverviewPanel({
                             );
                           })}
                         {roster.filter((student: any) => {
-                          if (student.role !== "student") return false;
-                          const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-                          const recordedCount = studentAtts.length;
-                          const presentOrLate = studentAtts.filter(
-                            (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-                          ).length;
-                          const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-                          const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
-
-                          const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-                          const hasMissingAssignments = assignments.some((a: any) => {
-                            const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-                            const isPastDue = pastDueAssignments.has(a.id);
-                            return !hasSub && isPastDue;
-                          });
-
-                          return hasCriticalAttendance || hasMissingAssignments;
+                          const riskData = studentsRiskData.get(student.id);
+                          return riskData ? riskData.isAtRisk : false;
                         }).length === 0 && (
                           <tr>
                             <td colSpan={5} className="py-6 text-center text-gray-500 italic font-sans">
