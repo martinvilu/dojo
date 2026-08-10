@@ -1531,10 +1531,12 @@ export default function DashboardPage() {
         {/* Collapse Toggle Button (Desktop Only) */}
         <button
           type="button"
+          aria-label={isSidebarCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+          aria-expanded={!isSidebarCollapsed}
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="hidden md:flex absolute top-5 -right-3.5 bg-bg-secondary border border-border-custom text-text-secondary hover:text-text-primary p-1.5 rounded-full z-50 shadow-md cursor-pointer transition-transform hover:scale-110"
+          className="hidden md:flex absolute top-5 -right-3.5 bg-bg-secondary border border-border-custom text-text-secondary hover:text-text-primary p-1.5 rounded-full z-50 shadow-md cursor-pointer transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
-          <span>{isSidebarCollapsed ? "▶" : "◀"}</span>
+          <span aria-hidden="true">{isSidebarCollapsed ? "▶" : "◀"}</span>
         </button>
 
         <div className="overflow-hidden">
@@ -1550,9 +1552,13 @@ export default function DashboardPage() {
 
         {/* Clickable User Profile Badge with floating menu */}
         <div className="relative">
-          <div
+          <button
+            type="button"
+            aria-label="Menú de perfil de usuario"
+            aria-haspopup="menu"
+            aria-expanded={isProfileMenuOpen}
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="flex items-center space-x-3 bg-bg-primary/50 p-3 rounded-xl border border-border-custom cursor-pointer hover:bg-bg-tertiary transition-colors"
+            className="w-full flex items-center space-x-3 bg-bg-primary/50 p-3 rounded-xl border border-border-custom cursor-pointer hover:bg-bg-tertiary transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 text-left"
           >
             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white uppercase overflow-hidden text-sm shrink-0">
               {profile?.avatar_url ? (
@@ -1567,7 +1573,7 @@ export default function DashboardPage() {
                 <p className="text-xs text-text-secondary truncate">{currentUser?.email}</p>
               </div>
             )}
-          </div>
+          </button>
 
           {/* FLOATING PROFILE MENU (POPOVER) */}
           {isProfileMenuOpen && (
