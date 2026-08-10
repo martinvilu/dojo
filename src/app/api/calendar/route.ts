@@ -57,7 +57,7 @@ const DEFAULT_SAMPLE_EVENTS: CalendarEvent[] = [
 ];
 
 function generateICSContent(events: CalendarEvent[], courseName: string = "Jutsu Classroom"): string {
-  let ics = [
+  const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Jutsu Classroom//Calendar Feed 1.0//ES",

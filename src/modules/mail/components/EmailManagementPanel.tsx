@@ -368,7 +368,7 @@ export default function EmailManagementPanel({
                   {mailLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-neutral-850/50 transition">
                       <td className="p-3 font-mono text-gray-400">
-                        {log.sent_at?.seconds ? new Date(log.sent_at.seconds * 1000).toLocaleString("es-AR") : new Date(log.sent_at || Date.now()).toLocaleString("es-AR")}
+                        {log.sent_at?.seconds ? new Date(log.sent_at.seconds * 1000).toLocaleString("es-AR") : (log.sent_at ? new Date(log.sent_at).toLocaleString("es-AR") : "-")}
                       </td>
                       <td className="p-3 font-semibold text-white">
                         {log.student_name ? `${log.student_name} (${log.student_email})` : "Envío Masivo"}

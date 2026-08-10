@@ -80,12 +80,12 @@ export function CourseSchedulesPanel({
     const baseDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
     const dayMap: Record<string, number> = { "Domingo": 0, "Lunes": 1, "Martes": 2, "Miércoles": 3, "Jueves": 4, "Viernes": 5, "Sábado": 6 };
 
-    let generated: ClassInstance[] = [];
+    const generated: ClassInstance[] = [];
     teacherSchedules.forEach((sch: any) => {
       const targetDay = dayMap[sch.day];
       if (targetDay === undefined) return;
 
-      let currentDay = baseDate.getUTCDay();
+      const currentDay = baseDate.getUTCDay();
       let diff = targetDay - currentDay;
       if (diff < 0) diff += 7;
 
@@ -480,7 +480,7 @@ export function CourseSchedulesPanel({
                         );
                       })}
                       {teacherClasses.length === 0 && (
-                        <p className="text-gray-500 text-sm">No hay clases creadas. Ve a la pestaña 'Ajustes Cátedra' para crearlas.</p>
+                        <p className="text-gray-500 text-sm">No hay clases creadas. Ve a la pestaña &apos;Ajustes Cátedra&apos; para crearlas.</p>
                       )}
                     </div>
                   ) : (

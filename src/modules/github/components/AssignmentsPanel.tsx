@@ -411,7 +411,7 @@ export default function AssignmentsPanel({
                                           </div>
                                           <div>
                                             <span className="text-[9px] text-gray-500 block uppercase font-bold">Cambio de Feedback</span>
-                                            <p className="text-gray-400 italic">"{log.previous_feedback || "(sin feedback)"}" ➔ <strong className="text-gray-300">"{log.new_feedback}"</strong></p>
+                                            <p className="text-gray-400 italic">&quot;{log.previous_feedback || "(sin feedback)"}&quot; ➔ <strong className="text-gray-300">&quot;{log.new_feedback}&quot;</strong></p>
                                           </div>
                                         </div>
                                       </div>

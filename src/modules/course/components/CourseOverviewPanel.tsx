@@ -205,7 +205,7 @@ export function CourseOverviewPanel({
                               </span>
                             </div>
                             <p className="text-xs text-gray-300 line-clamp-2 italic leading-relaxed">
-                              "{comment.content}"
+                              &quot;{comment.content}&quot;
                             </p>
                             <div className="flex justify-end pt-1">
                               <button

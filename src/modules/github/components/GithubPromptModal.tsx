@@ -3,10 +3,9 @@ import React from "react";
 
 export function GithubPromptModal(props: any) {
   const { githubPromptModal, setGithubPromptModal, showToast } = props;
-  
-  if (!githubPromptModal?.isOpen) return null;
+  const [inputVal, setInputVal] = React.useState("");
 
-  let inputVal = "";
+  if (!githubPromptModal?.isOpen) return null;
   
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -18,9 +17,10 @@ export function GithubPromptModal(props: any) {
         </p>
         <input
           type="text"
+          value={inputVal}
           placeholder="Nombre de usuario de GitHub"
           className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans"
-          onChange={(e) => { inputVal = e.target.value; }}
+          onChange={(e) => setInputVal(e.target.value)}
         />
         <div className="flex gap-3 pt-2">
           <button

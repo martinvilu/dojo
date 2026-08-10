@@ -357,7 +357,7 @@ export default function MoodleIntegrationPanel({
                   2. Servicios
                 </h4>
                 <p className="text-text-secondary"><strong className="text-text-primary">IMS LTI Assignment and Grade Services:</strong> Use this service for grade sync and column management</p>
-                <p className="text-text-secondary"><strong className="text-text-primary">IMS LTI Names and Role Provisioning:</strong> Use this service to retrieve members' information as per privacy settings</p>
+                <p className="text-text-secondary"><strong className="text-text-primary">IMS LTI Names and Role Provisioning:</strong> Use this service to retrieve members&apos; information as per privacy settings</p>
                 <p className="text-text-secondary"><strong className="text-text-primary">Tool Settings:</strong> Use this service</p>
               </div>
 

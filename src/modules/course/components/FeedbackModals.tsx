@@ -197,7 +197,7 @@ export function FeedbackModals(props: any) {
                   <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
                     {feedbackStats.comments.map((cmt: any, cIdx: number) => (
                       <div key={cIdx} className="bg-neutral-950/80 border border-neutral-850 p-3 rounded-xl text-xs text-gray-300 leading-relaxed italic">
-                        "{cmt}"
+                        &quot;{cmt}&quot;
                       </div>
                     ))}
                     {feedbackStats.comments.length === 0 && (

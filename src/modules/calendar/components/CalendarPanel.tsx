@@ -56,8 +56,6 @@ export default function CalendarPanel({
   const [newBookmarkTime, setNewBookmarkTime] = useState("");
   const [newBookmarkLabel, setNewBookmarkLabel] = useState("");
 
-  if (activeTab !== "calendar") return null;
-
   // Filter events by selected course
   const filteredClasses = useMemo(() => {
     return classes.filter((c) => {
@@ -306,6 +304,8 @@ export default function CalendarPanel({
     setNewBookmarkTime("");
     setNewBookmarkLabel("");
   };
+
+  if (activeTab !== "calendar") return null;
 
   return (
     <div className="space-y-6">

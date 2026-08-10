@@ -1,5 +1,4 @@
 import React from "react";
-import { useGmailAuth } from "../hooks/useGmailAuth";
 
 export default function GmailIntegrationCard({ 
   gmailStatus, 
