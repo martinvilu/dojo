@@ -58,18 +58,23 @@ export default function StudentPanel({
 
           {/* Join Course Form */}
           <form onSubmit={handleEnrollCourse} className="flex gap-2">
+            <label htmlFor="enrollCode" className="sr-only">
+              Código Cátedra
+            </label>
             <input
+              id="enrollCode"
               type="text"
               maxLength={6}
               value={enrollCode}
               onChange={(e) => setEnrollCode(e.target.value)}
               placeholder="Código Cátedra"
-              className="bg-bg-primary border border-border-custom rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-blue-500 uppercase font-mono tracking-widest text-center text-text-primary placeholder:text-text-secondary"
+              title="Ingresá el código de 6 caracteres brindado por el profesor"
+              className="bg-bg-primary border border-border-custom rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 uppercase font-mono tracking-widest text-center text-text-primary placeholder:text-text-secondary"
               required
             />
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:outline-none"
             >
               Unirse
             </button>
