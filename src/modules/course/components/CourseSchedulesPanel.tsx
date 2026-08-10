@@ -5,6 +5,13 @@ import { marked } from 'marked';
 import ClassCommentsThread from '@/modules/course/components/comments/ClassCommentsThread';
 import AttendanceManager from '@/modules/attendance/components/AttendanceManager';
 
+// Pre-instantiate DateFormatters to prevent O(N) recreations during rendering
+const longDateFormatter = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+const shortDateFormatter = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short", timeZone: "UTC" });
+const shortDateWithWeekdayFormatter = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+const timeFormatter = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+const localeStringFormatter = new Intl.DateTimeFormat("es-AR", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
 export interface ClassInstance {
   date: string;
   type: string;
@@ -329,8 +336,8 @@ export function CourseSchedulesPanel({
                       <div className="space-y-4">
                         {teacherClasses.map((ci: any, idx: number) => {
                         const dateObj = new Date(ci.date);
-                        const dateStr = dateObj.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
-                        const timeStr = dateObj.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+                        const dateStr = longDateFormatter.format(dateObj);
+                        const timeStr = timeFormatter.format(dateObj);
 
                         return (
                           <div
@@ -517,7 +524,7 @@ export function CourseSchedulesPanel({
                                   <div className="flex justify-between items-center text-[10px]">
                                     <span className="font-bold text-gray-550">Clase {item.originalIndex + 1}</span>
                                     <span className="text-gray-550 font-sans">
-                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                      {shortDateFormatter.format(new Date(item.date))}
                                     </span>
                                   </div>
                                   <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema"}</h5>
@@ -567,7 +574,7 @@ export function CourseSchedulesPanel({
                                   <div className="flex justify-between items-center text-[10px]">
                                     <span className="font-bold text-gray-550">Clase {item.originalIndex + 1}</span>
                                     <span className="text-gray-550 font-sans">
-                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                      {shortDateFormatter.format(new Date(item.date))}
                                     </span>
                                   </div>
                                   <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema"}</h5>
@@ -617,7 +624,7 @@ export function CourseSchedulesPanel({
                                   <div className="flex justify-between items-center text-[10px]">
                                     <span className="font-bold text-amber-550 font-sans">Clase {item.originalIndex + 1}</span>
                                     <span className="text-gray-550 font-sans">
-                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                      {shortDateFormatter.format(new Date(item.date))}
                                     </span>
                                   </div>
                                   <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema (Feriado)"}</h5>
@@ -664,7 +671,7 @@ export function CourseSchedulesPanel({
                                   <div className="flex justify-between items-center text-[10px]">
                                     <span className="font-bold text-red-450 font-sans">Clase {item.originalIndex + 1}</span>
                                     <span className="text-gray-555 font-mono">
-                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                      {shortDateFormatter.format(new Date(item.date))}
                                     </span>
                                   </div>
                                   <h5 className="font-bold text-xs text-red-200 truncate">{item.topic || "Evaluación"}</h5>
@@ -708,7 +715,7 @@ export function CourseSchedulesPanel({
                           <div className="space-y-3">
                             {weeklyClassesGrouped[parseInt(weekNum)].map((ci: any, index: number) => {
                                   const d = new Date(ci.date);
-                                  const ds = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+                                  const ds = shortDateWithWeekdayFormatter.format(d);
                                   
                                   let tagClass = "bg-neutral-800 text-gray-400";
                                   if (ci.special_status === "Clase Remota") tagClass = "bg-amber-950/60 text-amber-400 border border-amber-800/40";
@@ -866,7 +873,7 @@ export function CourseSchedulesPanel({
                       >
                         <p className="font-bold text-white">{v.version_name}</p>
                         <p className="text-[10px] text-gray-400">Por: {v.created_by_name}</p>
-                        <p className="text-[9px] text-gray-500">{new Date(v.created_at).toLocaleString()}</p>
+                        <p className="text-[9px] text-gray-500">{localeStringFormatter.format(new Date(v.created_at))}</p>
                         <div className="flex gap-2 pt-1">
                           <button
                             onClick={(e) => {
