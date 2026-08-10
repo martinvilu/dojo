@@ -12,3 +12,7 @@
 ## 2025-02-18 - Repeated Date instantiations in functional components
 **Learning:** Instantiating `new Date()` within nested `map` iterations causes an $O(N \times M)$ overhead for simple comparisons (e.g. checking if assignments are past due or classes passed) and can cause memory leaks / performance degradation in large lists.
 **Action:** Always extract and memoize date instantiations or complex data processing that relies on invariant state during a single render cycle, using `useMemo` and Set/Map lookups for $O(1)$ performance in inner loops.
+
+## 2023-10-25 - O(N*M) filtering inside render loops
+**Learning:** Found an $O(N \times M)$ anti-pattern in `src/modules/course/components/CourseSchedulesPanel.tsx` where an array of comments ($M$) was being `.filter()`'d inside a `.map()` that rendered a list of classes ($N$) to find comment counts per class. This caused significant performance degradation on every render when both lists are large.
+**Action:** Replace nested loops by pre-computing counts with a `useMemo` block into a `Map` ($O(N + M)$), and then use `O(1)` map lookups inside the render cycle.
