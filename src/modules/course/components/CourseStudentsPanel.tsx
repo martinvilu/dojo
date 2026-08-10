@@ -334,6 +334,8 @@ export function CourseStudentsPanel({
                       type="button"
                       onClick={() => setShowCsvEndpoint(!showCsvEndpoint)}
                       className="w-full flex justify-between items-center text-xs font-bold text-gray-300 hover:text-white transition cursor-pointer select-none"
+                      aria-expanded={showCsvEndpoint}
+                      aria-controls="csv-endpoint-collapse"
                     >
                       <span className="flex items-center space-x-2">
                         <span>📊 URL de Endpoint CSV para Planillas de Cálculo (Google Sheets / Excel)</span>
@@ -344,7 +346,7 @@ export function CourseStudentsPanel({
                     </button>
 
                     {showCsvEndpoint && (
-                      <div className="pt-3 space-y-2 border-t border-neutral-900 animate-in fade-in duration-200">
+                      <div id="csv-endpoint-collapse" className="pt-3 space-y-2 border-t border-neutral-900 animate-in fade-in duration-200">
                         <p className="text-[10px] text-gray-400 leading-relaxed">
                           Conectá esta URL directamente en Google Sheets con <code className="text-emerald-400 font-mono font-bold">=IMPORTDATA(&quot;...&quot;)</code> para sincronizar automáticamente el roster y alertas de desempeño:
                         </p>
