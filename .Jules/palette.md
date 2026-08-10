@@ -16,3 +16,7 @@
 ## 2026-08-03 - Password Visibility Toggle UX
 **Learning:** The login page lacked a way to verify the entered password, leading to potential frustration and typos, especially on mobile devices or when pasting.
 **Action:** Adding a simple, accessible show/hide password toggle button within the password input field significantly improves the login experience without requiring large design changes. Ensure the button has proper `aria-label` for screen readers and `focus-visible` styles for keyboard navigation.
+
+## 2026-08-01 - Form Accessibility (Label Associations)
+**Learning:** Found that multiple form inputs across the application (e.g., in the login page and user profile panel) lacked explicit associations with their labels via `htmlFor` and `id`. This negatively impacts screen readers and reduces the click area for users.
+**Action:** Always associate `<label>` elements with their respective `<input>` elements using the `htmlFor` and `id` attributes to improve accessibility and user experience.
