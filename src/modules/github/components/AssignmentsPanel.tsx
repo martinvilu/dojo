@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { query, collection, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import GithubActivityPanel from "./GithubActivityPanel";
@@ -49,6 +49,17 @@ export default function AssignmentsPanel({
   // Modals
   const [groupPromptModal, setGroupPromptModal] = useState<{ isOpen: boolean; assignmentId: string; resolve: (val: string | null) => void } | null>(null);
   const [commentPromptModal, setCommentPromptModal] = useState<{ isOpen: boolean; submissionId: string; resolve: (val: string | null) => void } | null>(null);
+
+  // ⚡ Bolt Optimization: Precompute submissions map for O(1) lookups
+  const submissionsByAssignment = useMemo(() => {
+    const map = new Map<string, any>();
+    submissions.forEach((s: any) => {
+      if (s.assignment_id && !map.has(s.assignment_id)) {
+        map.set(s.assignment_id, s);
+      }
+    });
+    return map;
+  }, [submissions]);
 
   // --- Handlers ---
   const handleCreateAssignment = async (e: React.FormEvent) => {
@@ -438,7 +449,7 @@ export default function AssignmentsPanel({
       ) : (
         <div className="space-y-4">
           {assignments.map((a: any) => {
-            const sub = submissions.find((s: any) => s.assignment_id === a.id);
+            const sub = submissionsByAssignment.get(a.id);
             return (
               <div key={a.id} className={`p-6 rounded-2xl border ${sub ? "bg-green-950/10 border-green-900/40" : "bg-neutral-900/30 border-neutral-800"} space-y-4`}>
                 <div className="flex justify-between items-center flex-wrap gap-2">
