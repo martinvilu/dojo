@@ -1456,7 +1456,9 @@ export default function DashboardPage() {
           </p>
           
           <form onSubmit={handleSubmitMatricula} className="space-y-4 max-w-md mx-auto">
+            <label htmlFor="matricula" className="sr-only">Número de matrícula de la UNRN</label>
             <input
+              id="matricula"
               type="text"
               value={matriculaInput}
               onChange={(e) => setMatriculaInput(e.target.value)}
