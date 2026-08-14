@@ -150,8 +150,10 @@ export default function UsersPage() {
         {/* Filters */}
         <div className="bg-neutral-900/60 p-4 rounded-2xl border border-neutral-800 flex items-center">
           <div className="relative flex-1">
-            <span className="absolute left-3.5 top-2.5 text-gray-500">🔍</span>
+            <span className="absolute left-3.5 top-2.5 text-gray-500" aria-hidden="true">🔍</span>
+            <label htmlFor="userSearch" className="sr-only">Buscar por nombre, email o matrícula</label>
             <input
+              id="userSearch"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
