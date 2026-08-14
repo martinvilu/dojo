@@ -30,6 +30,15 @@ export interface CourseFilter {
   name: string;
 }
 
+// ⚡ Bolt Optimization: Pre-instantiate DateTimeFormat for better performance
+const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
 interface CalendarPanelProps {
   activeTab: string;
   classes: ClassInstance[];
@@ -86,13 +95,7 @@ export default function CalendarPanel({
       const [year, month, day] = dateParts[0].split("-").map(Number);
       if (!year || !month || !day) return rawDate;
       const d = new Date(Date.UTC(year, month - 1, day));
-      const formattedDate = d.toLocaleDateString("es-AR", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      });
+      const formattedDate = fullDateFormatter.format(d);
       const capitalized = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
       if (dateParts[1] && !dateParts[1].startsWith("00:00:00")) {
         const timePart = dateParts[1].substring(0, 5);
