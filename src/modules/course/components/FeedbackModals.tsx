@@ -136,6 +136,7 @@ export function FeedbackModals(props: any) {
               <button
                 onClick={() => setViewingFeedbackClass(null)}
                 className="text-gray-500 hover:text-white transition font-bold"
+                aria-label="Cerrar modal"
               >
                 ✕
               </button>

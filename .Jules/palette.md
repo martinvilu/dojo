@@ -20,3 +20,7 @@
 ## 2026-08-01 - Form Accessibility (Label Associations)
 **Learning:** Found that multiple form inputs across the application (e.g., in the login page and user profile panel) lacked explicit associations with their labels via `htmlFor` and `id`. This negatively impacts screen readers and reduces the click area for users.
 **Action:** Always associate `<label>` elements with their respective `<input>` elements using the `htmlFor` and `id` attributes to improve accessibility and user experience.
+
+## 2026-08-04 - Accessibility for Action Buttons in Admin & Course Panels
+**Learning:** Found multiple icon-only "close" (✕) and "delete" (🗑️) buttons in modals (AdminPanel, FeedbackModals, CourseSchedulesPanel) and dynamic settings (CourseSettingsPanel) that lacked screen reader support.
+**Action:** Always add descriptive `aria-label`s (in Spanish, matching the app's language, e.g., "Cerrar modal", "Eliminar comisión") and explicitly set `type="button"` on icon-only interactive elements to prevent implicit form submissions and improve accessibility.

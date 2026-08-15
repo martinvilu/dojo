@@ -308,6 +308,7 @@ export function CourseSettingsPanel(props: any) {
                               }}
                               className="text-red-500 hover:text-red-400 p-1 text-xs cursor-pointer"
                               title="Eliminar comisión"
+                              aria-label="Eliminar comisión"
                             >
                               🗑️
                             </button>
