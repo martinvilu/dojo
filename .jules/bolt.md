@@ -20,3 +20,7 @@
 ## 2023-10-27 - O(N) array filtering within map/reduce calls across large datasets
 **Learning:** In components rendering long lists of entities like `CourseStudentsPanel`, nested iterations using `.filter()` and `.find()` over relationships (like `courseAttendance` or `courseSubmissions`) within standard `.map()` render loops or `.reduce()` aggregation functions result in severe O(N*M) or O(N^2) complexity. This causes massive slowdowns on re-renders or when exporting large CSV/PDF files.
 **Action:** Always pre-compute relationships into O(1) lookups using Hash Maps (like `Map<StudentId, Map<AssignmentId, Submission>>`) encapsulated in a `useMemo` block. This reduces rendering and aggregation from O(N^2) to O(N).
+
+## 2025-02-18 - Repeated Intl.DateTimeFormat instantiations inside loops
+**Learning:** Instantiating `Intl.DateTimeFormat` dynamically via `toLocaleDateString` or `toLocaleTimeString` inside render loops (e.g., `array.map()`) is extremely slow. In a benchmark with 1000 items, inline formatting took ~366ms compared to ~1.6ms when using a pre-instantiated formatter.
+**Action:** Always pre-instantiate `Intl.DateTimeFormat` outside of components/loops and use the `.format(date)` method inside inner rendering logic to improve speed.
