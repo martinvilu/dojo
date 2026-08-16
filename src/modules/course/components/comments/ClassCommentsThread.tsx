@@ -224,7 +224,11 @@ export default function ClassCommentsThread({
 
       {/* Add Comment Input */}
       <div className="flex gap-2">
+        <label htmlFor={`newCommentText-${classNumber}`} className="sr-only">
+          Nuevo comentario
+        </label>
         <input
+          id={`newCommentText-${classNumber}`}
           type="text"
           value={newCommentText}
           onChange={(e) => setNewCommentText(e.target.value)}
