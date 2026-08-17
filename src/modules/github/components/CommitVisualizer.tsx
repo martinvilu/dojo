@@ -1,5 +1,15 @@
 import React from "react";
 
+// Pre-instantiate Intl.DateTimeFormat for better performance in map loops
+const dateTimeFormatter = new Intl.DateTimeFormat("es-AR", {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+});
+
 interface CommitItem {
   sha: string;
   message: string;
@@ -124,7 +134,7 @@ export default function CommitVisualizer({ commits }: CommitVisualizerProps) {
                         {c.branch}
                       </span>
                     </div>
-                    <span className="text-gray-500">{new Date(c.date).toLocaleString("es-AR")}</span>
+                    <span className="text-gray-500">{dateTimeFormatter.format(new Date(c.date))}</span>
                   </div>
                   <p className="text-gray-350 font-sans">{c.message}</p>
                   <div className="flex items-center space-x-1 pt-1 text-[9px] text-gray-500 font-sans">

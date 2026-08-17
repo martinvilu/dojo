@@ -1,6 +1,17 @@
 import React from "react";
 import CommitVisualizer from "./CommitVisualizer";
 
+// Pre-instantiate Intl.DateTimeFormat for better performance in map loops
+const dateFormatter = new Intl.DateTimeFormat("es-AR");
+const dateTimeFormatter = new Intl.DateTimeFormat("es-AR", {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+});
+
 interface CommitItem {
   sha: string;
   message: string;
@@ -111,7 +122,7 @@ export default function GithubActivityPanel({
               <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
                 {c.sha.substring(0, 7)}: <span className="text-gray-300 font-sans">{c.message}</span>
               </a>
-              <span className="text-gray-500">{new Date(c.date).toLocaleDateString("es-AR")}</span>
+              <span className="text-gray-500">{dateFormatter.format(new Date(c.date))}</span>
             </div>
           ))}
           {activity.commits.length === 0 && <p className="text-gray-500 italic font-sans">No hay commits en el repositorio.</p>}
@@ -144,7 +155,7 @@ export default function GithubActivityPanel({
             <div key={idx} className="bg-neutral-900/40 p-2.5 rounded-lg border border-neutral-900 space-y-1">
               <div className="flex justify-between items-center text-[10px] text-gray-500">
                 <span className="font-bold text-gray-400">@{c.author}</span>
-                <span>{new Date(c.created_at).toLocaleString("es-AR")}</span>
+                <span>{dateTimeFormatter.format(new Date(c.created_at))}</span>
               </div>
               <p className="text-xs text-gray-300 whitespace-pre-wrap">{c.body}</p>
             </div>
