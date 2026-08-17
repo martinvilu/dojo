@@ -20,3 +20,6 @@
 ## 2026-08-01 - Form Accessibility (Label Associations)
 **Learning:** Found that multiple form inputs across the application (e.g., in the login page and user profile panel) lacked explicit associations with their labels via `htmlFor` and `id`. This negatively impacts screen readers and reduces the click area for users.
 **Action:** Always associate `<label>` elements with their respective `<input>` elements using the `htmlFor` and `id` attributes to improve accessibility and user experience.
+## 2024-05-24 - Accessibility bindings in configuration forms
+**Learning:** Configuration settings components (like those for external integrations) often have labels and inputs visually close together, but without proper `htmlFor` and `id` bindings. This creates poor accessibility for screen readers and breaks click-to-focus functionality, reducing usability significantly.
+**Action:** Always ensure that every `<label>` and its corresponding `<input>`, `<select>`, or `<textarea>` element are properly bound via `htmlFor` and `id` attributes when building or updating settings panels.
