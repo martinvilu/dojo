@@ -20,3 +20,6 @@
 ## 2023-10-27 - O(N) array filtering within map/reduce calls across large datasets
 **Learning:** In components rendering long lists of entities like `CourseStudentsPanel`, nested iterations using `.filter()` and `.find()` over relationships (like `courseAttendance` or `courseSubmissions`) within standard `.map()` render loops or `.reduce()` aggregation functions result in severe O(N*M) or O(N^2) complexity. This causes massive slowdowns on re-renders or when exporting large CSV/PDF files.
 **Action:** Always pre-compute relationships into O(1) lookups using Hash Maps (like `Map<StudentId, Map<AssignmentId, Submission>>`) encapsulated in a `useMemo` block. This reduces rendering and aggregation from O(N^2) to O(N).
+## 2024-05-18 - Caching Intl Instantiations in List Renders
+**Learning:** Instantiating `Intl.DateTimeFormat` implicitly inside functions like `.toLocaleDateString()` inside large mapping loops within functional components forces repeated execution of high-overhead native formatting initializations on every render.
+**Action:** Extract formatters (e.g. `new Intl.DateTimeFormat()`) to the module scope (outside the component) to persist instances across renders and share them amongst mapped items. This avoids significant CPU cycles per iteration on components rendering large arrays (like schedule panels).
