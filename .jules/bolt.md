@@ -20,3 +20,6 @@
 ## 2023-10-27 - O(N) array filtering within map/reduce calls across large datasets
 **Learning:** In components rendering long lists of entities like `CourseStudentsPanel`, nested iterations using `.filter()` and `.find()` over relationships (like `courseAttendance` or `courseSubmissions`) within standard `.map()` render loops or `.reduce()` aggregation functions result in severe O(N*M) or O(N^2) complexity. This causes massive slowdowns on re-renders or when exporting large CSV/PDF files.
 **Action:** Always pre-compute relationships into O(1) lookups using Hash Maps (like `Map<StudentId, Map<AssignmentId, Submission>>`) encapsulated in a `useMemo` block. This reduces rendering and aggregation from O(N^2) to O(N).
+## 2025-02-12 - Date Formatters in React Render Loops
+**Learning:** Pre-instantiating `Intl.DateTimeFormat` outside of React components is a critical optimization when formatting dates inside `.map()` loops. `toLocaleDateString` and `toLocaleTimeString` are surprisingly slow because they re-instantiate the formatter internally on every call.
+**Action:** Always extract invariant formatters and heavy object instantiations outside of functional components to prevent O(N) allocation overhead during renders.
