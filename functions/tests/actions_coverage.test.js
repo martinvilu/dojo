@@ -1,16 +1,16 @@
-const adminActions = require('../actions/admin');
-const announcementActions = require('../actions/announcements');
-const assignmentActions = require('../actions/assignments');
-const attendanceActions = require('../actions/attendance');
-const backupActions = require('../actions/backups');
-const courseActions = require('../actions/courses');
-const moodleActions = require('../actions/moodle');
-const notificationActions = require('../actions/notifications');
-const profileActions = require('../actions/profile');
-const scheduleActions = require('../actions/schedule');
-const statsActions = require('../actions/stats');
-const studyGroupActions = require('../actions/studyGroups');
-const tutoringActions = require('../actions/tutoring');
+const adminActions = require('../src/modules/course/admin');
+const announcementActions = require('../src/modules/course/announcements');
+const assignmentActions = require('../src/modules/github/assignments');
+const attendanceActions = require('../src/modules/attendance/attendance');
+const backupActions = require('../src/modules/system/backups');
+const courseActions = require('../src/modules/course/courses');
+const moodleActions = require('../src/modules/integrations/moodle');
+const notificationActions = require('../src/modules/notifications/notifications');
+const profileActions = require('../src/modules/auth/profile');
+const scheduleActions = require('../src/modules/course/schedule');
+const statsActions = require('../src/modules/course/stats');
+const studyGroupActions = require('../src/modules/study_groups/studyGroups');
+const tutoringActions = require('../src/modules/tutoring/tutoring');
 
 describe('Full Coverage Actions Test Suite', () => {
 

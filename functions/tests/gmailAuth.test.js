@@ -1,13 +1,15 @@
+// The module resolves fetch at load time via `global.fetch || require('node-fetch')`.
+// On Node 22+ the native global fetch wins, so stub it BEFORE requiring the module.
+global.fetch = jest.fn();
+const fetch = global.fetch;
+
 const {
     getGmailAuthUrl,
     saveGmailAuthCode,
     getGmailAuthStatus,
     disconnectGmailAuth,
     sendGmailNotification
-} = require('../actions/gmailAuth');
-
-jest.mock('node-fetch');
-const fetch = require('node-fetch');
+} = require('../src/modules/mail/gmailAuth');
 
 describe('Gmail OAuth Actions', () => {
     let mockContext;

@@ -1,5 +1,13 @@
 const test = require('firebase-functions-test')();
 
+// Modules like src/modules/course/export.js import Firestore helpers from
+// the 'firebase-admin/firestore' subpath; delegate them to the mocked
+// 'firebase-admin' main entry so both share the same fakes.
+jest.mock('firebase-admin/firestore', () => ({
+  getFirestore: () => require('firebase-admin').firestore(),
+  FieldValue: { serverTimestamp: jest.fn(() => 'SERVER_TIMESTAMP') }
+}));
+
 jest.mock('firebase-admin', () => {
   const getMock = jest.fn();
   const setMock = jest.fn();
@@ -42,9 +50,10 @@ jest.mock('firebase-admin', () => {
   return {
     initializeApp: jest.fn(),
     firestore: Object.assign(() => ({
-      collection: collectionMock,
-      batch: batchMock
-    }), {
+        collection: collectionMock,
+        batch: batchMock,
+        settings: jest.fn()
+      }), {
       FieldValue: { serverTimestamp: jest.fn() }
     }),
     auth: () => ({

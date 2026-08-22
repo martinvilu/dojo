@@ -1,13 +1,13 @@
-const { getEmailTemplates, saveEmailTemplate } = require('../actions/emailTemplates');
+const { getEmailTemplates, saveEmailTemplate } = require('../src/modules/mail/emailTemplates');
 const {
     getScheduledEmails,
     createScheduledEmail,
     cancelScheduledEmail,
     sendDirectStudentEmail,
     getMailLogs
-} = require('../actions/scheduledEmails');
+} = require('../src/modules/mail/scheduledEmails');
 
-jest.mock('../actions/gmailAuth', () => ({
+jest.mock('../src/modules/mail/gmailAuth', () => ({
     sendGmailNotification: jest.fn().mockResolvedValue({ success: true, messageId: 'msg_123' })
 }));
 

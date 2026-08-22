@@ -33,9 +33,10 @@ jest.mock('firebase-admin', () => {
   return {
     initializeApp: jest.fn(),
     firestore: Object.assign(() => ({
-      collection: collectionMock,
-      batch: batchMock
-    }), {
+        collection: collectionMock,
+        batch: batchMock,
+        settings: jest.fn()
+      }), {
       FieldValue: { serverTimestamp: jest.fn() }
     }),
     auth: () => ({ verifyIdToken: jest.fn() })
