@@ -3,7 +3,7 @@
 > Verificación realizada el **22/08/2026** sobre la rama `main` (commit `0a61c7f`, árbol limpio y sincronizado con `origin/main`).
 > Este documento consolida el resultado de las verificaciones ejecutadas y define un plan de acción priorizado.
 >
-> **Avance 22/08/2026**: completadas las Fases 0–1 (reglas RBAC, suite Jest 74/74 en verde, router de acciones sin legacy) y la documentación re-sincronizada. Ver casilleros en §3.
+> **Avance 22/08/2026**: completadas las Fases 0–1 (reglas RBAC, suite Jest 74/74 en verde, router de acciones sin legacy), la documentación re-sincronizada, CI de PRs activo, 0 warnings de ESLint y lazy-loading de paneles pesados. Ver casilleros en §3.
 
 ---
 
@@ -102,9 +102,9 @@ Es frágil y confuso; debe resolverse a la ruta final directa.
 
 - [x] Reemplazar el hack `./actions/${moduleName}` de `functions/index.js` por la resolución directa de los paths ya mapeados (`./src/modules/<dominio>/<name>`). *(commit `2605705`)*
 - [ ] Dividir `dashboard/page.tsx` (2.360 líneas) extrayendo el estado compartido a un contexto o custom hooks (`useCourses`, `useProfile`, `useNotifications` según propuesta de `docs/ROADMAP.md` §Custom Hooks).
-- [ ] Limpiar los 65 warnings de ESLint: eliminar props/variables muertas y corregir deps de `useEffect`.
-- [ ] Aplicar `next/dynamic` a paneles pesados (`MoodleIntegrationPanel`, `CalendarPanel`, `EmailManagementPanel`) para reducir el bundle inicial.
-- [ ] Criterio de aceptación: `page.tsx` < 500 líneas, 0 warnings de lint, build verde.
+- [x] Limpiar los 65 warnings de ESLint: eliminar props/variables muertas y documentar deps intencionales de `useEffect`. *(commit `8cd7f4c`)*
+- [x] Aplicar `next/dynamic` a paneles pesados renderizados condicionalmente (`CalendarPanel`, `EmailManagementPanel`, `DirectEmailModal`). *(commit `ea74541`)*
+- [ ] Criterio de aceptación pendiente: dividir `page.tsx` por debajo de 500 líneas con hooks de dominio.
 
 ### Fase 3 — CI/CD y calidad continua (P1)
 
