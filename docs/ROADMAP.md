@@ -37,7 +37,7 @@ Este documento detalla el estado actual del sistema, la arquitectura modularizad
 *   [ ] **Corrección Automática de Código**: Integración con GitHub Actions para ejecución automatizada de tests unitarios en entregas.
 
 ### 4. Infraestructura, Calidad y Pruebas
-*   [x] **Suite Unificada E2E Selenium WebDriver (54 Pruebas Automatizadas)**: Batería completa en 14 módulos que cubren el 100% de las funcionalidades del usuario en los 4 roles (**Estudiante**, **Tutor**, **Docente**, **Administrador**):
+*   [x] **Suite Unificada E2E Selenium WebDriver (56 Escenarios Automatizados)**: Batería completa en 14 módulos que cubre las funcionalidades del usuario en los 4 roles (**Estudiante**, **Tutor**, **Docente**, **Administrador**):
     *   `design-system.test.js`: Pruebas de Modales, Badges de Alerta y Toast notifications.
     *   `login.test.js`, `modals.test.js`, `dashboard.test.js`, `attendance.test.js`, `features.test.js`, `student.test.js`, `teacher.test.js`, `tutor.test.js`, `admin.test.js`, `roles.test.js`, `moodle.test.js`, `calendar.test.js`, `toast.test.js`.
 *   [x] **Suite de Backend Jest (74 Pruebas Unitarias)**: Cobertura total de endpoints REST, triggers Firebase y lógica de negocio en `functions/`.

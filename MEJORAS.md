@@ -30,7 +30,7 @@ Este documento rastrea el estado de ejecución de las mejoras planeadas, las inn
     *   `BaseModal.tsx`: Contenedor modal accesible con portal DOM, backdrop blur `z-[99999]`, tecla <kbd>Escape</kbd> y ancho adaptable (`min-w-[280px] sm:min-w-[480px]`).
     *   `AlertBadge.tsx`: Badges de alerta de alto contraste (`critical`, `warning`, `success`, `info`) con dimensiones mínimas fijas (`min-w-[170px]`).
     *   `ToastNotification.tsx`: Notificaciones emergentes con portal DOM elevadísimo (`z-[999999]`) y descarte automático o manual `✕`.
-*   [x] **Suite de Pruebas Selenium E2E Unificada (54 Pruebas Automatizadas)**: Cobertura del 100% de funcionalidades y roles (**Estudiante**, **Tutor**, **Docente**, **Administrador**) en 14 módulos de prueba.
+*   [x] **Suite de Pruebas Selenium E2E Unificada (56 Escenarios Automatizados)**: Cobertura de funcionalidades y roles (**Estudiante**, **Tutor**, **Docente**, **Administrador**) en 14 módulos de prueba.
 *   [x] **Endpoint HTTP `/api/calendar`**: API route en Next.js App Router para servir feeds RFC 5545 iCalendar VCALENDAR y respuestas JSON.
 *   [x] **Integración LTI 1.3 con Moodle 4.2+ & Respaldos MBZ**: Endpoints `/api/lti/launch`, `/api/lti/jwks` y generador nativo de paquetes de respaldo XML / MBZ.
 *   [x] **Paginación y Caché IndexedDB en Firestore**: Estrategias de limitación de lecturas y soporte offline completo.
@@ -51,4 +51,4 @@ Este documento rastrea el estado de ejecución de las mejoras planeadas, las inn
 3. **Middleware de API Centralizado (`src/app/api/middleware/`)**:
    * Implementar validación de tokens de Firebase Auth, sanitización de entrada y manejo de CORS unificado para los handlers de `/api/`.
 4. **Pipeline CI/CD Automatizado (`.github/workflows/e2e-tests.yml`)**:
-   * Ejecución headless automática de las 54 pruebas Selenium y 74 pruebas Jest en cada Pull Request.
+   * Ejecución headless automática de los 56 escenarios Selenium y 74 pruebas Jest en cada Pull Request.

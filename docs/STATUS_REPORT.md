@@ -44,7 +44,7 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 - [x] **Corrección del Error de Prerenderizado**:
   - Clave de fallback `AIzaSyFakeKeyForBuildPrerendering_NoCrash` en `clientApp.ts` para evitar fallos de inicialización de Firebase durante `next build`.
 - [x] **Cobertura de Pruebas**:
-  - Pruebas unitarias de Jest creadas para `moodleAutoEnroll`. 41/41 pruebas pasando exitosamente en la suite general del backend.
+  - Pruebas unitarias de Jest creadas para `moodleAutoEnroll`. 74/74 pruebas pasando exitosamente en la suite general del backend (verificado 22/08/2026).
 
 ---
 
@@ -60,7 +60,16 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 - [x] **M4: Aislación de Módulos de Asistencia y Consultas**:
   - Mover `AttendanceManager.tsx` (asistencia y QR) e `Hilos de Consultas` (`ClassCommentsThread.tsx`) a componentes independientes.
 - [x] **M5: Desmonolitizar Functions Backend**:
-  - Dividir `functions/index.js` en submódulos de acciones independientes cargadas de forma dinámica en `/functions/actions/`.
+    - Dividir `functions/index.js` en submódulos de acciones independientes cargadas de forma dinámica en `/functions/actions/`.
+
+### 🔒 Endurecimiento y Reparaciones (22/08/2026)
+- [x] **Reglas de Firestore RBAC**:
+    - Reemplazo de la política permisiva (`auth != null` → acceso total) por reglas por colección: perfiles own-only, foros/asistencia/encuestas acotados por membresía de curso, escrituras privilegiadas solo vía Cloud Functions.
+    - El cliente dejó de consultar `submissions` directamente; ahora usa `getAssignmentSubmissions`.
+- [x] **Reparación de la Suite Jest (74/74)**:
+    - Imports actualizados de `../actions/*` a `../src/modules/*`, mock de `db.settings()` agregado, subpath `firebase-admin/firestore` mockeado y stub de `global.fetch` en reemplazo de `node-fetch`.
+- [x] **Limpieza del Router de Acciones**:
+    - Eliminado el prefijo legacy `./actions/` en la resolución dinámica de módulos de `functions/index.js`.
 
 ---
 

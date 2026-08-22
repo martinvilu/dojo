@@ -47,7 +47,7 @@ A diferencia de los LMS tradicionales rígidos y complejos, Ninja Dojo conecta e
 
 *   **Frontend**: Next.js (App Router, React 19, TypeScript), Vanilla CSS Design System modularizado (`BaseModal`, `AlertBadge`, `ToastNotification`), Tailwind CSS.
 *   **Backend & Cloud**: Firebase Authentication, Cloud Firestore (con soporte IndexedDB offline), Cloud Functions (Node.js) y Firebase App Hosting (SSR).
-*   **Calidad & Pruebas**: Batería E2E con **Selenium WebDriver (55 pruebas automatizadas al 100%)** y **Jest (74 unit tests)**.
+*   **Calidad & Pruebas**: Batería E2E con **Selenium WebDriver (56 escenarios en 14 módulos)** y **Jest (74 unit tests)**.
 *   **Estándares Abiertos**: LTI 1.3 Advantage (IMS Global), RFC 5545 iCalendar, Moodle 4.2 MBZ Backup.
 
 ---
@@ -84,9 +84,9 @@ A diferencia de los LMS tradicionales rígidos y complejos, Ninja Dojo conecta e
 
 ## 🧪 Ejecución de Pruebas Automatizadas
 
-*   **Ejecutar Suite E2E con Selenium WebDriver (55 pruebas)**:
+*   **Ejecutar Suite E2E con Selenium WebDriver (56 escenarios)**:
     ```bash
-    npm run test:e2e
+    npm run test:selenium
     ```
 *   **Ejecutar Pruebas Unitarias del Backend Jest (74 pruebas)**:
     ```bash

@@ -50,10 +50,13 @@ El sistema implementa un modelo de Control de Acceso Basado en Roles (RBAC) con 
 
 ### Implementación Técnica de Seguridad:
 *   **Reglas de Firestore (`firestore.rules`)**:
-    *   Validan que solo usuarios autenticados puedan leer sus propios perfiles.
-    *   Aseguran que las lecturas de clases e inscripciones requieran que el usuario sea docente asignado o estudiante en el roster del curso correspondiente.
+    *   Denegación por defecto: todo lo no listado explícitamente queda inaccesible para el cliente.
+    *   **Perfiles (`profiles`)**: cada usuario solo puede leer su propio perfil (el aprovisionamiento ocurre en el backend). Docentes y administradores únicamente pueden editar el mapa de comisiones sobre perfiles de estudiantes.
+    *   **Membresía de curso**: se valida mediante IDs predecibles — `course_teachers/{courseId}_{uid}`, `course_roster/{courseId}_{uid}` y `enrollments/{uid}_{courseId}` — usando `exists()`, sin lecturas extra.
+    *   **Subcolecciones de cursada**: asistencia legible por miembros y escribible solo por docentes asignados; token QR activo publicado solo por el docente; foros Q&A con updates restringidos a reacciones (participantes) o marca de mejor respuesta (docente); encuestas anónimas validadas por rating 1-5.
+    *   **Colecciones privilegiadas**: `submissions`, `audit_logs`, `activity_logs`, `backups`, avisos, notificaciones, tutorías y configuración global no aceptan escrituras directas del cliente; se operan exclusivamente vía Cloud Functions con SDK admin.
 *   **Cloud Functions API**:
-    *   Los endpoints críticos (ej: `/change-role`) decodifican el token de autenticación del llamador y verifican en Firestore que el perfil correspondiente posea el rol `admin` antes de proceder con el cambio en la base de datos.
+    *   La acción callable única (`api`) decodifica el token de autenticación del llamador, resuelve su perfil y despacha al módulo correspondiente, que verifica rol/membresía antes de proceder (ej: cambio de roles reservado a `admin`).
 
 ---
 
@@ -301,30 +304,29 @@ Logs históricos detallando modificaciones sobre calificaciones (calificaciones 
 El repositorio está estructurado para independizar la lógica de despliegue del frontend de la del backend serverless:
 
 ```
-├── .firebase/                  # Archivos temporales de despliegue de Firebase
+├── .firebase/                  # Archivos temporales de despliegue Firebase
 ├── docs/                       # Documentación técnica y de diagramas
 │   ├── ARCHITECTURE.md         # (Este archivo) Estructura y arquitectura del sistema
 │   ├── CASOS_DE_USO.md         # Escenarios detallados por rol de usuario
-│   ├── DESIGN.md               # Tokens y paleta de colores de la UI
-│   ├── DEVELOPMENT.md          # Estándares de desarrollo y commits
-│   ├── NOMBRES.md              # Propuestas creativas de nombres de proyecto
-│   ├── ROADMAP.md              # Futuras características y mejoras sugeridas
+│   ├── PROXIMOS_PASOS.md       # Estado verificado y plan de acción priorizado
+│   ├── ROADMAP.md              # Estado del sistema y características futuras
+│   ├── STATUS_REPORT.md        # Registro histórico de tareas completadas/pendientes
 │   ├── TESTING.md              # Guía de pruebas manuales y seed
 │   └── UML.md                  # Diagramas Mermaid (Casos de Uso, Secuencias)
 ├── functions/                  # Backend: Firebase Cloud Functions (Node.js 22)
-│   ├── index.js                # Punto de entrada de la API HTTP Express
-│   ├── seed.js                 # Script de carga de datos iniciales
+│   ├── index.js                # Router callable (api) + endpoints onRequest
+│   ├── src/modules/            # Dominios: auth, course, github, mail, moodle, etc.
+│   ├── tests/                  # Suite Jest (74 pruebas unitarias)
 │   └── package.json            # Dependencias del backend
-├── public/                     # Recursos estáticos del frontend (imágenes, iconos)
-├── src/                        # Frontend: Next.js + React
-│   ├── app/                    # Rutas y páginas principales del sitio
-│   │   ├── admin/              # Panel de administración de usuarios y cátedras
-│   │   ├── courses/            # Vistas detalladas de cátedras y cronogramas
-│   │   ├── layout.tsx          # Estructura HTML base y barra de navegación
-│   │   └── page.tsx            # Página de inicio y panel del usuario (Dashboard)
-├── firestore.rules             # Reglas de seguridad de acceso a base de datos
+├── manual/                     # Manual de usuario (docentes, estudiantes, admins)
+├── public/                     # Recursos estáticos del frontend
+├── src/                        # Frontend: Next.js 16 (App Router) + React 19
+│   ├── app/                    # Rutas: /login, /dashboard, /api/{calendar,lti}
+│   ├── components/dashboard/ui # Design System (BaseModal, AlertBadge, Toasts)
+│   ├── lib/                    # Clientes firebase, helpers de API y logging
+│   └── modules/                # Módulos de dominio con componentes/hooks/utils
+├── tests/selenium/             # Suite E2E Selenium WebDriver (14 módulos)
+├── firestore.rules             # Reglas de seguridad RBAC de Firestore
 ├── firestore.indexes.json      # Índices compuestos de base de datos
-├── firebase.json               # Configuración de servicios de Firebase CLI
-├── seed.sh                     # Script idempotente para poblar base de datos local o remota
-└── package.json                # Dependencias del proyecto Next.js
+└── firebase.json               # Configuración de servicios de Firebase CLI
 ```
