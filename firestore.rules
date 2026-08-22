@@ -1,8 +1,153 @@
 rules_version = '2';
+
+// Ninja Dojo - Reglas de seguridad de Firestore (RBAC)
+//
+// El acceso directo del cliente se limita a los datos que la UI consume en
+// tiempo real (foros Q&A, presentismo, encuestas anónimas). Toda operación
+// privilegiada (roles, notas, roster, backups, auditoría) pasa por Cloud
+// Functions vía el SDK admin, que no está sujeta a estas reglas.
+//
+// Modelo de membresía basado en IDs predecibles:
+//   course_teachers/{courseId}_{uid}  -> docente asignado al curso
+//   course_roster/{courseId}_{uid}    -> estudiante en el roster del curso
+//   enrollments/{uid}_{courseId}      -> inscripción activa del estudiante
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return signedIn() && myProfile().role == 'admin';
+    }
+
+    function isTeacherRole() {
+      return signedIn() && myProfile().role == 'teacher';
+    }
+
+    function isTeacherOf(courseId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/course_teachers/$(courseId + '_' + request.auth.uid));
+    }
+
+    function isEnrolledIn(courseId) {
+      return signedIn()
+        && (exists(/databases/$(database)/documents/course_roster/$(courseId + '_' + request.auth.uid))
+            || exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId)));
+    }
+
+    function isMemberOf(courseId) {
+      return isAdmin() || isTeacherOf(courseId) || isEnrolledIn(courseId);
+    }
+
+    // ------------------------------------------------------------------
+    // Perfiles: cada usuario solo lee su propio perfil. Los perfiles se
+    // aprovisionan desde el backend (acción getProfile). Los docentes y
+    // admins únicamente pueden editar el mapa 'commissions' y solo sobre
+    // perfiles de estudiantes.
+    // ------------------------------------------------------------------
+    match /profiles/{userId} {
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow update: if (isAdmin() || isTeacherRole())
+        && resource.data.role == 'student'
+        && request.resource.data.diff(resource.data)
+             .affectedKeys().hasOnly(['commissions']);
+      allow create, list, delete: if false;
+    }
+
+    // ------------------------------------------------------------------
+    // Cursos: el documento raíz y sus metadatos se gestionan por backend.
+    match /courses/{courseId} {
+      allow read, write: if false;
+
+      // Presentismo: los miembros consultan; solo el docente del curso
+      // registra o corrige planillas de asistencia.
+      match /attendance/{attendanceId} {
+        allow read: if isMemberOf(courseId);
+        allow create, update: if isTeacherOf(courseId);
+        allow delete: if false;
+      }
+
+      // Token QR vigente: publicado por el docente. Ningún cliente lo lee:
+      // los estudiantes validan su token vía submitQrAttendance (backend).
+      match /active_qr/{qrId} {
+        allow read: if false;
+        allow create, update: if isTeacherOf(courseId);
+        allow delete: if false;
+      }
+
+      // Foro Q&A por clase: miembros leen y publican consultas. En updates,
+      // un participante solo puede mutar reacciones; el docente del curso o
+      // un admin solo pueden alternar la marca de mejor respuesta.
+      match /class_comments/{commentId} {
+        function onlyReactionsChanged() {
+          return request.resource.data.keys().hasOnly(resource.data.keys())
+            && request.resource.data.diff(resource.data)
+                 .unchangedKeys().hasAll(['classNumber', 'user_id', 'content', 'created_at']);
+        }
+        function onlyBestAnswerChanged() {
+          return request.resource.data.diff(resource.data)
+                 .affectedKeys().hasOnly(['is_best_answer']);
+        }
+
+        allow read: if isMemberOf(courseId);
+        allow create: if isMemberOf(courseId)
+          && request.resource.data.user_id == request.auth.uid
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          && request.resource.data.content.size() <= 4000;
+        allow update: if ((isAdmin() || isTeacherOf(courseId)) && onlyBestAnswerChanged())
+          || (isMemberOf(courseId) && onlyReactionsChanged());
+        allow delete: if false;
+      }
+
+      // Encuestas anónimas por clase: el id del documento es el hash del
+      // uid + clase (no adivinable), por lo que el estudiante puede leer y
+      // escribir su propia respuesta. El docente agrega resultados por clase.
+      match /class_feedback/{feedbackId} {
+        allow get, list: if isMemberOf(courseId);
+        allow create, update: if isEnrolledIn(courseId)
+          && request.resource.data.rating is int
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5;
+        allow delete: if false;
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Entregas: sin acceso directo del cliente. La lectura se realiza con
+    // getAssignmentSubmissions / getStudentAssignments (backend).
+    match /submissions/{submissionId} {
+      allow get: if signedIn() && resource.data.student_id == request.auth.uid;
+      allow list, create, update, delete: if false;
+    }
+
+    // Bitácora inmutable de calificaciones: consulta para docentes y admins.
+    // Las escrituras provienen exclusivamente del backend.
+    match /audit_logs/{logId} {
+      allow read: if isAdmin() || isTeacherRole();
+      allow write: if false;
+    }
+
+    // Logs de actividad: escritura y lectura solo por backend.
+    match /activity_logs/{logId} {
+      allow read, write: if false;
+    }
+
+    // ------------------------------------------------------------------
+    // Denegación explícita para todo lo demás: perfiles ajenos, cursos,
+    // inscripciones, rosters, docentes asignados, clases, avisos,
+    // notificaciones, grupos de estudio, tutorías, cronogramas versionados,
+    // backups, plantillas de correo y configuración global se consumen
+    // exclusivamente a través de Cloud Functions.
+    // ------------------------------------------------------------------
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }
