@@ -1172,17 +1172,13 @@ export default function DashboardPage() {
   const loadAllCourseSubmissions = async () => {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid || assignments.length === 0) return;
-    
+
     try {
-      const allSubs: any[] = [];
-      await Promise.all(assignments.map(async (a) => {
-        const q = query(collection(db, "submissions"), where("assignment_id", "==", a.id));
-        const snap = await getDocs(q);
-        snap.forEach((doc) => {
-          allSubs.push({ id: doc.id, ...doc.data() });
-        });
+      const results = await Promise.all(assignments.map(async (a) => {
+        const res = await api("getAssignmentSubmissions", { assignmentId: a.id });
+        return res || [];
       }));
-      setCourseSubmissions(allSubs);
+      setCourseSubmissions(results.flat());
     } catch (err) {
       console.error("Error loading course submissions for alerts:", err);
     }
