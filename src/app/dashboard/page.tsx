@@ -9,6 +9,7 @@ import { CourseAnnouncementsPanel } from "@/modules/course/components/CourseAnno
 import { CourseOverviewPanel } from "@/modules/course/components/CourseOverviewPanel";
 import { CourseSchedulesPanel } from "@/modules/course/components/CourseSchedulesPanel";
 import { useState, useEffect, useRef, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase/clientApp";
@@ -24,12 +25,17 @@ import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/modules/tutoring/components/TutoringPanel";
 import { FeedbackModals } from "@/modules/course/components/FeedbackModals";
 import { StudentAttendanceModals } from "@/modules/attendance/components/StudentAttendanceModals";
-import CalendarPanel from "@/modules/calendar/components/CalendarPanel";
 import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
-import EmailManagementPanel from "@/modules/mail/components/EmailManagementPanel";
-import DirectEmailModal from "@/modules/mail/components/DirectEmailModal";
 
 import { api } from "@/lib/api";
+
+// Heavy panels rendered conditionally; keep them out of the initial bundle
+const PanelFallback = () => (
+  <div className="p-6 text-center text-sm text-gray-400" role="status">Cargando módulo…</div>
+);
+const CalendarPanel = dynamic(() => import("@/modules/calendar/components/CalendarPanel"), { loading: () => <PanelFallback /> });
+const EmailManagementPanel = dynamic(() => import("@/modules/mail/components/EmailManagementPanel"), { loading: () => <PanelFallback /> });
+const DirectEmailModal = dynamic(() => import("@/modules/mail/components/DirectEmailModal"), { loading: () => <PanelFallback /> });
 
 interface UserProfile {
   id: string;
