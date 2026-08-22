@@ -69,6 +69,9 @@ export default function AttendanceManager({
       }
     }, 1000);
     return () => clearTimeout(timer);
+    // Countdown ticks drive regeneration on expiry; adding the async
+    // generator here would reset the timer on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeQr]);
 
   const handleGenerateQr = async () => {

@@ -1,7 +1,6 @@
 
 "use client";
 import React from "react";
-import { marked } from "marked";
 
 export function CourseAnnouncementsPanel(props: any) {
   const {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { showToast as toastNotify, ToastOptions } from "nextjs-toast-notify";
 
 export interface ToastNotificationProps {
@@ -14,7 +14,8 @@ export interface ToastNotificationProps {
 export function showToast(
   message: string,
   type: "success" | "error" | "info" | "warning" = "success",
-  toastId: string = "toast-container"
+  // third parameter kept for API compatibility with the component wrapper
+  _toastId: string = "toast-container"
 ) {
   if (typeof window === "undefined") return;
 

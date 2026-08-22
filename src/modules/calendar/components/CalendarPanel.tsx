@@ -44,7 +44,6 @@ export default function CalendarPanel({
   classes,
   assignments,
   courses = [],
-  activeCourseName = "Global",
   onAddBookmark,
 }: CalendarPanelProps) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -99,7 +98,7 @@ export default function CalendarPanel({
         return `${capitalized}, ${timePart} hs`;
       }
       return capitalized;
-    } catch (e) {
+    } catch {
       return rawDate;
     }
   };

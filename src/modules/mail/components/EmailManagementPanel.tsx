@@ -66,6 +66,8 @@ export default function EmailManagementPanel({
 
   useEffect(() => {
     loadData();
+    // Refetch on course/tab change only; loadData reads fresh state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, subTab]);
 
   const handleSelectTemplate = (tId: string) => {

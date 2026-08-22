@@ -26,8 +26,8 @@ interface UserProfile {
 
 export default function UsersPage() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [, setCurrentUser] = useState<User | null>(null);
+  const [, setProfile] = useState<UserProfile | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

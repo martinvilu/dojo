@@ -10,17 +10,17 @@ import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegratio
 export function CourseSettingsPanel(props: any) {
   // Destructure everything from props to make it easy for now
   const {
-    profile, selectedCourse, setSelectedCourse, setApiLoading, showToast, 
+    profile, selectedCourse, showToast,
     teacherGithubToken, setTeacherGithubToken, teacherMoodleEnabled, setTeacherMoodleEnabled,
     teacherExternalCalendars, setTeacherExternalCalendars,
-    teacherSchedules, setTeacherSchedules,
-    teacherClasses, teacherCommissions, setTeacherCommissions,
+    teacherSchedules,
+    teacherCommissions, setTeacherCommissions,
     teacherCommissionsMapping, setTeacherCommissionsMapping,
     cloneSourceId, setCloneSourceId, moodleApiUrl, setMoodleApiUrl,
     moodleWsToken, setMoodleWsToken, moodleCourseId, setMoodleCourseId,
-    showCsvEndpoint, setShowCsvEndpoint, showCsvGradingEndpoint, setShowCsvGradingEndpoint,
+    showCsvGradingEndpoint, setShowCsvGradingEndpoint,
     scheduleDay, setScheduleDay, scheduleTime, setScheduleTime, scheduleType, setScheduleType,
-    otherTeacherCourses, setCourseSubTab, courseSubTab, newCommissionInput, setNewCommissionInput, teacherCoverText, setTeacherCoverText, teacherStartDate, setTeacherStartDate, teacherDuration, setTeacherDuration,
+    otherTeacherCourses, courseSubTab, newCommissionInput, setNewCommissionInput, teacherCoverText, setTeacherCoverText, teacherStartDate, setTeacherStartDate, teacherDuration, setTeacherDuration,
     gmailStatus, handleStartGmailAuth, handleDisconnectGmail, handleSendTestGmail, courseTeachers,
     handleAddSchedule, handleRemoveSchedule, handleSaveTeacherSettings, handleExportMoodleXml, handleSyncMoodleRoster, handleCloneCourseConfig
   } = props;

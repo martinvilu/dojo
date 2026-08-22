@@ -15,7 +15,6 @@ export function StudentAttendanceModals(props: any) {
     setStudentActiveAttendanceClass,
     studentQrToken,
     setStudentQrToken,
-    selectedCourse,
     studentAttendanceGeoLoading,
     handleSubmitStudentAttendanceQr
   } = props;

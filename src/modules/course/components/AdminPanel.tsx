@@ -102,27 +102,7 @@ export default function AdminPanel({
     }
   };
 
-  const formatDate = (val: any) => {
-    if (!val) return "Nunca / -";
-    let date: Date;
-    if (typeof val === "object" && typeof val.toDate === "function") {
-      date = val.toDate();
-    } else if (typeof val === "object" && (val.seconds || val._seconds)) {
-      date = new Date((val.seconds || val._seconds) * 1000);
-    } else if (val instanceof Date) {
-      date = val;
-    } else {
-      date = new Date(val);
-    }
-    if (isNaN(date.getTime())) return "Nunca / -";
-    return date.toLocaleString("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }) + " hs";
-  };
+
 
   const sortedUsers = [...users].sort((a, b) => {
     let aVal = a[sortField as keyof UserProfile];

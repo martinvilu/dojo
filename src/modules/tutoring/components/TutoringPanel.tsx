@@ -51,7 +51,8 @@ export default function TutoringPanel({
   const [tutorAvailability, setTutorAvailability] = useState("");
   const [bookingTopic, setBookingTopic] = useState("");
   const [bookingDateTime, setBookingDateTime] = useState("");
-  const [loading, setLoading] = useState(false);
+  // only the setter is used (busy feedback is handled by local flags)
+  const [, setLoading] = useState(false);
 
   const handleRegisterAsTutor = async (e: React.FormEvent) => {
     e.preventDefault();

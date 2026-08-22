@@ -11,10 +11,8 @@ import { CourseSchedulesPanel } from "@/modules/course/components/CourseSchedule
 import { useState, useEffect, useRef, useMemo } from "react";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { auth, db, functions } from "@/lib/firebase/clientApp";
-import { httpsCallable } from "firebase/functions";
-import { marked } from "marked";
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc, updateDoc, getDoc, getDocs, writeBatch, arrayUnion, arrayRemove } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase/clientApp";
+import { collection, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, getDocs } from "firebase/firestore";
 import AdminPanel from "@/modules/course/components/AdminPanel";
 import StudentPanel from "@/modules/course/components/StudentPanel";
 import ProfilePanel from "@/modules/auth/components/ProfilePanel";
@@ -22,21 +20,14 @@ import TeacherPanel from "@/modules/course/components/TeacherPanel";
 import StudyGroupsPanel from "@/modules/study_groups/components/StudyGroupsPanel";
 import AssignmentsPanel from "@/modules/github/components/AssignmentsPanel";
 import { GithubPromptModal } from "@/modules/github/components/GithubPromptModal";
-import GithubActivityPanel from "@/modules/github/components/GithubActivityPanel";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/modules/tutoring/components/TutoringPanel";
-import AttendanceManager from "@/modules/attendance/components/AttendanceManager";
-import ClassCommentsThread from "@/modules/course/components/comments/ClassCommentsThread";
 import { FeedbackModals } from "@/modules/course/components/FeedbackModals";
-import QrScannerModal from "@/modules/attendance/components/QrScannerModal";
 import { StudentAttendanceModals } from "@/modules/attendance/components/StudentAttendanceModals";
 import CalendarPanel from "@/modules/calendar/components/CalendarPanel";
 import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
-import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard";
 import EmailManagementPanel from "@/modules/mail/components/EmailManagementPanel";
 import DirectEmailModal from "@/modules/mail/components/DirectEmailModal";
-import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegrationPanel";
-import { copyToClipboard } from "@/lib/clipboard";
 
 import { api } from "@/lib/api";
 
@@ -99,7 +90,7 @@ export default function DashboardPage() {
   // Data states
   const [courses, setCourses] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [globalSettings, setGlobalSettings] = useState<any>({});
+  const [, setGlobalSettings] = useState<any>({});
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [courseSubTab, setCourseSubTab] = useState("schedules");
 
@@ -208,8 +199,7 @@ export default function DashboardPage() {
     gmailStatus,
     handleStartAuth: handleStartGmailAuth,
     handleDisconnect: handleDisconnectGmail,
-    handleSendTest: handleSendTestGmail,
-    refreshStatus: getGmailAuthStatus
+    handleSendTest: handleSendTestGmail
   } = useGmailAuth(api);
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [selectedDirectEmailStudent, setSelectedDirectEmailStudent] = useState<any | null>(null);
@@ -230,10 +220,6 @@ export default function DashboardPage() {
   // CSV Endpoint collapsible state (normally hidden)
   const [showCsvEndpoint, setShowCsvEndpoint] = useState(false);
   const [showCsvGradingEndpoint, setShowCsvGradingEndpoint] = useState(false);
-
-  // Calendar render state
-  const [calendarViewMode, setCalendarViewMode] = useState<"list" | "grid">("list");
-
 
   const [courseTeachers, setCourseTeachers] = useState<any[]>([]);
   const [allTeachersList, setAllTeachersList] = useState<any[]>([]);
@@ -268,9 +254,7 @@ export default function DashboardPage() {
   const [studyGroups, setStudyGroups] = useState<any[]>([]);
   const [tutors, setTutors] = useState<any[]>([]);
   const courseCommissions = (selectedCourse?.commissions || selectedCourse?.course?.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]) as string[];
-  const [loadingTutors, setLoadingTutors] = useState(false);
   const [tutoringSessions, setTutoringSessions] = useState<any[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(false);
 
   useEffect(() => {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
@@ -618,7 +602,7 @@ export default function DashboardPage() {
                 matchedCourse = c.course || c;
                 break;
               }
-            } catch (e) {}
+            } catch {}
           }
         }
         if (matchedCourse) {
@@ -632,6 +616,9 @@ export default function DashboardPage() {
     };
 
     processParams();
+    // Query params must be consumed once per auth/data readiness;
+    // the handlers are unstable closures that would re-trigger this flow
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, courses]);
 
   // Load course details subtabs
@@ -740,6 +727,9 @@ export default function DashboardPage() {
     };
 
     loadSubTabData();
+    // Reload strictly on tab/course/role changes; loader closures read
+    // fresh state at call time and would cause redundant fetch loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseSubTab, selectedCourse, profile]);
 
   const handleLogout = async () => {
@@ -1188,6 +1178,9 @@ export default function DashboardPage() {
     if (courseSubTab === "students") {
       loadAllCourseSubmissions();
     }
+    // Refresh on tab entry only; submissions are fetched per current
+    // assignments snapshot at call time
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseSubTab]);
 
 

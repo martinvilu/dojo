@@ -1,14 +1,9 @@
 "use client";
 import React from 'react';
-import { api } from '@/lib/api';
 
 export function CourseOverviewPanel({
-  profile,
   selectedCourse,
   assignments,
-  setAssignments,
-  showToast,
-  setApiLoading,
   overviewSubmissionsList,
   loadingOverviewSubmissions,
   roster,

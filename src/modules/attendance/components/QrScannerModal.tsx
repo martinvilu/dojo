@@ -93,7 +93,7 @@ export default function QrScannerModal({
           // Success callback
           handleDecodedText(decodedText);
         },
-        (errorMessage) => {
+        () => {
           // Silent verbose errors during scanning
         }
       );
@@ -123,7 +123,7 @@ export default function QrScannerModal({
       } else {
         throw new Error("Formato de QR no válido.");
       }
-    } catch (err: any) {
+    } catch {
       const errorMsg = "Código QR inválido. Asegurate de escanear el código QR provisto por el profesor.";
       if (onScanError) onScanError(errorMsg);
       setScannerError(errorMsg);

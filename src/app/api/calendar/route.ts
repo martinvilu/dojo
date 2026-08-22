@@ -127,7 +127,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function HEAD(request: Request) {
+export async function HEAD() {
   return new Response(null, {
     status: 200,
     headers: {

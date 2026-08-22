@@ -48,3 +48,6 @@ firebase-debug.*.log
 
 # GCP Service Account key
 github-deploy-key.json
+
+# Firestore emulator debug log
+firestore-debug.log

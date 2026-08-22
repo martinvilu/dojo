@@ -34,6 +34,8 @@ function AuthScreenContent() {
       }
     });
     return () => unsubscribe();
+    // Runs once on mount; redirectUrl is fixed for the lifetime of the screen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
