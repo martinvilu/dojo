@@ -65,7 +65,7 @@ export async function requireCourseSubscriptionToken(
   courseIdParam: string = "id"
 ): Promise<CourseSubscription | NextResponse> {
   const { searchParams } = new URL(request.url);
-  const courseId = searchParams.get(courseIdParam) || "";
+  const courseId = searchParams.get(courseIdParam) || searchParams.get("courseId") || "";
   const token = searchParams.get("token") || "";
 
   if (!courseId) return jsonError(400, "Falta el ID del curso");

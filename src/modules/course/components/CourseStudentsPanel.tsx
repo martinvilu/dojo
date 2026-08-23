@@ -17,14 +17,20 @@ export function CourseStudentsPanel({
   pastDueAssignments,
   showToast,
   setApiLoading,
-  commissionFilter,
-  setCommissionFilter,
+  commissionFilter,  setCommissionFilter,
   setSelectedDirectEmailStudent,
   teacherClasses,
   courseCommissions,
   showCsvEndpoint,
   setShowCsvEndpoint
 }: any) {
+  const rosterCsvUrlFor = (course: any) => {
+    const cid = course?.id || course?.course?.id || "";
+    const token = course?.sync_secret || course?.course?.sync_secret || "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    return `${origin}/api/export/csv?id=${cid}&type=roster&token=${token}`;
+  };
+
   // Pre-compute attendance and submissions statistics for O(1) lookups during render and export
   // This avoids O(N) array filtering/finding inside maps across hundreds of rows
   const { attendanceStats, submissionsByStudent } = useMemo(() => {
@@ -354,13 +360,13 @@ export function CourseStudentsPanel({
                           <input
                             type="text"
                             readOnly
-                            value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`}
+                            value={rosterCsvUrlFor(selectedCourse)}
                             className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-gray-300 select-all font-mono"
                           />
                           <button
                             type="button"
                             onClick={async () => {
-                              const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?id=${selectedCourse.id || selectedCourse.course?.id}&type=roster&token=${selectedCourse.sync_secret || 'SECRET'}`;
+                              const url = rosterCsvUrlFor(selectedCourse);
                               const ok = await copyToClipboard(url);
                               showToast(ok ? "¡URL del Endpoint CSV de Alumnos copiada al portapapeles con éxito!" : "No se pudo copiar la URL.", "success");
                             }}

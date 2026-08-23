@@ -15,6 +15,13 @@ export function CourseSettingsPanel(props: any) {
     return `${origin}/api/calendar?id=${cid}&token=${token}`;
   };
 
+  const exportGradesCsvUrlFor = (course: any) => {
+    const cid = course?.id || course?.course?.id || "";
+    const token = course?.sync_secret || course?.course?.sync_secret || "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    return `${origin}/api/export/csv?courseId=${cid}&token=${token}`;
+  };
+
   // Destructure everything from props to make it easy for now
   const {
     profile, selectedCourse, showToast,
@@ -371,13 +378,13 @@ export function CourseSettingsPanel(props: any) {
                         <input
                           type="text"
                           readOnly
-                          value={`https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${selectedCourse.id || selectedCourse.course?.id}&token=${selectedCourse.sync_secret || "TOKEN"}`}
+                          value={exportGradesCsvUrlFor(selectedCourse)}
                           className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-amber-400 font-mono select-all"
                         />
                         <button
                           type="button"
                           onClick={async () => {
-                            const url = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${selectedCourse.id || selectedCourse.course?.id}&token=${selectedCourse.sync_secret || "TOKEN"}`;
+                            const url = exportGradesCsvUrlFor(selectedCourse);
                             const ok = await copyToClipboard(url);
                             showToast(ok ? "¡URL del Endpoint CSV de Notas copiada al portapapeles con éxito!" : "No se pudo copiar la URL.", "success");
                           }}

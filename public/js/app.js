@@ -637,7 +637,7 @@ async function loadTeacherCourseSettings(courseId) {
         }
 
         const syncSecret = data.sync_secret || 'FALTA_TOKEN';
-        document.getElementById('settings-export-grades-url').value = `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/exportGradesCsv?courseId=${courseId}&token=${syncSecret}`;
+        document.getElementById('settings-export-grades-url').value = `/api/export/csv?courseId=${courseId}&token=${syncSecret}`;
 
         document.getElementById('settings-import-csv-btn').onclick = async () => {
             const fileInput = document.getElementById('settings-import-csv-input');

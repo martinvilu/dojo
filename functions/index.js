@@ -317,16 +317,6 @@ exports.webhook = onRequest(async (req, res) => {
     return webhookHandler(req, res);
 });
 
-exports.exportGradesCsv = onRequest(async (req, res) => {
-    const handler = require('./src/modules/course/export').exportGradesCsv;
-    return handler(req, res);
-});
-
-exports.exportAttendanceCsv = onRequest(async (req, res) => {
-    const handler = require('./src/modules/course/export').exportAttendanceCsv;
-    return handler(req, res);
-});
-
 exports.importGrades = onRequest(async (req, res) => {
     const handler = require('./src/modules/course/export').importGrades;
     return handler(req, res);
