@@ -31,6 +31,7 @@ import { api } from "@/lib/api";
 import { useTheme } from "./hooks/useTheme";
 import { useGithubPromptModal } from "./hooks/useGithubPromptModal";
 import { useClassFeedback } from "./hooks/useClassFeedback";
+import { useStudentQrAttendance } from "./hooks/useStudentQrAttendance";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -155,10 +156,13 @@ export default function DashboardPage() {
   const [courseSubmissions, setCourseSubmissions] = useState<any[]>([]);
 
   // QR Attendance states
-  const [studentActiveAttendanceClass, setStudentActiveAttendanceClass] = useState<number | null>(null);
-  const [studentQrToken, setStudentQrToken] = useState("");
-  const [studentAttendanceGeoLoading, setStudentAttendanceGeoLoading] = useState(false);
-  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const {
+    studentActiveAttendanceClass, setStudentActiveAttendanceClass,
+    studentQrToken, setStudentQrToken,
+    studentAttendanceGeoLoading, setStudentAttendanceGeoLoading,
+    isQrScannerOpen, setIsQrScannerOpen,
+    handleSubmitStudentAttendanceQr
+  } = useStudentQrAttendance({ selectedCourse, setApiLoading });
 
   // Sidebar & Profile Menu states
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -285,48 +289,6 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [selectedCourse]);
 
-
-
-  const handleSubmitStudentAttendanceQr = async (classNumber: number) => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid) return;
-    setApiLoading(true);
-    setStudentAttendanceGeoLoading(true);
-    
-    let lat: number | null = null;
-    let lng: number | null = null;
-    
-    if (navigator.geolocation) {
-      try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-        });
-        lat = pos.coords.latitude;
-        lng = pos.coords.longitude;
-      } catch (err) {
-        console.warn("Geolocation unavailable or denied:", err);
-      }
-    }
-    
-    setStudentAttendanceGeoLoading(false);
-    
-    try {
-      await api("submitQrAttendance", {
-        courseId: cid,
-        classNumber,
-        token: studentQrToken.trim().toUpperCase(),
-        lat,
-        lng
-      });
-      showToast("¡Asistencia registrada con éxito! Ya estás presente.", "success");
-      setStudentActiveAttendanceClass(null);
-      setStudentQrToken("");
-    } catch (err: any) {
-      showToast("Error al registrar asistencia: " + err.message, "error");
-    } finally {
-      setApiLoading(false);
-    }
-  };
 
 
 
