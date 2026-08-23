@@ -13,7 +13,7 @@ import dynamic from "next/dynamic";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase/clientApp";
-import { collection, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import AdminPanel from "@/modules/course/components/AdminPanel";
 import StudentPanel from "@/modules/course/components/StudentPanel";
 import ProfilePanel from "@/modules/auth/components/ProfilePanel";
@@ -34,6 +34,7 @@ import { useClassFeedback } from "./hooks/useClassFeedback";
 import { useStudentQrAttendance } from "./hooks/useStudentQrAttendance";
 import CommandPalette from "@/components/dashboard/ui/CommandPalette";
 import { useAnnouncements } from "./hooks/useAnnouncements";
+import { useTeacherCourseSettings } from "./hooks/useTeacherCourseSettings";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -69,12 +70,6 @@ interface ClassInstance {
 }
 
 
-interface ScheduleItem {
-  day: string;
-  time: string;
-  type: string;
-}
-
 export default function DashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -101,6 +96,7 @@ export default function DashboardPage() {
 
   // Data states
   const [courses, setCourses] = useState<any[]>([]);
+  const [teacherClasses, setTeacherClasses] = useState<ClassInstance[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [, setGlobalSettings] = useState<any>({});
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
@@ -122,25 +118,6 @@ export default function DashboardPage() {
   const [newCourseOrg, setNewCourseOrg] = useState("");
   const [enrollCode, setEnrollCode] = useState("");
   const [globalCalendarUrl, setGlobalCalendarUrl] = useState("");
-
-  // Teacher Schedule & Settings local states
-  const [teacherStartDate, setTeacherStartDate] = useState("");
-  const [teacherDuration, setTeacherDuration] = useState("");
-  const [teacherCoverText, setTeacherCoverText] = useState("");
-  const [teacherGithubToken, setTeacherGithubToken] = useState("");
-  const [teacherMoodleEnabled, setTeacherMoodleEnabled] = useState(false);
-  const [teacherExternalCalendars, setTeacherExternalCalendars] = useState("");
-  const [teacherSchedules, setTeacherSchedules] = useState<ScheduleItem[]>([]);
-  const [teacherClasses, setTeacherClasses] = useState<ClassInstance[]>([]);
-  
-  // Adding schedule states
-  const [scheduleDay, setScheduleDay] = useState("Lunes");
-  const [scheduleTime, setScheduleTime] = useState("");
-  const [scheduleType, setScheduleType] = useState("Teoría");
-
-  // Clone course config state
-  const [otherTeacherCourses, setOtherTeacherCourses] = useState<any[]>([]);
-  const [cloneSourceId, setCloneSourceId] = useState("");
 
   // Assignments states
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -166,6 +143,36 @@ export default function DashboardPage() {
     handleSubmitStudentAttendanceQr
   } = useStudentQrAttendance({ selectedCourse, setApiLoading });
 
+  const {
+    teacherStartDate, setTeacherStartDate,
+    teacherDuration, setTeacherDuration,
+    teacherCoverText, setTeacherCoverText,
+    teacherGithubToken, setTeacherGithubToken,
+    teacherMoodleEnabled, setTeacherMoodleEnabled,
+    teacherExternalCalendars, setTeacherExternalCalendars,
+    teacherSchedules, setTeacherSchedules,
+    scheduleDay, setScheduleDay,
+    scheduleTime, setScheduleTime,
+    scheduleType, setScheduleType,
+    otherTeacherCourses, setOtherTeacherCourses,
+    cloneSourceId, setCloneSourceId,
+    teacherCommissionsMapping, setTeacherCommissionsMapping,
+    teacherCommissions, setTeacherCommissions,
+    newCommissionInput, setNewCommissionInput,
+    moodleApiUrl, setMoodleApiUrl,
+    moodleWsToken, setMoodleWsToken,
+    moodleCourseId, setMoodleCourseId,
+    showCsvEndpoint, setShowCsvEndpoint,
+    showCsvGradingEndpoint, setShowCsvGradingEndpoint,
+    applyCourseSettings,
+    handleAddSchedule,
+    handleRemoveSchedule,
+    handleSaveTeacherSettings,
+    handleCloneCourseConfig,
+    handleExportMoodleXml,
+    handleSyncMoodleRoster
+  } = useTeacherCourseSettings({ selectedCourse, setSelectedCourse, setCourses, setApiLoading });
+
   // Sidebar & Profile Menu states
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -185,9 +192,6 @@ export default function DashboardPage() {
 
   // Commission & Co-docencia states
   const [commissionFilter, setCommissionFilter] = useState<string>("Todas");
-  const [teacherCommissionsMapping, setTeacherCommissionsMapping] = useState<Record<string, string>>({});
-  const [teacherCommissions, setTeacherCommissions] = useState<string[]>([]);
-  const [newCommissionInput, setNewCommissionInput] = useState<string>("");
 
   // Gmail OAuth Integration
   const {
@@ -199,10 +203,6 @@ export default function DashboardPage() {
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [selectedDirectEmailStudent, setSelectedDirectEmailStudent] = useState<any | null>(null);
 
-  // Expanded Moodle Integration states
-  const [moodleApiUrl, setMoodleApiUrl] = useState<string>("");
-  const [moodleWsToken, setMoodleWsToken] = useState<string>("");
-  const [moodleCourseId, setMoodleCourseId] = useState<string>("");
 
   // Teacher Central Dashboard states
   const [overviewSubmissionsList, setOverviewSubmissionsList] = useState<any[]>([]);
@@ -211,8 +211,6 @@ export default function DashboardPage() {
   // Announcements states
 
   // CSV Endpoint collapsible state (normally hidden)
-  const [showCsvEndpoint, setShowCsvEndpoint] = useState(false);
-  const [showCsvGradingEndpoint, setShowCsvGradingEndpoint] = useState(false);
 
   const [courseTeachers, setCourseTeachers] = useState<any[]>([]);
   const [allTeachersList, setAllTeachersList] = useState<any[]>([]);
@@ -596,17 +594,8 @@ export default function DashboardPage() {
           } else if (courseSubTab === "settings") {
             const res = await api("getCourseSettings", { courseId: cid });
             const data = (res && (res.start_date !== undefined || res.invite_code !== undefined)) ? res : (res?.data || selectedCourse || {});
-            setTeacherStartDate(data.start_date || selectedCourse?.start_date || "");
-            setTeacherDuration(data.duration_weeks ? data.duration_weeks.toString() : (selectedCourse?.duration_weeks ? selectedCourse.duration_weeks.toString() : ""));
-            setTeacherCoverText(data.cover_text || selectedCourse?.cover_text || "");
-            setTeacherGithubToken(data.github_token || selectedCourse?.github_token || "");
-            setTeacherMoodleEnabled(data.moodle_enabled || selectedCourse?.moodle_enabled || false);
-            setTeacherExternalCalendars(Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || ""));
-            setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
-            const comms = Array.isArray(data.commissions) ? data.commissions : (Array.isArray(selectedCourse?.commissions) ? selectedCourse.commissions : ["Comisión A", "Comisión B"]);
-            setTeacherCommissions(comms);
-            
-            
+            applyCourseSettings(data);
+
 
             // Get other courses for cloning
             const otherCoursesRes = await api("getTeacherCourses");
@@ -635,15 +624,7 @@ export default function DashboardPage() {
           } else if (courseSubTab === "settings") {
             const res = await api("getCourseSettings", { courseId: cid });
             const data = (res && (res.start_date !== undefined || res.invite_code !== undefined)) ? res : (res?.data || selectedCourse || {});
-            setTeacherStartDate(data.start_date || selectedCourse?.start_date || "");
-            setTeacherDuration(data.duration_weeks ? data.duration_weeks.toString() : (selectedCourse?.duration_weeks ? selectedCourse.duration_weeks.toString() : ""));
-            setTeacherCoverText(data.cover_text || selectedCourse?.cover_text || "");
-            setTeacherGithubToken(data.github_token || selectedCourse?.github_token || "");
-            setTeacherMoodleEnabled(data.moodle_enabled || selectedCourse?.moodle_enabled || false);
-            setTeacherExternalCalendars(Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || ""));
-            setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
-            const comms = Array.isArray(data.commissions) ? data.commissions : (Array.isArray(selectedCourse?.commissions) ? selectedCourse.commissions : ["Comisión A", "Comisión B"]);
-            setTeacherCommissions(comms);
+            applyCourseSettings(data);
           } else if (courseSubTab === "assignments") {
             setAssignments(detailRes?.assignments || []);
           } else if (courseSubTab === "teachers") {
@@ -859,174 +840,6 @@ export default function DashboardPage() {
 
 
   // Teacher Schedule settings manipulation
-  const handleAddSchedule = () => {
-    if (!scheduleTime) return showToast("Poné una hora válida.", "success");
-    setTeacherSchedules([...teacherSchedules, { day: scheduleDay, time: scheduleTime, type: scheduleType }]);
-    setScheduleTime("");
-  };
-
-  const handleRemoveSchedule = (idx: number) => {
-    setTeacherSchedules(teacherSchedules.filter((_, i) => i !== idx));
-  };
-
-
-  const handleSaveTeacherSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cid = selectedCourse.id || selectedCourse.course?.id;
-    setApiLoading(true);
-    try {
-      const durationNum = parseInt(teacherDuration);
-      const updatedData = {
-        cover_text: teacherCoverText,
-        duration_weeks: isNaN(durationNum) ? null : durationNum,
-        start_date: teacherStartDate,
-        external_calendars: teacherExternalCalendars.split(",").map(c => c.trim()).filter(Boolean),
-        github_token: teacherGithubToken,
-        moodle_enabled: teacherMoodleEnabled,
-        schedules: teacherSchedules,
-        commissions: teacherCommissions,
-        commissions_mapping: teacherCommissionsMapping
-      };
-
-      await api("updateCourseSettings", {
-        courseId: cid,
-        data: updatedData
-      });
-
-      setSelectedCourse((prev: any) => {
-        if (!prev) return null;
-        if (prev.course) {
-          return {
-            ...prev,
-            course: {
-              ...prev.course,
-              ...updatedData
-            }
-          };
-        }
-        return {
-          ...prev,
-          ...updatedData
-        };
-      });
-
-      setCourses(prev => prev.map(c => {
-        if (c.id === cid) {
-          return {
-            ...c,
-            ...updatedData
-          };
-        }
-        return c;
-      }));
-
-      showToast("Configuración de cátedra guardada.", "success");
-    } catch (err: any) {
-      showToast("Error al guardar configuración: " + err.message, "error");
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleCloneCourseConfig = async () => {
-    if (!cloneSourceId) return;
-    if (!confirm("¿Seguro que querés clonar la configuración? Sobrescribirá tus horarios y duración.")) return;
-    setApiLoading(true);
-    try {
-      const cid = selectedCourse.id || selectedCourse.course?.id;
-      await api("cloneCourseExtraData", { sourceCourseId: cloneSourceId, targetCourseId: cid });
-      // Reload settings tab
-      const res = await api("getCourseSettings", { courseId: cid });
-      const data = res.data;
-      setTeacherStartDate(data.start_date || "");
-      setTeacherDuration(data.duration_weeks?.toString() || "");
-      setTeacherCoverText(data.cover_text || "");
-      setTeacherGithubToken(data.github_token || "");
-      setTeacherMoodleEnabled(data.moodle_enabled || false);
-      setTeacherExternalCalendars((data.external_calendars || []).join(", "));
-      setTeacherSchedules(data.schedules || []);
-      setTeacherCommissionsMapping(data.commissions_mapping || {});
-      setTeacherCommissions(data.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]);
-      showToast("Configuración clonada exitosamente.", "success");
-    } catch (err: any) {
-      showToast("Error al clonar configuración: " + err.message, "error");
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-
-
-
-
-
-  const handleExportMoodleXml = async () => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid) return;
-    setApiLoading(true);
-    try {
-      const res = await api("exportCourseToMoodleXml", { courseId: cid });
-      if (res?.mbzBase64) {
-        const binaryStr = atob(res.mbzBase64);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
-        const blob = new Blob([bytes], { type: "application/x-gzip" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = res.filename || "moodle_backup.mbz";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast("¡Archivo de Respaldo MBZ (Moodle 4.2) generado y descargado exitosamente!", "success");
-      } else if (res?.xmlContent) {
-        const blob = new Blob([res.xmlContent], { type: "application/xml" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = res.filename || "moodle_backup.xml";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast("¡Respaldo XML de Moodle generado y descargado exitosamente!", "success");
-      }
-    } catch (err: any) {
-      showToast("Error al exportar curso a Moodle: " + err.message, "error");
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleSyncMoodleRoster = async () => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid) return;
-    if (!moodleApiUrl || !moodleWsToken || !moodleCourseId) {
-      showToast("Por favor completá la URL de Moodle, el Token de Web Service y el ID del curso de Moodle.", "success");
-      return;
-    }
-    setApiLoading(true);
-    try {
-      const res = await api("syncMoodleCourseRoster", {
-        courseId: cid,
-        moodleUrl: moodleApiUrl,
-        moodleToken: moodleWsToken,
-        moodleCourseId: moodleCourseId
-      });
-      showToast(`¡Sincronización completada! ${res.syncedCount} estudiantes sincronizados desde un total de ${res.totalMoodleUsers} usuarios en Moodle.`, "success");
-    } catch (err: any) {
-      showToast("Error al sincronizar roster desde Moodle: " + err.message, "error");
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-
-
-
   // Schedule Versioning & History actions
 
 
