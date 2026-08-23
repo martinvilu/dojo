@@ -101,7 +101,7 @@ Es frágil y confuso; debe resolverse a la ruta final directa.
 ### Fase 2 — Completar la modularización (P1)
 
 - [x] Reemplazar el hack `./actions/${moduleName}` de `functions/index.js` por la resolución directa de los paths ya mapeados (`./src/modules/<dominio>/<name>`). *(commit `2605705`)*
-- [ ] Dividir `dashboard/page.tsx` extrayendo el estado compartido a custom hooks. **Avance**: extraídos `useTheme`, `useGithubPromptModal`, `useClassFeedback` y `useStudentQrAttendance` a `src/app/dashboard/hooks/` (commits `fd403ea`, `ff3a96b`); quedan los grupos de estado de cursos/cronogramas y el orquestador de pestañas, que requieren verificación manual de UI.
+- [ ] Dividir `dashboard/page.tsx` extrayendo el estado compartido a custom hooks. **Avance**: 8 hooks extraídos a `src/app/dashboard/hooks/` — `useTheme`, `useGithubPromptModal`, `useClassFeedback`, `useStudentQrAttendance`, `useAnnouncements`, `useTeacherCourseSettings` (colapsó además la hidratación duplicada teacher/admin de configuración), `useBackups` *(commits `fd403ea`…`4d3c851`)*; el archivo pasó de 2.356 a ~1.940 líneas. Quedan: efecto de deep-links/params, carga de detalle de curso y estados de perfil, que están más acoplados al orquestador.
 - [x] Limpiar los 65 warnings de ESLint: eliminar props/variables muertas y documentar deps intencionales de `useEffect`. *(commit `8cd7f4c`)*
 - [x] Aplicar `next/dynamic` a paneles pesados renderizados condicionalmente (`CalendarPanel`, `EmailManagementPanel`, `DirectEmailModal`). *(commit `ea74541`)*
 - [ ] Criterio de aceptación pendiente: dividir `page.tsx` por debajo de 500 líneas con hooks de dominio.
@@ -116,6 +116,7 @@ Es frágil y confuso; debe resolverse a la ruta final directa.
 
 - [x] **Calendario unificado multi-materia** (`pendientes.md`): carga paralela de todas las cursadas, filtros por materia con checkboxes y colores distintivos por cátedra. *(commits `74f8d85`, `1679951`)*
 - [x] **Buscador omni (Command + K)** sobre cátedras, clases y entregas cargadas en el cliente. *(commit `9356f83`)*
+- [x] **Editor de texto para avisos**: toolbar Markdown (negrita, itálica, título, lista, código, enlace) sobre el compositor, que ya renderizaba Markdown vía `marked`; sin dependencias nuevas. *(commit `eca7c82`)*
 - [x] **Hardening del feed iCal** (parte del item "middleware"): el endpoint `/api/calendar` exigía cero credenciales; ahora usa el token `sync_secret` por curso, mismo esquema que los endpoints CSV. *(commit `1679951`)*
 - [ ] Middleware unificado restante: wrapper común de validación Bearer/sanitización para futuras rutas App Router.
 - [ ] Editor rich text para avisos/tareas.

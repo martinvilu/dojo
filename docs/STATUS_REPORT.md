@@ -84,6 +84,8 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 - [x] **Calendario Unificado Multi-materia**: checkboxes por cátedra (multi-selección con acciones Todas/Ninguna) y colores distintivos por materia en vistas mensual/semanal/modal. Completado el plan de `pendientes.md`.
 - [x] **Token obligatorio en feed iCal**: `/api/calendar` exige `token=sync_secret` (esquema ya usado por los endpoints CSV); las URLs generadas en Ajustes, Cronogramas y Calendario incluyen el token.
 - [x] **Buscador Omni (⌘K)**: paleta de comandos que busca cátedras, clases y tareas cargadas y navega al detalle correspondiente.
+- [x] **Toolbar Markdown en Avisos**: formateo (negrita, itálica, título, lista, código, enlace) sobre el compositor docente sin dependencias nuevas.
+- [x] **Hooks adicionales**: `useAnnouncements`, `useTeacherCourseSettings` (con hidratación unificada teacher/admin) y `useBackups`; `page.tsx` queda en ~1.940 líneas (desde 2.356).
 
 ---
 
