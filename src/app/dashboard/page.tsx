@@ -10,10 +10,8 @@ import { CourseOverviewPanel } from "@/modules/course/components/CourseOverviewP
 import { CourseSchedulesPanel } from "@/modules/course/components/CourseSchedulesPanel";
 import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { useRouter } from "next/navigation";
-import { auth, db } from "@/lib/firebase/clientApp";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase/clientApp";
 import AdminPanel from "@/modules/course/components/AdminPanel";
 import StudentPanel from "@/modules/course/components/StudentPanel";
 import ProfilePanel from "@/modules/auth/components/ProfilePanel";
@@ -36,6 +34,7 @@ import CommandPalette from "@/components/dashboard/ui/CommandPalette";
 import { useAnnouncements } from "./hooks/useAnnouncements";
 import { useTeacherCourseSettings } from "./hooks/useTeacherCourseSettings";
 import { useBackups } from "./hooks/useBackups";
+import { useAuthProfile } from "./hooks/useAuthProfile";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -44,18 +43,6 @@ const PanelFallback = () => (
 const CalendarPanel = dynamic(() => import("@/modules/calendar/components/CalendarPanel"), { loading: () => <PanelFallback /> });
 const EmailManagementPanel = dynamic(() => import("@/modules/mail/components/EmailManagementPanel"), { loading: () => <PanelFallback /> });
 const DirectEmailModal = dynamic(() => import("@/modules/mail/components/DirectEmailModal"), { loading: () => <PanelFallback /> });
-
-interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  role: "admin" | "teacher" | "student";
-  avatar_url?: string;
-  account_status: "pending" | "approved";
-  matricula_unrn?: string;
-  cohorte?: string;
-  github_user?: string;
-}
 
 interface ClassInstance {
   date: string;
@@ -72,27 +59,12 @@ interface ClassInstance {
 
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [apiLoading, setApiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("");
   const [error, setError] = useState("");
   const hasProcessedParams = useRef(false);
   const moodleLtiParams = useRef<{ outcomeUrl?: string, resultId?: string }>({});
 
-  
-  // Pending Matricula inputs
-  const [matriculaInput, setMatriculaInput] = useState("");
-  const [matriculaError, setMatriculaError] = useState("");
-
-  // Profile Edit state
-  const [profileName, setProfileName] = useState("");
-  const [profileMatricula, setProfileMatricula] = useState("");
-  const [profileCohorte, setProfileCohorte] = useState("");
-  const [profileGithubUser, setProfileGithubUser] = useState("");
-  const [xpLogs, setXpLogs] = useState<any[]>([]);
   const [collapsedClasses, setCollapsedClasses] = useState<Record<string, boolean>>({});
 
   // Data states
@@ -119,6 +91,16 @@ export default function DashboardPage() {
   const [newCourseOrg, setNewCourseOrg] = useState("");
   const [enrollCode, setEnrollCode] = useState("");
   const [globalCalendarUrl, setGlobalCalendarUrl] = useState("");
+
+  // Session & profile domain
+  const {
+    currentUser, profile, setProfile, loading,
+    matriculaInput, setMatriculaInput, matriculaError,
+    profileName, setProfileName, profileMatricula, setProfileMatricula,
+    profileCohorte, setProfileCohorte, profileGithubUser, setProfileGithubUser,
+    xpLogs, setXpLogs,
+    handleLogout, handleSubmitMatricula, handleUpdateProfile, handleAddSecondaryEmail
+  } = useAuthProfile({ setActiveTab, setApiLoading, setError });
 
   // Assignments states
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -332,44 +314,6 @@ export default function DashboardPage() {
   }, [selectedCourse]);
 
 
-
-  // Fetch profiles and manage auth status
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push("/login?redirect=" + encodeURIComponent(window.location.pathname + window.location.search));
-        return;
-      }
-      setCurrentUser(user);
-      try {
-        let profileRes = await api("getProfile");
-        if (!profileRes) {
-          await new Promise((r) => setTimeout(r, 2000));
-          profileRes = await api("getProfile");
-        }
-        
-        const userProfile = profileRes as UserProfile;
-        setProfile(userProfile);
-
-        if (userProfile.account_status === "approved" || userProfile.role === "admin" || userProfile.role === "teacher") {
-          if (userProfile.role === "admin") {
-            setActiveTab("admin-courses");
-          } else if (userProfile.role === "teacher") {
-            setActiveTab("teacher-courses");
-          } else {
-            setActiveTab("student-courses");
-          }
-        }
-      } catch (err: any) {
-        console.error("Error loading profile:", err);
-        setError("Error al cargar perfil de usuario: " + err.message);
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
 
   // Load data when tab changes
   useEffect(() => {
@@ -679,34 +623,6 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseSubTab, selectedCourse, profile]);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/login");
-  };
-
-  // Submit matricula validation (for pending students)
-  const handleSubmitMatricula = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^UNRN-\d{5,}$/.test(matriculaInput)) {
-      setMatriculaError("Formato inválido. Debe ser UNRN- seguido de al menos 5 números.");
-      return;
-    }
-    setMatriculaError("");
-    setApiLoading(true);
-    try {
-      await api("submitMatricula", { matricula: matriculaInput });
-      const profileRes = await api("getProfile");
-      setProfile(profileRes);
-      if (profileRes?.role === "student") {
-        setActiveTab("student-courses");
-      }
-    } catch (err: any) {
-      setError("Error al enviar la matrícula: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
   // Admin Actions
   const handleApproveUser = async (uid: string) => {
     if (!confirm("¿Aprobar manualmente a este usuario?")) return;
@@ -923,41 +839,6 @@ export default function DashboardPage() {
   };
 
 
-
-  // Profile update state
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setApiLoading(true);
-    try {
-      await api("updateProfile", { 
-        full_name: profileName,
-        matricula_unrn: profileMatricula, 
-        cohorte: profileCohorte,
-        github_user: profileGithubUser 
-      });
-      const profileRes = await api("getProfile");
-      setProfile(profileRes);
-      showToast("Perfil actualizado correctamente.", "success");
-    } catch (err: any) {
-      setError("Error al actualizar perfil: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleAddSecondaryEmail = async (email: string) => {
-    setApiLoading(true);
-    try {
-      await api("addSecondaryEmail", { email });
-      const profileRes = await api("getProfile");
-      setProfile(profileRes);
-      showToast("Correo secundario vinculado exitosamente.", "success");
-    } catch (err: any) {
-      showToast("Error al vincular correo secundario: " + err.message, "error");
-    } finally {
-      setApiLoading(false);
-    }
-  };
 
   // Open course calendar directly
   const handleOpenCourseCalendar = (courseId: string) => {
