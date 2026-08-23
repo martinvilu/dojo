@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, auth as adminAuth } from "firebase-admin/firestore";
 
 /**
  * Shared middleware helpers for App Router API routes.
@@ -17,6 +17,32 @@ export function adminDb() {
 
 export function jsonError(status: number, message: string) {
   return NextResponse.json({ error: message }, { status });
+}
+
+/**
+ * Validates a Firebase Auth Bearer token and returns the decoded user.
+ * Usage for identity-gated routes:
+ *
+ *   const user = await requireBearerUser(request);
+ *   if (user instanceof NextResponse) return user;
+ *   // user.uid / user.email available
+ */
+export async function requireBearerUser(
+  request: Request
+): Promise<{ uid: string; email?: string; [k: string]: any } | NextResponse> {
+  const header = request.headers.get("authorization") || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!token) return jsonError(401, "Falta el token Bearer");
+
+  try {
+    if (!getApps().length) {
+      initializeApp();
+    }
+    const decoded = await adminAuth().verifyIdToken(token);
+    return { uid: decoded.uid, email: decoded.email, ...decoded };
+  } catch {
+    return jsonError(401, "Token inválido o expirado");
+  }
 }
 
 export interface CourseSubscription {

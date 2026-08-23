@@ -1,0 +1,87 @@
+# =====================================================================
+# Plantilla de Autograding (Python/pytest) - Ninja Dojo
+# =====================================================================
+# Variante para consignas en Python. Mismos requisitos que la versión
+# Node: secrets NINJA_DOJO_SYNC_SECRET y MATRICULA_UNRN en el repo del
+# alumno, y editar los valores <COMPLETAR> (webhook e id de tarea).
+#
+# El puntaje se calcula como tests aprobados / total * 10.
+# =====================================================================
+
+name: Autograding Ninja Dojo (Python)
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+env:
+  # URL del webhook de Ninja Dojo (Cloud Function onRequest "webhook").
+  WEBHOOK_URL: "<COMPLETAR_URL_DEL_WEBHOOK>"
+  # ID de la tarea en Ninja Dojo.
+  ASSIGNMENT_ID: "<COMPLETAR_ID_DE_TAREA>"
+
+jobs:
+  autograde:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run tests and compute score
+        run: |
+          set +e
+          pytest -q --junitxml=results.xml > /dev/null 2>&1
+          TEST_EXIT=$?
+          set -e
+
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+
+          try:
+              tree = ET.parse("results.xml").getroot()
+              suite = tree.find("testsuite") or tree
+              total = int(suite.get("tests", "0"))
+              failures = int(suite.get("failures", "0")) + int(suite.get("errors", "0"))
+          except Exception:
+              total, failures = 0, 0
+
+          passed = max(total - failures, 0)
+          pct = round(passed / total * 100) if total else 0
+          grade = pct / 10.0
+          feedback = f"Autograding: {passed}/{total} tests aprobados ({pct}%)."
+
+          with open("grade.env", "w") as fh:
+              fh.write(f"GRADE={grade}\nFEEDBACK={feedback}\n")
+          print(feedback)
+          PY
+
+          cat grade.env >> "$GITHUB_ENV"
+          exit $TEST_EXIT
+
+      - name: Publish grade to Ninja Dojo
+        if: always()
+        run: |
+          curl -sf -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg assignmentId "$ASSIGNMENT_ID" \
+              --arg sync_secret "${{ secrets.NINJA_DOJO_SYNC_SECRET }}" \
+              --arg matricula "${{ secrets.MATRICULA_UNRN }}" \
+              --arg grade "$GRADE" \
+              --arg feedback "$FEEDBACK" \
+              '{assignmentId:$assignmentId, sync_secret:$sync_secret,
+                grades:[{matricula:$matricula, grade:$grade, feedback:$feedback}]}')"
