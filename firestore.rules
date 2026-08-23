@@ -86,9 +86,15 @@ service cloud.firestore {
       // un admin solo pueden alternar la marca de mejor respuesta.
       match /class_comments/{commentId} {
         function onlyReactionsChanged() {
-          return request.resource.data.keys().hasOnly(resource.data.keys())
-            && request.resource.data.diff(resource.data)
-                 .unchangedKeys().hasAll(['classNumber', 'user_id', 'content', 'created_at']);
+          // Base fields must never change, and beyond that only the
+          // 'reactions' subtree may differ: either the map already existed
+          // (no new top-level keys) or it is being added wholesale on a
+          // legacy comment (affected key path is exactly 'reactions').
+          return request.resource.data.diff(resource.data)
+                 .unchangedKeys().hasAll(['classNumber', 'user_id', 'content', 'created_at'])
+            && (request.resource.data.keys().hasOnly(resource.data.keys())
+              || request.resource.data.diff(resource.data)
+                   .affectedKeys().hasOnly(['reactions']));
         }
         function onlyBestAnswerChanged() {
           return request.resource.data.diff(resource.data)

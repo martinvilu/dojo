@@ -67,6 +67,7 @@ export default function ClassCommentsThread({
         user_name: profile.full_name || profile.email,
         user_role: profile.role,
         content: text,
+        reactions: {},
         created_at: serverTimestamp(),
       });
       setNewCommentText("");

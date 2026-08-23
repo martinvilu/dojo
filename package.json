@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:selenium": "node tests/selenium/run-all-tests.js",
+    "test:rules": "npx -y firebase-tools@latest emulators:exec --only firestore --project demo-ninja-dojo-rules -- \"npx jest tests/firestore.rules.test.js --runInBand\"",
     "test:local": "./scripts/test-local.sh"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "sonner": "^2.0.7"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/postcss": "^4",
     "@types/marked": "^5.0.2",
     "@types/node": "^20",
@@ -30,6 +32,7 @@
     "@types/selenium-webdriver": "^4.35.6",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "jest": "^30.4.2",
     "selenium-webdriver": "^4.46.0",
     "tailwindcss": "^4",
     "typescript": "^5"
