@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore, auth as adminAuth } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 
 /**
  * Shared middleware helpers for App Router API routes.
@@ -38,8 +39,8 @@ export async function requireBearerUser(
     if (!getApps().length) {
       initializeApp();
     }
-    const decoded = await adminAuth().verifyIdToken(token);
-    return { uid: decoded.uid, email: decoded.email, ...decoded };
+    const decoded = await getAuth().verifyIdToken(token);
+    return { ...decoded, uid: decoded.uid, email: decoded.email };
   } catch {
     return jsonError(401, "Token inválido o expirado");
   }
