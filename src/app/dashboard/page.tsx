@@ -39,6 +39,9 @@ import { useCourseDetail } from "./hooks/useCourseDetail";
 import { useCourseRealtime } from "./hooks/useCourseRealtime";
 import { useCourseSubtabData } from "./hooks/useCourseSubtabData";
 import { useTabDataLoader } from "./hooks/useTabDataLoader";
+import { DashboardOverlays } from "./components/DashboardOverlays";
+import { getWeeklyClasses } from "./utils/weeklyClasses";
+import type { ClassInstance } from "./types";
 import { Sidebar } from "./components/Sidebar";
 import { AdminBackupsSection } from "./components/AdminBackupsSection";
 import { CourseDetailSection } from "./components/CourseDetailSection";
@@ -49,21 +52,7 @@ const PanelFallback = () => (
   <div className="p-6 text-center text-sm text-gray-400" role="status">Cargando módulo…</div>
 );
 const CalendarPanel = dynamic(() => import("@/modules/calendar/components/CalendarPanel"), { loading: () => <PanelFallback /> });
-const EmailManagementPanel = dynamic(() => import("@/modules/mail/components/EmailManagementPanel"), { loading: () => <PanelFallback /> });
-const DirectEmailModal = dynamic(() => import("@/modules/mail/components/DirectEmailModal"), { loading: () => <PanelFallback /> });
 
-interface ClassInstance {
-  date: string;
-  type: string;
-  topic: string;
-  presentation_url?: string;
-  recording_url?: string;
-  special_status: "Normal" | "Clase Remota" | "Examen" | "Feriado";
-  description?: string;
-  classNumber?: number;
-  presentation_optimized?: boolean;
-  recording_optimized?: boolean;
-}
 
 
 export default function DashboardPage() {
@@ -336,31 +325,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Helper to group classes by weeks
-  const getWeeklyClasses = (classes: ClassInstance[]) => {
-    if (!classes || classes.length === 0) return {};
-    const weeks: Record<number, ClassInstance[]> = {};
-    
-    // Find Monday of the first class week
-    const firstClassDate = new Date(classes[0].date);
-    const dayOfWeek = firstClassDate.getUTCDay();
-    const offsetToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const baseMonday = new Date(firstClassDate);
-    baseMonday.setUTCDate(baseMonday.getUTCDate() - offsetToMonday);
-    baseMonday.setUTCHours(0,0,0,0);
-
-    classes.forEach(ci => {
-      const d = new Date(ci.date);
-      const diffTime = Math.abs(d.getTime() - baseMonday.getTime());
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      const weekNumber = Math.floor(diffDays / 7) + 1;
-      
-      if (!weeks[weekNumber]) weeks[weekNumber] = [];
-      weeks[weekNumber].push(ci);
-    });
-
-    return weeks;
-  };
 
   const weeklyClassesGrouped = getWeeklyClasses(teacherClasses);
 
@@ -555,26 +519,22 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* Teacher QR Modal is handled inside AttendanceManager */}
-
-      <StudentAttendanceModals
+      {/* Global modals & overlays */}
+      <DashboardOverlays
         profile={profile}
+        selectedCourse={selectedCourse}
+        courses={courses}
+        teacherClasses={teacherClasses}
+        assignments={assignments}
         isQrScannerOpen={isQrScannerOpen}
         setIsQrScannerOpen={setIsQrScannerOpen}
-        setApiLoading={setApiLoading}
         setStudentAttendanceGeoLoading={setStudentAttendanceGeoLoading}
-        api={api}
-        showToast={showToast}
         studentActiveAttendanceClass={studentActiveAttendanceClass}
         setStudentActiveAttendanceClass={setStudentActiveAttendanceClass}
         studentQrToken={studentQrToken}
         setStudentQrToken={setStudentQrToken}
-        selectedCourse={selectedCourse}
         studentAttendanceGeoLoading={studentAttendanceGeoLoading}
         handleSubmitStudentAttendanceQr={handleSubmitStudentAttendanceQr}
-      />
-
-            <FeedbackModals
         activeFeedbackClass={activeFeedbackClass}
         setActiveFeedbackClass={setActiveFeedbackClass}
         loadingFeedback={loadingFeedback}
@@ -588,35 +548,13 @@ export default function DashboardPage() {
         viewingFeedbackClass={viewingFeedbackClass}
         setViewingFeedbackClass={setViewingFeedbackClass}
         feedbackStats={feedbackStats}
+        githubPromptModal={githubPromptModal}
+        setGithubPromptModal={setGithubPromptModal}
+        onCommandNavigate={handleCommandNavigate}
+        selectedDirectEmailStudent={selectedDirectEmailStudent}
+        setSelectedDirectEmailStudent={setSelectedDirectEmailStudent}
+        setApiLoading={setApiLoading}
       />
-
-            {/* 📜 Historial de Versiones / Comparación Modal */}
-
-      {/* 💾 Guardar Versión Modal */}
-
-
-      {/* Modals are handled inside components now */}
-
-
-      <GithubPromptModal githubPromptModal={githubPromptModal} setGithubPromptModal={setGithubPromptModal} showToast={showToast} />
-
-      <CommandPalette
-        courses={courses}
-        classes={teacherClasses}
-        assignments={assignments}
-        onNavigate={handleCommandNavigate}
-      />
-      
-      {selectedDirectEmailStudent && (
-        <DirectEmailModal
-          student={selectedDirectEmailStudent}
-          courseName={selectedCourse?.name || "Cátedra"}
-          courseId={selectedCourse?.id || selectedCourse?.course?.id}
-          onClose={() => setSelectedDirectEmailStudent(null)}
-          api={api}
-        />
-      )}
-
     </div>
   );
 }
