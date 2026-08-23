@@ -10,8 +10,6 @@ import { CourseOverviewPanel } from "@/modules/course/components/CourseOverviewP
 import { CourseSchedulesPanel } from "@/modules/course/components/CourseSchedulesPanel";
 import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase/clientApp";
 import AdminPanel from "@/modules/course/components/AdminPanel";
 import StudentPanel from "@/modules/course/components/StudentPanel";
 import ProfilePanel from "@/modules/auth/components/ProfilePanel";
@@ -38,6 +36,7 @@ import { useAuthProfile } from "./hooks/useAuthProfile";
 import { useDeepLinks } from "./hooks/useDeepLinks";
 import { useAdminPanel } from "./hooks/useAdminPanel";
 import { useCourseDetail } from "./hooks/useCourseDetail";
+import { useCourseRealtime } from "./hooks/useCourseRealtime";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -72,7 +71,6 @@ export default function DashboardPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [teacherClasses, setTeacherClasses] = useState<ClassInstance[]>([]);
   const [, setGlobalSettings] = useState<any>({});
-  const [courseTeachers, setCourseTeachers] = useState<any[]>([]);
 
   // Form states
   const { theme, toggleTheme } = useTheme();
@@ -100,6 +98,15 @@ export default function DashboardPage() {
   } = useCourseDetail({
     profile, activeTab, setActiveTab, courses, setTeacherClasses, setApiLoading
   });
+
+  // Course-scoped live data (roster, teachers, attendance, Q&A comments)
+  const {
+    roster, setRoster,
+    courseAttendance,
+    courseTeachers, setCourseTeachers,
+    courseComments,
+    expandedComments, toggleComments
+  } = useCourseRealtime({ selectedCourse });
 
   // Admin management domain
   const {
@@ -220,13 +227,8 @@ export default function DashboardPage() {
     handleToggleAcks
   } = useAnnouncements({ selectedCourse, setApiLoading, setError });
 
-  // Class Q&A Comments states
-  const [courseComments, setCourseComments] = useState<any[]>([]);
-  const [expandedComments, setExpandedComments] = useState<Record<number, boolean>>({});
+  // Class Q&A Comments / Attendance states → useCourseRealtime
 
-  // Attendance states
-  const [courseAttendance, setCourseAttendance] = useState<any[]>([]);
-  const [roster, setRoster] = useState<any[]>([]);
   const [activeAttendanceClass, setActiveAttendanceClass] = useState<number | null>(null);
 
   // Schedule Versioning & History states
@@ -248,83 +250,6 @@ export default function DashboardPage() {
   const [tutors, setTutors] = useState<any[]>([]);
   const courseCommissions = (selectedCourse?.commissions || selectedCourse?.course?.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]) as string[];
   const [tutoringSessions, setTutoringSessions] = useState<any[]>([]);
-
-  useEffect(() => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid) {
-      setRoster([]);
-      setCourseTeachers([]);
-      return;
-    }
-    api("getCourseRoster", { courseId: cid })
-      .then((res) => {
-        setRoster(res || []);
-      })
-      .catch((err) => {
-        console.error("Error loading roster:", err);
-      });
-
-    api("getCourseTeachers", { courseId: cid })
-      .then((res) => {
-        setCourseTeachers(res || []);
-      })
-      .catch((err) => {
-        console.error("Error loading course teachers:", err);
-      });
-  }, [selectedCourse]);
-
-  useEffect(() => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid) {
-      setCourseAttendance([]);
-      return;
-    }
-    const q = collection(db, "courses", cid, "attendance");
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const att = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setCourseAttendance(att);
-    }, (err) => {
-      console.error("Error loading attendance:", err);
-    });
-    return () => unsubscribe();
-  }, [selectedCourse]);
-
-
-
-
-  const toggleComments = (idx: number) => {
-    setExpandedComments(prev => ({ ...prev, [idx]: !prev[idx] }));
-  };
-
-  useEffect(() => {
-    const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid) {
-      setCourseComments([]);
-      return;
-    }
-    
-    const q = query(
-      collection(db, "courses", cid, "class_comments"),
-      orderBy("created_at", "asc")
-    );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const comments = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setCourseComments(comments);
-    }, (err) => {
-      console.error("Error loading comments:", err);
-    });
-    
-    return () => unsubscribe();
-  }, [selectedCourse]);
-
-
 
   // Load data when tab changes
   useEffect(() => {
