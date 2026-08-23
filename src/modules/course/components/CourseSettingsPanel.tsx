@@ -8,6 +8,13 @@ import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard
 import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegrationPanel";
 
 export function CourseSettingsPanel(props: any) {
+  const calendarFeedUrlFor = (course: any) => {
+    const cid = course?.id || course?.course?.id || "";
+    const token = course?.sync_secret || course?.course?.sync_secret || "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
+    return `${origin}/api/calendar?id=${cid}&token=${token}`;
+  };
+
   // Destructure everything from props to make it easy for now
   const {
     profile, selectedCourse, showToast,
@@ -131,14 +138,13 @@ export function CourseSettingsPanel(props: any) {
                         <input
                           type="text"
                           readOnly
-                          value={typeof window !== "undefined" ? `${window.location.origin}/api/calendar?id=${selectedCourse.id || selectedCourse.course?.id}` : `https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/calendar?id=${selectedCourse.id || selectedCourse.course?.id}`}
+                          value={calendarFeedUrlFor(selectedCourse)}
                           className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-gray-300 select-all font-mono"
                         />
                         <button
                           type="button"
                           onClick={async () => {
-                            const cid = selectedCourse.id || selectedCourse.course?.id || "";
-                            const url = typeof window !== "undefined" ? `${window.location.origin}/api/calendar?id=${cid}` : `https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/calendar?id=${cid}`;
+                            const url = calendarFeedUrlFor(selectedCourse);
                             const ok = await copyToClipboard(url);
                             showToast(ok ? "¡Enlace de calendario copiado con éxito al portapapeles!" : "No se pudo copiar automáticamente.", "success");
                           }}
@@ -149,8 +155,7 @@ export function CourseSettingsPanel(props: any) {
                         <button
                           type="button"
                           onClick={() => {
-                            const cid = selectedCourse.id || selectedCourse.course?.id || "";
-                            const feedUrl = typeof window !== "undefined" ? `${window.location.origin}/api/calendar?id=${cid}` : `https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app/api/calendar?id=${cid}`;
+                            const feedUrl = calendarFeedUrlFor(selectedCourse);
                             window.open(`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`, "_blank");
                           }}
                           className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1 whitespace-nowrap"

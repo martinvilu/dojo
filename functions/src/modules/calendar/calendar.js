@@ -4,15 +4,22 @@ const { getFirestore } = require("firebase-admin/firestore");
 exports.calendar = async (req, res) => {
     const courseId = req.query.id;
     if (!courseId) return res.status(400).send('Falta el ID del curso');
-    
+
     const db = getFirestore();
 
     try {
         const cSnap = await db.collection('courses').doc(courseId).get();
         if (!cSnap.exists) return res.status(404).send('Curso no encontrado');
-        
+
         const course = cSnap.data();
-        
+
+        // Feed de suscripción: usa el mismo esquema de token por curso que
+        // los endpoints CSV (sync_secret), que ya comparten los miembros de
+        // la cátedra para armar sus URLs de Google Calendar / Moodle.
+        if (!course.sync_secret || req.query.token !== course.sync_secret) {
+            return res.status(401).send('Token de suscripción inválido');
+        }
+
         let ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Jutsu Classroom//ES\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nX-WR-CALNAME:" + (course.name || "Cursada") + "\r\n";
         
         if (course.class_instances && course.class_instances.length > 0) {

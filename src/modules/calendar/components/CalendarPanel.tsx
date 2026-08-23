@@ -28,6 +28,7 @@ export interface Assignment {
 export interface CourseFilter {
   id: string;
   name: string;
+  sync_secret?: string;
 }
 
 // Distinct per-course accents so subjects are recognizable at a glance.
@@ -300,12 +301,13 @@ export default function CalendarPanel({
     document.body.removeChild(link);
   };
 
+  const singleVisibleCourse = visibleCourseCount === 1 ? visibleCourses[0] : null;
+
   const handleGoogleCalendarSubscribe = () => {
+    if (!singleVisibleCourse) return;
     const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
-    let feedUrl = `${origin}/api/calendar`;
-    if (visibleCourseCount === 1) {
-      feedUrl += `?id=${visibleCourses[0].id}`;
-    }
+    const tokenSuffix = singleVisibleCourse.sync_secret ? `&token=${singleVisibleCourse.sync_secret}` : "";
+    const feedUrl = `${origin}/api/calendar?id=${singleVisibleCourse.id}${tokenSuffix}`;
     const googleCalUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`;
     window.open(googleCalUrl, "_blank");
   };
@@ -440,8 +442,9 @@ export default function CalendarPanel({
             </button>
             <button
               onClick={handleGoogleCalendarSubscribe}
-              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer flex items-center space-x-1.5 shadow-sm"
-              title="Atajo para añadir este calendario automáticamente en Google Calendar"
+              disabled={!singleVisibleCourse}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer flex items-center space-x-1.5 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              title={singleVisibleCourse ? "Añadir esta cursada automáticamente en Google Calendar" : "Seleccioná exactamente una materia para suscribirla"}
             >
               <span>📅 Añadir a Google Calendar</span>
             </button>

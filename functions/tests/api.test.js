@@ -96,6 +96,50 @@ describe('API Callable Function', () => {
     expect(res.send).toHaveBeenCalledWith('Falta el ID del curso');
   });
 
+  it('calendar endpoint returns 401 when the subscription token is missing or wrong', async () => {
+    const db = admin.firestore();
+    db.collection('courses').doc('c1').get = jest.fn().mockResolvedValue({
+      exists: true,
+      data: () => ({ name: 'Algoritmos', sync_secret: 'SECRETO1' })
+    });
+
+    const resFor = (token) => {
+      const req = { query: token === undefined ? { id: 'c1' } : { id: 'c1', token } };
+      const res = { status: jest.fn().mockReturnThis(), set: jest.fn(), send: jest.fn() };
+      return { req, res };
+    };
+
+    const noToken = resFor(undefined);
+    await myFunctions.calendar(noToken.req, noToken.res);
+    expect(noToken.res.status).toHaveBeenCalledWith(401);
+
+    const badToken = resFor('OTROTOKEN');
+    await myFunctions.calendar(badToken.req, badToken.res);
+    expect(badToken.res.status).toHaveBeenCalledWith(401);
+    expect(badToken.res.send).toHaveBeenCalledWith('Token de suscripción inválido');
+  });
+
+  it('calendar endpoint serves the iCal feed with a valid subscription token', async () => {
+    const db = admin.firestore();
+    db.collection('courses').doc('c1').get = jest.fn().mockResolvedValue({
+      exists: true,
+      data: () => ({
+        name: 'Algoritmos',
+        sync_secret: 'SECRETO1',
+        class_instances: [
+          { date: '2026-08-24', type: 'Teórica', topic: 'Funciones' }
+        ]
+      })
+    });
+
+    const req = { query: { id: 'c1', token: 'SECRETO1' } };
+    const res = { status: jest.fn().mockReturnThis(), set: jest.fn(), send: jest.fn() };
+    await myFunctions.calendar(req, res);
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.set).toHaveBeenCalled();
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('BEGIN:VCALENDAR'));
+  });
+
   it('exportAttendanceCsv returns 400 if courseId or token is missing', async () => {
     const req = { query: {}, set: jest.fn() };
     const res = {

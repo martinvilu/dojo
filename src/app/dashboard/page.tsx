@@ -1751,6 +1751,7 @@ export default function DashboardPage() {
             courses={(courses || []).map((c: any) => ({
               id: c.id || c.course?.id,
               name: c.name || c.course?.name || "Sin nombre",
+              sync_secret: c.sync_secret || c.course?.sync_secret,
             }))}
             activeCourseName="Global"
           />
