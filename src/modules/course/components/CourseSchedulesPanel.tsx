@@ -108,7 +108,9 @@ export function CourseSchedulesPanel({
       }
     });
 
-    generated.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // ⚡ Bolt Optimization: Use lexicographical string comparison for ISO dates
+    // Avoids O(N log N) overhead of instantiating new Date() and parsing strings inside the sort callback
+    generated.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     
     // Map class number
     generated.forEach((ci, idx) => {

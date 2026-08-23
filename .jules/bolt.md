@@ -20,3 +20,7 @@
 ## 2023-10-27 - O(N) array filtering within map/reduce calls across large datasets
 **Learning:** In components rendering long lists of entities like `CourseStudentsPanel`, nested iterations using `.filter()` and `.find()` over relationships (like `courseAttendance` or `courseSubmissions`) within standard `.map()` render loops or `.reduce()` aggregation functions result in severe O(N*M) or O(N^2) complexity. This causes massive slowdowns on re-renders or when exporting large CSV/PDF files.
 **Action:** Always pre-compute relationships into O(1) lookups using Hash Maps (like `Map<StudentId, Map<AssignmentId, Submission>>`) encapsulated in a `useMemo` block. This reduces rendering and aggregation from O(N^2) to O(N).
+
+## 2023-10-27 - O(N log N) overhead instantiating Date in sort callback
+**Learning:** Found an $O(N \log N)$ anti-pattern in `src/modules/course/components/CourseSchedulesPanel.tsx` where `new Date(a.date).getTime() - new Date(b.date).getTime()` was being used to sort ISO date strings. This causes performance degradation due to object instantiation and string parsing overhead inside the sorting loop.
+**Action:** Replace `Date` instantiation inside sorting callbacks with lexicographical string comparison `(a.date < b.date ? -1 : a.date > b.date ? 1 : 0)` when it's known that the dates are consistently formatted as ISO 8601 strings (e.g., `YYYY-MM-DDTHH:mm:ss.sssZ`).
