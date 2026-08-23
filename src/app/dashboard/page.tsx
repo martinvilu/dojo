@@ -38,9 +38,10 @@ import { useAdminPanel } from "./hooks/useAdminPanel";
 import { useCourseDetail } from "./hooks/useCourseDetail";
 import { useCourseRealtime } from "./hooks/useCourseRealtime";
 import { useCourseSubtabData } from "./hooks/useCourseSubtabData";
+import { useTabDataLoader } from "./hooks/useTabDataLoader";
 import { Sidebar } from "./components/Sidebar";
 import { AdminBackupsSection } from "./components/AdminBackupsSection";
-import { StudentNinjaRankCard } from "./components/StudentNinjaRankCard";
+import { CourseDetailSection } from "./components/CourseDetailSection";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -74,7 +75,6 @@ export default function DashboardPage() {
   // Data states
   const [courses, setCourses] = useState<any[]>([]);
   const [teacherClasses, setTeacherClasses] = useState<ClassInstance[]>([]);
-  const [, setGlobalSettings] = useState<any>({});
 
   // Form states
   const { theme, toggleTheme } = useTheme();
@@ -265,100 +265,24 @@ export default function DashboardPage() {
     handleRestoreBackupDocument
   } = useBackups({ setApiLoading });
 
+  // Top-level tab data loading
+  useTabDataLoader({
+    activeTab, profile,
+    setSelectedCourse, setCourses, setUsers,
+    setGlobalCalendarUrl,
+    setSystemBackups,
+    setAssignments, setTeacherClasses,
+    setProfileName, setProfileMatricula, setProfileCohorte, setProfileGithubUser,
+    setXpLogs,
+    setApiLoading, setError
+  });
+
   // Custom Prompts states (non-blocking alternative to native prompt)
 
   const { githubPromptModal, setGithubPromptModal, promptGithubUsername } = useGithubPromptModal();
 
   const courseCommissions = (selectedCourse?.commissions || selectedCourse?.course?.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]) as string[];
 
-  // Load data when tab changes
-  useEffect(() => {
-    setSelectedCourse(null);
-    if (!profile || (profile.account_status !== "approved" && profile.role !== "admin" && profile.role !== "teacher")) return;
-
-    const loadData = async () => {
-      setApiLoading(true);
-      try {
-        if (activeTab === "admin-courses") {
-          const res = await api("getAdminCourses");
-          setCourses(res || []);
-        } else if (activeTab === "admin-users") {
-          const res = await api("getAdminUsers");
-          setUsers(res || []);
-        } else if (activeTab === "admin-settings") {
-          const res = await api("getGlobalSettings");
-          setGlobalSettings(res || {});
-          setGlobalCalendarUrl(res?.globalCalendarIcsUrl || "");
-        } else if (activeTab === "admin-backups") {
-          const res = await api("getSystemBackups");
-          setSystemBackups(res || []);
-        } else if (activeTab === "teacher-courses") {
-          const res = await api("getTeacherCourses");
-          setCourses(res || []);
-        } else if (activeTab === "student-courses") {
-          const res = await api("getStudentCourses");
-          setCourses(res || []);
-        } else if (activeTab === "calendar") {
-          const userCourses = profile?.role === "student" 
-            ? await api("getStudentCourses") 
-            : await api("getTeacherCourses");
-          const safeCourses = userCourses || [];
-          setCourses(safeCourses);
-
-          const courseIds = safeCourses.map((c: any) => c.id || c.course?.id).filter(Boolean);
-          if (courseIds.length > 0) {
-            const assignRes = profile?.role === "student"
-              ? await api("getStudentAssignments", { courseIds })
-              : await api("getTeacherAssignments", { courseIds });
-            const rawAssignments = Array.isArray(assignRes) ? assignRes : (assignRes?.assignments || []);
-            const courseNameOf = (cid: string) =>
-              safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.name
-              || safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.course?.name
-              || "Cátedra";
-            const loadedAssignments = rawAssignments.map((a: any) => ({
-              ...a,
-              course_name: a.course_name || courseNameOf(a.course_id),
-            }));
-            setAssignments(loadedAssignments);
-
-            const allClassInstances: any[] = [];
-            await Promise.all(
-              courseIds.map(async (cid: string) => {
-                try {
-                  const detail = await api("getCourseDetails", { courseId: cid });
-                  const cName = detail?.name || safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.name || "Cátedra";
-                  const instances = detail?.class_instances || [];
-                  instances.forEach((inst: any) => {
-                    allClassInstances.push({
-                      ...inst,
-                      course_id: cid,
-                      course_name: cName,
-                    });
-                  });
-                } catch (e) {
-                  console.error("Error fetching course details for calendar:", e);
-                }
-              })
-            );
-            setTeacherClasses(allClassInstances);
-          }
-        } else if (activeTab === "profile" && profile) {
-          setProfileName(profile.full_name || "");
-          setProfileMatricula(profile.matricula_unrn || "");
-          setProfileCohorte(profile.cohorte || "");
-          setProfileGithubUser(profile.github_user || "");
-          api("getXpLogs").then(logs => setXpLogs(logs || [])).catch(() => setXpLogs([]));
-        }
-      } catch (err: any) {
-        console.error("Error loading tab data:", err);
-        setError("Error de red: " + err.message);
-      } finally {
-        setApiLoading(false);
-      }
-    };
-
-    loadData();
-  }, [activeTab, profile]);
 
   // Student Actions
   const handleEnrollCourse = async (e: React.FormEvent) => {
@@ -626,268 +550,50 @@ export default function DashboardPage() {
 
         {/* DETALLADA VISTA DE CÁTEDRA */}
         {selectedCourse && ["admin-courses", "teacher-courses", "student-courses"].includes(activeTab) && (
-          <div className="space-y-6">
-            {/* Header Detail */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-neutral-800 pb-4 gap-4">
-              <div>
-                <div className="flex items-center space-x-2 text-sm text-gray-400 mb-1">
-                  <button onClick={() => setSelectedCourse(null)} className="hover:text-white underline transition">
-                    Cátedras
-                  </button>
-                  <span>/</span>
-                  <span className="text-gray-300 font-semibold">{selectedCourse.name}</span>
-                </div>
-                <h2 className="text-2xl font-bold">{selectedCourse.name}</h2>
-              </div>
-
-              {/* Subtabs controls */}
-              <div className="flex bg-neutral-900 border border-neutral-800 rounded-xl p-1 text-xs font-medium flex-wrap gap-1">
-                {(profile?.role === "admin" || profile?.role === "teacher") && (
-                  <button
-                    onClick={() => handleSetCourseSubTab("overview")}
-                    className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "overview" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                  >
-                    📊 Resumen
-                  </button>
-                )}
-                <button
-                  onClick={() => handleSetCourseSubTab("schedules")}
-                  className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "schedules" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                >
-                  Cronograma
-                </button>
-                <button
-                  onClick={() => handleSetCourseSubTab("assignments")}
-                  className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "assignments" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                >
-                  Tareas
-                </button>
-                <button
-                  onClick={() => handleSetCourseSubTab("announcements")}
-                  className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "announcements" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                >
-                  Avisos
-                </button>
-                {profile?.role === "teacher" && (
-                  <button
-                    onClick={() => handleSetCourseSubTab("settings")}
-                    className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "settings" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                  >
-                    Ajustes Cátedra
-                  </button>
-                )}
-                {(profile?.role === "admin" || profile?.role === "teacher") && (
-                  <button
-                    onClick={() => handleSetCourseSubTab("students")}
-                    className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "students" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                  >
-                    👥 Alumnos y Alertas
-                  </button>
-                )}
-                {(profile?.role === "admin" || profile?.role === "teacher") && (
-                  <button
-                    onClick={() => handleSetCourseSubTab("emails")}
-                    className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "emails" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                  >
-                    📧 Gestión Correos
-                  </button>
-                )}
-                {(profile?.role === "admin" || profile?.role === "teacher") && (
-                  <button
-                    onClick={() => handleSetCourseSubTab("teachers")}
-                    className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "teachers" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                  >
-                    Docentes
-                  </button>
-                )}
-                <button
-                  onClick={() => handleSetCourseSubTab("tutorias")}
-                  className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "tutorias" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                >
-                  🎓 Tutorías
-                </button>
-                <button
-                  onClick={() => handleSetCourseSubTab("study_groups")}
-                  className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "study_groups" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                >
-                  👥 Grupos de Estudio
-                </button>
-              </div>
-            </div>
-
-            {profile?.role === "student" && (
-              <StudentNinjaRankCard
-                profile={profile}
-                submissions={submissions}
-                courseComments={courseComments}
-                courseAttendance={courseAttendance}
-                onOpenProfile={() => setActiveTab("profile")}
-              />
-            )}
-
-            {/* DETAIL CONTENT AREA BY SUBTAB */}
-
-            {/* SUBTAB RESUMEN DOCENTE / CENTRALIZED DASHBOARD */}
-
-            {courseSubTab === "overview" && (profile?.role === "teacher" || profile?.role === "admin") && (
-              <CourseOverviewPanel
-                profile={profile}
-                selectedCourse={selectedCourse}
-                assignments={assignments}
-                setAssignments={setAssignments}
-                showToast={showToast}
-                setApiLoading={setApiLoading}
-                overviewSubmissionsList={overviewSubmissionsList}
-                loadingOverviewSubmissions={loadingOverviewSubmissions}
-                roster={roster}
-                courseAttendance={courseAttendance}
-                courseSubmissions={courseSubmissions}
-                pastDueAssignments={pastDueAssignments}
-                setCourseSubTab={setCourseSubTab}
-              />
-            )}
-
-
-            {/* SUBTAB 1. CRONOGRAMA / CLASES */}
-
-            {courseSubTab === "schedules" && (
-              <CourseSchedulesPanel
-                profile={profile}
-                selectedCourse={selectedCourse}
-                teacherClasses={teacherClasses}
-                setTeacherClasses={setTeacherClasses}
-                teacherSchedules={teacherSchedules}
-                teacherStartDate={teacherStartDate}
-                teacherDuration={teacherDuration}
-                showToast={showToast}
-                setApiLoading={setApiLoading}
-                collapsedClasses={collapsedClasses}
-                setCollapsedClasses={setCollapsedClasses}
-                handleOpenFeedbackModal={handleOpenFeedbackModal}
-                weeklyClassesGrouped={weeklyClassesGrouped}
-                expandedComments={expandedComments}
-                courseCommissions={courseCommissions}
-                courseAttendance={courseAttendance}
-                roster={roster}
-                setActiveAttendanceClass={setActiveAttendanceClass}
-                activeAttendanceClass={activeAttendanceClass}
-                handleLoadClassFeedback={handleLoadClassFeedback}
-                toggleComments={toggleComments}
-                courseComments={courseComments}
-              />
-            )}
-
-
-            {/* SUBTAB 2. TAREAS (ASSIGNMENTS) */}
-            {courseSubTab === "assignments" && (
-              <AssignmentsPanel
-                selectedCourse={selectedCourse}
-                profile={profile}
-                courseCommissions={courseCommissions}
-                showToast={showToast}
-                setApiLoading={setApiLoading}
-                api={api}
-                assignments={assignments}
-                setAssignments={setAssignments}
-                submissions={submissions}
-                setSubmissions={setSubmissions}
-                commissionFilter={commissionFilter}
-                setCommissionFilter={setCommissionFilter}
-                setSelectedDirectEmailStudent={setSelectedDirectEmailStudent}
-                moodleLtiParams={moodleLtiParams}
-                moodleApiUrl={moodleApiUrl}
-                moodleWsToken={moodleWsToken}
-                moodleCourseId={moodleCourseId}
-              />
-            )}
-
-            {/* SUBTAB ALUMNOS Y ALERTAS */}
-
-            {courseSubTab === "students" && (
-              <CourseStudentsPanel
-                profile={profile}
-                selectedCourse={selectedCourse}
-                roster={roster}
-                setRoster={setRoster}
-                courseAttendance={courseAttendance}
-                courseSubmissions={courseSubmissions}
-                assignments={assignments}
-                pastDueAssignments={pastDueAssignments}
-                showToast={showToast}
-                setApiLoading={setApiLoading}
-                commissionFilter={commissionFilter}
-                setCommissionFilter={setCommissionFilter}
-                teacherClasses={teacherClasses}
-                courseCommissions={courseCommissions}
-                courseComments={courseComments}
-                setSelectedDirectEmailStudent={setSelectedDirectEmailStudent}
-                showCsvEndpoint={showCsvEndpoint}
-                setShowCsvEndpoint={setShowCsvEndpoint}
-              />
-            )}
-
-
-            {/* SUBTAB 3. AVISOS (ANNOUNCEMENTS) */}
-<CourseAnnouncementsPanel 
-                profile={profile}
-                announcements={announcements}
-                newAnnouncementMessage={newAnnouncementMessage}
-                setNewAnnouncementMessage={setNewAnnouncementMessage}
-                handleCreateAnnouncement={handleCreateAnnouncement}
-                handleAcknowledgeAnnouncement={handleAcknowledgeAnnouncement}
-                courseSubTab={courseSubTab}
-                handleToggleAcks={handleToggleAcks}
-                visibleAcksId={visibleAcksId}
-                announcementAcks={announcementAcks}
-              />
-<CourseSettingsPanel {...{
-    profile, selectedCourse, setSelectedCourse, setApiLoading, showToast, teacherGithubToken, setTeacherGithubToken, teacherMoodleEnabled, setTeacherMoodleEnabled, teacherExternalCalendars, setTeacherExternalCalendars, teacherSchedules, setTeacherSchedules, teacherClasses, teacherCommissions, setTeacherCommissions, teacherCommissionsMapping, setTeacherCommissionsMapping, cloneSourceId, setCloneSourceId, moodleApiUrl, setMoodleApiUrl, moodleWsToken, setMoodleWsToken, moodleCourseId, setMoodleCourseId, showCsvEndpoint, setShowCsvEndpoint, showCsvGradingEndpoint, setShowCsvGradingEndpoint, scheduleDay, setScheduleDay, scheduleTime, setScheduleTime, scheduleType, setScheduleType, otherTeacherCourses, setCourseSubTab: handleSetCourseSubTab, courseSubTab, newCommissionInput, setNewCommissionInput, teacherCoverText, setTeacherCoverText, teacherStartDate, setTeacherStartDate, teacherDuration, setTeacherDuration, gmailStatus, handleStartGmailAuth, handleDisconnectGmail, handleSendTestGmail, courseTeachers,
-    handleAddSchedule, handleRemoveSchedule, handleSaveTeacherSettings, handleExportMoodleXml, handleSyncMoodleRoster, handleCloneCourseConfig
-  }} />
-            {courseSubTab === "emails" && (profile?.role === "teacher" || profile?.role === "admin") && (
-              <EmailManagementPanel
-                courseId={selectedCourse.id || selectedCourse.course?.id}
-                courseName={selectedCourse.name || "Cátedra"}
-                api={api}
-                gmailStatus={gmailStatus}
-                onStartGmailAuth={handleStartGmailAuth}
-              />
-            )}
-
-            {/* SUBTAB 5. DOCENTES (ADMIN & TEACHER) */}
-<CourseTeachersPanel 
-                courseTeachers={courseTeachers}
-                selectedNewTeacherId={selectedNewTeacherId}
-                setSelectedNewTeacherId={setSelectedNewTeacherId}
-                allTeachersList={allTeachersList}
-                handleAssignTeacher={handleAssignTeacher}
-                handleRemoveTeacher={handleRemoveTeacher}
-                profile={profile}
-                courseSubTab={courseSubTab}
-              />
-            {courseSubTab === "study_groups" && (
-              <StudyGroupsPanel
-                courseId={selectedCourse.id || selectedCourse.course?.id}
-                studyGroups={studyGroups}
-                setStudyGroups={setStudyGroups}
-                currentUser={currentUser}
-                api={api}
-              />
-            )}
-
-            {/* SUBTAB: TUTORÍAS */}
-            {courseSubTab === "tutorias" && (
-              <TutoringPanel
-                courseId={selectedCourse.id || selectedCourse.course?.id}
-                tutors={tutors}
-                setTutors={setTutors}
-                tutoringSessions={tutoringSessions}
-                setTutoringSessions={setTutoringSessions}
-                currentUser={currentUser}
-                api={api}
-              />
-            )}
-          </div>
+          <CourseDetailSection {...{
+            profile, currentUser, activeTab, setActiveTab,
+            selectedCourse, setSelectedCourse,
+            courseSubTab, setCourseSubTab, handleSetCourseSubTab,
+            courses, teacherClasses, setTeacherClasses,
+            assignments, setAssignments, submissions, setSubmissions,
+            courseSubmissions, pastDueAssignments,
+            roster, setRoster, courseAttendance, courseComments,
+            expandedComments, toggleComments, weeklyClassesGrouped,
+            collapsedClasses, setCollapsedClasses, courseCommissions,
+            commissionFilter, setCommissionFilter,
+            overviewSubmissionsList, loadingOverviewSubmissions,
+            activeAttendanceClass, setActiveAttendanceClass,
+            handleOpenFeedbackModal, handleLoadClassFeedback,
+            moodleLtiParams,
+            announcements, newAnnouncementMessage, setNewAnnouncementMessage,
+            handleCreateAnnouncement, handleAcknowledgeAnnouncement,
+            handleToggleAcks, visibleAcksId, announcementAcks,
+            setSelectedDirectEmailStudent, showCsvEndpoint, setShowCsvEndpoint,
+            showCsvGradingEndpoint, setShowCsvGradingEndpoint,
+            teacherGithubToken, setTeacherGithubToken,
+            teacherMoodleEnabled, setTeacherMoodleEnabled,
+            teacherExternalCalendars, setTeacherExternalCalendars,
+            teacherSchedules, setTeacherSchedules,
+            teacherStartDate, setTeacherStartDate, teacherDuration, setTeacherDuration,
+            teacherCoverText, setTeacherCoverText,
+            teacherCommissions, setTeacherCommissions,
+            teacherCommissionsMapping, setTeacherCommissionsMapping,
+            cloneSourceId, setCloneSourceId,
+            moodleApiUrl, setMoodleApiUrl, moodleWsToken, setMoodleWsToken,
+            moodleCourseId, setMoodleCourseId,
+            otherTeacherCourses, newCommissionInput, setNewCommissionInput,
+            scheduleDay, setScheduleDay, scheduleTime, setScheduleTime,
+            scheduleType, setScheduleType,
+            gmailStatus, handleStartGmailAuth, handleDisconnectGmail, handleSendTestGmail,
+            courseTeachers, allTeachersList,
+            selectedNewTeacherId, setSelectedNewTeacherId,
+            handleAssignTeacher, handleRemoveTeacher,
+            studyGroups, setStudyGroups, tutors, setTutors,
+            tutoringSessions, setTutoringSessions,
+            setApiLoading,
+            handleAddSchedule, handleRemoveSchedule, handleSaveTeacherSettings,
+            handleExportMoodleXml, handleSyncMoodleRoster, handleCloneCourseConfig
+          }} />
         )}
       </main>
 
