@@ -20,3 +20,7 @@
 ## 2026-08-01 - Form Accessibility (Label Associations)
 **Learning:** Found that multiple form inputs across the application (e.g., in the login page and user profile panel) lacked explicit associations with their labels via `htmlFor` and `id`. This negatively impacts screen readers and reduces the click area for users.
 **Action:** Always associate `<label>` elements with their respective `<input>` elements using the `htmlFor` and `id` attributes to improve accessibility and user experience.
+
+## 2024-05-18 - Missing ARIA labels on Icon-only Close Buttons
+**Learning:** Many custom modal implementations across different modules (`CourseSchedulesPanel`, `AdminPanel`, `FeedbackModals`) were missing `aria-label` attributes on their icon-only "✕" close buttons, which causes issues for screen reader users since the icon itself has no semantic meaning.
+**Action:** Always ensure that any button that only contains an icon (like an "X", "✕", or a font icon) has a descriptive `aria-label` attribute (e.g., `aria-label="Cerrar modal"`) to clearly convey its purpose to assistive technologies.
