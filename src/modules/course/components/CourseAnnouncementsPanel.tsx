@@ -1,6 +1,7 @@
-
+ 
 "use client";
-import React from "react";
+import React, { useRef } from "react";
+import MarkdownToolbar from "@/components/dashboard/ui/MarkdownToolbar";
 
 export function CourseAnnouncementsPanel(props: any) {
   const {
@@ -8,6 +9,7 @@ export function CourseAnnouncementsPanel(props: any) {
     handleCreateAnnouncement, handleAcknowledgeAnnouncement, courseSubTab, marked,
     handleToggleAcks, visibleAcksId, announcementAcks
   } = props;
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   return (
     <>
                   {courseSubTab === "announcements" && (
@@ -17,7 +19,13 @@ export function CourseAnnouncementsPanel(props: any) {
                   <form onSubmit={handleCreateAnnouncement} className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
                     <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider">Publicar Aviso a Alumnos</h4>
                     <div>
+                      <MarkdownToolbar
+                        textareaRef={composerRef}
+                        value={newAnnouncementMessage}
+                        onChange={setNewAnnouncementMessage}
+                      />
                       <textarea
+                        ref={composerRef}
                         value={newAnnouncementMessage}
                         onChange={(e) => setNewAnnouncementMessage(e.target.value)}
                         placeholder="Mensaje o temario del aviso (Soporta Markdown)..."
