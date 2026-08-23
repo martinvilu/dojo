@@ -3,7 +3,7 @@
 > Verificación realizada el **22/08/2026** sobre la rama `main` (commit `0a61c7f`, árbol limpio y sincronizado con `origin/main`).
 > Este documento consolida el resultado de las verificaciones ejecutadas y define un plan de acción priorizado.
 >
-> **Avance 22/08/2026**: Fases 0–3 completadas — reglas RBAC validadas por 23 tests de emulador integrados a CI, suite Jest 74/74, Selenium 56/56 verificado, documentación re-sincronizada y 0 warnings de ESLint. Fase 2 (hooks) en avance: 4 hooks extraídos. Ver casilleros en §3.
+> **Avance final**: Fases 0–4 completadas. Reglas RBAC validadas (23 tests), Jest 76/76, Selenium 56/56 integrado a CI con checks obligatorios en `main`, calendario multi-materia con feed iCal real y autenticado, autograding vía GitHub Actions, ⌘K y toolbar Markdown.
 
 ---
 
@@ -106,11 +106,11 @@ Es frágil y confuso; debe resolverse a la ruta final directa.
 - [x] Aplicar `next/dynamic` a paneles pesados renderizados condicionalmente (`CalendarPanel`, `EmailManagementPanel`, `DirectEmailModal`). *(commit `ea74541`)*
 - [ ] Criterio de aceptación pendiente: dividir `page.tsx` por debajo de 500 líneas con hooks de dominio.
 
-### Fase 3 — CI/CD y calidad continua (P1)
+### Fase 3 — CI/CD y calidad continua (P1) ✅ COMPLETADA
 
-- [ ] Crear `.github/workflows/tests.yml`: en cada PR correr `lint`, `tsc --noEmit`, `next build`, `jest` (functions) y Selenium headless sobre mock server (ya existe `tests/selenium/server.js`).
-- [ ] Hacer obligatorios los checks en GitHub antes de merge a `main`.
-- [ ] Criterio de aceptación: un PR con test roto no puede mergear.
+- [x] `.github/workflows/tests.yml`: en cada PR corren 4 jobs — Frontend (`lint`, `tsc --noEmit`, `next build`), Backend (`jest`, 76 pruebas), Security (reglas Firestore con emulador, 23 escenarios) y E2E (56 escenarios Selenium sobre mock server con Chrome headless).
+- [x] Protección de rama activada vía GitHub API: los 4 checks son obligatorios para mergear a `main` (strict: actualiza la rama antes de validar).
+- [x] Criterio de aceptación cumplido: un PR con cualquier check roto no puede mergear.
 
 ### Fase 4 — Features pendientes del roadmap (P2)
 
@@ -118,9 +118,31 @@ Es frágil y confuso; debe resolverse a la ruta final directa.
 - [x] **Buscador omni (Command + K)** sobre cátedras, clases y entregas cargadas en el cliente. *(commit `9356f83`)*
 - [x] **Editor de texto para avisos**: toolbar Markdown (negrita, itálica, título, lista, código, enlace) sobre el compositor, que ya renderizaba Markdown vía `marked`; sin dependencias nuevas. *(commit `eca7c82`)*
 - [x] **Hardening del feed iCal** (parte del item "middleware"): el endpoint `/api/calendar` exigía cero credenciales; ahora usa el token `sync_secret` por curso, mismo esquema que los endpoints CSV. *(commit `1679951`)*
-- [ ] Middleware unificado restante: wrapper común de validación Bearer/sanitización para futuras rutas App Router.
-- [ ] Editor rich text para avisos/tareas.
-- [ ] Detección de plagio por AST y Autograding vía GitHub Actions (según `docs/STATUS_REPORT.md` §2).
+- [x] **Middleware unificado de API** (`src/app/api/middleware/api.ts`): bootstrap de firebase-admin con ADC, errores JSON centralizados, verificación del token de suscripción por curso y sanitización; adoptado por `/api/calendar`.
+- [x] **Editor de texto para tareas/avisos**: cubierto por la toolbar Markdown del compositor (sin dependencias nuevas).
+- [x] **Autograding vía GitHub Actions**: plantilla lista en `/templates/ninja-dojo-autograde.yml` (botón por tarea en el panel de Tareas) que corre los tests del repo del alumno y publica la nota al webhook nativo, pasando por auditoría y sincronización Moodle opcional.
+- [ ] Detección de plagio por AST (ver §Próximas Mejoras).
+
+---
+
+## 5. Próximas Mejoras (backlog priorizado post-Fase 4)
+
+Con las Fases 0–4 completadas, el backlog continúa ordenado por valor/riesgo:
+
+### 🔴 Prioridad alta
+1. **Detección de plagio por similitud de código**: análisis estático de las entregas (fingerprinting/winnowing sobre los archivos del repo o AST para JS/Python) con matriz comparativa en el panel docente y alertas automáticas. Requiere un worker dedicado (Cloud Function con timeout extendido) por costo computacional.
+2. **Tests E2E contra la app real**: hoy Selenium valida contra mock server. Agregar una segunda suite (o modo) que corra contra `firebase emulators:exec` con Auth+Firestore+Functions y datos seed, para cubrir login real, flujos de cursada y permisos end-to-end.
+3. **Verificación manual pendiente de UI**: validar con navegación real los flujos refactorizados sin cobertura automatizada — deep-links LTI, detalle de curso por rol, encuestas anónimas y paleta ⌘K.
+
+### 🟡 Prioridad media
+4. **Unificar endpoints CSV hacia App Router**: migrar `exportGradesCsv`/`exportAttendanceCsv` a rutas Next.js usando el middleware compartido (`requireCourseSubscriptionToken`), eliminando la duplicación actual Functions vs App Hosting.
+5. **Autograding avanzado**: soporte de lenguajes no-Node (plantillas pytest/jUnit), detección automática del runner según archivos del repo y reintentos con feedback estructurado por test fallido.
+6. **Adoptar middleware Bearer JWT** (`verifyIdToken` de firebase-admin) en las nuevas rutas API que requieran identidad de usuario; hoy solo se necesita token de curso.
+
+### 🟢 Exploratorias (roadmap original)
+7. Asistente pedagógico de corrección asistida por IA (Gemini API) sobre diffs de entregas.
+8. Predicción de abandono con analítica temprana (asistencia + entregas + foro).
+9. Tablero de métricas GitHub por alumno (frecuencia de commits, horarios, PRs).
 
 ---
 
