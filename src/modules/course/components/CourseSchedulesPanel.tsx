@@ -841,6 +841,7 @@ export function CourseSchedulesPanel({
                   setSelectedCourseForComparison(null);
                 }}
                 className="text-gray-400 hover:text-white font-bold cursor-pointer"
+                aria-label="Cerrar modal"
               >
                 ✕
               </button>
