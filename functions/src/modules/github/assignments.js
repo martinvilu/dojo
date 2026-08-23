@@ -1,5 +1,12 @@
 const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
+const { randomBytes } = require('node:crypto');
+
+// Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
+// (los viejos de 8 chars siguen válidos hasta que se regeneren).
+function generateSyncSecret() {
+    return randomBytes(16).toString('hex').toUpperCase();
+}
 
 async function archiveAssignment(payload, context) {
     const { uid, db } = context;
@@ -82,7 +89,7 @@ async function createAssignment(payload, context) {
         is_group: Boolean(payload.is_group || payload.isGroup),
         create_feedback_pr: Boolean(payload.create_feedback_pr || payload.createFeedbackPr),
         is_archived: false,
-        sync_secret: Math.random().toString(36).substring(2, 10).toUpperCase(),
+        sync_secret: generateSyncSecret(),
         created_at: admin.firestore.FieldValue.serverTimestamp()
     };
 

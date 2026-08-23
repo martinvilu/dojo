@@ -1,3 +1,5 @@
+const { randomBytes } = require('node:crypto');
+
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
     const courseId = payload.courseId;
@@ -15,7 +17,7 @@ async function getCourseDetails(payload, context) {
     
     const data = cSnap.data();
     if (!data.sync_secret) {
-        data.sync_secret = Math.random().toString(36).substring(2, 10).toUpperCase();
+        data.sync_secret = generateSyncSecret();
         await db.collection('courses').doc(courseId).update({
             sync_secret: data.sync_secret
         });
@@ -81,7 +83,7 @@ async function createCourse(payload, context) {
         invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
         teacher_invite_code: 'T-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
         assistant_invite_code: 'A-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-        sync_secret: Math.random().toString(36).substring(2, 10).toUpperCase(),
+        sync_secret: generateSyncSecret(),
         created_by: uid,
         created_at: admin.firestore.FieldValue.serverTimestamp()
     });
@@ -140,6 +142,13 @@ const COURSE_PUBLIC_FIELDS = [
     'invite_code'
 ];
 
+
+// Tokens de suscripción de 32 hex chars: resistentes a fuerza bruta
+// (los viejos de 8 chars siguen válidos hasta que se regeneren).
+function generateSyncSecret() {
+    return randomBytes(16).toString('hex').toUpperCase();
+}
+
 function projectCourse(data) {
     const projected = {};
     for (const field of COURSE_PUBLIC_FIELDS) {
@@ -188,7 +197,7 @@ async function getCourseSettings(payload, context) {
         needsUpdate = true;
     }
     if (!data.sync_secret) {
-        data.sync_secret = Math.random().toString(36).substring(2, 10).toUpperCase();
+        data.sync_secret = generateSyncSecret();
         needsUpdate = true;
     }
     

@@ -1,10 +1,40 @@
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
 
+// Throttle anti fuerza bruta del sync_secret. Ventana en memoria por
+// instancia: en serverless es un disuasivo best-effort (las instancias
+// son efímeras), combinado con secrets de 32 hex chars hace impráctico
+// adivinar el token.
+const ATTEMPT_WINDOW_MS = 5 * 60 * 1000;
+const MAX_ATTEMPTS = 10;
+const attemptsByIp = new Map();
+
+function registerFailedAttempt(ip) {
+    const now = Date.now();
+    const entry = attemptsByIp.get(ip) || { count: 0, resetAt: now + ATTEMPT_WINDOW_MS };
+    if (now > entry.resetAt) {
+        entry.count = 0;
+        entry.resetAt = now + ATTEMPT_WINDOW_MS;
+    }
+    entry.count += 1;
+    attemptsByIp.set(ip, entry);
+    return entry.count;
+}
+
+function isThrottled(ip) {
+    const entry = attemptsByIp.get(ip);
+    if (!entry) return false;
+    if (Date.now() > entry.resetAt) {
+        attemptsByIp.delete(ip);
+        return false;
+    }
+    return entry.count >= MAX_ATTEMPTS;
+}
+
 exports.webhook = async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST');
-    
+
     if (req.method === 'OPTIONS') {
         res.set('Access-Control-Allow-Headers', 'Content-Type');
         res.status(204).send('');
@@ -12,6 +42,11 @@ exports.webhook = async (req, res) => {
     }
 
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+    if (isThrottled(req.ip || 'unknown')) {
+        logger.warn("[webhook] throttled:", req.ip);
+        return res.status(429).send('Demasiados intentos inválidos. Reintentá más tarde.');
+    }
+
     
     const { assignmentId, sync_secret, grades } = req.body;
     if (!assignmentId || !sync_secret || !grades) {
@@ -26,6 +61,7 @@ exports.webhook = async (req, res) => {
         const assignment = aSnap.data();
         
         if (assignment.sync_secret !== sync_secret) {
+            registerFailedAttempt(req.ip || 'unknown');
             return res.status(401).send('Invalid secret');
         }
         
