@@ -37,6 +37,7 @@ import { useBackups } from "./hooks/useBackups";
 import { useAuthProfile } from "./hooks/useAuthProfile";
 import { useDeepLinks } from "./hooks/useDeepLinks";
 import { useAdminPanel } from "./hooks/useAdminPanel";
+import { useCourseDetail } from "./hooks/useCourseDetail";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -71,17 +72,34 @@ export default function DashboardPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [teacherClasses, setTeacherClasses] = useState<ClassInstance[]>([]);
   const [, setGlobalSettings] = useState<any>({});
-  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
-  const [courseSubTab, setCourseSubTab] = useState("schedules");
   const [courseTeachers, setCourseTeachers] = useState<any[]>([]);
 
-  const handleSetCourseSubTab = (tab: string) => {
-    setCourseSubTab(tab);
-    if (selectedCourse?.id || selectedCourse?.course?.id) {
-      const cid = selectedCourse.id || selectedCourse.course.id;
-      window.history.pushState(null, "", `/dashboard/courses/${cid}/${tab}`);
-    }
-  };
+  // Form states
+  const { theme, toggleTheme } = useTheme();
+
+  const [enrollCode, setEnrollCode] = useState("");
+
+  // Session & profile domain
+  const {
+    currentUser, profile, setProfile, loading,
+    matriculaInput, setMatriculaInput, matriculaError,
+    profileName, setProfileName, profileMatricula, setProfileMatricula,
+    profileCohorte, setProfileCohorte, profileGithubUser, setProfileGithubUser,
+    xpLogs, setXpLogs,
+    handleLogout, handleSubmitMatricula, handleUpdateProfile, handleAddSecondaryEmail
+  } = useAuthProfile({ setActiveTab, setApiLoading, setError });
+
+  // Course detail & navigation domain
+  const {
+    selectedCourse, setSelectedCourse,
+    courseSubTab, setCourseSubTab,
+    handleSetCourseSubTab,
+    handleOpenCourseCalendar,
+    viewCourseDetails,
+    handleCommandNavigate
+  } = useCourseDetail({
+    profile, activeTab, setActiveTab, courses, setTeacherClasses, setApiLoading
+  });
 
   // Admin management domain
   const {
@@ -98,22 +116,6 @@ export default function DashboardPage() {
     getSelectedCourseId: () => selectedCourse?.id || selectedCourse?.course?.id,
     setCourses, setCourseTeachers, setApiLoading, setError
   });
-
-
-  // Form states
-  const { theme, toggleTheme } = useTheme();
-
-  const [enrollCode, setEnrollCode] = useState("");
-
-  // Session & profile domain
-  const {
-    currentUser, profile, setProfile, loading,
-    matriculaInput, setMatriculaInput, matriculaError,
-    profileName, setProfileName, profileMatricula, setProfileMatricula,
-    profileCohorte, setProfileCohorte, profileGithubUser, setProfileGithubUser,
-    xpLogs, setXpLogs,
-    handleLogout, handleSubmitMatricula, handleUpdateProfile, handleAddSecondaryEmail
-  } = useAuthProfile({ setActiveTab, setApiLoading, setError });
 
   // Assignments states
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -413,44 +415,6 @@ export default function DashboardPage() {
     loadData();
   }, [activeTab, profile]);
 
-  // Dynamic Document Title based on active course or tab (starts with "Dojo")
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    
-    let titleStr = "Dojo";
-
-    if (selectedCourse) {
-      const courseName = selectedCourse.name || "Cátedra";
-      const subtabMap: Record<string, string> = {
-        overview: "Inicio",
-        classes: "Clases y Cronograma",
-        assignments: "Tareas y Entregas",
-        roster: "Alumnos y Alertas",
-        forum: "Foros y Consultas",
-        groups: "Grupos de Estudio",
-        tutorias: "Tutorías Académicas",
-        announcements: "Avisos",
-        settings: "Configuración",
-      };
-      const subtabName = subtabMap[courseSubTab] || "Detalles";
-      titleStr = `Dojo | ${courseName} - ${subtabName}`;
-    } else {
-      const tabMap: Record<string, string> = {
-        "teacher-courses": "Mis Cátedras",
-        "student-courses": "Mis Cursadas",
-        "admin-courses": "Gestión de Cátedras",
-        "admin-users": "Administración de Usuarios",
-        "admin-backups": "Respaldos de Sistema",
-        calendar: "Calendario Global",
-        profile: "Mi Perfil",
-      };
-      const tabName = tabMap[activeTab] || "Dashboard";
-      titleStr = `Dojo | ${tabName}`;
-    }
-
-    document.title = titleStr;
-  }, [selectedCourse, courseSubTab, activeTab]);
-
   // Load course details subtabs
   useEffect(() => {
     if (!selectedCourse) return;
@@ -641,56 +605,6 @@ export default function DashboardPage() {
     } finally {
       setLoadingOverviewSubmissions(false);
     }
-  };
-
-
-
-  // Open course calendar directly
-  const handleOpenCourseCalendar = (courseId: string) => {
-    const courseMatch = courses.find((c: any) => (c.id || c.course?.id) === courseId);
-    if (courseMatch) {
-      const cData = courseMatch.course || courseMatch;
-      const instances = cData.class_instances || [];
-      const formattedClasses = instances.map((inst: any) => ({
-        ...inst,
-        course_id: courseId,
-        course_name: cData.name || courseMatch.name,
-      }));
-      setTeacherClasses(formattedClasses);
-    }
-    setActiveTab("calendar");
-  };
-
-  // View course details (shared logic)
-  const viewCourseDetails = async (course: any) => {
-    const courseId = course.id;
-    setApiLoading(true);
-    try {
-      if (profile?.role === "admin") {
-        const res = await api("getAdminCourseDetails", { courseId });
-        setSelectedCourse({ id: courseId, name: course.name, ...res });
-      } else {
-        const res = await api("getCourseDetails", { courseId });
-        setSelectedCourse({ id: courseId, name: course.name, ...res });
-      }
-      if (profile?.role === "teacher" || profile?.role === "admin") {
-        handleSetCourseSubTab("overview");
-      } else {
-        handleSetCourseSubTab("schedules");
-      }
-    } catch (err: any) {
-      showToast("Error al cargar detalles de la cátedra: " + err.message, "error");
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleCommandNavigate = async (r: any) => {
-    if (!r?.courseRef) return;
-    const tabByRole = profile?.role === "admin" ? "admin-courses" : profile?.role === "teacher" ? "teacher-courses" : "student-courses";
-    setActiveTab(tabByRole);
-    await viewCourseDetails(r.courseRef);
-    if (r.subTab) handleSetCourseSubTab(r.subTab);
   };
 
   // Deep-link / LTI launch param consumption (needs viewCourseDetails ready)
