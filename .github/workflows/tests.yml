@@ -76,3 +76,22 @@ jobs:
 
       - name: Run Rules Tests
         run: npm run test:rules
+
+  e2e-selenium:
+    name: E2E (selenium)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Selenium Suite (mock server + headless Chrome)
+        run: npm run test:selenium
