@@ -33,6 +33,7 @@ import { useGithubPromptModal } from "./hooks/useGithubPromptModal";
 import { useClassFeedback } from "./hooks/useClassFeedback";
 import { useStudentQrAttendance } from "./hooks/useStudentQrAttendance";
 import CommandPalette from "@/components/dashboard/ui/CommandPalette";
+import { useAnnouncements } from "./hooks/useAnnouncements";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -208,8 +209,6 @@ export default function DashboardPage() {
   const [loadingOverviewSubmissions, setLoadingOverviewSubmissions] = useState<boolean>(false);
 
   // Announcements states
-  const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [newAnnouncementMessage, setNewAnnouncementMessage] = useState("");
 
   // CSV Endpoint collapsible state (normally hidden)
   const [showCsvEndpoint, setShowCsvEndpoint] = useState(false);
@@ -220,8 +219,14 @@ export default function DashboardPage() {
   const [selectedNewTeacherId, setSelectedNewTeacherId] = useState("");
 
   // Announcement Acknowledgement states
-  const [visibleAcksId, setVisibleAcksId] = useState<string | null>(null);
-  const [announcementAcks, setAnnouncementAcks] = useState<any[]>([]);
+  const {
+    announcements, setAnnouncements,
+    newAnnouncementMessage, setNewAnnouncementMessage,
+    visibleAcksId, announcementAcks,
+    handleCreateAnnouncement,
+    handleAcknowledgeAnnouncement,
+    handleToggleAcks
+  } = useAnnouncements({ selectedCourse, setApiLoading, setError });
 
   // Class Q&A Comments states
   const [courseComments, setCourseComments] = useState<any[]>([]);
@@ -802,38 +807,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleAcknowledgeAnnouncement = async (announcementId: string) => {
-    setApiLoading(true);
-    try {
-      await api("acknowledgeAnnouncement", { announcementId });
-      const cid = selectedCourse.id || selectedCourse.course?.id;
-      const annRes = await api("getStudentAnnouncements", { courseIds: [cid] });
-      setAnnouncements(annRes || []);
-    } catch (err: any) {
-      setError("Error al confirmar recepción: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleToggleAcks = async (announcementId: string) => {
-    if (visibleAcksId === announcementId) {
-      setVisibleAcksId(null);
-      setAnnouncementAcks([]);
-    } else {
-      setApiLoading(true);
-      try {
-        const res = await api("getAnnouncementAcknowledgements", { announcementId });
-        setAnnouncementAcks(res || []);
-        setVisibleAcksId(announcementId);
-      } catch (err: any) {
-        setError("Error al cargar acuses de recibo: " + err.message);
-      } finally {
-        setApiLoading(false);
-      }
-    }
-  };
-
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseName) return;
@@ -1178,24 +1151,6 @@ export default function DashboardPage() {
   };
 
 
-  // Teacher Announcements Actions
-  const handleCreateAnnouncement = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAnnouncementMessage) return;
-    const cid = selectedCourse.id || selectedCourse.course?.id;
-    setApiLoading(true);
-    try {
-      await api("createAnnouncement", { course_id: cid, message: newAnnouncementMessage });
-      setNewAnnouncementMessage("");
-      const res = await api("getTeacherAnnouncements");
-      setAnnouncements((res || []).filter((a: any) => a.course_id === cid));
-      showToast("Aviso enviado a la cátedra.", "success");
-    } catch (err: any) {
-      showToast("Error al enviar aviso: " + err.message, "error");
-    } finally {
-      setApiLoading(false);
-    }
-  };
 
   // Profile update state
   const handleUpdateProfile = async (e: React.FormEvent) => {
