@@ -239,6 +239,9 @@ const actionModules = {
     updateAssignment: './src/modules/github/assignments',
     syncGradesFromSpreadsheet: './src/modules/github/assignments',
     addGroupCollaborator: './src/modules/github/assignments',
+
+    // plagiarism
+    detectAssignmentPlagiarism: './src/modules/github/plagiarism',
 };
 
 exports.api = onCall(async (request) => {

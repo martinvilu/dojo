@@ -38,6 +38,9 @@ export default function AssignmentsPanel({
   const [githubActivitySubmissionId, setGithubActivitySubmissionId] = useState<string | null>(null);
   const [githubActivityData, setGithubActivityData] = useState<{ commits: any[], pullRequests: any[], comments: any[] } | null>(null);
   const [githubActivityLoading, setGithubActivityLoading] = useState(false);
+  const [plagiarismResults, setPlagiarismResults] = useState<Record<string, any>>({});
+  const [plagiarismOpenId, setPlagiarismOpenId] = useState<string | null>(null);
+  const [plagiarismLoading, setPlagiarismLoading] = useState(false);
   const [githubActivityTab, setGithubActivityTab] = useState<"commits" | "pulls" | "comments" | "visualizer">("commits");
   const [editingGrades, setEditingGrades] = useState<Record<string, string>>({});
   const [editingFeedbacks, setEditingFeedbacks] = useState<Record<string, string>>({});
@@ -118,6 +121,23 @@ export default function AssignmentsPanel({
       showToast("Error al cargar entregas: " + err.message, "error");
     } finally {
       setApiLoading(false);
+    }
+  };
+  const handleDetectPlagiarism = async (assignmentId: string) => {
+    if (plagiarismOpenId === assignmentId) {
+      setPlagiarismOpenId(null);
+      return;
+    }
+    setPlagiarismLoading(true);
+    try {
+      const res = await api("detectAssignmentPlagiarism", { assignmentId });
+      setPlagiarismResults(prev => ({ ...prev, [assignmentId]: res }));
+      setPlagiarismOpenId(assignmentId);
+      showToast(`Análisis completo: ${res.flaggedCount} pares sospechosos de ${res.analyzedCount} entregas.`, res.flaggedCount > 0 ? "error" : "success");
+    } catch (err: any) {
+      showToast("Error al detectar plagio: " + err.message, "error");
+    } finally {
+      setPlagiarismLoading(false);
     }
   };
 
@@ -336,6 +356,54 @@ export default function AssignmentsPanel({
                       <label htmlFor={`csv-file-${a.id}`} className="px-3 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-semibold text-gray-300 transition inline-block text-center cursor-pointer">📤 Cargar Notas CSV</label>
                     </div>
                     <button type="button" onClick={() => handleToggleGrader(a.id)} className="px-3 py-2 bg-blue-955/50 hover:bg-blue-900/50 border border-blue-800 rounded-xl text-xs font-semibold text-blue-300 transition cursor-pointer">{expandedGraderAssignmentId === a.id ? "📂 Ocultar Entregas" : "📂 Ver Entregas y Actividad"}</button>
+                    <button
+                      type="button"
+                      onClick={() => handleDetectPlagiarism(a.id)}
+                      disabled={plagiarismLoading}
+                      className="px-3 py-2 bg-red-950/40 hover:bg-red-900/40 border border-red-800/60 rounded-xl text-xs font-semibold text-red-300 transition cursor-pointer disabled:opacity-50"
+                      title="Compara el código de las entregas entre alumnos y marca pares sospechosos de copia"
+                    >{plagiarismLoading ? "🔎 Analizando…" : "🕵️ Detectar Plagio"}</button>
+                    {plagiarismOpenId === a.id && plagiarismResults[a.id] && (
+                      <div className="md:col-span-2 bg-neutral-950/60 border border-neutral-850 rounded-xl p-4 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h5 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                            Análisis de similitud — {plagiarismResults[a.id].analyzedCount} entregas analizadas
+                          </h5>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${plagiarismResults[a.id].flaggedCount > 0 ? "bg-red-500/20 text-red-300" : "bg-green-500/20 text-green-300"}`}>
+                            {plagiarismResults[a.id].flaggedCount} par(es) sospechosos (umbral {plagiarismResults[a.id].threshold}%)
+                          </span>
+                        </div>
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                          {plagiarismResults[a.id].pairs.map((pair: any, idx: number) => (
+                            <div key={idx} className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border text-[11px] ${pair.flagged ? "bg-red-950/30 border-red-900/50" : "bg-neutral-900 border-neutral-850"}`}>
+                              <span className="text-gray-300">
+                                <strong>{pair.a.name}</strong> ↔ <strong>{pair.b.name}</strong>
+                              </span>
+                              <span className="flex items-center gap-2 font-mono">
+                                <span className={pair.flagged ? "text-red-300 font-bold" : "text-gray-400"}>{pair.score}%</span>
+                                <span className="text-[9px] text-gray-600">jac {pair.jaccard}% · cont {pair.containment}%</span>
+                                {pair.flagged && <span className="text-[9px] font-bold uppercase text-red-400">⚠ Copia probable</span>}
+                                <a href={pair.a.repo} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">A ↗</a>
+                                <a href={pair.b.repo} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">B ↗</a>
+                              </span>
+                            </div>
+                          ))}
+                          {plagiarismResults[a.id].pairs.length === 0 && (
+                            <p className="text-[11px] text-gray-500 italic">No hay pares comparables (se necesitan al menos dos entregas con repositorio).</p>
+                          )}
+                          {plagiarismResults[a.id].skipped?.length > 0 && (
+                            <details className="pt-1">
+                              <summary className="text-[10px] text-gray-500 cursor-pointer">Entregas omitidas ({plagiarismResults[a.id].skipped.length})</summary>
+                              <ul className="mt-1 space-y-0.5">
+                                {plagiarismResults[a.id].skipped.map((sk: any, i: number) => (
+                                  <li key={i} className="text-[10px] text-gray-600">• {sk.student}: {sk.reason}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {gradesCSVStatus[a.id] && <p className="text-xs font-semibold">{gradesCSVStatus[a.id]}</p>}
                 </div>
