@@ -21,7 +21,7 @@ Requisitos: Node.js 22+, Firebase CLI (`npm install -g firebase-tools`), Chrome/
 | `npm run dev` / `build` | Desarrollo / build de producción |
 | `npx tsc --noEmit` | Chequeo de tipos |
 | `npm run lint` | ESLint |
-| `cd functions && npm test` | Suite Jest del backend (90 pruebas) |
+| `cd functions && npm test` | Suite Jest del backend (111 pruebas) |
 | `npm run test:rules` | Reglas de Firestore contra emulador (23 escenarios) |
 | `npm run test:selenium` | E2E Selenium sobre mock server (56 escenarios) |
 | `npm run test:local` | Batería local completa (`scripts/test-local.sh`) |

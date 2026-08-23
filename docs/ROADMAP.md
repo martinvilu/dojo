@@ -14,7 +14,7 @@ Otros documentos: [Arquitectura](ARCHITECTURE.md) · [Guía de Desarrollo](DEVEL
 | Build de producción | `npm run build` | ✔ 15 rutas |
 | Chequeo de tipos | `npx tsc --noEmit` | ✔ 0 errores |
 | Lint | `npm run lint` | ✔ 0 errores |
-| Tests unitarios backend | `cd functions && npm test` | ✔ 90 pruebas / 9 suites |
+| Tests unitarios backend | `cd functions && npm test` | ✔ 111 pruebas / 12 suites |
 | Reglas de Firestore | `npm run test:rules` | ✔ 23 escenarios (emulador) |
 | E2E Selenium | `npm run test:selenium` | ✔ 56 escenarios / 14 módulos (mock server) |
 
@@ -38,7 +38,7 @@ Otros documentos: [Arquitectura](ARCHITECTURE.md) · [Guía de Desarrollo](DEVEL
 2.  **Verificación manual de UI sin cobertura automatizada**: deep-links LTI, detalle de curso por rol, encuestas anónimas y paleta ⌘K.
 
 ### 🟡 Prioridad media
-3. ✅ **Completar modularización del dashboard** — COMPLETADA: `dashboard/page.tsx` quedó en **456 líneas** (<500, criterio de aceptación cumplido), orquestando 14 hooks de dominio en `src/app/dashboard/hooks/` (8 previos + `useAuthProfile`, `useDeepLinks`, `useAdminPanel`, `useCourseDetail`, `useCourseRealtime`, `useCourseSubtabData`) y 7 componentes de layout en `src/app/dashboard/components/` (Sidebar, TabPanelsSection, CourseDetailSection, DashboardOverlays, AdminBackupsSection, StudentNinjaRankCard, GateScreens). Verificado con tsc, lint, build, jest 90/90 y Selenium E2E 56/56.
+3. ✅ **Completar modularización del dashboard** — COMPLETADA: `dashboard/page.tsx` quedó en **456 líneas** (<500, criterio de aceptación cumplido), orquestando 14 hooks de dominio en `src/app/dashboard/hooks/` (8 previos + `useAuthProfile`, `useDeepLinks`, `useAdminPanel`, `useCourseDetail`, `useCourseRealtime`, `useCourseSubtabData`) y 7 componentes de layout en `src/app/dashboard/components/` (Sidebar, TabPanelsSection, CourseDetailSection, DashboardOverlays, AdminBackupsSection, StudentNinjaRankCard, GateScreens). Verificado con tsc, lint, build, jest 111/111 y Selenium E2E 56/56.
 4.  **Detección de plagio v2**: winnowing para repos grandes y resaltado de fragmentos coincidentes (v1: fingerprints k-gram ya en producción).
 5.  **Autograding avanzado**: detección automática del runner según archivos del repo y feedback estructurado por test fallido (plantillas Node/pytest listas).
 6.  **Adoptar `requireBearerUser`** a medida que se sumen rutas API con identidad de usuario.

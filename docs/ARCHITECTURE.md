@@ -315,7 +315,7 @@ El repositorio está estructurado para independizar la lógica de despliegue del
 ├── functions/                  # Backend: Firebase Cloud Functions (Node.js 22)
 │   ├── index.js                # Router callable (api) + endpoints onRequest
 │   ├── src/modules/            # Dominios: auth, course, github, mail, moodle, etc.
-│   ├── tests/                  # Suite Jest (90 pruebas unitarias)
+│   ├── tests/                  # Suite Jest (111 pruebas unitarias)
 │   └── package.json            # Dependencias del backend
 ├── manual/                     # Manual de usuario (docentes, estudiantes, admins)
 ├── public/                     # Recursos estáticos del frontend
