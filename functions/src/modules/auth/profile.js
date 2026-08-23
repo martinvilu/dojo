@@ -7,9 +7,15 @@ async function getProfile(payload, context) {
     
     if (!pSnap.exists) {
         let role = 'student';
-        const email = authUser?.email || payload?.email || '';
-        if (email === 'admin@jutsu.com' || email === 'admin@gaula.com' || email === 'admin@dojo.com') role = 'admin';
-        if (email === 'teacher@jutsu.com' || email === 'teacher@gaula.com' || email === 'teacher@dojo.com') role = 'teacher';
+        // Auto-promoción SOLO para seeds locales: configurá SEED_ADMIN_EMAILS
+        // en .env del emulador. Nunca activo en producción por defecto.
+        const seedEmails = String(process.env.SEED_ADMIN_EMAILS || '')
+            .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+        const email = (authUser?.email || payload?.email || '').toLowerCase();
+        if (seedEmails.includes(email)) {
+            role = process.env.SEED_TEACHER_EMAILS && String(process.env.SEED_TEACHER_EMAILS)
+                .split(',').map(e => e.trim().toLowerCase()).includes(email) ? 'teacher' : 'admin';
+        }
 
         const profileData = {
             id: uid,

@@ -1,4 +1,5 @@
 const logger = require("firebase-functions/logger");
+const { projectCourse } = require('./courses');
 
 async function approveUser(payload, context) {
     const { db, getMyProfile } = context;
@@ -44,7 +45,7 @@ async function getAdminCourses(payload, context) {
     const coursesSnap = await db.collection('courses').get();
     const courses = [];
     for (let doc of coursesSnap.docs) {
-        const c = { id: doc.id, ...doc.data() };
+        const c = { id: doc.id, ...projectCourse(doc.data()) };
         const teachersSnap = await db.collection('course_teachers').where('course_id', '==', c.id).get();
         c.course_teachers = [];
         for (let tdoc of teachersSnap.docs) {

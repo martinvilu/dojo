@@ -129,6 +129,25 @@ async function removeTeacher(payload, context) {
     return { success: true };
 }
 
+
+// Campos seguros para entregar al cliente en listados de cursos.
+// Excluye credenciales (github_token, tokens Moodle) que no deben
+// salir nunca del backend: el docente solo los edita, jamás los lee.
+const COURSE_PUBLIC_FIELDS = [
+    'name', 'sync_secret', 'start_date', 'duration_weeks', 'schedules',
+    'class_instances', 'commissions', 'commissions_mapping', 'cover_text',
+    'moodle_enabled', 'external_calendars', 'created_at', 'archived',
+    'invite_code'
+];
+
+function projectCourse(data) {
+    const projected = {};
+    for (const field of COURSE_PUBLIC_FIELDS) {
+        if (data[field] !== undefined) projected[field] = data[field];
+    }
+    return projected;
+}
+
 async function getTeacherCourses(payload, context) {
     const { uid, db } = context;
     const snap = await db.collection('course_teachers').where('teacher_id', '==', uid).get();
@@ -136,7 +155,7 @@ async function getTeacherCourses(payload, context) {
     for (let doc of snap.docs) {
         const cSnap = await db.collection('courses').doc(doc.data().course_id).get();
         if (cSnap.exists) {
-            courses.push({ id: cSnap.id, course_role: doc.data().role || 'titular', ...cSnap.data() });
+            courses.push({ id: cSnap.id, course_role: doc.data().role || 'titular', ...projectCourse(cSnap.data()) });
         }
     }
     return courses;
@@ -259,7 +278,7 @@ async function getStudentCourses(payload, context) {
     const courses = [];
     for (const courseId of courseIds) {
         const cSnap = await db.collection('courses').doc(courseId).get();
-        if (cSnap.exists) courses.push({ id: cSnap.id, ...cSnap.data() });
+        if (cSnap.exists) courses.push({ id: cSnap.id, ...projectCourse(cSnap.data()) });
     }
     return courses;
 }
@@ -411,6 +430,6 @@ module.exports = {
     getStudentCourses,
     getCourseRoster,
     updateRosterStudentStatus,
-    syncGuaraniRoster
+    syncGuaraniRoster,
+    projectCourse
 };
-
