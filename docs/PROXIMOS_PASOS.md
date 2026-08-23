@@ -3,7 +3,7 @@
 > Verificación realizada el **22/08/2026** sobre la rama `main` (commit `0a61c7f`, árbol limpio y sincronizado con `origin/main`).
 > Este documento consolida el resultado de las verificaciones ejecutadas y define un plan de acción priorizado.
 >
-> **Avance 22/08/2026**: completadas las Fases 0–1 (reglas RBAC, suite Jest 74/74 en verde, router de acciones sin legacy), la documentación re-sincronizada, CI de PRs activo, 0 warnings de ESLint y lazy-loading de paneles pesados. Ver casilleros en §3.
+> **Avance 22/08/2026**: Fases 0–3 completadas — reglas RBAC validadas por 23 tests de emulador integrados a CI, suite Jest 74/74, Selenium 56/56 verificado, documentación re-sincronizada y 0 warnings de ESLint. Fase 2 (hooks) en avance: 4 hooks extraídos. Ver casilleros en §3.
 
 ---
 
@@ -86,22 +86,22 @@ Es frágil y confuso; debe resolverse a la ruta final directa.
 ### Fase 0 — Seguridad (P0, hacer primero)
 
 - [x] **Endurecer `firestore.rules`** con reglas por colección basadas en roles: perfiles own-only, escritura de comisiones acotada a docentes, asistencia/foros/encuestas limitados por membresía de curso, `submissions`/`audit_logs`/`activity_logs` sin escritura de cliente y denegación explícita para el resto. *(commit `69c8ddf`)*
-- [ ] Agregar **tests de reglas** con `@firebase/rules-unit-testing` + emulador de Firestore (Java ya disponible) y subirlos al pipeline.
+- [x] Agregar **tests de reglas** con `@firebase/rules-unit-testing` + emulador de Firestore y subirlos al pipeline. *(commits `9763b71`, `46e261c`)* — 23/23 escenarios en verde; detectaron y corrigieron dos fallos reales de política.
 - [x] Corregir `docs/ARCHITECTURE.md` para que describa las reglas reales.
-- [ ] Criterio de aceptación: ningún cliente puede escribir documentos de otros usuarios validado con tests de reglas.
+- [x] Criterio de aceptación cumplido: ningún cliente puede escribir documentos de otros usuarios, validado con `npm run test:rules`.
 
 ### Fase 1 — Restaurar la confianza en los tests (P0)
 
 - [x] Actualizar imports de las 3 suites rotas: `../actions/X` → `../src/modules/<dominio>/X`.
 - [x] Agregar `settings: jest.fn()` al mock de Firestore en las suites que cargan `index.js`; además mockear el subpath `firebase-admin/firestore` (webhook/export/calendar) y stubbear `global.fetch` (los módulos ya no usan `node-fetch`). *(commit `442a39f`)*
 - [x] Re-ejecutar `cd functions && npm test` hasta verde: **74/74 pruebas pasando**.
-- [ ] Ejecutar manualmente la suite Selenium (`npm run test:selenium`) y registrar el resultado real en README/ROADMAP.
-- [x] Cifra de tests consistente en la documentación (56 escenarios E2E verificados estáticamente; 74 unit tests verificados en ejecución).
+- [x] Ejecutar manualmente la suite Selenium (`npm run test:selenium`) contra el mock server: **56/56 escenarios en verde (33.7s)** — coincide con el conteo estático documentado.
+- [x] Cifra de tests consistente en la documentación (56 escenarios E2E; 74 unit tests; 23 de reglas).
 
 ### Fase 2 — Completar la modularización (P1)
 
 - [x] Reemplazar el hack `./actions/${moduleName}` de `functions/index.js` por la resolución directa de los paths ya mapeados (`./src/modules/<dominio>/<name>`). *(commit `2605705`)*
-- [ ] Dividir `dashboard/page.tsx` (2.360 líneas) extrayendo el estado compartido a un contexto o custom hooks (`useCourses`, `useProfile`, `useNotifications` según propuesta de `docs/ROADMAP.md` §Custom Hooks).
+- [ ] Dividir `dashboard/page.tsx` extrayendo el estado compartido a custom hooks. **Avance**: extraídos `useTheme`, `useGithubPromptModal`, `useClassFeedback` y `useStudentQrAttendance` a `src/app/dashboard/hooks/` (commits `fd403ea`, `ff3a96b`); quedan los grupos de estado de cursos/cronogramas y el orquestador de pestañas, que requieren verificación manual de UI.
 - [x] Limpiar los 65 warnings de ESLint: eliminar props/variables muertas y documentar deps intencionales de `useEffect`. *(commit `8cd7f4c`)*
 - [x] Aplicar `next/dynamic` a paneles pesados renderizados condicionalmente (`CalendarPanel`, `EmailManagementPanel`, `DirectEmailModal`). *(commit `ea74541`)*
 - [ ] Criterio de aceptación pendiente: dividir `page.tsx` por debajo de 500 líneas con hooks de dominio.

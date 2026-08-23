@@ -71,6 +71,15 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 - [x] **Limpieza del Router de Acciones**:
     - Eliminado el prefijo legacy `./actions/` en la resolución dinámica de módulos de `functions/index.js`.
 
+### 🔒 Validación y Modularización (22/08/2026, tanda 2)
+- [x] **Suite de Reglas Firestore (23 escenarios)**:
+    - `tests/firestore.rules.test.js` con `@firebase/rules-unit-testing` contra el emulador (`npm run test:rules`) e integrado al workflow de CI.
+    - Detectó dos fallos reales de política: primera reacción bloqueada en comentarios legacy sin mapa `reactions`, y creación de comentarios sin sembrar el mapa. Ambos corregidos.
+- [x] **Verificación Selenium E2E**:
+    - Ejecución local completa: 56/56 escenarios en verde (14 módulos) contra el mock server.
+- [x] **Hooks de dominio extraídos de `page.tsx`**:
+    - `useTheme`, `useGithubPromptModal`, `useClassFeedback`, `useStudentQrAttendance` en `src/app/dashboard/hooks/`.
+
 ---
 
 ## 2. Tareas por Completar (Pendientes / Futuras)
