@@ -32,6 +32,7 @@ import { useTheme } from "./hooks/useTheme";
 import { useGithubPromptModal } from "./hooks/useGithubPromptModal";
 import { useClassFeedback } from "./hooks/useClassFeedback";
 import { useStudentQrAttendance } from "./hooks/useStudentQrAttendance";
+import CommandPalette from "@/components/dashboard/ui/CommandPalette";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -1271,6 +1272,14 @@ export default function DashboardPage() {
     }
   };
 
+  const handleCommandNavigate = async (r: any) => {
+    if (!r?.courseRef) return;
+    const tabByRole = profile?.role === "admin" ? "admin-courses" : profile?.role === "teacher" ? "teacher-courses" : "student-courses";
+    setActiveTab(tabByRole);
+    await viewCourseDetails(r.courseRef);
+    if (r.subTab) handleSetCourseSubTab(r.subTab);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white">
@@ -2183,6 +2192,13 @@ export default function DashboardPage() {
 
 
       <GithubPromptModal githubPromptModal={githubPromptModal} setGithubPromptModal={setGithubPromptModal} showToast={showToast} />
+
+      <CommandPalette
+        courses={courses}
+        classes={teacherClasses}
+        assignments={assignments}
+        onNavigate={handleCommandNavigate}
+      />
       
       {selectedDirectEmailStudent && (
         <DirectEmailModal
