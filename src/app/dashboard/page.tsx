@@ -36,6 +36,7 @@ import { useTeacherCourseSettings } from "./hooks/useTeacherCourseSettings";
 import { useBackups } from "./hooks/useBackups";
 import { useAuthProfile } from "./hooks/useAuthProfile";
 import { useDeepLinks } from "./hooks/useDeepLinks";
+import { useAdminPanel } from "./hooks/useAdminPanel";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -69,10 +70,10 @@ export default function DashboardPage() {
   // Data states
   const [courses, setCourses] = useState<any[]>([]);
   const [teacherClasses, setTeacherClasses] = useState<ClassInstance[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
   const [, setGlobalSettings] = useState<any>({});
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [courseSubTab, setCourseSubTab] = useState("schedules");
+  const [courseTeachers, setCourseTeachers] = useState<any[]>([]);
 
   const handleSetCourseSubTab = (tab: string) => {
     setCourseSubTab(tab);
@@ -82,14 +83,27 @@ export default function DashboardPage() {
     }
   };
 
+  // Admin management domain
+  const {
+    users, setUsers,
+    allTeachersList, setAllTeachersList,
+    selectedNewTeacherId, setSelectedNewTeacherId,
+    newCourseName, setNewCourseName,
+    newCourseOrg, setNewCourseOrg,
+    globalCalendarUrl, setGlobalCalendarUrl,
+    handleApproveUser, handleDeleteUser, handleUpdateUserRole, handleUpdateUserProfile,
+    handleAssignTeacher, handleRemoveTeacher,
+    handleCreateCourse, handleSaveSettings
+  } = useAdminPanel({
+    getSelectedCourseId: () => selectedCourse?.id || selectedCourse?.course?.id,
+    setCourses, setCourseTeachers, setApiLoading, setError
+  });
+
 
   // Form states
   const { theme, toggleTheme } = useTheme();
 
-  const [newCourseName, setNewCourseName] = useState("");
-  const [newCourseOrg, setNewCourseOrg] = useState("");
   const [enrollCode, setEnrollCode] = useState("");
-  const [globalCalendarUrl, setGlobalCalendarUrl] = useState("");
 
   // Session & profile domain
   const {
@@ -193,10 +207,6 @@ export default function DashboardPage() {
   // Announcements states
 
   // CSV Endpoint collapsible state (normally hidden)
-
-  const [courseTeachers, setCourseTeachers] = useState<any[]>([]);
-  const [allTeachersList, setAllTeachersList] = useState<any[]>([]);
-  const [selectedNewTeacherId, setSelectedNewTeacherId] = useState("");
 
   // Announcement Acknowledgement states
   const {
@@ -534,123 +544,6 @@ export default function DashboardPage() {
     // fresh state at call time and would cause redundant fetch loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseSubTab, selectedCourse, profile]);
-
-  // Admin Actions
-  const handleApproveUser = async (uid: string) => {
-    if (!confirm("¿Aprobar manualmente a este usuario?")) return;
-    setApiLoading(true);
-    try {
-      await api("approveUser", { targetUid: uid });
-      const res = await api("getAdminUsers");
-      setUsers(res || []);
-    } catch (err: any) {
-      setError("Error al aprobar usuario: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleDeleteUser = async (uid: string) => {
-    setApiLoading(true);
-    try {
-      await api("deleteUser", { targetUid: uid });
-      const res = await api("getAdminUsers");
-      setUsers(res || []);
-    } catch (err: any) {
-      setError("Error al borrar usuario: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleUpdateUserRole = async (uid: string, newRole: "admin" | "teacher" | "student") => {
-    if (!confirm(`¿Estás seguro de que deseas cambiar el rol del usuario a ${newRole === "admin" ? "Administrador" : newRole === "teacher" ? "Profesor" : "Estudiante"}?`)) return;
-    setApiLoading(true);
-    try {
-      await api("updateUserRole", { targetUid: uid, newRole });
-      const res = await api("getAdminUsers");
-      setUsers(res || []);
-    } catch (err: any) {
-      setError("Error al cambiar rol: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleUpdateUserProfile = async (uid: string, data: any) => {
-    setApiLoading(true);
-    try {
-      await api("updateUserProfile", { userId: uid, data });
-      const res = await api("getAdminUsers");
-      setUsers(res || []);
-    } catch (err: any) {
-      setError("Error al actualizar perfil de usuario: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleAssignTeacher = async () => {
-    if (!selectedCourse || !selectedNewTeacherId) return;
-    const cid = selectedCourse.id || selectedCourse.course?.id;
-    setApiLoading(true);
-    try {
-      await api("assignTeacher", { courseId: cid, teacherId: selectedNewTeacherId });
-      setSelectedNewTeacherId("");
-      const tRes = await api("getCourseTeachers", { courseId: cid });
-      setCourseTeachers(tRes || []);
-    } catch (err: any) {
-      setError("Error al asignar profesor: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleRemoveTeacher = async (teacherId: string) => {
-    if (!selectedCourse) return;
-    if (!confirm("¿Desasignar a este profesor de la cátedra?")) return;
-    const cid = selectedCourse.id || selectedCourse.course?.id;
-    setApiLoading(true);
-    try {
-      await api("removeTeacher", { courseId: cid, teacherId });
-      const tRes = await api("getCourseTeachers", { courseId: cid });
-      setCourseTeachers(tRes || []);
-    } catch (err: any) {
-      setError("Error al desasignar profesor: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleCreateCourse = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCourseName) return;
-    setApiLoading(true);
-    try {
-      await api("createCourse", { name: newCourseName, github_org: newCourseOrg });
-      setNewCourseName("");
-      setNewCourseOrg("");
-      const res = await api("getAdminCourses");
-      setCourses(res || []);
-    } catch (err: any) {
-      setError("Error al crear curso: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setApiLoading(true);
-    try {
-      await api("saveGlobalSettings", { globalCalendarIcsUrl: globalCalendarUrl });
-      showToast("Configuración guardada.", "success");
-    } catch (err: any) {
-      setError("Error al guardar configuraciones: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
 
   // Student Actions
   const handleEnrollCourse = async (e: React.FormEvent) => {
