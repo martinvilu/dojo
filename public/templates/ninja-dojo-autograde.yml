@@ -1,0 +1,94 @@
+# =====================================================================
+# Plantilla de Autograding - Ninja Dojo (Jutsu Classroom)
+# =====================================================================
+# Copiá este archivo como `.github/workflows/autograde.yml` en el repositorio
+# de la tarea del alumno y completá los valores marcados con <COMPLETAR>.
+#
+# Requisitos:
+#   1. Secret del repo: NINJA_DOJO_SYNC_SECRET  -> token de la cátedra
+#      (el mismo sync_secret de Ajustes de Cátedra).
+#   2. Secret del repo: MATRICULA_UNRN          -> matrícula del alumno.
+#   3. Editá WEBHOOK_URL y ASSIGNMENT_ID con los datos de tu tarea.
+#
+# Flujo: push del alumno -> corren los tests -> se calcula el porcentaje de
+# tests aprobados -> se publica la nota en Ninja Dojo vía el webhook nativo,
+# respetando la escala configurada y quedando registrada en audit_logs.
+# =====================================================================
+
+name: Autograding Ninja Dojo
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+env:
+  # URL del webhook de Ninja Dojo (Cloud Function onRequest "webhook").
+  # Ej: https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/webhook
+  WEBHOOK_URL: "<COMPLETAR_URL_DEL_WEBHOOK>"
+  # ID de la tarea en Ninja Dojo (visible en el panel de Tareas del docente).
+  ASSIGNMENT_ID: "<COMPLETAR_ID_DE_TAREA>"
+  # Comando de tests del proyecto. Editalo según tu consigna.
+  TEST_COMMAND: npm test -- --json --outputFile=jest-results.json
+
+jobs:
+  autograde:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install || true
+
+      - name: Run tests and compute score
+        id: grade
+        run: |
+          set +e
+          eval "$TEST_COMMAND"
+          TEST_EXIT=$?
+          set -e
+
+          node - <<'NODE'
+          const fs = require('fs');
+          let total = 0, passed = 0;
+          try {
+            const r = JSON.parse(fs.readFileSync('jest-results.json', 'utf8'));
+            total = r.numTotalTests ?? 0;
+            passed = r.numPassedTests ?? 0;
+          } catch {
+            console.warn('No se encontró jest-results.json; ajustá TEST_COMMAND.');
+          }
+          const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
+          // Escala 0..10 (editá si tu cátedra usa otra escala)
+          const grade = Math.round((pct / 10) * 10) / 10;
+          const feedback = total > 0
+            ? `Autograding: ${passed}/${total} tests aprobados (${pct}%).`
+            : 'Autograding: no se pudieron leer resultados de tests.';
+          fs.writeFileSync('grade.env', `GRADE=${grade}\nFEEDBACK=${feedback}\n`);
+          console.log(feedback);
+          NODE
+
+          cat grade.env >> "$GITHUB_ENV"
+          exit $TEST_EXIT
+
+      - name: Publish grade to Ninja Dojo
+        if: always()
+        run: |
+          curl -sf -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg assignmentId "$ASSIGNMENT_ID" \
+              --arg sync_secret "${{ secrets.NINJA_DOJO_SYNC_SECRET }}" \
+              --arg matricula "${{ secrets.MATRICULA_UNRN }}" \
+              --arg grade "$GRADE" \
+              --arg feedback "$FEEDBACK" \
+              '{assignmentId:$assignmentId, sync_secret:$sync_secret,
+                grades:[{matricula:$matricula, grade:$grade, feedback:$feedback}]}')"

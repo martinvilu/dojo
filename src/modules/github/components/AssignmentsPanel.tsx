@@ -325,6 +325,12 @@ export default function AssignmentsPanel({
                 <div className="border-t border-neutral-800/60 pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                   <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                     <button onClick={() => handleDownloadGradesTemplate(a.id, a.title)} className="px-3 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-semibold text-gray-300 transition">📥 Descargar Plantilla Notas</button>
+                    <button
+                      type="button"
+                      onClick={() => window.open("/templates/ninja-dojo-autograde.yml", "_blank")}
+                      className="px-3 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-semibold text-gray-300 transition"
+                      title="Descarga la plantilla de GitHub Actions para autocalificar esta tarea: el alumno la agrega a su repo, corre los tests y publica la nota vía webhook"
+                    >🤖 Plantilla Autograding</button>
                     <div className="relative">
                       <input type="file" accept=".csv" id={`csv-file-${a.id}`} onChange={(e) => handleImportCSVGrades(a.id, selectedCourse.sync_secret || "TOKEN", e.target.files)} className="hidden" />
                       <label htmlFor={`csv-file-${a.id}`} className="px-3 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-semibold text-gray-300 transition inline-block text-center cursor-pointer">📤 Cargar Notas CSV</label>
