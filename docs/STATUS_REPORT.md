@@ -85,6 +85,12 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 - [x] **Token obligatorio en feed iCal**: `/api/calendar` exige `token=sync_secret` (esquema ya usado por los endpoints CSV); las URLs generadas en Ajustes, Cronogramas y Calendario incluyen el token.
 - [x] **Buscador Omni (⌘K)**: paleta de comandos que busca cátedras, clases y tareas cargadas y navega al detalle correspondiente.
 - [x] **Toolbar Markdown en Avisos**: formateo (negrita, itálica, título, lista, código, enlace) sobre el compositor docente sin dependencias nuevas.
+
+### 🔍 Detección de Plagio y Hardening API (22/08/2026, tanda 4)
+- [x] **Feed iCal real y autenticado**: `/api/calendar` servía eventos hardcodeados sin credenciales; ahora lee el curso desde Firestore con validación `sync_secret` vía middleware compartido. Verificado end-to-end contra emulador (400/401/404/200).
+- [x] **CI completo**: job E2E Selenium en PRs + branch protection con 4 checks obligatorios en `main`.
+- [x] **Autograding**: plantillas GitHub Actions (Node/pytest) descargables desde el panel de Tareas que publican notas al webhook nativo.
+- [x] **Detección de plagio v1**: motor de fingerprints k-gram (normalización por lenguaje, tolerante a reformateo e identificadores renombrados), acción backend autorizada por cátedra y matriz comparativa en el panel docente con pares marcados por umbral. Jest: 90 pruebas.
 - [x] **Hooks adicionales**: `useAnnouncements`, `useTeacherCourseSettings` (con hidratación unificada teacher/admin) y `useBackups`; `page.tsx` queda en ~1.940 líneas (desde 2.356).
 
 ---

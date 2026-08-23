@@ -130,14 +130,14 @@ Es frágil y confuso; debe resolverse a la ruta final directa.
 Con las Fases 0–4 completadas, el backlog continúa ordenado por valor/riesgo:
 
 ### 🔴 Prioridad alta
-1. **Detección de plagio por similitud de código**: análisis estático de las entregas (fingerprinting/winnowing sobre los archivos del repo o AST para JS/Python) con matriz comparativa en el panel docente y alertas automáticas. Requiere un worker dedicado (Cloud Function con timeout extendido) por costo computacional.
+1. ✅ **Detección de plagio** — IMPLEMENTADA (commit `42b806c`): motor puro de fingerprinting k-gram con normalización por lenguaje + acción `detectAssignmentPlagiarism` que analiza los repos de las entregas y panel docente con matriz comparativa. Pendiente de refinamiento: winnowing para repos muy grandes y resaltado de fragmentos coincidentes.
 2. **Tests E2E contra la app real**: hoy Selenium valida contra mock server. Agregar una segunda suite (o modo) que corra contra `firebase emulators:exec` con Auth+Firestore+Functions y datos seed, para cubrir login real, flujos de cursada y permisos end-to-end.
 3. **Verificación manual pendiente de UI**: validar con navegación real los flujos refactorizados sin cobertura automatizada — deep-links LTI, detalle de curso por rol, encuestas anónimas y paleta ⌘K.
 
 ### 🟡 Prioridad media
 4. **Unificar endpoints CSV hacia App Router**: migrar `exportGradesCsv`/`exportAttendanceCsv` a rutas Next.js usando el middleware compartido (`requireCourseSubscriptionToken`), eliminando la duplicación actual Functions vs App Hosting.
-5. **Autograding avanzado**: soporte de lenguajes no-Node (plantillas pytest/jUnit), detección automática del runner según archivos del repo y reintentos con feedback estructurado por test fallido.
-6. **Adoptar middleware Bearer JWT** (`verifyIdToken` de firebase-admin) en las nuevas rutas API que requieran identidad de usuario; hoy solo se necesita token de curso.
+5. **Autograding avanzado**: plantillas Node y pytest ya disponibles; falta detección automática del runner según archivos del repo y feedback estructurado por test fallido.
+6. ✅ **Middleware Bearer JWT** — DISPONIBLE (`requireBearerUser` en `src/app/api/middleware/api.ts`); adoptarlo a medida que se sumen rutas API con identidad de usuario.
 
 ### 🟢 Exploratorias (roadmap original)
 7. Asistente pedagógico de corrección asistida por IA (Gemini API) sobre diffs de entregas.
