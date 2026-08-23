@@ -114,9 +114,10 @@ Es frágil y confuso; debe resolverse a la ruta final directa.
 
 ### Fase 4 — Features pendientes del roadmap (P2)
 
-- [ ] **Calendario unificado multi-materia** (`pendientes.md`): carga paralela de todas las cursadas del usuario, filtros por materia con checkboxes y colores distintivos por cátedra.
-- [ ] Buscador omni (Command + K) sobre clases, avisos y entregas.
-- [ ] Middleware unificado de API (`src/app/api/middleware/`) para validar tokens Bearer y sanitizar entradas en `/api/calendar`, `/api/lti/*`.
+- [x] **Calendario unificado multi-materia** (`pendientes.md`): carga paralela de todas las cursadas, filtros por materia con checkboxes y colores distintivos por cátedra. *(commits `74f8d85`, `1679951`)*
+- [x] **Buscador omni (Command + K)** sobre cátedras, clases y entregas cargadas en el cliente. *(commit `9356f83`)*
+- [x] **Hardening del feed iCal** (parte del item "middleware"): el endpoint `/api/calendar` exigía cero credenciales; ahora usa el token `sync_secret` por curso, mismo esquema que los endpoints CSV. *(commit `1679951`)*
+- [ ] Middleware unificado restante: wrapper común de validación Bearer/sanitización para futuras rutas App Router.
 - [ ] Editor rich text para avisos/tareas.
 - [ ] Detección de plagio por AST y Autograding vía GitHub Actions (según `docs/STATUS_REPORT.md` §2).
 

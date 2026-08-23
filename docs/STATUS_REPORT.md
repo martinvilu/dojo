@@ -80,6 +80,11 @@ Este documento detalla explícitamente las tareas completadas, en curso y pendie
 - [x] **Hooks de dominio extraídos de `page.tsx`**:
     - `useTheme`, `useGithubPromptModal`, `useClassFeedback`, `useStudentQrAttendance` en `src/app/dashboard/hooks/`.
 
+### ✨ Funcionalidades (22/08/2026, tanda 3)
+- [x] **Calendario Unificado Multi-materia**: checkboxes por cátedra (multi-selección con acciones Todas/Ninguna) y colores distintivos por materia en vistas mensual/semanal/modal. Completado el plan de `pendientes.md`.
+- [x] **Token obligatorio en feed iCal**: `/api/calendar` exige `token=sync_secret` (esquema ya usado por los endpoints CSV); las URLs generadas en Ajustes, Cronogramas y Calendario incluyen el token.
+- [x] **Buscador Omni (⌘K)**: paleta de comandos que busca cátedras, clases y tareas cargadas y navega al detalle correspondiente.
+
 ---
 
 ## 2. Tareas por Completar (Pendientes / Futuras)
