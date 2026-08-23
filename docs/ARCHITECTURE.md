@@ -308,20 +308,19 @@ El repositorio está estructurado para independizar la lógica de despliegue del
 ├── docs/                       # Documentación técnica y de diagramas
 │   ├── ARCHITECTURE.md         # (Este archivo) Estructura y arquitectura del sistema
 │   ├── CASOS_DE_USO.md         # Escenarios detallados por rol de usuario
-│   ├── PROXIMOS_PASOS.md       # Estado verificado y plan de acción priorizado
-│   ├── ROADMAP.md              # Estado del sistema y características futuras
-│   ├── STATUS_REPORT.md        # Registro histórico de tareas completadas/pendientes
-│   ├── TESTING.md              # Guía de pruebas manuales y seed
+│   ├── DEVELOPMENT.md          # Setup, convenciones, pruebas y seed
+│   ├── ROADMAP.md              # Estado verificado, backlog e hitos
+│   ├── RUNBOOK_DESPLIEGUE_CSV.md # Acciones manuales de despliegue operativo
 │   └── UML.md                  # Diagramas Mermaid (Casos de Uso, Secuencias)
 ├── functions/                  # Backend: Firebase Cloud Functions (Node.js 22)
 │   ├── index.js                # Router callable (api) + endpoints onRequest
 │   ├── src/modules/            # Dominios: auth, course, github, mail, moodle, etc.
-│   ├── tests/                  # Suite Jest (74 pruebas unitarias)
+│   ├── tests/                  # Suite Jest (90 pruebas unitarias)
 │   └── package.json            # Dependencias del backend
 ├── manual/                     # Manual de usuario (docentes, estudiantes, admins)
 ├── public/                     # Recursos estáticos del frontend
 ├── src/                        # Frontend: Next.js 16 (App Router) + React 19
-│   ├── app/                    # Rutas: /login, /dashboard, /api/{calendar,lti}
+│   ├── app/                    # Rutas: /login, /dashboard, /api/{calendar,export/csv,lti}
 │   ├── components/dashboard/ui # Design System (BaseModal, AlertBadge, Toasts)
 │   ├── lib/                    # Clientes firebase, helpers de API y logging
 │   └── modules/                # Módulos de dominio con componentes/hooks/utils

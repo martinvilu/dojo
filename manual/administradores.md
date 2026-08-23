@@ -58,5 +58,5 @@ Jutsu Classroom soporta integración LTI 1.3 Advantage con Moodle:
 - **Launch Endpoint**: `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/api/lti/launch`
 
 ```{note}
-Para más detalles sobre la configuración de llaves públicas RSA y JWT con Moodle, consulta la guía [MOODLE_INTEGRATION.md](file:///home/mrtin/dev/gaula/docs/MOODLE_INTEGRATION.md).
+Para más detalles sobre la configuración de llaves públicas RSA y JWT con Moodle, consulta la guía [MOODLE_INTEGRATION.md](../docs/MOODLE_INTEGRATION.md).
 ```
