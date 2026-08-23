@@ -30,6 +30,28 @@ export interface CourseFilter {
   name: string;
 }
 
+// Distinct per-course accents so subjects are recognizable at a glance.
+// Classes must stay statically named for Tailwind's JIT scanner.
+const COURSE_PALETTE = [
+  { dot: "bg-blue-400", edge: "border-l-blue-400" },
+  { dot: "bg-emerald-400", edge: "border-l-emerald-400" },
+  { dot: "bg-amber-400", edge: "border-l-amber-400" },
+  { dot: "bg-purple-400", edge: "border-l-purple-400" },
+  { dot: "bg-pink-400", edge: "border-l-pink-400" },
+  { dot: "bg-cyan-400", edge: "border-l-cyan-400" },
+  { dot: "bg-orange-400", edge: "border-l-orange-400" },
+  { dot: "bg-lime-400", edge: "border-l-lime-400" },
+];
+
+function courseAccentOf(courseId?: string) {
+  if (!courseId) return null;
+  let hash = 0;
+  for (let i = 0; i < courseId.length; i++) {
+    hash = (hash * 31 + courseId.charCodeAt(i)) >>> 0;
+  }
+  return COURSE_PALETTE[hash % COURSE_PALETTE.length];
+}
+
 interface CalendarPanelProps {
   activeTab: string;
   classes: ClassInstance[];
@@ -48,27 +70,41 @@ export default function CalendarPanel({
 }: CalendarPanelProps) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
-  const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>("all");
+  const [hiddenCourseIds, setHiddenCourseIds] = useState<Set<string>>(new Set());
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   // Bookmark input states inside event modal
   const [newBookmarkTime, setNewBookmarkTime] = useState("");
   const [newBookmarkLabel, setNewBookmarkLabel] = useState("");
 
-  // Filter events by selected course
-  const filteredClasses = useMemo(() => {
-    return classes.filter((c) => {
-      if (selectedCourseFilter === "all") return true;
-      return c.course_id === selectedCourseFilter;
+  const toggleCourseVisibility = (id: string) => {
+    setHiddenCourseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
-  }, [classes, selectedCourseFilter]);
+  };
+  const showAllCourses = () => setHiddenCourseIds(new Set());
+  const hideAllCourses = () => setHiddenCourseIds(new Set(courses.map((c) => c.id)));
+
+  // Events without an associated course (legacy data) always stay visible
+  const isCourseVisible = (courseId?: string) =>
+    !courseId || !hiddenCourseIds.has(courseId);
+
+  // Filter events by the multi-subject checkbox selection
+  const filteredClasses = useMemo(() => {
+    return classes.filter((c) => isCourseVisible(c.course_id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classes, hiddenCourseIds]);
 
   const filteredAssignments = useMemo(() => {
-    return assignments.filter((a) => {
-      if (selectedCourseFilter === "all") return true;
-      return a.course_id === selectedCourseFilter;
-    });
-  }, [assignments, selectedCourseFilter]);
+    return assignments.filter((a) => isCourseVisible(a.course_id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignments, hiddenCourseIds]);
+
+  const visibleCourseCount = courses.filter((c) => !hiddenCourseIds.has(c.id)).length;
+  const allVisible = hiddenCourseIds.size === 0;
 
   // Helper: Format date to YYYY-MM-DD local string
   const toLocalDateString = (date: Date) => {
@@ -231,6 +267,10 @@ export default function CalendarPanel({
     setCurrentDate(new Date());
   };
 
+  const visibleCourses = courses.filter((c) => !hiddenCourseIds.has(c.id));
+  const exportKey =
+    visibleCourseCount === 1 ? visibleCourses[0].id : allVisible ? "all" : "seleccion";
+
   // iCal / ICS Exporter
   const handleExportICS = () => {
     let icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Jutsu Classroom//Calendar//ES\r\nCALSCALE:GREGORIAN\r\n";
@@ -254,7 +294,7 @@ export default function CalendarPanel({
     const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `jutsu_classroom_calendar_${selectedCourseFilter}.ics`;
+    link.download = `jutsu_classroom_calendar_${exportKey}.ics`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -263,8 +303,8 @@ export default function CalendarPanel({
   const handleGoogleCalendarSubscribe = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
     let feedUrl = `${origin}/api/calendar`;
-    if (selectedCourseFilter && selectedCourseFilter !== "all") {
-      feedUrl += `?id=${selectedCourseFilter}`;
+    if (visibleCourseCount === 1) {
+      feedUrl += `?id=${visibleCourses[0].id}`;
     }
     const googleCalUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`;
     window.open(googleCalUrl, "_blank");
@@ -318,22 +358,56 @@ export default function CalendarPanel({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* COURSE FILTER DROPDOWN */}
-          <div className="flex items-center space-x-2">
-            <label className="text-xs font-semibold text-text-secondary uppercase">Cátedra:</label>
-            <select
-              value={selectedCourseFilter}
-              onChange={(e) => setSelectedCourseFilter(e.target.value)}
-              className="bg-bg-primary border border-border-custom text-text-primary rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-blue-500 cursor-pointer"
-            >
-              <option value="all">🌐 Calendario Global (Todas)</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  📚 {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* MULTI-SUBJECT CHECKBOX FILTER BAR */}
+          {courses.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-text-secondary uppercase">Materias:</span>
+                <button
+                  type="button"
+                  onClick={showAllCourses}
+                  disabled={allVisible}
+                  className="text-[10px] font-bold text-blue-400 hover:text-blue-300 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer uppercase tracking-wider"
+                >
+                  Todas
+                </button>
+                <button
+                  type="button"
+                  onClick={hideAllCourses}
+                  disabled={hiddenCourseIds.size === courses.length}
+                  className="text-[10px] font-bold text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer uppercase tracking-wider"
+                >
+                  Ninguna
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrar eventos por materia">
+                {courses.map((c) => {
+                  const visible = !hiddenCourseIds.has(c.id);
+                  const accent = courseAccentOf(c.id);
+                  return (
+                    <label
+                      key={c.id}
+                      title={visible ? "Ocultar esta materia" : "Mostrar esta materia"}
+                      className={`flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-full border cursor-pointer text-[11px] font-semibold transition select-none ${
+                        visible
+                          ? "bg-bg-primary border-border-custom text-text-primary"
+                          : "border-dashed border-border-custom text-text-secondary/50 opacity-60"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={visible}
+                        onChange={() => toggleCourseVisibility(c.id)}
+                        className="h-3 w-3 accent-blue-500 cursor-pointer"
+                      />
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${accent ? accent.dot : "bg-gray-400"}`} />
+                      <span className="max-w-[150px] truncate">{c.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* VISTA TOGGLE */}
           <div className="flex items-center space-x-1 bg-bg-primary p-1 rounded-xl border border-border-custom">
@@ -462,12 +536,16 @@ export default function CalendarPanel({
                         badgeClass = "bg-pink-500/20 text-pink-400 border-pink-500/30 font-semibold";
                       }
 
+                      const accent = courseAccentOf(evt.details?.course_id);
+
                       return (
                         <button
                           key={eIdx}
                           onClick={() => setSelectedEvent(evt)}
-                          className={`w-full text-left truncate px-2 py-0.5 rounded text-[10px] border transition hover:scale-[1.02] cursor-pointer flex items-center space-x-1 ${badgeClass}`}
+                          title={evt.details?.course_name ? `${evt.details.course_name} — ${evt.title}` : evt.title}
+                          className={`w-full text-left truncate px-2 py-0.5 rounded text-[10px] border transition hover:scale-[1.02] cursor-pointer flex items-center space-x-1 ${badgeClass} ${accent ? `border-l-2 ${accent.edge}` : ""}`}
                         >
+                          {accent && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${accent.dot}`} aria-hidden="true" />}
                           <span>{evt.type === "assignment" ? "📝" : "•"}</span>
                           <span className="truncate">{evt.title}</span>
                         </button>
@@ -534,14 +612,22 @@ export default function CalendarPanel({
                       titleColor = "text-pink-400";
                     }
 
+                    const accent = courseAccentOf(evt.details?.course_id);
+
                     return (
                       <div
                         key={eIdx}
                         onClick={() => setSelectedEvent(evt)}
-                        className={`p-3 rounded-xl border transition hover:scale-[1.02] cursor-pointer space-y-1.5 text-left ${badgeClass}`}
+                        className={`p-3 rounded-xl border transition hover:scale-[1.02] cursor-pointer space-y-1.5 text-left ${badgeClass} ${accent ? `border-l-4 ${accent.edge}` : ""}`}
                       >
                         <span className="text-[9px] font-bold text-text-secondary uppercase tracking-widest block">
                           {evt.type === "assignment" ? "Entrega" : "Clase"}
+                          {evt.details?.course_name && (
+                            <span className="inline-flex items-center gap-1 ml-1.5 normal-case tracking-normal">
+                              <span className={`w-1.5 h-1.5 rounded-full inline-block ${accent ? accent.dot : "bg-gray-400"}`} aria-hidden="true" />
+                              {evt.details.course_name}
+                            </span>
+                          )}
                         </span>
                         <h5 className={`text-xs font-bold leading-tight ${titleColor}`}>
                           {evt.title}
@@ -576,6 +662,16 @@ export default function CalendarPanel({
             <span className="chip-status text-[10px] font-bold uppercase font-mono tracking-wider bg-bg-primary text-text-secondary border border-border-custom">
               {selectedEvent.type === "assignment" ? "📝 Entrega de Tarea" : "📅 Sesión de Clase"}
             </span>
+
+            {selectedEvent.details?.course_name && (
+              <span className="inline-flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-bg-primary border border-border-custom text-[10px] font-bold text-text-secondary align-middle">
+                <span
+                  className={`w-2 h-2 rounded-full ${courseAccentOf(selectedEvent.details?.course_id)?.dot || "bg-gray-400"}`}
+                  aria-hidden="true"
+                />
+                {selectedEvent.details.course_name}
+              </span>
+            )}
 
             <div className="space-y-1 pt-1">
               <h3 className="text-lg font-bold text-text-primary leading-tight">{selectedEvent.title}</h3>

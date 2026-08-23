@@ -397,10 +397,18 @@ export default function DashboardPage() {
 
           const courseIds = safeCourses.map((c: any) => c.id || c.course?.id).filter(Boolean);
           if (courseIds.length > 0) {
-            const assignRes = profile?.role === "student" 
-              ? await api("getStudentAssignments", { courseIds }) 
+            const assignRes = profile?.role === "student"
+              ? await api("getStudentAssignments", { courseIds })
               : await api("getTeacherAssignments", { courseIds });
-            const loadedAssignments = Array.isArray(assignRes) ? assignRes : (assignRes?.assignments || []);
+            const rawAssignments = Array.isArray(assignRes) ? assignRes : (assignRes?.assignments || []);
+            const courseNameOf = (cid: string) =>
+              safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.name
+              || safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.course?.name
+              || "Cátedra";
+            const loadedAssignments = rawAssignments.map((a: any) => ({
+              ...a,
+              course_name: a.course_name || courseNameOf(a.course_id),
+            }));
             setAssignments(loadedAssignments);
 
             const allClassInstances: any[] = [];
