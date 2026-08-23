@@ -1,34 +1,14 @@
 "use client";
 
-import { CourseStudentsPanel } from "@/modules/course/components/CourseStudentsPanel";
-
-import { CourseSettingsPanel } from "@/modules/course/components/CourseSettingsPanel";
-import { CourseTeachersPanel } from "@/modules/course/components/CourseTeachersPanel";
-import { CourseAnnouncementsPanel } from "@/modules/course/components/CourseAnnouncementsPanel";
-
-import { CourseOverviewPanel } from "@/modules/course/components/CourseOverviewPanel";
-import { CourseSchedulesPanel } from "@/modules/course/components/CourseSchedulesPanel";
-import { useState, useEffect, useRef, useMemo } from "react";
-import dynamic from "next/dynamic";
-import AdminPanel from "@/modules/course/components/AdminPanel";
-import StudentPanel from "@/modules/course/components/StudentPanel";
-import ProfilePanel from "@/modules/auth/components/ProfilePanel";
-import TeacherPanel from "@/modules/course/components/TeacherPanel";
-import StudyGroupsPanel from "@/modules/study_groups/components/StudyGroupsPanel";
-import AssignmentsPanel from "@/modules/github/components/AssignmentsPanel";
-import { GithubPromptModal } from "@/modules/github/components/GithubPromptModal";
-import { showToast } from "@/components/dashboard/ui/ToastNotification";
-import TutoringPanel from "@/modules/tutoring/components/TutoringPanel";
-import { FeedbackModals } from "@/modules/course/components/FeedbackModals";
-import { StudentAttendanceModals } from "@/modules/attendance/components/StudentAttendanceModals";
+import { useState, useMemo } from "react";
 import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
+import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
 import { api } from "@/lib/api";
 import { useTheme } from "./hooks/useTheme";
 import { useGithubPromptModal } from "./hooks/useGithubPromptModal";
 import { useClassFeedback } from "./hooks/useClassFeedback";
 import { useStudentQrAttendance } from "./hooks/useStudentQrAttendance";
-import CommandPalette from "@/components/dashboard/ui/CommandPalette";
 import { useAnnouncements } from "./hooks/useAnnouncements";
 import { useTeacherCourseSettings } from "./hooks/useTeacherCourseSettings";
 import { useBackups } from "./hooks/useBackups";
@@ -40,20 +20,12 @@ import { useCourseRealtime } from "./hooks/useCourseRealtime";
 import { useCourseSubtabData } from "./hooks/useCourseSubtabData";
 import { useTabDataLoader } from "./hooks/useTabDataLoader";
 import { DashboardOverlays } from "./components/DashboardOverlays";
+import { TabPanelsSection } from "./components/TabPanelsSection";
 import { getWeeklyClasses } from "./utils/weeklyClasses";
 import type { ClassInstance } from "./types";
 import { Sidebar } from "./components/Sidebar";
-import { AdminBackupsSection } from "./components/AdminBackupsSection";
 import { CourseDetailSection } from "./components/CourseDetailSection";
 import { LoadingScreen, PendingApprovalView } from "./components/GateScreens";
-
-// Heavy panels rendered conditionally; keep them out of the initial bundle
-const PanelFallback = () => (
-  <div className="p-6 text-center text-sm text-gray-400" role="status">Cargando módulo…</div>
-);
-const CalendarPanel = dynamic(() => import("@/modules/calendar/components/CalendarPanel"), { loading: () => <PanelFallback /> });
-
-
 
 export default function DashboardPage() {
   const [apiLoading, setApiLoading] = useState(false);
@@ -373,102 +345,26 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ADMIN TABS COMPONENT */}
-        {profile?.role === "admin" && (
-          <AdminPanel
-            activeTab={activeTab}
-            courses={courses}
-            users={users}
-            globalCalendarUrl={globalCalendarUrl}
-            setGlobalCalendarUrl={setGlobalCalendarUrl}
-            newCourseName={newCourseName}
-            setNewCourseName={setNewCourseName}
-            newCourseOrg={newCourseOrg}
-            setNewCourseOrg={setNewCourseOrg}
-            handleCreateCourse={handleCreateCourse}
-            handleUpdateUserRole={handleUpdateUserRole}
-            handleUpdateUserProfile={handleUpdateUserProfile}
-            handleApproveUser={handleApproveUser}
-            handleDeleteUser={handleDeleteUser}
-            handleSaveSettings={handleSaveSettings}
-            viewCourseDetails={viewCourseDetails}
-          />
-        )}
-
-        {/* ADMIN BACKUPS PANEL */}
-        {profile?.role === "admin" && activeTab === "admin-backups" && (
-          <AdminBackupsSection
-            systemBackups={systemBackups}
-            courses={courses}
-            assignments={assignments}
-            users={users}
-            onCreateBackup={handleCreateBackup}
-            onDownloadBackup={handleDownloadBackup}
-            onRestoreBackupDocument={handleRestoreBackupDocument}
-          />
-        )}
-
-        {/* TEACHER TABS COMPONENT */}
-        {!selectedCourse && (
-          <TeacherPanel
-            activeTab={activeTab}
-            courses={courses}
-            viewCourseDetails={viewCourseDetails}
-            onOpenCourseCalendar={handleOpenCourseCalendar}
-          />
-        )}
-
-        {/* STUDENT TABS COMPONENT */}
-        {!selectedCourse && (
-          <StudentPanel
-            activeTab={activeTab}
-            courses={courses}
-            enrollCode={enrollCode}
-            setEnrollCode={setEnrollCode}
-            handleEnrollCourse={handleEnrollCourse}
-            viewCourseDetails={viewCourseDetails}
-            onOpenCourseCalendar={handleOpenCourseCalendar}
-            onOpenQrScanner={() => setIsQrScannerOpen(true)}
-          />
-        )}
-
-        {/* UNIFIED CALENDAR PANEL */}
-        {activeTab === "calendar" && (
-          <CalendarPanel
-            activeTab={activeTab}
-            classes={teacherClasses}
-            assignments={assignments}
-            courses={(courses || []).map((c: any) => ({
-              id: c.id || c.course?.id,
-              name: c.name || c.course?.name || "Sin nombre",
-              sync_secret: c.sync_secret || c.course?.sync_secret,
-            }))}
-            activeCourseName="Global"
-          />
-        )}
-
-        {/* PROFILE TAB COMPONENT */}
-        <ProfilePanel
-          activeTab={activeTab}
-          profile={profile}
-          profileName={profileName}
-          setProfileName={setProfileName}
-          profileMatricula={profileMatricula}
-          setProfileMatricula={setProfileMatricula}
-          profileCohorte={profileCohorte}
-          setProfileCohorte={setProfileCohorte}
-          profileGithubUser={profileGithubUser}
-          setProfileGithubUser={setProfileGithubUser}
-          handleUpdateProfile={handleUpdateProfile}
-          handleAddSecondaryEmail={handleAddSecondaryEmail}
-          xpLogs={xpLogs}
-          gmailStatus={gmailStatus}
-          handleStartGmailAuth={handleStartGmailAuth}
-          handleDisconnectGmail={handleDisconnectGmail}
-          handleSendTestGmail={handleSendTestGmail}
-          testEmailAddress={testEmailAddress}
-          setTestEmailAddress={setTestEmailAddress}
-        />
+        {/* TOP-LEVEL TAB PANELS (admin / teacher / student / calendar / profile) */}
+        <TabPanelsSection {...{
+          profile, activeTab, courses, users, assignments, teacherClasses, selectedCourse,
+          globalCalendarUrl, setGlobalCalendarUrl,
+          newCourseName, setNewCourseName, newCourseOrg, setNewCourseOrg,
+          handleCreateCourse, handleUpdateUserRole, handleUpdateUserProfile,
+          handleApproveUser, handleDeleteUser, handleSaveSettings,
+          systemBackups,
+          onCreateBackup: handleCreateBackup,
+          onDownloadBackup: handleDownloadBackup,
+          onRestoreBackupDocument: handleRestoreBackupDocument,
+          viewCourseDetails, onOpenCourseCalendar: handleOpenCourseCalendar,
+          onOpenQrScanner: () => setIsQrScannerOpen(true),
+          enrollCode, setEnrollCode, handleEnrollCourse,
+          profileName, setProfileName, profileMatricula, setProfileMatricula,
+          profileCohorte, setProfileCohorte, profileGithubUser, setProfileGithubUser,
+          handleUpdateProfile, handleAddSecondaryEmail, xpLogs,
+          gmailStatus, handleStartGmailAuth, handleDisconnectGmail, handleSendTestGmail,
+          testEmailAddress, setTestEmailAddress
+        }} />
 
         {/* DETALLADA VISTA DE CÁTEDRA */}
         {selectedCourse && ["admin-courses", "teacher-courses", "student-courses"].includes(activeTab) && (
