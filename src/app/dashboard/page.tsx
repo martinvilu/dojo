@@ -28,6 +28,9 @@ import { StudentAttendanceModals } from "@/modules/attendance/components/Student
 import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
 
 import { api } from "@/lib/api";
+import { useTheme } from "./hooks/useTheme";
+import { useGithubPromptModal } from "./hooks/useGithubPromptModal";
+import { useClassFeedback } from "./hooks/useClassFeedback";
 
 // Heavy panels rendered conditionally; keep them out of the initial bundle
 const PanelFallback = () => (
@@ -110,31 +113,7 @@ export default function DashboardPage() {
 
 
   // Form states
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
-
-  useEffect(() => {
-    const savedTheme = typeof window !== "undefined" ? localStorage.getItem("theme") as "light" | "dark" : null;
-    const initialTheme = savedTheme || "dark";
-    setTheme(initialTheme);
-    if (initialTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("theme", newTheme);
-    }
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
+  const { theme, toggleTheme } = useTheme();
 
   const [newCourseName, setNewCourseName] = useState("");
   const [newCourseOrg, setNewCourseOrg] = useState("");
@@ -186,13 +165,17 @@ export default function DashboardPage() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   // Anonymous Feedback states
-  const [activeFeedbackClass, setActiveFeedbackClass] = useState<number | null>(null);
-  const [feedbackRating, setFeedbackRating] = useState<number>(5);
-  const [feedbackUnderstanding, setFeedbackUnderstanding] = useState<string>("Entendí todo");
-  const [feedbackComment, setFeedbackComment] = useState<string>("");
-  const [viewingFeedbackClass, setViewingFeedbackClass] = useState<number | null>(null);
-  const [feedbackStats, setFeedbackStats] = useState<{ avgRating: number; count: number; understandingDist: Record<string, number>; comments: string[] } | null>(null);
-  const [loadingFeedback, setLoadingFeedback] = useState<boolean>(false);
+  const {
+    activeFeedbackClass, setActiveFeedbackClass,
+    feedbackRating, setFeedbackRating,
+    feedbackUnderstanding, setFeedbackUnderstanding,
+    feedbackComment, setFeedbackComment,
+    viewingFeedbackClass, feedbackStats,
+    setViewingFeedbackClass, loadingFeedback,
+    handleOpenFeedbackModal,
+    handleSubmitFeedback,
+    handleLoadClassFeedback
+  } = useClassFeedback({ profile, selectedCourse });
 
   // Commission & Co-docencia states
   const [commissionFilter, setCommissionFilter] = useState<string>("Todas");
@@ -251,10 +234,7 @@ export default function DashboardPage() {
 
   // Custom Prompts states (non-blocking alternative to native prompt)
 
-  const [githubPromptModal, setGithubPromptModal] = useState<{
-    isOpen: boolean;
-    resolve: (username: string | null) => void;
-  } | null>(null);
+  const { githubPromptModal, setGithubPromptModal, promptGithubUsername } = useGithubPromptModal();
 
   // Study Groups states
   const [studyGroups, setStudyGroups] = useState<any[]>([]);
@@ -574,9 +554,7 @@ export default function DashboardPage() {
           updatedCourses = updated || [];
 
           if (profile.role === "student" && !profile.github_user) {
-            const githubUser = await new Promise<string | null>((resolve) => {
-              setGithubPromptModal({ isOpen: true, resolve });
-            });
+            const githubUser = await promptGithubUsername();
             if (githubUser && githubUser.trim()) {
               const cleanedUser = githubUser.trim();
               await api("updateProfile", { github_user: cleanedUser });
@@ -1225,111 +1203,6 @@ export default function DashboardPage() {
       console.error("Error loading overview submissions:", err);
     } finally {
       setLoadingOverviewSubmissions(false);
-    }
-  };
-
-  const hashString = async (str: string) => {
-    const msgUint8 = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-  };
-
-  const handleOpenFeedbackModal = async (classNumber: number) => {
-    const cid = selectedCourse.id || selectedCourse.course?.id;
-    if (!cid || !profile) return;
-    
-    setLoadingFeedback(true);
-    setActiveFeedbackClass(classNumber);
-    setFeedbackRating(5);
-    setFeedbackUnderstanding("Entendí todo");
-    setFeedbackComment("");
-    
-    try {
-      // Check if student already gave feedback by checking document existence
-      const docId = await hashString(`${profile.id}_class_${classNumber}`);
-      const feedbackDoc = await getDoc(doc(db, "courses", cid, "class_feedback", docId));
-      if (feedbackDoc.exists()) {
-        const data = feedbackDoc.data();
-        setFeedbackRating(data.rating || 5);
-        setFeedbackUnderstanding(data.understanding || "Entendí todo");
-        setFeedbackComment(data.comment || "");
-      }
-    } catch (err) {
-      console.error("Error checking existing feedback:", err);
-    } finally {
-      setLoadingFeedback(false);
-    }
-  };
-
-  const handleSubmitFeedback = async () => {
-    const cid = selectedCourse.id || selectedCourse.course?.id;
-    if (!cid || !profile || activeFeedbackClass === null) return;
-    
-    setLoadingFeedback(true);
-    try {
-      const docId = await hashString(`${profile.id}_class_${activeFeedbackClass}`);
-      await setDoc(doc(db, "courses", cid, "class_feedback", docId), {
-        classNumber: activeFeedbackClass,
-        rating: feedbackRating,
-        understanding: feedbackUnderstanding,
-        comment: feedbackComment,
-        created_at: serverTimestamp()
-      });
-      showToast("¡Feedback enviado de forma anónima! Muchas gracias.", "success");
-      setActiveFeedbackClass(null);
-    } catch (err: any) {
-      showToast("Error al enviar feedback: " + err.message, "error");
-    } finally {
-      setLoadingFeedback(false);
-    }
-  };
-
-  const handleLoadClassFeedback = async (classNumber: number) => {
-    const cid = selectedCourse.id || selectedCourse.course?.id;
-    if (!cid) return;
-    
-    setLoadingFeedback(true);
-    setViewingFeedbackClass(classNumber);
-    try {
-      const q = query(
-        collection(db, "courses", cid, "class_feedback"),
-        where("classNumber", "==", classNumber)
-      );
-      const snap = await getDocs(q);
-      
-      let sumRating = 0;
-      let feedbackCount = 0;
-      const understandingDist: Record<string, number> = {
-        "Entendí todo": 0,
-        "Entendí la mayor parte": 0,
-        "Tengo dudas": 0,
-        "No entendí nada": 0
-      };
-      const comments: string[] = [];
-      
-      snap.forEach(doc => {
-        const data = doc.data();
-        sumRating += data.rating || 0;
-        feedbackCount++;
-        if (data.understanding && data.understanding in understandingDist) {
-          understandingDist[data.understanding]++;
-        }
-        if (data.comment && data.comment.trim() !== "") {
-          comments.push(data.comment);
-        }
-      });
-      
-      setFeedbackStats({
-        avgRating: feedbackCount > 0 ? sumRating / feedbackCount : 0,
-        count: feedbackCount,
-        understandingDist,
-        comments
-      });
-    } catch (err: any) {
-      showToast("Error al cargar feedback: " + err.message, "error");
-    } finally {
-      setLoadingFeedback(false);
     }
   };
 
