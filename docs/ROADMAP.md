@@ -38,7 +38,7 @@ Otros documentos: [Arquitectura](ARCHITECTURE.md) · [Guía de Desarrollo](DEVEL
 2.  **Verificación manual de UI sin cobertura automatizada**: deep-links LTI, detalle de curso por rol, encuestas anónimas y paleta ⌘K.
 
 ### 🟡 Prioridad media
-3.  **Completar modularización del dashboard**: dividir `dashboard/page.tsx` por debajo de 500 líneas. Ya se extrajeron 8 hooks a `src/app/dashboard/hooks/` (~2.356 → ~1.940 líneas); quedan deep-links/params, carga de detalle de curso y estados de perfil.
+3. ✅ **Completar modularización del dashboard** — COMPLETADA: `dashboard/page.tsx` quedó en **456 líneas** (<500, criterio de aceptación cumplido), orquestando 14 hooks de dominio en `src/app/dashboard/hooks/` (8 previos + `useAuthProfile`, `useDeepLinks`, `useAdminPanel`, `useCourseDetail`, `useCourseRealtime`, `useCourseSubtabData`) y 7 componentes de layout en `src/app/dashboard/components/` (Sidebar, TabPanelsSection, CourseDetailSection, DashboardOverlays, AdminBackupsSection, StudentNinjaRankCard, GateScreens). Verificado con tsc, lint, build, jest 90/90 y Selenium E2E 56/56.
 4.  **Detección de plagio v2**: winnowing para repos grandes y resaltado de fragmentos coincidentes (v1: fingerprints k-gram ya en producción).
 5.  **Autograding avanzado**: detección automática del runner según archivos del repo y feedback estructurado por test fallido (plantillas Node/pytest listas).
 6.  **Adoptar `requireBearerUser`** a medida que se sumen rutas API con identidad de usuario.
