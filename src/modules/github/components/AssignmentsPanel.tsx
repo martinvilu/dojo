@@ -41,13 +41,13 @@ export default function AssignmentsPanel({
   const [plagiarismResults, setPlagiarismResults] = useState<Record<string, any>>({});
   const [plagiarismOpenId, setPlagiarismOpenId] = useState<string | null>(null);
   const [plagiarismLoading, setPlagiarismLoading] = useState(false);
-  const [githubActivityTab, setGithubActivityTab] = useState<"commits" | "pulls" | "comments" | "visualizer">("commits");
+  const [githubActivityTab, setGithubActivityTab] = useState<"commits" | "pulls" | "comments" | "metrics" | "visualizer">("commits");
   const [editingGrades, setEditingGrades] = useState<Record<string, string>>({});
   const [editingFeedbacks, setEditingFeedbacks] = useState<Record<string, string>>({});
   const [expandedAuditLogs, setExpandedAuditLogs] = useState<Record<string, any[]>>({});
   
   const [studentGithubActivity, setStudentGithubActivity] = useState<{ commits: any[], pullRequests: any[], comments: any[] } | null>(null);
-  const [studentGithubActivityTab, setStudentGithubActivityTab] = useState<"commits" | "pulls" | "comments" | "visualizer">("commits");
+  const [studentGithubActivityTab, setStudentGithubActivityTab] = useState<"commits" | "pulls" | "comments" | "metrics" | "visualizer">("commits");
 
   // Modals
   const [groupPromptModal, setGroupPromptModal] = useState<{ isOpen: boolean; assignmentId: string; resolve: (val: string | null) => void } | null>(null);
