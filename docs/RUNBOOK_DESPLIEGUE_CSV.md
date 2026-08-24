@@ -71,7 +71,7 @@ Obtener un `courseId` y su `sync_secret` de la colección `courses` en la consol
 APP=https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app
 
 # 1. Sin token → debe responder 401
-curl -s -o /dev/null -w '%{http_code}\n' "$APP/api/export/csv?courseId=CURSO_ID"
+curl -s -w '\n' "$APP/api/export/csv?courseId=CURSO_ID"
 
 # 2. Token inválido → 401
 curl -s -o /dev/null -w '%{http_code}\n' "$APP/api/export/csv?courseId=CURSO_ID&token=TOKEN_FALSO"
@@ -92,6 +92,36 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 ```
 
 Además, en la app: abrir **Configuración de cátedra → Sincronización CSV** y **Alumnos → Endpoint CSV**: las URLs mostradas deben apuntar al dominio propio (`/api/export/csv?...`), no a `cloudfunctions.net`.
+
+### Troubleshooting de la verificación
+
+| Síntoma | Causa probable | Acción |
+|---|---|---|
+| Checks 1–4 dan **404** | La build de App Hosting con la ruta nueva **no está desplegada** (push pendiente, rollout en curso o fallido) | Verificar build marker (abajo) y estado del rollout; reintentar cuando termine |
+| Check 1 da 400 | Falta el parámetro `courseId` en la URL probada | Revisar el curl |
+| Check 2 da **500** en local | Sin credenciales ADC (`gcloud auth application-default login`) — solo afecta a `npm run dev`, no a producción | Autenticarse o probar contra el entorno desplegado |
+| Checks dan 500 en producción | Credenciales del backend de App Hosting | Revisar logs en consola Firebase → App Hosting → Logs |
+
+**Build marker**: para saber qué versión está sirviendo App Hosting, consultar una ruta que solo exista en builds recientes:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' "$APP/api/me"
+# 401 o 405 = build nueva (ruta existe); 404 = build vieja, el rollout aún no aplicó
+```
+
+Verificación local sin deploy (los checks 1 y 4 funcionan igual):
+
+```bash
+npm run dev &
+curl -s -o /dev/null -w '%{http_code}\n' "http://localhost:3000/api/export/csv?courseId=X"   # 401
+```
+
+Estado del rollout:
+
+```bash
+firebase apphosting:backends:list
+firebase apphosting:rollouts:create dojo   # forzar un rollout nuevo
+```
 
 ## Paso 3 — Comunicar a los docentes (obligatorio)
 
