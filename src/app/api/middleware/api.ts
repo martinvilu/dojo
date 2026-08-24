@@ -31,9 +31,18 @@ export function jsonError(status: number, message: string) {
 export async function requireBearerUser(
   request: Request
 ): Promise<{ uid: string; email?: string; [k: string]: any } | NextResponse> {
+  const user = await getBearerUser(request);
+  if (!user) {
+    const hasHeader = (request.headers.get("authorization") || "").startsWith("Bearer ");
+    return jsonError(401, hasHeader ? "Token inválido o expirado" : "Falta el token Bearer");
+  }
+  return user;
+}
+
+async function getBearerUser(request: Request): Promise<{ uid: string; email?: string; [k: string]: any } | null> {
   const header = request.headers.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!token) return jsonError(401, "Falta el token Bearer");
+  if (!token) return null;
 
   try {
     if (!getApps().length) {
@@ -42,7 +51,38 @@ export async function requireBearerUser(
     const decoded = await getAuth().verifyIdToken(token);
     return { ...decoded, uid: decoded.uid, email: decoded.email };
   } catch {
-    return jsonError(401, "Token inválido o expirado");
+    return null;
+  }
+}
+
+export interface BearerSession {
+  user: { uid: string; email?: string; [k: string]: any };
+  profile: any;
+}
+
+/**
+ * Bearer authentication plus the caller's Firestore profile, for routes
+ * that need role-based behaviour (e.g. the Dojo CLI cloud endpoints).
+ *
+ *   const session = await requireBearerProfile(request);
+ *   if (session instanceof NextResponse) return session;
+ *   // session.user.uid / session.profile.role available
+ */
+export async function requireBearerProfile(
+  request: Request
+): Promise<BearerSession | NextResponse> {
+  const user = await getBearerUser(request);
+  if (!user) {
+    const hasHeader = (request.headers.get("authorization") || "").startsWith("Bearer ");
+    return jsonError(401, hasHeader ? "Token inválido o expirado" : "Falta el token Bearer");
+  }
+
+  try {
+    const snap = await adminDb().collection("profiles").doc(user.uid).get();
+    if (!snap.exists) return jsonError(404, "Perfil no encontrado");
+    return { user, profile: snap.data() };
+  } catch (error: any) {
+    return jsonError(500, "Error al cargar el perfil: " + error.message);
   }
 }
 
