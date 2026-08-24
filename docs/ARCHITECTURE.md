@@ -58,6 +58,18 @@ El sistema implementa un modelo de Control de Acceso Basado en Roles (RBAC) con 
 *   **Cloud Functions API**:
     *   La acción callable única (`api`) decodifica el token de autenticación del llamador, resuelve su perfil y despacha al módulo correspondiente, que verifica rol/membresía antes de proceder (ej: cambio de roles reservado a `admin`).
 
+### Autenticación de las rutas App Router (`src/app/api/`):
+
+Cada ruta usa exactamente un esquema, centralizado en `src/app/api/middleware/api.ts`:
+
+| Esquema | Helper | Rutas | Consumidor |
+|---|---|---|---|
+| Token de suscripción por curso (`sync_secret`) | `requireCourseSubscriptionToken` | `/api/calendar`, `/api/export/csv` | Google Sheets / clientes iCal |
+| Bearer JWT de Firebase Auth | `requireBearerUser` / `requireBearerProfile` | `/api/me`, `/api/cli/*` | Dojo CLI (modo cloud) y futuras rutas con identidad de usuario |
+| JWT firmado por la plataforma LTI | verificación propia del protocolo | `/api/lti/*` | Moodle 4.2+ |
+
+Convención: toda nueva ruta que actúe en nombre de un usuario debe usar `requireBearerProfile` (identidad + perfil para decisiones por rol) y jamás exponer `sync_secret`, códigos de invitación ni datos de terceros.
+
 ---
 
 ## 3. Esquema de Base de Datos (Firestore)
@@ -320,7 +332,7 @@ El repositorio está estructurado para independizar la lógica de despliegue del
 ├── manual/                     # Manual de usuario (docentes, estudiantes, admins)
 ├── public/                     # Recursos estáticos del frontend
 ├── src/                        # Frontend: Next.js 16 (App Router) + React 19
-│   ├── app/                    # Rutas: /login, /dashboard, /api/{calendar,export/csv,lti}
+│   ├── app/                    # Rutas: /login, /dashboard, /api/{calendar,export/csv,me,cli,lti}
 │   ├── components/dashboard/ui # Design System (BaseModal, AlertBadge, Toasts)
 │   ├── lib/                    # Clientes firebase, helpers de API y logging
 │   └── modules/                # Módulos de dominio con componentes/hooks/utils

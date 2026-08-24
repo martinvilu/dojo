@@ -41,7 +41,7 @@ Otros documentos: [Arquitectura](ARCHITECTURE.md) · [Guía de Desarrollo](DEVEL
 3. ✅ **Completar modularización del dashboard** — COMPLETADA: `dashboard/page.tsx` quedó en **456 líneas** (<500, criterio de aceptación cumplido), orquestando 14 hooks de dominio en `src/app/dashboard/hooks/` (8 previos + `useAuthProfile`, `useDeepLinks`, `useAdminPanel`, `useCourseDetail`, `useCourseRealtime`, `useCourseSubtabData`) y 7 componentes de layout en `src/app/dashboard/components/` (Sidebar, TabPanelsSection, CourseDetailSection, DashboardOverlays, AdminBackupsSection, StudentNinjaRankCard, GateScreens). Verificado con tsc, lint, build, jest 111/111 y Selenium E2E 56/56.
 4.  **Detección de plagio v2**: winnowing para repos grandes y resaltado de fragmentos coincidentes (v1: fingerprints k-gram ya en producción).
 5.  **Autograding avanzado**: detección automática del runner según archivos del repo y feedback estructurado por test fallido (plantillas Node/pytest listas).
-6.  **Adoptar `requireBearerUser`** a medida que se sumen rutas API con identidad de usuario.
+6. ✅ **Adoptar `requireBearerUser`** — ADOPTADO: las primeras rutas con identidad de usuario ya operan con Bearer JWT (`/api/me`, `/api/cli/courses`, `/api/cli/assignments`) para el modo cloud del Dojo CLI; el helper `requireBearerProfile` suma la carga del perfil para decisiones por rol. Convención y esquemas por ruta documentados en [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ### 🟢 Exploratorias
 7.  Asistente pedagógico de corrección con IA (Gemini API) sobre diffs de entregas.
