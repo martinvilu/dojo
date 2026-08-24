@@ -14,7 +14,7 @@ Otros documentos: [Arquitectura](ARCHITECTURE.md) · [Guía de Desarrollo](DEVEL
 | Build de producción | `npm run build` | ✔ 15 rutas |
 | Chequeo de tipos | `npx tsc --noEmit` | ✔ 0 errores |
 | Lint | `npm run lint` | ✔ 0 errores |
-| Tests unitarios backend | `cd functions && npm test` | ✔ 111 pruebas / 12 suites |
+| Tests unitarios backend | `cd functions && npm test` | ✔ 128 pruebas / 15 suites |
 | Reglas de Firestore | `npm run test:rules` | ✔ 23 escenarios (emulador) |
 | E2E Selenium | `npm run test:selenium` | ✔ 56 escenarios / 14 módulos (mock server) |
 
@@ -45,9 +45,9 @@ Otros documentos: [Arquitectura](ARCHITECTURE.md) · [Guía de Desarrollo](DEVEL
 
 ### 🟢 Exploratorias
 7.  Asistente pedagógico de corrección con IA (Gemini API) sobre diffs de entregas.
-8.  Predicción de abandono con analítica temprana (asistencia + entregas + foro).
-9.  Tablero de métricas GitHub por alumno (frecuencia de commits, horarios, PRs).
-10. Evaluación entre pares (peer review con rúbricas) y portafolio público de proyectos.
+8.  ✅ **Predicción de abandono** — IMPLEMENTADA: acción `getDropoutRiskAnalysis` con puntaje 0-100 ponderado (asistencia 45 / pendientes 35 / tardías 10 / foro 10), niveles ALTO-MEDIO-BAJO y tablero docente en "Alumnos y Alertas". Scoring cubierto por Jest.
+9.  ✅ **Métricas GitHub por alumno** — IMPLEMENTADAS: pestaña "📈 Métricas" en el visor de actividad con frecuencia semanal (6 semanas), histograma horario con hora pico y ratio nocturno, y desglose de PRs abiertos/cerrados/mergeados; agregación cliente sobre la actividad ya sincronizada.
+10. ✅ **Peer review + Portafolio público** — IMPLEMENTADOS: rúbricas por tarea (`enablePeerReview`), emparejamiento determinístico rotativo (2 pares por revisor), revisiones anónimas con feedback agregado para el alumno y vista completa para el docente; portafolio público `/p/{uid}` server-rendered con visibilidad opt-in por entrega.
 
 ---
 

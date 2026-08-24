@@ -35,7 +35,7 @@ Ninja Dojo conecta en tiempo real a **Estudiantes**, **Tutores**, **Docentes** y
 
 *   **Frontend**: Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4, design system modular.
 *   **Backend**: Firebase Auth, Cloud Firestore (offline vía IndexedDB), Cloud Functions v2 (Node 22), Firebase App Hosting (SSR).
-*   **Calidad**: Jest (111 pruebas en 12 suites), Selenium E2E (56 escenarios / 14 módulos), reglas Firestore contra emulador (23 escenarios) — los 4 checks son obligatorios en cada PR.
+*   **Calidad**: Jest (128 pruebas en 15 suites), Selenium E2E (56 escenarios / 14 módulos), reglas Firestore contra emulador (23 escenarios) — los 4 checks son obligatorios en cada PR.
 *   **Estándares**: LTI 1.3 Advantage, RFC 5545 iCalendar, Moodle 4.2 MBZ.
 
 ## 💻 Requisitos previos
@@ -53,7 +53,7 @@ npm run dev                 # http://localhost:3000
 ## 🧪 Pruebas
 
 ```bash
-cd functions && npm test    # unitarias backend (111)
+cd functions && npm test    # unitarias backend (128)
 npm run test:rules          # reglas Firestore con emulador (23)
 npm run test:selenium       # E2E Selenium (56)
 ```
