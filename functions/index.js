@@ -202,6 +202,7 @@ const actionModules = {
     // notifications
     notifyCourseStudents: './src/modules/notifications/notifications',
     checkAndAlertStudentsAtRisk: './src/modules/notifications/notifications',
+    getDropoutRiskAnalysis: './src/modules/course/analytics',
     getStudentNotifications: './src/modules/notifications/notifications',
     markNotificationsRead: './src/modules/notifications/notifications',
     

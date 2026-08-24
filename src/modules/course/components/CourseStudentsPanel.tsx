@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase/clientApp';
 import { doc, updateDoc } from 'firebase/firestore';
 import { copyToClipboard } from '@/lib/clipboard';
 import { useMemo } from 'react';
+import DropoutRiskPanel from './DropoutRiskPanel';
 
 export function CourseStudentsPanel({
   profile,
@@ -378,6 +379,12 @@ export function CourseStudentsPanel({
                       </div>
                     )}
                   </div>
+
+                  <DropoutRiskPanel
+                    profile={profile}
+                    selectedCourse={selectedCourse}
+                    setApiLoading={setApiLoading}
+                  />
 
                   <div className="overflow-x-auto bg-neutral-950/40 border border-neutral-850 rounded-2xl">
                     <table className="w-full text-left border-collapse">
