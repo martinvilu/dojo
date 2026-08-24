@@ -4,6 +4,7 @@ import { useState } from "react";
 import { query, collection, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import GithubActivityPanel from "./GithubActivityPanel";
+import PeerReviewSection from "./PeerReviewSection";
 
 export default function AssignmentsPanel({
   selectedCourse,
@@ -363,6 +364,9 @@ export default function AssignmentsPanel({
                       className="px-3 py-2 bg-red-950/40 hover:bg-red-900/40 border border-red-800/60 rounded-xl text-xs font-semibold text-red-300 transition cursor-pointer disabled:opacity-50"
                       title="Compara el código de las entregas entre alumnos y marca pares sospechosos de copia"
                     >{plagiarismLoading ? "🔎 Analizando…" : "🕵️ Detectar Plagio"}</button>
+                    <div className="md:col-span-2">
+                      <PeerReviewSection mode="teacher" courseId={selectedCourse.id || selectedCourse.course?.id} assignment={a} showToast={showToast} setApiLoading={setApiLoading} />
+                    </div>
                     {plagiarismOpenId === a.id && plagiarismResults[a.id] && (
                       <div className="md:col-span-2 bg-neutral-950/60 border border-neutral-850 rounded-xl p-4 space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -511,6 +515,12 @@ export default function AssignmentsPanel({
         </div>
       ) : (
         <div className="space-y-4">
+          <PeerReviewSection
+            mode="student"
+            courseId={selectedCourse.id || selectedCourse.course?.id}
+            showToast={showToast}
+            setApiLoading={setApiLoading}
+          />
           {assignments.map((a: any) => {
             const sub = submissions.find((s: any) => s.assignment_id === a.id);
             return (
@@ -526,6 +536,20 @@ export default function AssignmentsPanel({
                       {sub.feedback && <p className="text-xs text-gray-300"><strong>Feedback:</strong> {sub.feedback}</p>}
                     </div>
                     <div className="border-t border-neutral-850 pt-4 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await api("setSubmissionPortfolioVisibility", { submissionId: sub.id, isPublic: !sub.is_public });
+                            setSubmissions((prev: any[]) => prev.map((x: any) => x.id === sub.id ? { ...x, is_public: !sub.is_public } : x));
+                            showToast(!sub.is_public ? "🌐 Proyecto publicado en tu portafolio." : "Proyecto retirado del portafolio.", "success");
+                          } catch (err: any) {
+                            showToast("Error: " + err.message, "error");
+                          }
+                        }}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${sub.is_public ? "bg-sky-950/50 border-sky-800/60 text-sky-300" : "bg-neutral-950 hover:bg-neutral-800 border-neutral-800 text-gray-300"}`}
+                        title="Elegí si este proyecto aparece en tu portafolio público (/p/tu-id)"
+                      >{sub.is_public ? "🌐 En Portafolio" : "🌐 Publicar en Portafolio"}</button>
                       <button onClick={() => handleViewCommits(sub.id)} className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition">🔍 Ver Commits</button>
                       {sub.status !== "submitted" ? (
                         <button onClick={() => handleMarkAsSubmitted(sub.id)} className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition">🚀 Marcar como Entregado</button>

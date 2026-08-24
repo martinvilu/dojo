@@ -203,6 +203,12 @@ const actionModules = {
     notifyCourseStudents: './src/modules/notifications/notifications',
     checkAndAlertStudentsAtRisk: './src/modules/notifications/notifications',
     getDropoutRiskAnalysis: './src/modules/course/analytics',
+    enablePeerReview: './src/modules/github/peerreview',
+    getMyReviewAssignments: './src/modules/github/peerreview',
+    submitPeerReview: './src/modules/github/peerreview',
+    getPeerReviewFeedback: './src/modules/github/peerreview',
+    setSubmissionPortfolioVisibility: './src/modules/course/portfolio',
+    getMyPortfolio: './src/modules/course/portfolio',
     getStudentNotifications: './src/modules/notifications/notifications',
     markNotificationsRead: './src/modules/notifications/notifications',
     
