@@ -2,14 +2,7 @@
 
 import React from "react";
 
-// Pre-instantiate DateTimeFormat for better performance in map loops
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
+import { formatDateSafe } from "@/lib/dates";
 
 interface TeacherPanelProps {
   activeTab: string;
@@ -36,10 +29,7 @@ export default function TeacherPanel({
           const orgName = c.github_org || c.course?.github_org || "No vinculada";
           const inviteCode = c.invite_code || c.course?.invite_code || "N/A";
 
-          const updatedAtRaw = c.updated_at || c.created_at;
-          const updatedAtStr = updatedAtRaw
-            ? dateFormatter.format(new Date(updatedAtRaw)) + " hs"
-            : dateFormatter.format(new Date()) + " hs";
+          const updatedAtStr = formatDateSafe(c.updated_at || c.created_at) + " hs";
 
           return (
             <div

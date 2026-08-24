@@ -50,6 +50,7 @@ export function CourseDetailSection(props: {
   courseAttendance: any[];
   courseComments: any[];
   expandedComments: Record<number, boolean>;
+  setExpandedComments: React.Dispatch<React.SetStateAction<Record<number, boolean>>>;
   toggleComments: (idx: number) => void;
   weeklyClassesGrouped: Record<number, any[]>;
   collapsedClasses: Record<string, boolean>;
@@ -275,6 +276,8 @@ export function CourseDetailSection(props: {
           courseSubmissions={courseSubmissions}
           pastDueAssignments={pastDueAssignments}
           setCourseSubTab={setCourseSubTab}
+          courseComments={courseComments}
+          setExpandedComments={props.setExpandedComments}
         />
       )}
 

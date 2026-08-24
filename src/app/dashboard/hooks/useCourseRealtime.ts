@@ -97,6 +97,6 @@ export function useCourseRealtime({ selectedCourse }: UseCourseRealtimeArgs) {
     courseAttendance,
     courseTeachers, setCourseTeachers,
     courseComments,
-    expandedComments, toggleComments
+    expandedComments, setExpandedComments, toggleComments
   };
 }

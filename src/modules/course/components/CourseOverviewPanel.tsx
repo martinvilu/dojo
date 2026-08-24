@@ -6,13 +6,13 @@ export function CourseOverviewPanel({
   assignments,
   overviewSubmissionsList,
   loadingOverviewSubmissions,
-  roster,
-  courseAttendance,
-  courseSubmissions,
-  pastDueAssignments,
+  roster = [],
+  courseAttendance = [],
+  courseSubmissions = [],
+  pastDueAssignments = new Set(),
   setCourseSubTab,
-  courseComments,
-  setExpandedComments
+  courseComments = [],
+  setExpandedComments = () => {}
 }: any) {
   // Memoize student risk calculations to avoid O(R * (A + S)) recomputations on every render
   const studentsRiskData = React.useMemo(() => {

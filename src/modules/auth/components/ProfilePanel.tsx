@@ -327,6 +327,26 @@ export default function ProfilePanel({
         </form>
       </div>
 
+      {/* PORTAFOLIO PÚBLICO */}
+      {profile?.role === "student" && profile?.id && (
+        <div className="bg-bg-secondary p-6 rounded-2xl border border-border-custom shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">🌐 Portafolio Público de Proyectos</h3>
+            <p className="text-xs text-text-secondary mt-1">
+              Elegí qué entregas compartir desde la vista de Tareas. Tu portafolio es accesible sin sesión en <code className="font-mono text-blue-400">/p/{profile.id}</code>.
+            </p>
+          </div>
+          <a
+            href={`/p/${profile.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition whitespace-nowrap shrink-0"
+          >
+            Ver mi portafolio ↗
+          </a>
+        </div>
+      )}
+
       {/* LOG DE PUNTOS DE EXPERIENCIA (XP) */}
       <div className="bg-bg-secondary p-6 rounded-2xl border border-border-custom space-y-4 shadow-sm">
         <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider border-b border-border-custom pb-2">⚡ Historial de Puntos de Experiencia (XP)</h3>

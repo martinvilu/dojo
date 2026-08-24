@@ -71,7 +71,7 @@ export default function DashboardPage() {
     courseAttendance,
     courseTeachers, setCourseTeachers,
     courseComments,
-    expandedComments, toggleComments
+    expandedComments, setExpandedComments, toggleComments
   } = useCourseRealtime({ selectedCourse });
 
   // Admin management domain
@@ -376,7 +376,7 @@ export default function DashboardPage() {
             assignments, setAssignments, submissions, setSubmissions,
             courseSubmissions, pastDueAssignments,
             roster, setRoster, courseAttendance, courseComments,
-            expandedComments, toggleComments, weeklyClassesGrouped,
+            expandedComments, setExpandedComments, toggleComments, weeklyClassesGrouped,
             collapsedClasses, setCollapsedClasses, courseCommissions,
             commissionFilter, setCommissionFilter,
             overviewSubmissionsList, loadingOverviewSubmissions,
