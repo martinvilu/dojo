@@ -1,4 +1,5 @@
 "use client";
+import React, { useMemo } from 'react';
 
 interface StudentNinjaRankCardProps {
   profile: any;
@@ -11,44 +12,72 @@ interface StudentNinjaRankCardProps {
 export function StudentNinjaRankCard({
   profile, submissions, courseComments, courseAttendance, onOpenProfile
 }: StudentNinjaRankCardProps) {
-  const studentComments = courseComments.filter(c => c.user_id === profile?.id);
-  const commentPoints = studentComments.length * 10;
-  const solutionPoints = studentComments.filter(c => c.is_best_answer).length * 100;
-
-  const studentAtts = courseAttendance.filter(c => c.records && c.records[profile?.id]);
-  const attendancePoints = studentAtts.filter(c => c.records[profile?.id] === "present" || c.records[profile?.id] === "late").length * 10;
-
-  const studentSubmissions = submissions.filter(s => s.student_id === profile?.id);
-  let submissionPoints = studentSubmissions.length * 50;
-  studentSubmissions.forEach(s => {
-    const num = parseFloat(s.grade);
-    if (!isNaN(num)) {
-      submissionPoints += num * 5;
+  // ⚡ Bolt Optimization: Memoize all expensive array filtering operations
+  // Avoids O(N) recalculations on every render for large arrays
+  const {
+    currentLevel,
+    currentLevelProgress,
+    totalXp,
+    hasChakraMaster,
+    hasPerfectAttendance,
+    hasActiveNinja,
+    hasSolucionador
+  } = useMemo(() => {
+    const profId = profile?.id;
+    if (!profId) {
+      return {
+        currentLevel: 1, currentLevelProgress: 0, totalXp: 0,
+        hasChakraMaster: false, hasPerfectAttendance: false, hasActiveNinja: false, hasSolucionador: false
+      };
     }
-  });
 
-  const totalXp = commentPoints + solutionPoints + attendancePoints + submissionPoints;
-  const currentLevel = Math.floor(totalXp / 100) + 1;
-  const currentLevelProgress = totalXp % 100;
+    const studentComments = courseComments.filter(c => c.user_id === profId);
+    let bestAnswersCount = 0;
+    studentComments.forEach(c => {
+      if (c.is_best_answer) bestAnswersCount++;
+    });
 
-  let gradesSum = 0;
-  let gradesCount = 0;
-  studentSubmissions.forEach(s => {
-    const num = parseFloat(s.grade);
-    if (!isNaN(num)) {
-      gradesSum += num;
-      gradesCount++;
-    }
-  });
-  const avgGrade = gradesCount > 0 ? gradesSum / gradesCount : 0;
-  const hasChakraMaster = avgGrade >= 9;
+    const commentPoints = studentComments.length * 10;
+    const solutionPoints = bestAnswersCount * 100;
 
-  const presentCount = studentAtts.filter(c => c.records[profile?.id] === "present" || c.records[profile?.id] === "late").length;
-  const totalClasses = studentAtts.length;
-  const hasPerfectAttendance = totalClasses >= 3 && presentCount === totalClasses;
+    let presentCount = 0;
+    const studentAtts = courseAttendance.filter(c => c.records && c.records[profId]);
+    studentAtts.forEach(c => {
+      const rec = c.records[profId];
+      if (rec === "present" || rec === "late") {
+        presentCount++;
+      }
+    });
+    const attendancePoints = presentCount * 10;
 
-  const hasActiveNinja = studentComments.length >= 3;
-  const hasSolucionador = studentComments.some(c => c.is_best_answer);
+    const studentSubmissions = submissions.filter(s => s.student_id === profId);
+    let submissionPoints = studentSubmissions.length * 50;
+    let gradesSum = 0;
+    let gradesCount = 0;
+
+    studentSubmissions.forEach(s => {
+      const num = parseFloat(s.grade);
+      if (!isNaN(num)) {
+        submissionPoints += num * 5;
+        gradesSum += num;
+        gradesCount++;
+      }
+    });
+
+    const totalXpCalc = commentPoints + solutionPoints + attendancePoints + submissionPoints;
+    const avgGrade = gradesCount > 0 ? gradesSum / gradesCount : 0;
+    const totalClasses = studentAtts.length;
+
+    return {
+      totalXp: totalXpCalc,
+      currentLevel: Math.floor(totalXpCalc / 100) + 1,
+      currentLevelProgress: totalXpCalc % 100,
+      hasChakraMaster: avgGrade >= 9,
+      hasPerfectAttendance: totalClasses >= 3 && presentCount === totalClasses,
+      hasActiveNinja: studentComments.length >= 3,
+      hasSolucionador: bestAnswersCount > 0
+    };
+  }, [courseComments, courseAttendance, submissions, profile?.id]);
 
   return (
     <div
