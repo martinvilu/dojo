@@ -1,12 +1,13 @@
  
 "use client";
+import { marked } from 'marked';
 import React, { useRef } from "react";
 import MarkdownToolbar from "@/components/dashboard/ui/MarkdownToolbar";
 
 export function CourseAnnouncementsPanel(props: any) {
   const {
     profile, announcements, newAnnouncementMessage, setNewAnnouncementMessage,
-    handleCreateAnnouncement, handleAcknowledgeAnnouncement, courseSubTab, marked,
+    handleCreateAnnouncement, handleAcknowledgeAnnouncement, courseSubTab,
     handleToggleAcks, visibleAcksId, announcementAcks
   } = props;
   const composerRef = useRef<HTMLTextAreaElement>(null);
