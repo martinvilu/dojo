@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 
 interface StudentNinjaRankCardProps {
   profile: any;
@@ -11,44 +12,81 @@ interface StudentNinjaRankCardProps {
 export function StudentNinjaRankCard({
   profile, submissions, courseComments, courseAttendance, onOpenProfile
 }: StudentNinjaRankCardProps) {
-  const studentComments = courseComments.filter(c => c.user_id === profile?.id);
-  const commentPoints = studentComments.length * 10;
-  const solutionPoints = studentComments.filter(c => c.is_best_answer).length * 100;
-
-  const studentAtts = courseAttendance.filter(c => c.records && c.records[profile?.id]);
-  const attendancePoints = studentAtts.filter(c => c.records[profile?.id] === "present" || c.records[profile?.id] === "late").length * 10;
-
-  const studentSubmissions = submissions.filter(s => s.student_id === profile?.id);
-  let submissionPoints = studentSubmissions.length * 50;
-  studentSubmissions.forEach(s => {
-    const num = parseFloat(s.grade);
-    if (!isNaN(num)) {
-      submissionPoints += num * 5;
+  const {
+    currentLevel,
+    currentLevelProgress,
+    totalXp,
+    hasChakraMaster,
+    hasPerfectAttendance,
+    hasActiveNinja,
+    hasSolucionador
+  } = useMemo(() => {
+    if (!profile?.id) {
+      return {
+        currentLevel: 1, currentLevelProgress: 0, totalXp: 0,
+        hasChakraMaster: false, hasPerfectAttendance: false,
+        hasActiveNinja: false, hasSolucionador: false
+      };
     }
-  });
 
-  const totalXp = commentPoints + solutionPoints + attendancePoints + submissionPoints;
-  const currentLevel = Math.floor(totalXp / 100) + 1;
-  const currentLevelProgress = totalXp % 100;
+    const pId = profile.id;
+    let commentPoints = 0;
+    let solutionCount = 0;
+    let activeNinjaCount = 0;
 
-  let gradesSum = 0;
-  let gradesCount = 0;
-  studentSubmissions.forEach(s => {
-    const num = parseFloat(s.grade);
-    if (!isNaN(num)) {
-      gradesSum += num;
-      gradesCount++;
+    // O(N) loop for comments
+    for (let i = 0; i < courseComments.length; i++) {
+      if (courseComments[i].user_id === pId) {
+        activeNinjaCount++;
+        commentPoints += 10;
+        if (courseComments[i].is_best_answer) solutionCount++;
+      }
     }
-  });
-  const avgGrade = gradesCount > 0 ? gradesSum / gradesCount : 0;
-  const hasChakraMaster = avgGrade >= 9;
+    const solutionPoints = solutionCount * 100;
 
-  const presentCount = studentAtts.filter(c => c.records[profile?.id] === "present" || c.records[profile?.id] === "late").length;
-  const totalClasses = studentAtts.length;
-  const hasPerfectAttendance = totalClasses >= 3 && presentCount === totalClasses;
+    // O(N) loop for attendance
+    let totalClasses = 0;
+    let presentCount = 0;
+    for (let i = 0; i < courseAttendance.length; i++) {
+      const records = courseAttendance[i].records;
+      if (records && records[pId]) {
+        totalClasses++;
+        if (records[pId] === "present" || records[pId] === "late") {
+          presentCount++;
+        }
+      }
+    }
+    const attendancePoints = presentCount * 10;
 
-  const hasActiveNinja = studentComments.length >= 3;
-  const hasSolucionador = studentComments.some(c => c.is_best_answer);
+    // O(N) loop for submissions
+    let submissionPoints = 0;
+    let gradesSum = 0;
+    let gradesCount = 0;
+    for (let i = 0; i < submissions.length; i++) {
+      if (submissions[i].student_id === pId) {
+        submissionPoints += 50;
+        const num = parseFloat(submissions[i].grade);
+        if (!isNaN(num)) {
+          submissionPoints += num * 5;
+          gradesSum += num;
+          gradesCount++;
+        }
+      }
+    }
+
+    const _totalXp = commentPoints + solutionPoints + attendancePoints + submissionPoints;
+    const avgGrade = gradesCount > 0 ? gradesSum / gradesCount : 0;
+
+    return {
+      currentLevel: Math.floor(_totalXp / 100) + 1,
+      currentLevelProgress: _totalXp % 100,
+      totalXp: _totalXp,
+      hasChakraMaster: avgGrade >= 9,
+      hasPerfectAttendance: totalClasses >= 3 && presentCount === totalClasses,
+      hasActiveNinja: activeNinjaCount >= 3,
+      hasSolucionador: solutionCount > 0
+    };
+  }, [profile?.id, submissions, courseComments, courseAttendance]);
 
   return (
     <div
