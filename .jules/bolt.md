@@ -20,3 +20,6 @@
 ## 2023-10-27 - O(N) array filtering within map/reduce calls across large datasets
 **Learning:** In components rendering long lists of entities like `CourseStudentsPanel`, nested iterations using `.filter()` and `.find()` over relationships (like `courseAttendance` or `courseSubmissions`) within standard `.map()` render loops or `.reduce()` aggregation functions result in severe O(N*M) or O(N^2) complexity. This causes massive slowdowns on re-renders or when exporting large CSV/PDF files.
 **Action:** Always pre-compute relationships into O(1) lookups using Hash Maps (like `Map<StudentId, Map<AssignmentId, Submission>>`) encapsulated in a `useMemo` block. This reduces rendering and aggregation from O(N^2) to O(N).
+## 2025-02-25 - UseMemo Array Optimization
+**Learning:** Multiple array filter methods mapped to the same inputs inside a functional component can be optimized into a single pass loop using useMemo to reduce layout trashing on rendering.
+**Action:** Always wrap derived states in useMemo and condense duplicated iterations (like filters/maps/forEach on the same object) to O(N) operations when a component frequently re-renders.
