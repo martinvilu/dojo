@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 
 interface StudentNinjaRankCardProps {
   profile: any;
@@ -21,13 +21,26 @@ export function StudentNinjaRankCard({
     hasChakraMaster,
     hasPerfectAttendance,
     hasActiveNinja,
-    hasSolucionador
+    hasSolucionador,
+    commentPoints,
+    solutionPoints,
+    attendancePoints,
+    submissionPoints,
+    avgGrade,
+    totalClasses,
+    presentCount,
+    studentComments,
+    studentAtts,
+    studentSubmissions
   } = useMemo(() => {
     const profId = profile?.id;
     if (!profId) {
       return {
         currentLevel: 1, currentLevelProgress: 0, totalXp: 0,
-        hasChakraMaster: false, hasPerfectAttendance: false, hasActiveNinja: false, hasSolucionador: false
+        hasChakraMaster: false, hasPerfectAttendance: false, hasActiveNinja: false, hasSolucionador: false,
+        commentPoints: 0, solutionPoints: 0, attendancePoints: 0, submissionPoints: 0,
+        avgGrade: 0, totalClasses: 0, presentCount: 0,
+        studentComments: [], studentAtts: [], studentSubmissions: []
       };
     }
 
@@ -75,7 +88,17 @@ export function StudentNinjaRankCard({
       hasChakraMaster: avgGrade >= 9,
       hasPerfectAttendance: totalClasses >= 3 && presentCount === totalClasses,
       hasActiveNinja: studentComments.length >= 3,
-      hasSolucionador: bestAnswersCount > 0
+      hasSolucionador: bestAnswersCount > 0,
+      commentPoints,
+      solutionPoints,
+      attendancePoints,
+      submissionPoints,
+      avgGrade,
+      totalClasses,
+      presentCount,
+      studentComments,
+      studentAtts,
+      studentSubmissions
     };
   }, [courseComments, courseAttendance, submissions, profile?.id]);
 
