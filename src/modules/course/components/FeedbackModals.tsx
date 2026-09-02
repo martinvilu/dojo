@@ -134,8 +134,10 @@ export function FeedbackModals(props: any) {
                 </span>
               </h3>
               <button
+                type="button"
+                aria-label="Cerrar detalles"
                 onClick={() => setViewingFeedbackClass(null)}
-                className="text-gray-500 hover:text-white transition font-bold"
+                className="text-gray-500 hover:text-white transition font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 rounded p-1"
               >
                 ✕
               </button>
