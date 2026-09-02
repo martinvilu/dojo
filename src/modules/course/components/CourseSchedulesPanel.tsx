@@ -840,7 +840,9 @@ export function CourseSchedulesPanel({
                   setSelectedVersionForDiff(null);
                   setSelectedCourseForComparison(null);
                 }}
-                className="text-gray-400 hover:text-white font-bold cursor-pointer"
+                type="button"
+                aria-label="Cerrar comparativa"
+                className="text-gray-400 hover:text-white font-bold cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 rounded p-1"
               >
                 ✕
               </button>
