@@ -45,6 +45,23 @@ export function CourseOverviewPanel({
     return data;
   }, [roster, courseAttendance, courseSubmissions, assignments, pastDueAssignments]);
 
+  const pendingSubmissions = React.useMemo(() => {
+    return overviewSubmissionsList.filter(
+      (s: any) => s.status === "submitted" && (s.grade === undefined || s.grade === "" || s.grade === null)
+    );
+  }, [overviewSubmissionsList]);
+
+  const activeComments = React.useMemo(() => {
+    return courseComments.filter((c: any) => c.user_role !== "teacher" && !c.is_best_answer);
+  }, [courseComments]);
+
+  const atRiskStudents = React.useMemo(() => {
+    return roster.filter((student: any) => {
+      const riskData = studentsRiskData.get(student.id);
+      return riskData ? riskData.isAtRisk : false;
+    });
+  }, [roster, studentsRiskData]);
+
   return (
     <>
               <div className="space-y-6 animate-fade-in font-sans">
@@ -52,9 +69,7 @@ export function CourseOverviewPanel({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Card 1: Pending Corrections */}
                   {(() => {
-                    const pendingCount = overviewSubmissionsList.filter(
-                      (s: any) => s.status === "submitted" && (s.grade === undefined || s.grade === "" || s.grade === null)
-                    ).length;
+                    const pendingCount = pendingSubmissions.length;
                     return (
                       <div className="bg-neutral-900/60 border border-neutral-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                         <div className="space-y-1">
@@ -122,8 +137,7 @@ export function CourseOverviewPanel({
                       </div>
                     ) : (
                       <div className="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
-                        {overviewSubmissionsList
-                          .filter((s: any) => s.status === "submitted" && (s.grade === undefined || s.grade === "" || s.grade === null))
+                        {pendingSubmissions
                           .map((sub: any) => {
                             const studentName = sub.profiles?.full_name || sub.profiles?.email || "Estudiante";
                             const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
@@ -159,9 +173,7 @@ export function CourseOverviewPanel({
                               </div>
                             );
                           })}
-                        {overviewSubmissionsList.filter(
-                          (s: any) => s.status === "submitted" && (s.grade === undefined || s.grade === "" || s.grade === null)
-                        ).length === 0 && (
+                        {pendingSubmissions.length === 0 && (
                           <div className="text-center py-12 text-xs text-gray-500 italic space-y-2">
                             <span>✨ ¡Al día! No hay entregas pendientes de corrección.</span>
                           </div>
@@ -180,8 +192,7 @@ export function CourseOverviewPanel({
                     </div>
 
                     <div className="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
-                      {courseComments
-                        .filter((c: any) => c.user_role !== "teacher" && !c.is_best_answer)
+                      {activeComments
                         .slice(0, 5)
                         .map((comment: any) => (
                           <div
@@ -216,7 +227,7 @@ export function CourseOverviewPanel({
                             </div>
                           </div>
                         ))}
-                      {courseComments.filter((c: any) => c.user_role !== "teacher" && !c.is_best_answer).length === 0 && (
+                      {activeComments.length === 0 && (
                         <div className="text-center py-12 text-xs text-gray-500 italic font-sans">
                           💬 No hay consultas activas sin resolver en los foros.
                         </div>
@@ -250,11 +261,7 @@ export function CourseOverviewPanel({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-900 text-gray-300">
-                        {roster
-                          .filter((student: any) => {
-                            const riskData = studentsRiskData.get(student.id);
-                            return riskData ? riskData.isAtRisk : false;
-                          })
+                        {atRiskStudents
                           .slice(0, 5)
                           .map((student: any) => {
                             const riskData = studentsRiskData.get(student.id) || {
@@ -295,10 +302,7 @@ export function CourseOverviewPanel({
                               </tr>
                             );
                           })}
-                        {roster.filter((student: any) => {
-                          const riskData = studentsRiskData.get(student.id);
-                          return riskData ? riskData.isAtRisk : false;
-                        }).length === 0 && (
+                        {atRiskStudents.length === 0 && (
                           <tr>
                             <td colSpan={5} className="py-6 text-center text-gray-500 italic font-sans">
                               💚 Todos los alumnos se encuentran al día con sus asistencias y entregas.

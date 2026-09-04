@@ -20,3 +20,6 @@
 ## 2023-10-27 - O(N) array filtering within map/reduce calls across large datasets
 **Learning:** In components rendering long lists of entities like `CourseStudentsPanel`, nested iterations using `.filter()` and `.find()` over relationships (like `courseAttendance` or `courseSubmissions`) within standard `.map()` render loops or `.reduce()` aggregation functions result in severe O(N*M) or O(N^2) complexity. This causes massive slowdowns on re-renders or when exporting large CSV/PDF files.
 **Action:** Always pre-compute relationships into O(1) lookups using Hash Maps (like `Map<StudentId, Map<AssignmentId, Submission>>`) encapsulated in a `useMemo` block. This reduces rendering and aggregation from O(N^2) to O(N).
+## 2025-02-12 - Prevent package manager side effects in PRs
+**Learning:** Running `pnpm install` in the sandbox environment to set up `node_modules` for testing often stages a new, massive `pnpm-lock.yaml` file which pollutes the intended commit.
+**Action:** Always verify `git status` after executing testing/linting routines and ensure accidental lockfiles are dropped (`git rm --cached pnpm-lock.yaml && rm pnpm-lock.yaml`) before committing to keep the PR scope clean.
