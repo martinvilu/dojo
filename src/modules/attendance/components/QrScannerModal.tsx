@@ -171,7 +171,7 @@ export default function QrScannerModal({
           )}
 
           {scannerError && (
-            <div className="absolute inset-0 bg-neutral-950/90 flex flex-col items-center justify-center p-4 text-center space-y-2 z-10">
+            <div role="alert" aria-live="assertive" className="absolute inset-0 bg-neutral-950/90 flex flex-col items-center justify-center p-4 text-center space-y-2 z-10">
               <span className="text-2xl">⚠️</span>
               <p className="text-xs text-red-400 font-semibold">{scannerError}</p>
               <button

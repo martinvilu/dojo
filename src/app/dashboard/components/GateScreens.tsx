@@ -46,7 +46,7 @@ export function PendingApprovalView({
             required
           />
           {matriculaError && (
-            <p className="text-red-400 text-xs text-left">{matriculaError}</p>
+            <p role="alert" aria-live="assertive" className="text-red-400 text-xs text-left">{matriculaError}</p>
           )}
           <button
             type="submit"

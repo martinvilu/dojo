@@ -20,3 +20,7 @@
 ## 2026-08-01 - Form Accessibility (Label Associations)
 **Learning:** Found that multiple form inputs across the application (e.g., in the login page and user profile panel) lacked explicit associations with their labels via `htmlFor` and `id`. This negatively impacts screen readers and reduces the click area for users.
 **Action:** Always associate `<label>` elements with their respective `<input>` elements using the `htmlFor` and `id` attributes to improve accessibility and user experience.
+
+## 2024-05-24 - Dynamic Error Messages Need ARIA Attributes
+**Learning:** Dynamic error messages (like those conditionally rendered on authentication failure or form validation) in this app often lack `role="alert"` and `aria-live="assertive"`, causing screen readers to miss them when they appear asynchronously.
+**Action:** When adding or modifying inline error messages, always include `role="alert"` and `aria-live="assertive"` directly on the error container element.
