@@ -228,7 +228,7 @@ function AuthScreenContent() {
               </div>
 
               {error && (
-                <div className="mb-5 p-3.5 bg-red-950/60 border border-red-800/80 rounded-xl text-red-400 text-xs break-words">
+                <div role="alert" aria-live="assertive" className="mb-5 p-3.5 bg-red-950/60 border border-red-800/80 rounded-xl text-red-400 text-xs break-words">
                   {error}
                 </div>
               )}
