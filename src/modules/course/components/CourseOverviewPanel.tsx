@@ -45,6 +45,17 @@ export function CourseOverviewPanel({
     return data;
   }, [roster, courseAttendance, courseSubmissions, assignments, pastDueAssignments]);
 
+  // Memoize pending submissions and active consultations to avoid repeated filtering on every render
+  const pendingSubmissions = React.useMemo(() => {
+    return overviewSubmissionsList.filter(
+      (s: any) => s.status === "submitted" && (s.grade === undefined || s.grade === "" || s.grade === null)
+    );
+  }, [overviewSubmissionsList]);
+
+  const activeConsultations = React.useMemo(() => {
+    return courseComments.filter((c: any) => c.user_role !== "teacher" && !c.is_best_answer);
+  }, [courseComments]);
+
   return (
     <>
               <div className="space-y-6 animate-fade-in font-sans">
@@ -122,8 +133,7 @@ export function CourseOverviewPanel({
                       </div>
                     ) : (
                       <div className="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
-                        {overviewSubmissionsList
-                          .filter((s: any) => s.status === "submitted" && (s.grade === undefined || s.grade === "" || s.grade === null))
+                        {pendingSubmissions
                           .map((sub: any) => {
                             const studentName = sub.profiles?.full_name || sub.profiles?.email || "Estudiante";
                             const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
@@ -159,9 +169,7 @@ export function CourseOverviewPanel({
                               </div>
                             );
                           })}
-                        {overviewSubmissionsList.filter(
-                          (s: any) => s.status === "submitted" && (s.grade === undefined || s.grade === "" || s.grade === null)
-                        ).length === 0 && (
+                        {pendingSubmissions.length === 0 && (
                           <div className="text-center py-12 text-xs text-gray-500 italic space-y-2">
                             <span>✨ ¡Al día! No hay entregas pendientes de corrección.</span>
                           </div>
@@ -180,8 +188,7 @@ export function CourseOverviewPanel({
                     </div>
 
                     <div className="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
-                      {courseComments
-                        .filter((c: any) => c.user_role !== "teacher" && !c.is_best_answer)
+                      {activeConsultations
                         .slice(0, 5)
                         .map((comment: any) => (
                           <div
@@ -216,7 +223,7 @@ export function CourseOverviewPanel({
                             </div>
                           </div>
                         ))}
-                      {courseComments.filter((c: any) => c.user_role !== "teacher" && !c.is_best_answer).length === 0 && (
+                      {activeConsultations.length === 0 && (
                         <div className="text-center py-12 text-xs text-gray-500 italic font-sans">
                           💬 No hay consultas activas sin resolver en los foros.
                         </div>
