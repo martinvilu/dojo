@@ -14,26 +14,43 @@ export function CourseOverviewPanel({
   courseComments = [],
   setExpandedComments = () => {}
 }: any) {
-  // Memoize student risk calculations to avoid O(R * (A + S)) recomputations on every render
+  // Memoize student risk calculations using Hash Maps to avoid O(R * (A + S)) recomputations on every render
+  // Precomputes O(1) lookups for attendance and submissions to eliminate nested array iterations (.filter/.some).
   const studentsRiskData = React.useMemo(() => {
     const data = new Map();
+
+    const attStatsByStudent = new Map();
+    courseAttendance.forEach((att: any) => {
+      if (!att.records) return;
+      Object.entries(att.records).forEach(([sid, status]) => {
+        if (!attStatsByStudent.has(sid)) attStatsByStudent.set(sid, { recordedCount: 0, presentOrLate: 0 });
+        const stats = attStatsByStudent.get(sid);
+        stats.recordedCount++;
+        if (status === 'present' || status === 'late') stats.presentOrLate++;
+      });
+    });
+
+    const subsByStudentAndAssignment = new Map();
+    courseSubmissions.forEach((sub: any) => {
+      if (!subsByStudentAndAssignment.has(sub.student_id)) {
+        subsByStudentAndAssignment.set(sub.student_id, new Set());
+      }
+      subsByStudentAndAssignment.get(sub.student_id).add(sub.assignment_id);
+    });
+
+    const pastDueAssignmentsList = assignments.filter((a: any) => pastDueAssignments.has(a.id));
+
     roster.forEach((student: any) => {
       if (student.role !== "student") return;
 
-      const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-      const recordedCount = studentAtts.length;
-      const presentOrLate = studentAtts.filter(
-        (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-      ).length;
-      const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
+      const sidStr = String(student.id);
+      const stats = attStatsByStudent.get(sidStr) || attStatsByStudent.get(student.id) || { recordedCount: 0, presentOrLate: 0 };
+      const recordedCount = stats.recordedCount;
+      const attendanceRate = recordedCount > 0 ? (stats.presentOrLate / recordedCount) * 100 : 100;
       const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
 
-      const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-      const hasMissingAssignments = assignments.some((a: any) => {
-        const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-        const isPastDue = pastDueAssignments.has(a.id);
-        return !hasSub && isPastDue;
-      });
+      const studentSubs = subsByStudentAndAssignment.get(student.id) || new Set();
+      const hasMissingAssignments = pastDueAssignmentsList.some((a: any) => !studentSubs.has(a.id));
 
       data.set(student.id, {
         hasCriticalAttendance,
