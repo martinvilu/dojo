@@ -20,3 +20,7 @@
 ## 2023-10-27 - O(N) array filtering within map/reduce calls across large datasets
 **Learning:** In components rendering long lists of entities like `CourseStudentsPanel`, nested iterations using `.filter()` and `.find()` over relationships (like `courseAttendance` or `courseSubmissions`) within standard `.map()` render loops or `.reduce()` aggregation functions result in severe O(N*M) or O(N^2) complexity. This causes massive slowdowns on re-renders or when exporting large CSV/PDF files.
 **Action:** Always pre-compute relationships into O(1) lookups using Hash Maps (like `Map<StudentId, Map<AssignmentId, Submission>>`) encapsulated in a `useMemo` block. This reduces rendering and aggregation from O(N^2) to O(N).
+
+## 2024-03-24 - [Avoid Redundant Array Operations Over the Same Reference in Renders]
+**Learning:** In large React components, running multiple `.filter` and `.length` operations over the same data source inside a `.map` loop or component return block creates redundant O(N) operations per render. This scales poorly when lists get large or updates are frequent.
+**Action:** When a React functional component requires derived state from multiple O(N) operations (e.g. `list.filter()`) on identical underlying arrays, group and extract them into individual `React.useMemo()` blocks. In this specific case, 5 `courseComments.filter()` and `overviewSubmissionsList.filter()` calls where compacted down to 3 memoized instances, improving overall application responsiveness.
