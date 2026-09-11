@@ -73,8 +73,15 @@ export default function CommandPalette({ courses, classes, assignments, onNaviga
       if (out.length < 12 && !out.some((x) => x.key === r.key)) out.push(r);
     };
 
+    // Precompute a map for O(1) lookups instead of O(N) array search on each iteration
+    const courseMap = new Map<string, any>();
+    courses.forEach((c: any) => {
+      const id = c.id || c.course?.id;
+      if (id) courseMap.set(id, c);
+    });
+
     const courseRefOf = (cid?: string) =>
-      courses.find((c: any) => (c.id || c.course?.id) === cid) || null;
+      cid ? courseMap.get(cid) || null : null;
 
     // Courses always listed when they match or when nothing was typed
     courses.forEach((c: any) => {
