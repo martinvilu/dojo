@@ -125,9 +125,10 @@ export default function MoodleIntegrationPanel({
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-text-secondary mb-1">URL del Servidor Moodle</label>
+            <label htmlFor="moodleApiUrl" className="block text-[11px] font-semibold text-text-secondary mb-1">URL del Servidor Moodle</label>
             <input
               type="url"
+              id="moodleApiUrl"
               value={moodleApiUrl}
               onChange={(e) => setMoodleApiUrl(e.target.value)}
               placeholder="https://moodle.unrn.edu.ar"
@@ -135,9 +136,10 @@ export default function MoodleIntegrationPanel({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-text-secondary mb-1">Web Service Token (wstoken)</label>
+            <label htmlFor="moodleWsToken" className="block text-[11px] font-semibold text-text-secondary mb-1">Web Service Token (wstoken)</label>
             <input
               type="password"
+              id="moodleWsToken"
               value={moodleWsToken}
               onChange={(e) => setMoodleWsToken(e.target.value)}
               placeholder={moodleWsToken ? "••••••••••••••••" : "Token REST de Moodle"}
@@ -145,9 +147,10 @@ export default function MoodleIntegrationPanel({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-text-secondary mb-1">ID del Curso en Moodle</label>
+            <label htmlFor="moodleCourseId" className="block text-[11px] font-semibold text-text-secondary mb-1">ID del Curso en Moodle</label>
             <input
               type="text"
+              id="moodleCourseId"
               value={moodleCourseId}
               onChange={(e) => setMoodleCourseId(e.target.value)}
               placeholder="Ej: 142"
