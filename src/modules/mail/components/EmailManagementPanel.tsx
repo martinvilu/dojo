@@ -308,8 +308,9 @@ export default function EmailManagementPanel({
             </h4>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Asunto del Correo</label>
+              <label htmlFor="editTemplateSubject" className="block text-xs font-semibold text-gray-400 mb-1">Asunto del Correo</label>
               <input
+                id="editTemplateSubject"
                 type="text"
                 value={editTemplateSubject}
                 onChange={(e) => setEditTemplateSubject(e.target.value)}
@@ -319,8 +320,9 @@ export default function EmailManagementPanel({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Cuerpo en HTML / Formato Rastro</label>
+              <label htmlFor="editTemplateBody" className="block text-xs font-semibold text-gray-400 mb-1">Cuerpo en HTML / Formato Rastro</label>
               <textarea
+                id="editTemplateBody"
                 value={editTemplateBody}
                 onChange={(e) => setEditTemplateBody(e.target.value)}
                 rows={10}
@@ -400,8 +402,9 @@ export default function EmailManagementPanel({
             </h3>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Título Interno del Correo</label>
+              <label htmlFor="newScheduleTitle" className="block text-xs font-semibold text-gray-400 mb-1">Título Interno del Correo</label>
               <input
+                id="newScheduleTitle"
                 type="text"
                 value={newScheduleTitle}
                 onChange={(e) => setNewScheduleTitle(e.target.value)}
@@ -411,8 +414,9 @@ export default function EmailManagementPanel({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Destinatarios</label>
+              <label htmlFor="newScheduleRecipientType" className="block text-xs font-semibold text-gray-400 mb-1">Destinatarios</label>
               <select
+                id="newScheduleRecipientType"
                 value={newScheduleRecipientType}
                 onChange={(e: any) => setNewScheduleRecipientType(e.target.value)}
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white"
@@ -423,8 +427,9 @@ export default function EmailManagementPanel({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Asunto del Correo</label>
+              <label htmlFor="newScheduleSubject" className="block text-xs font-semibold text-gray-400 mb-1">Asunto del Correo</label>
               <input
+                id="newScheduleSubject"
                 type="text"
                 value={newScheduleSubject}
                 onChange={(e) => setNewScheduleSubject(e.target.value)}
@@ -434,8 +439,9 @@ export default function EmailManagementPanel({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Contenido (HTML / Texto)</label>
+              <label htmlFor="newScheduleBody" className="block text-xs font-semibold text-gray-400 mb-1">Contenido (HTML / Texto)</label>
               <textarea
+                id="newScheduleBody"
                 value={newScheduleBody}
                 onChange={(e) => setNewScheduleBody(e.target.value)}
                 rows={5}
@@ -445,8 +451,9 @@ export default function EmailManagementPanel({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Ejecutar envío en (horas)</label>
+              <label htmlFor="newScheduleDelayHours" className="block text-xs font-semibold text-gray-400 mb-1">Ejecutar envío en (horas)</label>
               <input
+                id="newScheduleDelayHours"
                 type="number"
                 value={newScheduleDelayHours}
                 onChange={(e) => setNewScheduleDelayHours(Number(e.target.value))}
