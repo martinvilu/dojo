@@ -327,7 +327,14 @@ export default function AdminPanel({
               <h3 className="text-base font-bold text-text-primary flex items-center space-x-2">
                 <span>✏️ Editar Datos de Usuario ({userToEdit.email})</span>
               </h3>
-              <button onClick={() => setUserToEdit(null)} className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer">✕</button>
+              <button
+                type="button"
+                aria-label="Cerrar modal"
+                onClick={() => setUserToEdit(null)}
+                className="text-text-secondary hover:text-text-primary text-sm font-bold cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 rounded p-1"
+              >
+                ✕
+              </button>
             </div>
 
             <form onSubmit={handleSaveEditUser} className="space-y-4 text-xs">

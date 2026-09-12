@@ -24,6 +24,11 @@ export interface ScheduleItem {
   type: string;
 }
 
+const listDateFormatter = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+const listTimeFormatter = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+const boardDateFormatter = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short", timeZone: "UTC" });
+const weekDateFormatter = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+
 
 export function CourseSchedulesPanel({
   profile,
@@ -108,7 +113,7 @@ export function CourseSchedulesPanel({
       }
     });
 
-    generated.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    generated.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     
     // Map class number
     generated.forEach((ci, idx) => {
@@ -329,8 +334,8 @@ export function CourseSchedulesPanel({
                       <div className="space-y-4">
                         {teacherClasses.map((ci: any, idx: number) => {
                         const dateObj = new Date(ci.date);
-                        const dateStr = dateObj.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
-                        const timeStr = dateObj.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+                        const dateStr = listDateFormatter.format(dateObj);
+                        const timeStr = listTimeFormatter.format(dateObj);
 
                         return (
                           <div
@@ -517,7 +522,7 @@ export function CourseSchedulesPanel({
                                   <div className="flex justify-between items-center text-[10px]">
                                     <span className="font-bold text-gray-550">Clase {item.originalIndex + 1}</span>
                                     <span className="text-gray-550 font-sans">
-                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                      {boardDateFormatter.format(new Date(item.date))}
                                     </span>
                                   </div>
                                   <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema"}</h5>
@@ -567,7 +572,7 @@ export function CourseSchedulesPanel({
                                   <div className="flex justify-between items-center text-[10px]">
                                     <span className="font-bold text-gray-550">Clase {item.originalIndex + 1}</span>
                                     <span className="text-gray-550 font-sans">
-                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                      {boardDateFormatter.format(new Date(item.date))}
                                     </span>
                                   </div>
                                   <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema"}</h5>
@@ -617,7 +622,7 @@ export function CourseSchedulesPanel({
                                   <div className="flex justify-between items-center text-[10px]">
                                     <span className="font-bold text-amber-550 font-sans">Clase {item.originalIndex + 1}</span>
                                     <span className="text-gray-550 font-sans">
-                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                      {boardDateFormatter.format(new Date(item.date))}
                                     </span>
                                   </div>
                                   <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema (Feriado)"}</h5>
@@ -664,7 +669,7 @@ export function CourseSchedulesPanel({
                                   <div className="flex justify-between items-center text-[10px]">
                                     <span className="font-bold text-red-450 font-sans">Clase {item.originalIndex + 1}</span>
                                     <span className="text-gray-555 font-mono">
-                                      {new Date(item.date).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" })}
+                                      {boardDateFormatter.format(new Date(item.date))}
                                     </span>
                                   </div>
                                   <h5 className="font-bold text-xs text-red-200 truncate">{item.topic || "Evaluación"}</h5>
@@ -708,7 +713,7 @@ export function CourseSchedulesPanel({
                           <div className="space-y-3">
                             {weeklyClassesGrouped[parseInt(weekNum)].map((ci: any, index: number) => {
                                   const d = new Date(ci.date);
-                                  const ds = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+                                  const ds = weekDateFormatter.format(d);
                                   
                                   let tagClass = "bg-neutral-800 text-gray-400";
                                   if (ci.special_status === "Clase Remota") tagClass = "bg-amber-950/60 text-amber-400 border border-amber-800/40";
@@ -840,7 +845,9 @@ export function CourseSchedulesPanel({
                   setSelectedVersionForDiff(null);
                   setSelectedCourseForComparison(null);
                 }}
-                className="text-gray-400 hover:text-white font-bold cursor-pointer"
+                type="button"
+                aria-label="Cerrar comparativa"
+                className="text-gray-400 hover:text-white font-bold cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 rounded p-1"
               >
                 ✕
               </button>

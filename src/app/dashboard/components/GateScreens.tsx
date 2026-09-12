@@ -7,8 +7,8 @@ interface LoadingScreenProps {
 export function LoadingScreen({ message = "Cargando plataforma..." }: LoadingScreenProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="w-12 h-12 border-4 border-t-blue-500 border-blue-900 rounded-full animate-spin"></div>
+      <div className="flex flex-col items-center space-y-4" role="status" aria-live="polite">
+        <div className="w-12 h-12 border-4 border-t-blue-500 border-blue-900 rounded-full animate-spin" aria-hidden="true"></div>
         <p className="text-gray-400 font-medium">{message}</p>
       </div>
     </div>
@@ -37,21 +37,29 @@ export function PendingApprovalView({
         </p>
 
         <form onSubmit={onSubmit} className="space-y-4 max-w-md mx-auto">
-          <input
-            type="text"
-            value={matriculaInput}
-            onChange={(e) => setMatriculaInput(e.target.value)}
-            placeholder="Ej: UNRN-12345"
-            className="w-full bg-neutral-950/80 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-center font-mono text-white"
-            required
-          />
+          <div>
+            <label htmlFor="matricula" className="sr-only">Número de matrícula de la UNRN</label>
+            <input
+              id="matricula"
+              type="text"
+              value={matriculaInput}
+              onChange={(e) => setMatriculaInput(e.target.value)}
+              placeholder="Ej: UNRN-12345"
+              className="w-full bg-neutral-950/80 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-center font-mono text-white"
+              required
+              aria-invalid={!!matriculaError}
+              aria-describedby={matriculaError ? "matricula-error" : undefined}
+            />
+          </div>
           {matriculaError && (
-            <p className="text-red-400 text-xs text-left">{matriculaError}</p>
+            <div id="matricula-error" role="alert" aria-live="assertive">
+              <p className="text-red-400 text-xs text-left">{matriculaError}</p>
+            </div>
           )}
           <button
             type="submit"
             disabled={apiLoading}
-            className="w-full bg-amber-600 hover:bg-amber-500 active:bg-amber-700 transition text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-500/20 text-sm disabled:opacity-55"
+            className="w-full bg-amber-600 hover:bg-amber-500 active:bg-amber-700 transition text-white font-medium py-3 rounded-xl shadow-lg shadow-amber-500/20 text-sm disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 cursor-pointer"
           >
             {apiLoading ? "Enviando..." : "Validar Matrícula"}
           </button>
@@ -66,7 +74,7 @@ export function PendingApprovalView({
 
         <button
           onClick={onLogout}
-          className="px-6 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm transition"
+          className="px-6 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500 cursor-pointer"
         >
           Cerrar Sesión
         </button>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 interface StudentNinjaRankCardProps {
   profile: any;
   submissions: any[];
@@ -11,44 +13,88 @@ interface StudentNinjaRankCardProps {
 export function StudentNinjaRankCard({
   profile, submissions, courseComments, courseAttendance, onOpenProfile
 }: StudentNinjaRankCardProps) {
-  const studentComments = courseComments.filter(c => c.user_id === profile?.id);
-  const commentPoints = studentComments.length * 10;
-  const solutionPoints = studentComments.filter(c => c.is_best_answer).length * 100;
-
-  const studentAtts = courseAttendance.filter(c => c.records && c.records[profile?.id]);
-  const attendancePoints = studentAtts.filter(c => c.records[profile?.id] === "present" || c.records[profile?.id] === "late").length * 10;
-
-  const studentSubmissions = submissions.filter(s => s.student_id === profile?.id);
-  let submissionPoints = studentSubmissions.length * 50;
-  studentSubmissions.forEach(s => {
-    const num = parseFloat(s.grade);
-    if (!isNaN(num)) {
-      submissionPoints += num * 5;
+  // ⚡ Bolt: Performance Optimization
+  // Replaced multiple O(N) array `.filter` and `.forEach` sweeps with single-pass `for` loops.
+  // Wrapped all derived state calculations in `useMemo` to prevent expensive recalculations
+  // on every render cycle when dependencies haven't changed.
+  const {
+    currentLevel,
+    currentLevelProgress,
+    totalXp,
+    hasChakraMaster,
+    hasPerfectAttendance,
+    hasActiveNinja,
+    hasSolucionador
+  } = useMemo(() => {
+    const profileId = profile?.id;
+    if (!profileId) {
+      return {
+        currentLevel: 1, currentLevelProgress: 0, totalXp: 0,
+        hasChakraMaster: false, hasPerfectAttendance: false,
+        hasActiveNinja: false, hasSolucionador: false
+      };
     }
-  });
 
-  const totalXp = commentPoints + solutionPoints + attendancePoints + submissionPoints;
-  const currentLevel = Math.floor(totalXp / 100) + 1;
-  const currentLevelProgress = totalXp % 100;
-
-  let gradesSum = 0;
-  let gradesCount = 0;
-  studentSubmissions.forEach(s => {
-    const num = parseFloat(s.grade);
-    if (!isNaN(num)) {
-      gradesSum += num;
-      gradesCount++;
+    let commentCount = 0;
+    let bestAnswerCount = 0;
+    for (let i = 0; i < courseComments.length; i++) {
+      const c = courseComments[i];
+      if (c.user_id === profileId) {
+        commentCount++;
+        if (c.is_best_answer) bestAnswerCount++;
+      }
     }
-  });
-  const avgGrade = gradesCount > 0 ? gradesSum / gradesCount : 0;
-  const hasChakraMaster = avgGrade >= 9;
+    const commentPoints = commentCount * 10;
+    const solutionPoints = bestAnswerCount * 100;
 
-  const presentCount = studentAtts.filter(c => c.records[profile?.id] === "present" || c.records[profile?.id] === "late").length;
-  const totalClasses = studentAtts.length;
-  const hasPerfectAttendance = totalClasses >= 3 && presentCount === totalClasses;
+    let classCount = 0;
+    let presentCount = 0;
+    for (let i = 0; i < courseAttendance.length; i++) {
+      const c = courseAttendance[i];
+      if (c.records && c.records[profileId]) {
+        classCount++;
+        const status = c.records[profileId];
+        if (status === "present" || status === "late") presentCount++;
+      }
+    }
+    const attendancePoints = presentCount * 10;
 
-  const hasActiveNinja = studentComments.length >= 3;
-  const hasSolucionador = studentComments.some(c => c.is_best_answer);
+    let submissionCount = 0;
+    let gradesSum = 0;
+    let gradesCount = 0;
+    for (let i = 0; i < submissions.length; i++) {
+      const s = submissions[i];
+      if (s.student_id === profileId) {
+        submissionCount++;
+        const num = parseFloat(s.grade);
+        if (!isNaN(num)) {
+          gradesSum += num;
+          gradesCount++;
+        }
+      }
+    }
+    const submissionPoints = (submissionCount * 50) + (gradesSum * 5);
+
+    const totalXp = commentPoints + solutionPoints + attendancePoints + submissionPoints;
+    const currentLevel = Math.floor(totalXp / 100) + 1;
+    const currentLevelProgress = totalXp % 100;
+
+    const avgGrade = gradesCount > 0 ? gradesSum / gradesCount : 0;
+    const hasChakraMaster = avgGrade >= 9;
+    const hasPerfectAttendance = classCount >= 3 && presentCount === classCount;
+    const hasActiveNinja = commentCount >= 3;
+    const hasSolucionador = bestAnswerCount > 0;
+
+    return {
+      currentLevel,
+      currentLevelProgress,
+      totalXp,
+      hasChakraMaster,
+      hasPerfectAttendance,
+      hasActiveNinja,
+      hasSolucionador
+    };
+  }, [profile?.id, submissions, courseComments, courseAttendance]);
 
   return (
     <div
