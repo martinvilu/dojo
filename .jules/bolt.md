@@ -20,3 +20,7 @@
 ## 2023-10-27 - O(N) array filtering within map/reduce calls across large datasets
 **Learning:** In components rendering long lists of entities like `CourseStudentsPanel`, nested iterations using `.filter()` and `.find()` over relationships (like `courseAttendance` or `courseSubmissions`) within standard `.map()` render loops or `.reduce()` aggregation functions result in severe O(N*M) or O(N^2) complexity. This causes massive slowdowns on re-renders or when exporting large CSV/PDF files.
 **Action:** Always pre-compute relationships into O(1) lookups using Hash Maps (like `Map<StudentId, Map<AssignmentId, Submission>>`) encapsulated in a `useMemo` block. This reduces rendering and aggregation from O(N^2) to O(N).
+
+## 2023-11-06 - Replacing Array.prototype.find() with Map lookups in render loops
+**Learning:** Found an $O(N)$ `Array.prototype.find()` lookup inside an `assignments.map()` loop in `src/modules/github/components/AssignmentsPanel.tsx`. This causes $O(N \times M)$ overhead during render, which impacts performance when there are many assignments and submissions.
+**Action:** Replaced the array find with a precomputed `Map` using `useMemo` for $O(1)$ lookups, significantly reducing render time complexity. Additionally, when populating maps, always check for uniqueness (`!map.has()`) to strictly preserve the exact semantic behavior of `.find()` which returns the first match.
