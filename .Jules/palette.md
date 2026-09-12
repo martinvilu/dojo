@@ -20,3 +20,6 @@
 ## 2026-08-01 - Form Accessibility (Label Associations)
 **Learning:** Found that multiple form inputs across the application (e.g., in the login page and user profile panel) lacked explicit associations with their labels via `htmlFor` and `id`. This negatively impacts screen readers and reduces the click area for users.
 **Action:** Always associate `<label>` elements with their respective `<input>` elements using the `htmlFor` and `id` attributes to improve accessibility and user experience.
+## $(date +%Y-%m-%d) - Error messages and OAuth Buttons
+**Learning:** This app requires custom ARIA attributes and focus styles, specifically `role="alert"` and `aria-live="assertive"` on error messages to notify screen readers, and explicit outline styles (`focus-visible:ring-2`) to provide visible focus indicators on non-standard styled interactive elements like the OAuth buttons.
+**Action:** When working on similar components in this app, proactively include `role="alert"` for asynchronous error messages and explicit `focus-visible` utility classes for non-standard buttons to improve keyboard navigability.

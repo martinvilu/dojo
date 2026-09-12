@@ -321,7 +321,7 @@ export default function DashboardPage() {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 p-8 overflow-y-auto w-full">
         {error && (
-          <div className="mb-6 p-4 bg-red-950/40 border border-red-800/80 rounded-xl text-red-400 text-sm flex justify-between items-center animate-fade-in">
+          <div role="alert" aria-live="assertive" className="mb-6 p-4 bg-red-950/40 border border-red-800/80 rounded-xl text-red-400 text-sm flex justify-between items-center animate-fade-in">
             <span>{error}</span>
             <button onClick={() => setError("")} className="text-xs text-gray-400 hover:text-white underline">
               Cerrar
