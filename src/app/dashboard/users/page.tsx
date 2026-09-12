@@ -150,13 +150,15 @@ export default function UsersPage() {
         {/* Filters */}
         <div className="bg-neutral-900/60 p-4 rounded-2xl border border-neutral-800 flex items-center">
           <div className="relative flex-1">
-            <span className="absolute left-3.5 top-2.5 text-gray-500">🔍</span>
+            <label htmlFor="searchUsers" className="sr-only">Buscar usuarios</label>
+            <span className="absolute left-3.5 top-2.5 text-gray-500" aria-hidden="true">🔍</span>
             <input
+              id="searchUsers"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por nombre, email o matrícula..."
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-blue-500 text-white"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white"
             />
           </div>
         </div>
