@@ -304,21 +304,21 @@ export default function AssignmentsPanel({
             <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider">{editingAssignmentId ? "✏️ Editar Tarea" : "➕ Crear Nueva Tarea"}</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">Título de la Tarea</label>
-                <input type="text" value={assignTitle} onChange={(e) => setAssignTitle(e.target.value)} placeholder="Ej: Trabajo Práctico 1" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" required />
+                <label htmlFor="assignTitle" className="block text-xs font-semibold text-gray-400 mb-1">Título de la Tarea</label>
+                <input id="assignTitle" type="text" value={assignTitle} onChange={(e) => setAssignTitle(e.target.value)} placeholder="Ej: Trabajo Práctico 1" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" required />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">Repositorio Plantilla (org/repo)</label>
-                <input type="text" value={assignTemplate} onChange={(e) => setAssignTemplate(e.target.value)} placeholder="Ej: unrn-prog2-2026/tp1-plantilla" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" required />
+                <label htmlFor="assignTemplate" className="block text-xs font-semibold text-gray-400 mb-1">Repositorio Plantilla (org/repo)</label>
+                <input id="assignTemplate" type="text" value={assignTemplate} onChange={(e) => setAssignTemplate(e.target.value)} placeholder="Ej: unrn-prog2-2026/tp1-plantilla" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" required />
               </div>
             </div>
             <div className="flex space-x-6 items-center">
-              <label className="flex items-center space-x-2 text-xs font-semibold text-gray-400 cursor-pointer">
-                <input type="checkbox" checked={assignPr} onChange={(e) => setAssignPr(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
+              <label htmlFor="assignPr" className="flex items-center space-x-2 text-xs font-semibold text-gray-400 cursor-pointer">
+                <input id="assignPr" type="checkbox" checked={assignPr} onChange={(e) => setAssignPr(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
                 <span>Crear Pull Request de Feedback</span>
               </label>
-              <label className="flex items-center space-x-2 text-xs font-semibold text-gray-400 cursor-pointer">
-                <input type="checkbox" checked={assignGroup} onChange={(e) => setAssignGroup(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
+              <label htmlFor="assignGroup" className="flex items-center space-x-2 text-xs font-semibold text-gray-400 cursor-pointer">
+                <input id="assignGroup" type="checkbox" checked={assignGroup} onChange={(e) => setAssignGroup(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
                 <span>Tarea Grupal</span>
               </label>
             </div>
