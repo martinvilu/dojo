@@ -144,7 +144,7 @@ export function CourseDetailSection(props: {
   setApiLoading: (v: boolean) => void;
 }) {
   const {
-    profile, currentUser, activeTab, selectedCourse, setSelectedCourse,
+    profile, currentUser, activeTab: _activeTab, selectedCourse, setSelectedCourse,
     courseSubTab, setCourseSubTab, handleSetCourseSubTab,
     teacherClasses, assignments, setAssignments,
     submissions, setSubmissions, courseSubmissions, pastDueAssignments,

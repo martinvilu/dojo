@@ -15,34 +15,19 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
-
-interface CommentReaction {
-  thumbs_up?: string[];
-  party?: string[];
-  heart?: string[];
-}
-
-interface CommentItem {
-  id: string;
-  classNumber: number;
-  user_id: string;
-  user_name: string;
-  user_role: string;
-  content: string;
-  is_best_answer?: boolean;
-  reactions?: CommentReaction;
-  created_at?: any;
-}
+import { ClassComment } from "../../types";
+import { formatDateSafe, formatDateTime } from "@/lib/dates";
+import { logger } from "@/lib/logger";
 
 interface ClassCommentsThreadProps {
   classNumber: number;
   courseId: string;
-  courseComments: CommentItem[];
+  courseComments: ClassComment[];
   profile: {
     id: string;
     full_name?: string;
     email: string;
-    role: "student" | "teacher" | "admin" | "tutor";
+    role: "student" | "teacher" | "admin" | "tutor" | string;
   } | null;
 }
 
@@ -71,8 +56,9 @@ export default function ClassCommentsThread({
         created_at: serverTimestamp(),
       });
       setNewCommentText("");
-    } catch (err: any) {
-      showToast("Error al enviar comentario: " + err.message, "error");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast("Error al enviar comentario: " + msg, "error");
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +72,7 @@ export default function ClassCommentsThread({
       if (!commentDoc.exists()) return;
 
       const data = commentDoc.data();
-      const currentReactions = data.reactions?.[reactionType] || [];
+      const currentReactions = (data.reactions?.[reactionType] as string[]) || [];
       const hasReacted = currentReactions.includes(profile.id);
 
       await updateDoc(commentRef, {
@@ -94,8 +80,8 @@ export default function ClassCommentsThread({
           ? arrayRemove(profile.id)
           : arrayUnion(profile.id),
       });
-    } catch (err: any) {
-      console.error("Error toggling reaction:", err);
+    } catch (err: unknown) {
+      logger.error("Error toggling reaction:", err);
     }
   };
 
@@ -119,8 +105,9 @@ export default function ClassCommentsThread({
       batch.update(targetRef, { is_best_answer: !currentStatus });
 
       await batch.commit();
-    } catch (err: any) {
-      showToast("Error al marcar mejor respuesta: " + err.message, "error");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast("Error al marcar mejor respuesta: " + msg, "error");
     }
   };
 
@@ -153,14 +140,7 @@ export default function ClassCommentsThread({
                 )}
               </div>
               <span className="text-gray-500">
-                {comment.created_at?.toDate
-                  ? comment.created_at.toDate().toLocaleString("es-AR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "Enviando..."}
+                {formatDateSafe(comment.created_at, formatDateTime)}
               </span>
             </div>
             <p className="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
@@ -208,7 +188,7 @@ export default function ClassCommentsThread({
                   onClick={() => handleMarkBestAnswer(comment.id, comment.is_best_answer || false)}
                   className={`text-[9px] font-bold px-2 py-0.5 rounded border transition cursor-pointer ${
                     comment.is_best_answer
-                      ? "bg-emerald-950/50 border-emerald-800 text-emerald-400"
+                      ? "bg-emerald-955 border-emerald-800 text-emerald-400"
                       : "bg-neutral-900/50 border-neutral-850 text-gray-400 hover:text-white"
                   }`}
                 >

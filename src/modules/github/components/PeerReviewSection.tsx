@@ -8,36 +8,41 @@ interface PeerReviewSectionProps {
   mode: "teacher" | "student";
   courseId: string;
   assignment?: any;
-  showToast?: (msg: string, type?: string) => void;
+  showToast?: (msg: string, type?: any) => void;
   setApiLoading?: (v: boolean) => void;
 }
 
 /**
- * Rubric-based peer review UI.
- * - Teacher: per-assignment enable/disable toggle with rubric summary.
- * - Student: pending reviewees per enabled assignment plus an inline
- *   rubric scoring form; reviews stay anonymous towards reviewees.
+ * Peer Review UI:
+ * - Teacher: Toggle peer review on/off, configure rubric & review limit.
+ * - Student: List assigned peers to review, submit peer evaluation form.
  */
 export default function PeerReviewSection(props: PeerReviewSectionProps) {
   if (props.mode === "teacher") return <TeacherControls {...props} />;
   return <StudentBoard {...props} />;
 }
 
-function TeacherControls({ assignment, showToast = (m: string) => alert(m), setApiLoading = () => {} }: PeerReviewSectionProps) {
-  const [enabled, setEnabled] = useState<boolean>(Boolean(assignment?.peer_review?.enabled));
-  const [saving, setSaving] = useState(false);
+function TeacherControls({ assignment, showToast: notify = showToast, setApiLoading = () => {} }: PeerReviewSectionProps) {
+  const [enabled, setEnabled] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const toggle = async () => {
-    setSaving(true);
+  useEffect(() => {
+    setEnabled(Boolean(assignment?.peer_review_enabled || assignment?.peer_review?.enabled));
+  }, [assignment]);
+
+  const handleToggle = async () => {
+    if (!assignment?.id) return;
+    const nextEnabled = !enabled;
+    setSubmitting(true);
+    setApiLoading(true);
     try {
-      const nextEnabled = !enabled;
       await api("enablePeerReview", { assignmentId: assignment.id, enabled: nextEnabled });
       setEnabled(nextEnabled);
-      showToast(nextEnabled ? "Revisión entre pares activada." : "Revisión entre pares desactivada.", "success");
+      notify(nextEnabled ? "Revisión entre pares activada." : "Revisión entre pares desactivada.", "success");
     } catch (err: any) {
-      showToast("Error: " + err.message, "error");
+      notify("Error: " + err.message, "error");
     } finally {
-      setSaving(false);
+      setSubmitting(false);
       setApiLoading(false);
     }
   };
@@ -45,18 +50,18 @@ function TeacherControls({ assignment, showToast = (m: string) => alert(m), setA
   const rubric = assignment?.peer_review?.rubric || [];
 
   return (
-    <div className="bg-neutral-950/40 border border-neutral-850 rounded-xl p-3 space-y-2">
+    <div className="bg-neutral-955 border border-neutral-850 rounded-xl p-3 space-y-2">
       <div className="flex justify-between items-center gap-2">
         <span className="text-xs font-bold text-gray-300">👥 Revisión entre Pares</span>
         <button
           type="button"
-          disabled={saving}
-          onClick={toggle}
+          disabled={submitting}
+          onClick={handleToggle}
           className={`px-3 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
-            enabled ? "bg-red-950/50 text-red-400 hover:bg-red-900/40" : "bg-blue-600 hover:bg-blue-500 text-white"
+            enabled ? "bg-red-955 text-red-400 hover:bg-red-900/40" : "bg-blue-600 hover:bg-blue-500 text-white"
           }`}
         >
-          {saving ? "…" : enabled ? "Desactivar" : "Activar"}
+          {submitting ? "…" : enabled ? "Desactivar" : "Activar"}
         </button>
       </div>
       {enabled && (
@@ -70,7 +75,7 @@ function TeacherControls({ assignment, showToast = (m: string) => alert(m), setA
   );
 }
 
-function StudentBoard({ courseId, showToast = (m: string) => alert(m), setApiLoading = () => {} }: PeerReviewSectionProps) {
+function StudentBoard({ courseId, showToast: notify = showToast, setApiLoading = () => {} }: PeerReviewSectionProps) {
   const [reviewables, setReviewables] = useState<any[] | null>(null);
   const [activeForm, setActiveForm] = useState<{ assignmentId: string; revieweeId: string; rubric: any[] } | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
@@ -103,12 +108,12 @@ function StudentBoard({ courseId, showToast = (m: string) => alert(m), setApiLoa
         scores,
         comment
       });
-      showToast("¡Revisión enviada! Gracias por ayudar a tus compañeros.", "success");
+      notify("¡Revisión enviada! Gracias por ayudar a tus compañeros.", "success");
       setActiveForm(null);
       const res = await api("getMyReviewAssignments", { courseId });
       setReviewables((res || []).filter((r: any) => r.has_submitted && (r.pending_reviewees.length > 0 || r.reviewed_count > 0)));
     } catch (err: any) {
-      showToast("Error: " + err.message, "error");
+      notify("Error: " + err.message, "error");
     } finally {
       setSubmitting(false);
       setApiLoading(false);

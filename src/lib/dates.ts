@@ -5,26 +5,57 @@
  * non-finite dates, so callers must never feed it raw values.
  */
 
-const defaultFormatter = new Intl.DateTimeFormat("es-AR", {
+export const formatDateTime = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
   hour: "2-digit",
-  minute: "2-digit"
+  minute: "2-digit",
 });
 
-export function toDateSafe(value: any): Date | null {
+export const formatShortDate = new Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+export const formatDateFull = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+export const formatTimeOnly = new Intl.DateTimeFormat("es-AR", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const defaultFormatter = formatDateTime;
+
+export function toDateSafe(value: unknown): Date | null {
   if (value === null || value === undefined || value === "") return null;
   if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : null;
-  // Firestore Timestamp serialized over the wire
-  if (typeof value === "object" && Number.isFinite(Number(value.seconds))) {
-    return new Date(Number(value.seconds) * 1000);
+  
+  // Firestore Timestamp serialized over the wire or client SDK
+  if (typeof value === "object" && value !== null) {
+    if ("toDate" in value && typeof (value as { toDate: () => unknown }).toDate === "function") {
+      const d = (value as { toDate: () => unknown }).toDate();
+      if (d instanceof Date && Number.isFinite(d.getTime())) return d;
+    }
+    if ("seconds" in value && Number.isFinite(Number((value as { seconds: unknown }).seconds))) {
+      return new Date(Number((value as { seconds: number }).seconds) * 1000);
+    }
   }
-  const d = new Date(value);
-  return Number.isFinite(d.getTime()) ? d : null;
+
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+
+  return null;
 }
 
-export function formatDateSafe(value: any, formatter = defaultFormatter): string {
+export function formatDateSafe(value: unknown, formatter = defaultFormatter): string {
   const d = toDateSafe(value);
   return d ? formatter.format(d) : "—";
 }
