@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { User } from "firebase/auth";
 import type { UserProfile } from "../hooks/useAuthProfile";
 
@@ -63,7 +64,14 @@ export function Sidebar({
         >
           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white uppercase overflow-hidden text-sm shrink-0">
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
+              <Image
+                src={profile.avatar_url}
+                alt={profile.full_name || "Avatar"}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+                unoptimized
+              />
             ) : (
               profile?.full_name?.substring(0, 2) || "U"
             )}
