@@ -16,23 +16,44 @@ export function CourseOverviewPanel({
 }: any) {
   // Memoize student risk calculations to avoid O(R * (A + S)) recomputations on every render
   const studentsRiskData = React.useMemo(() => {
+    // ⚡ Bolt: Precompute attendance and submissions for O(1) lookups to avoid O(N*M) nested iterations
+    const attStats = new Map();
+    (courseAttendance || []).forEach((c: any) => {
+      if (!c.records) return;
+      Object.entries(c.records).forEach(([sId, status]) => {
+        if (!status) return; // Preserve original logic of skipping falsy records
+        if (!attStats.has(sId)) {
+          attStats.set(sId, { recordedCount: 0, presentOrLate: 0 });
+        }
+        const st = attStats.get(sId);
+        st.recordedCount++;
+        if (status === "present" || status === "late") {
+          st.presentOrLate++;
+        }
+      });
+    });
+
+    const subsByStudent = new Map();
+    (courseSubmissions || []).forEach((s: any) => {
+      const sIdStr = String(s.student_id);
+      if (!subsByStudent.has(sIdStr)) {
+        subsByStudent.set(sIdStr, new Set());
+      }
+      subsByStudent.get(sIdStr).add(String(s.assignment_id));
+    });
+
     const data = new Map();
-    roster.forEach((student: any) => {
+    (roster || []).forEach((student: any) => {
       if (student.role !== "student") return;
 
-      const studentAtts = courseAttendance.filter((c: any) => c.records && c.records[student.id]);
-      const recordedCount = studentAtts.length;
-      const presentOrLate = studentAtts.filter(
-        (c: any) => c.records[student.id] === "present" || c.records[student.id] === "late"
-      ).length;
-      const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
-      const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
+      const stAtt = attStats.get(String(student.id)) || { recordedCount: 0, presentOrLate: 0 };
+      const attendanceRate = stAtt.recordedCount > 0 ? (stAtt.presentOrLate / stAtt.recordedCount) * 100 : 100;
+      const hasCriticalAttendance = stAtt.recordedCount >= 3 && attendanceRate < 75;
 
-      const studentSubmissions = courseSubmissions.filter((s: any) => s.student_id === student.id);
-      const hasMissingAssignments = assignments.some((a: any) => {
-        const hasSub = studentSubmissions.some((s: any) => s.assignment_id === a.id);
-        const isPastDue = pastDueAssignments.has(a.id);
-        return !hasSub && isPastDue;
+      const studentSubs = subsByStudent.get(String(student.id)) || new Set();
+      // ⚡ Bolt: Iterate over filtered assignments array and look up in O(1) using Set
+      const hasMissingAssignments = (assignments || []).some((a: any) => {
+        return pastDueAssignments.has(a.id) && !studentSubs.has(String(a.id));
       });
 
       data.set(student.id, {
