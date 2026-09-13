@@ -4,6 +4,8 @@ import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import React, { useState } from "react";
 import { copyToClipboard } from "@/lib/clipboard";
 
+import { MoodleConfigSchema } from "@/lib/schemas/moodle";
+
 interface MoodleIntegrationPanelProps {
   courseId: string;
   courseName: string;
@@ -36,8 +38,13 @@ export default function MoodleIntegrationPanel({
   const [showDeepLinkModal, setShowDeepLinkModal] = useState(false);
 
   const handleSyncContents = async () => {
-    if (!moodleApiUrl || !moodleWsToken || !moodleCourseId) {
-      showToast("Completá los parámetros de conexión de Moodle.", "success");
+    const validation = MoodleConfigSchema.safeParse({
+      apiUrl: moodleApiUrl,
+      wsToken: moodleWsToken,
+      courseId: moodleCourseId,
+    });
+    if (!validation.success) {
+      showToast(validation.error.issues[0]?.message || "Completá los parámetros de conexión de Moodle válidos.", "error");
       return;
     }
     setLoading(true);
