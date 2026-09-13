@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2025-02-18 - O(N * (A+S)) anti-pattern in array filtering hooks
+**Learning:** Found an $O(N \times (A+S))$ anti-pattern in \`src/modules/course/hooks/useStudentRisk.ts\` where multiple \`.filter()\` array scans were occurring for every single student iteration inside a \`useMemo\` block over \`courseAttendance\` and \`courseSubmissions\`.
+**Action:** Always pre-compute relational entities into Maps (like \`attendanceStats\`) and \`Set\`s before iterating over lists (like \`roster\`) in loops to convert lookup costs to $O(1)$ and overall runtime to $O(N + A + S)$.
