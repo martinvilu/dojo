@@ -13,6 +13,7 @@ import AssignmentsPanel from "@/modules/github/components/AssignmentsPanel";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import TutoringPanel from "@/modules/tutoring/components/TutoringPanel";
 import { api } from "@/lib/api";
+import { ModuleErrorBoundary } from "@/components/ModuleErrorBoundary";
 
 const PanelFallback = () => (
   <div className="p-6 text-center text-sm text-gray-400" role="status">Cargando módulo…</div>
@@ -262,98 +263,106 @@ export function CourseDetailSection(props: {
 
       {/* SUBTAB RESUMEN DOCENTE / CENTRALIZED DASHBOARD */}
       {courseSubTab === "overview" && (profile?.role === "teacher" || profile?.role === "admin") && (
-        <CourseOverviewPanel
-          profile={profile}
-          selectedCourse={selectedCourse}
-          assignments={assignments}
-          setAssignments={setAssignments}
-          showToast={showToast}
-          setApiLoading={props.setApiLoading}
-          overviewSubmissionsList={overviewSubmissionsList}
-          loadingOverviewSubmissions={loadingOverviewSubmissions}
-          roster={roster}
-          courseAttendance={courseAttendance}
-          courseSubmissions={courseSubmissions}
-          pastDueAssignments={pastDueAssignments}
-          setCourseSubTab={setCourseSubTab}
-          courseComments={courseComments}
-          setExpandedComments={props.setExpandedComments}
-        />
+        <ModuleErrorBoundary moduleName="Resumen de Cátedra">
+          <CourseOverviewPanel
+            profile={profile}
+            selectedCourse={selectedCourse}
+            assignments={assignments}
+            setAssignments={setAssignments}
+            showToast={showToast}
+            setApiLoading={props.setApiLoading}
+            overviewSubmissionsList={overviewSubmissionsList}
+            loadingOverviewSubmissions={loadingOverviewSubmissions}
+            roster={roster}
+            courseAttendance={courseAttendance}
+            courseSubmissions={courseSubmissions}
+            pastDueAssignments={pastDueAssignments}
+            setCourseSubTab={setCourseSubTab}
+            courseComments={courseComments}
+            setExpandedComments={props.setExpandedComments}
+          />
+        </ModuleErrorBoundary>
       )}
 
       {/* SUBTAB 1. CRONOGRAMA / CLASES */}
       {courseSubTab === "schedules" && (
-        <CourseSchedulesPanel
-          profile={profile}
-          selectedCourse={selectedCourse}
-          teacherClasses={teacherClasses}
-          setTeacherClasses={props.setTeacherClasses}
-          teacherSchedules={props.teacherSchedules}
-          teacherStartDate={props.teacherStartDate}
-          teacherDuration={props.teacherDuration}
-          showToast={showToast}
-          setApiLoading={props.setApiLoading}
-          collapsedClasses={collapsedClasses}
-          setCollapsedClasses={setCollapsedClasses}
-          handleOpenFeedbackModal={handleOpenFeedbackModal}
-          weeklyClassesGrouped={weeklyClassesGrouped}
-          expandedComments={expandedComments}
-          courseCommissions={courseCommissions}
-          courseAttendance={courseAttendance}
-          roster={roster}
-          setActiveAttendanceClass={setActiveAttendanceClass}
-          activeAttendanceClass={activeAttendanceClass}
-          handleLoadClassFeedback={handleLoadClassFeedback}
-          toggleComments={toggleComments}
-          courseComments={courseComments}
-        />
+        <ModuleErrorBoundary moduleName="Cronograma y Clases">
+          <CourseSchedulesPanel
+            profile={profile}
+            selectedCourse={selectedCourse}
+            teacherClasses={teacherClasses}
+            setTeacherClasses={props.setTeacherClasses}
+            teacherSchedules={props.teacherSchedules}
+            teacherStartDate={props.teacherStartDate}
+            teacherDuration={props.teacherDuration}
+            showToast={showToast}
+            setApiLoading={props.setApiLoading}
+            collapsedClasses={collapsedClasses}
+            setCollapsedClasses={setCollapsedClasses}
+            handleOpenFeedbackModal={handleOpenFeedbackModal}
+            weeklyClassesGrouped={weeklyClassesGrouped}
+            expandedComments={expandedComments}
+            courseCommissions={courseCommissions}
+            courseAttendance={courseAttendance}
+            roster={roster}
+            setActiveAttendanceClass={setActiveAttendanceClass}
+            activeAttendanceClass={activeAttendanceClass}
+            handleLoadClassFeedback={handleLoadClassFeedback}
+            toggleComments={toggleComments}
+            courseComments={courseComments}
+          />
+        </ModuleErrorBoundary>
       )}
 
       {/* SUBTAB 2. TAREAS (ASSIGNMENTS) */}
       {courseSubTab === "assignments" && (
-        <AssignmentsPanel
-          selectedCourse={selectedCourse}
-          profile={profile}
-          courseCommissions={courseCommissions}
-          showToast={showToast}
-          setApiLoading={props.setApiLoading}
-          api={api}
-          assignments={assignments}
-          setAssignments={setAssignments}
-          submissions={submissions}
-          setSubmissions={setSubmissions}
-          commissionFilter={commissionFilter}
-          setCommissionFilter={setCommissionFilter}
-          setSelectedDirectEmailStudent={props.setSelectedDirectEmailStudent}
-          moodleLtiParams={props.moodleLtiParams}
-          moodleApiUrl={props.moodleApiUrl}
-          moodleWsToken={props.moodleWsToken}
-          moodleCourseId={props.moodleCourseId}
-        />
+        <ModuleErrorBoundary moduleName="Tareas y Entregas">
+          <AssignmentsPanel
+            selectedCourse={selectedCourse}
+            profile={profile}
+            courseCommissions={courseCommissions}
+            showToast={showToast}
+            setApiLoading={props.setApiLoading}
+            api={api}
+            assignments={assignments}
+            setAssignments={setAssignments}
+            submissions={submissions}
+            setSubmissions={setSubmissions}
+            commissionFilter={commissionFilter}
+            setCommissionFilter={setCommissionFilter}
+            setSelectedDirectEmailStudent={props.setSelectedDirectEmailStudent}
+            moodleLtiParams={props.moodleLtiParams}
+            moodleApiUrl={props.moodleApiUrl}
+            moodleWsToken={props.moodleWsToken}
+            moodleCourseId={props.moodleCourseId}
+          />
+        </ModuleErrorBoundary>
       )}
 
       {/* SUBTAB ALUMNOS Y ALERTAS */}
       {courseSubTab === "students" && (
-        <CourseStudentsPanel
-          profile={profile}
-          selectedCourse={selectedCourse}
-          roster={roster}
-          setRoster={setRoster}
-          courseAttendance={courseAttendance}
-          courseSubmissions={courseSubmissions}
-          assignments={assignments}
-          pastDueAssignments={pastDueAssignments}
-          showToast={showToast}
-          setApiLoading={props.setApiLoading}
-          commissionFilter={commissionFilter}
-          setCommissionFilter={setCommissionFilter}
-          teacherClasses={teacherClasses}
-          courseCommissions={courseCommissions}
-          courseComments={courseComments}
-          setSelectedDirectEmailStudent={props.setSelectedDirectEmailStudent}
-          showCsvEndpoint={props.showCsvEndpoint}
-          setShowCsvEndpoint={props.setShowCsvEndpoint}
-        />
+        <ModuleErrorBoundary moduleName="Alumnos y Asistencias">
+          <CourseStudentsPanel
+            profile={profile}
+            selectedCourse={selectedCourse}
+            roster={roster}
+            setRoster={setRoster}
+            courseAttendance={courseAttendance}
+            courseSubmissions={courseSubmissions}
+            assignments={assignments}
+            pastDueAssignments={pastDueAssignments}
+            showToast={showToast}
+            setApiLoading={props.setApiLoading}
+            commissionFilter={commissionFilter}
+            setCommissionFilter={setCommissionFilter}
+            teacherClasses={teacherClasses}
+            courseCommissions={courseCommissions}
+            courseComments={courseComments}
+            setSelectedDirectEmailStudent={props.setSelectedDirectEmailStudent}
+            showCsvEndpoint={props.showCsvEndpoint}
+            setShowCsvEndpoint={props.setShowCsvEndpoint}
+          />
+        </ModuleErrorBoundary>
       )}
 
       {/* SUBTAB 3. AVISOS (ANNOUNCEMENTS) */}
