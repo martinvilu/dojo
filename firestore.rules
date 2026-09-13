@@ -55,6 +55,7 @@ service cloud.firestore {
       allow get: if signedIn() && request.auth.uid == userId;
       allow update: if (isAdmin() || isTeacherRole())
         && resource.data.role == 'student'
+        && request.resource.data.role == resource.data.role
         && request.resource.data.diff(resource.data)
              .affectedKeys().hasOnly(['commissions']);
       allow create, list, delete: if false;
@@ -104,6 +105,7 @@ service cloud.firestore {
         allow read: if isMemberOf(courseId);
         allow create: if isMemberOf(courseId)
           && request.resource.data.user_id == request.auth.uid
+          && request.resource.data.classNumber is int
           && request.resource.data.content is string
           && request.resource.data.content.size() > 0
           && request.resource.data.content.size() <= 4000;
