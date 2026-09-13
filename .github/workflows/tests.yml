@@ -28,6 +28,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Unit Tests
+        run: npm run test:unit
+
       - name: Build Next.js
         run: npm run build
 
@@ -45,6 +48,8 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'functions/package-lock.json'
 
       - name: Install Functions Dependencies
         run: npm ci

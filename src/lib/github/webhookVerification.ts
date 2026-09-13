@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { logger } from "@/lib/logger";
+import { logger } from "../logger.ts";
 
 /**
  * Validates GitHub Webhook payloads using HMAC-SHA256 signature verification.
