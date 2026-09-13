@@ -2,51 +2,13 @@ import React from "react";
 import CommitVisualizer from "./CommitVisualizer";
 import { computeGithubMetrics } from "../utils/metrics";
 
-// Pre-instantiate Intl.DateTimeFormat for better performance in map loops
-const dateFormatter = new Intl.DateTimeFormat("es-AR");
-const dateTimeFormatter = new Intl.DateTimeFormat("es-AR", {
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
-  hour: "numeric",
-  minute: "numeric",
-  second: "numeric",
-});
-
-interface CommitItem {
-  sha: string;
-  message: string;
-  date: string;
-  author: string;
-  author_login: string;
-  author_avatar: string;
-  branch: string;
-  url?: string;
-}
-
-interface PullRequestItem {
-  number: number;
-  title: string;
-  state: "open" | "closed";
-  url?: string;
-}
-
-interface CommentItem {
-  author: string;
-  created_at: string;
-  body: string;
-}
-
-interface GithubActivity {
-  commits: CommitItem[];
-  pullRequests: PullRequestItem[];
-  comments: CommentItem[];
-}
+import { formatShortDate as dateFormatter, formatDateTime as dateTimeFormatter } from "@/lib/dates";
+import { GitHubActivity } from "../types";
 
 type ActivityTab = "commits" | "pulls" | "comments" | "metrics" | "visualizer";
 
 interface GithubActivityPanelProps {
-  activity: GithubActivity;
+  activity: GitHubActivity;
   activeTab: ActivityTab;
   setActiveTab: (tab: ActivityTab) => void;
   isLoading?: boolean;
