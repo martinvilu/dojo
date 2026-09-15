@@ -470,12 +470,12 @@ export default function AssignmentsPanel({
                             )}
                             <div className="border-t border-neutral-900/60 pt-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                               <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nota</label>
-                                <input type="text" value={editingGrades[sub.id] || ""} onChange={(e) => setEditingGrades(prev => ({ ...prev, [sub.id]: e.target.value }))} placeholder="Nota (Ej: 9, Aprobado)" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white" />
+                                <label htmlFor={`grade-${sub.id}`} className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nota</label>
+                                <input id={`grade-${sub.id}`} type="text" value={editingGrades[sub.id] || ""} onChange={(e) => setEditingGrades(prev => ({ ...prev, [sub.id]: e.target.value }))} placeholder="Nota (Ej: 9, Aprobado)" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white" />
                               </div>
                               <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Feedback / Comentario</label>
-                                <input type="text" value={editingFeedbacks[sub.id] || ""} onChange={(e) => setEditingFeedbacks(prev => ({ ...prev, [sub.id]: e.target.value }))} placeholder="Buen trabajo..." className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white" />
+                                <label htmlFor={`feedback-${sub.id}`} className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Feedback / Comentario</label>
+                                <input id={`feedback-${sub.id}`} type="text" value={editingFeedbacks[sub.id] || ""} onChange={(e) => setEditingFeedbacks(prev => ({ ...prev, [sub.id]: e.target.value }))} placeholder="Buen trabajo..." className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white" />
                               </div>
                               <button type="button" onClick={() => handleSaveSingleGrade(sub.id, a.id)} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-xl transition cursor-pointer">Guardar Calificación</button>
                             </div>
@@ -594,8 +594,8 @@ export default function AssignmentsPanel({
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
             <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Nombre del Equipo</h3>
-              <p className="text-xs text-gray-400 font-sans">Esta es una tarea grupal. Ingresá el nombre de tu equipo:</p>
-              <input type="text" placeholder="Nombre del grupo" className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans" onChange={(e) => { inputVal = e.target.value; }} onKeyDown={(e) => { if (e.key === "Enter" && inputVal.trim()) { groupPromptModal.resolve(inputVal.trim()); setGroupPromptModal(null); } }} />
+              <label htmlFor="groupName" className="text-xs text-gray-400 font-sans block mb-4">Esta es una tarea grupal. Ingresá el nombre de tu equipo:</label>
+              <input id="groupName" type="text" placeholder="Nombre del grupo" className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans" onChange={(e) => { inputVal = e.target.value; }} onKeyDown={(e) => { if (e.key === "Enter" && inputVal.trim()) { groupPromptModal.resolve(inputVal.trim()); setGroupPromptModal(null); } }} />
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { groupPromptModal.resolve(null); setGroupPromptModal(null); }} className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer font-sans">Cancelar</button>
                 <button type="button" onClick={() => { if (inputVal.trim()) { groupPromptModal.resolve(inputVal.trim()); setGroupPromptModal(null); } else { showToast("Ingresa un nombre.", "success"); } }} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans">Confirmar</button>
@@ -611,8 +611,8 @@ export default function AssignmentsPanel({
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
             <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Comentarios de la Entrega</h3>
-              <p className="text-xs text-gray-400 font-sans">¿Querés dejarle algún comentario al profesor sobre esta entrega? (Opcional):</p>
-              <textarea placeholder="Escribe tu mensaje aquí..." className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 min-h-20 font-sans" onChange={(e) => { inputVal = e.target.value; }} />
+              <label htmlFor="submissionComment" className="text-xs text-gray-400 font-sans block mb-4">¿Querés dejarle algún comentario al profesor sobre esta entrega? (Opcional):</label>
+              <textarea id="submissionComment" placeholder="Escribe tu mensaje aquí..." className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 min-h-20 font-sans" onChange={(e) => { inputVal = e.target.value; }} />
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { commentPromptModal.resolve(null); setCommentPromptModal(null); }} className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer font-sans">Cancelar</button>
                 <button type="button" onClick={() => { commentPromptModal.resolve(inputVal.trim()); setCommentPromptModal(null); }} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans">Enviar Entrega</button>
