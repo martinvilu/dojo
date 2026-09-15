@@ -86,11 +86,11 @@ export function StudentAttendanceModals(props: any) {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto text-center space-y-5 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-white">Firmar Presente (Clase {studentActiveAttendanceClass})</h3>
-            <p className="text-xs text-gray-400">
+            <label htmlFor="studentQrToken" className="text-xs text-gray-400 block mb-4">
               Ingresá el código de 6 caracteres que se muestra en la pantalla del profesor. Se requiere acceso a tu ubicación.
-            </p>
+            </label>
             <div className="space-y-4">
-              <input
+              <input id="studentQrToken"
                 type="text"
                 placeholder="Ej: A1B2C3"
                 value={studentQrToken}
