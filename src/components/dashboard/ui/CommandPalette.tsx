@@ -168,6 +168,11 @@ export default function CommandPalette({ courses, classes, assignments, onNaviga
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border-custom">
               <span aria-hidden="true">🔎</span>
               <input
+                role="combobox"
+                aria-expanded={isOpen}
+                aria-controls="command-palette-listbox"
+                aria-autocomplete="list"
+                aria-activedescendant={results.length > 0 ? `command-option-${activeIndex}` : undefined}
                 ref={inputRef}
                 value={query}
                 onChange={(e) => {
@@ -184,14 +189,14 @@ export default function CommandPalette({ courses, classes, assignments, onNaviga
               </kbd>
             </div>
 
-            <ul className="max-h-[50vh] overflow-y-auto p-2" role="listbox">
+            <ul className="max-h-[50vh] overflow-y-auto p-2" role="listbox" id="command-palette-listbox" aria-label="Resultados de búsqueda">
               {results.length === 0 && (
                 <li className="px-3 py-8 text-center text-xs text-text-secondary italic">
                   Sin resultados para “{query}”.
                 </li>
               )}
               {results.map((r, idx) => (
-                <li key={r.key} role="option" aria-selected={idx === activeIndex}>
+                <li key={r.key} role="option" aria-selected={idx === activeIndex} id={`command-option-${idx}`}>
                   <button
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={() => pick(r)}
