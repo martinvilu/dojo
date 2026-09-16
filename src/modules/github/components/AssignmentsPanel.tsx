@@ -54,6 +54,24 @@ export default function AssignmentsPanel({
   const [groupPromptModal, setGroupPromptModal] = useState<{ isOpen: boolean; assignmentId: string; resolve: (val: string | null) => void } | null>(null);
   const [commentPromptModal, setCommentPromptModal] = useState<{ isOpen: boolean; submissionId: string; resolve: (val: string | null) => void } | null>(null);
 
+
+  // Precompute filtered grader submissions to avoid redundant O(N) filtering on every render
+  const filteredGraderSubmissions = useMemo(() => {
+    const result: Record<string, any[]> = {};
+    const courseId = selectedCourse.id || selectedCourse.course?.id;
+
+    Object.entries(graderSubmissions).forEach(([assignmentId, subs]) => {
+      if (!subs) return;
+      result[assignmentId] = subs.filter((sub: any) => {
+        const studentComm = sub.profiles?.commissions?.[courseId] || "";
+        if (commissionFilter === "Todas") return true;
+        if (commissionFilter === "Sin Comisión") return studentComm === "";
+        return studentComm === commissionFilter;
+      });
+    });
+    return result;
+  }, [graderSubmissions, commissionFilter, selectedCourse.id, selectedCourse.course?.id]);
+
   // Precompute submissions map for O(1) lookups
   const submissionsByAssignment = useMemo(() => {
     const map = new Map<string, any>();
@@ -438,12 +456,7 @@ export default function AssignmentsPanel({
                     </div>
                     
                     <div className="space-y-4">
-                      {(graderSubmissions[a.id] || []).filter((sub: any) => {
-                        const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
-                        if (commissionFilter === "Todas") return true;
-                        if (commissionFilter === "Sin Comisión") return studentComm === "";
-                        return studentComm === commissionFilter;
-                      }).map((sub: any) => {
+                      {(filteredGraderSubmissions[a.id] || []).map((sub: any) => {
                         const studentName = sub.profiles?.full_name || sub.profiles?.email || "Estudiante";
                         const isGitHubLoaded = githubActivitySubmissionId === sub.id;
                         return (
@@ -513,7 +526,7 @@ export default function AssignmentsPanel({
                           </div>
                         );
                       })}
-                      {(!graderSubmissions[a.id] || graderSubmissions[a.id].filter((sub: any) => { const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || ""; if (commissionFilter === "Todas") return true; if (commissionFilter === "Sin Comisión") return studentComm === ""; return studentComm === commissionFilter; }).length === 0) && (
+                      {(!filteredGraderSubmissions[a.id] || filteredGraderSubmissions[a.id].length === 0) && (
                         <p className="text-xs text-gray-500 italic text-center py-4 bg-neutral-950/20 rounded-xl border border-neutral-850 border-dashed">No hay entregas registradas en esta comisión aún.</p>
                       )}
                     </div>
