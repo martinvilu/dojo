@@ -74,6 +74,32 @@ export function CourseSchedulesPanel({
     return counts;
   }, [courseComments]);
 
+  // Pre-compute kanban columns to avoid O(4N) filtering on every render
+  const kanbanColumns = useMemo(() => {
+    const columns = {
+      teoricas: [] as any[],
+      practicas: [] as any[],
+      feriados: [] as any[],
+      examenes: [] as any[]
+    };
+
+    teacherClasses.forEach((c: any, i: number) => {
+      const item = { ...c, originalIndex: i };
+      if (c.type === "Teórica" && c.special_status === "Normal") {
+        columns.teoricas.push(item);
+      } else if (c.type === "Práctica" && c.special_status === "Normal") {
+        columns.practicas.push(item);
+      } else if (c.special_status === "Feriado") {
+        columns.feriados.push(item);
+      } else if (c.special_status === "Examen") {
+        columns.examenes.push(item);
+      }
+    });
+
+    return columns;
+  }, [teacherClasses]);
+
+
   const handleGenerateClasses = () => {
     if (!teacherStartDate || !teacherDuration || teacherSchedules.length === 0) {
       showToast("Primero configurá la fecha de inicio, duración en semanas y al menos un horario.", "success");
@@ -492,12 +518,7 @@ export function CourseSchedulesPanel({
                     /* KANBAN BOARD VIEW */
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start select-none">
                       {/* COLUMN 1: TEÓRICA */}
-                      {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.type === "Teórica" && c.special_status === "Normal");
-                        return (
-                          <div
+                      <div
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
@@ -508,11 +529,11 @@ export function CourseSchedulesPanel({
                             <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
                               <h4 className="font-bold text-xs text-white uppercase tracking-wider">📖 Teóricas</h4>
                               <span className="font-mono text-[10px] bg-neutral-800 px-2 py-0.5 rounded text-gray-400 font-bold">
-                                {colClasses.length}
+                                {kanbanColumns.teoricas.length}
                               </span>
                             </div>
                             <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                              {colClasses.map((item: any) => (
+                              {kanbanColumns.teoricas.map((item: any) => (
                                 <div
                                   key={item.originalIndex}
                                   draggable="true"
@@ -531,23 +552,16 @@ export function CourseSchedulesPanel({
                                   )}
                                 </div>
                               ))}
-                              {colClasses.length === 0 && (
+                              {kanbanColumns.teoricas.length === 0 && (
                                 <div className="text-center text-[10px] text-gray-550 italic py-8">
                                   Arrastra clases aquí.
                                 </div>
                               )}
                             </div>
                           </div>
-                        );
-                      })()}
 
                       {/* COLUMN 2: PRÁCTICA */}
-                      {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.type === "Práctica" && c.special_status === "Normal");
-                        return (
-                          <div
+                      <div
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
@@ -558,11 +572,11 @@ export function CourseSchedulesPanel({
                             <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
                               <h4 className="font-bold text-xs text-white uppercase tracking-wider">🛠️ Prácticas</h4>
                               <span className="font-mono text-[10px] bg-neutral-800 px-2 py-0.5 rounded text-gray-400 font-bold">
-                                {colClasses.length}
+                                {kanbanColumns.practicas.length}
                               </span>
                             </div>
                             <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                              {colClasses.map((item: any) => (
+                              {kanbanColumns.practicas.map((item: any) => (
                                 <div
                                   key={item.originalIndex}
                                   draggable="true"
@@ -581,23 +595,16 @@ export function CourseSchedulesPanel({
                                   )}
                                 </div>
                               ))}
-                              {colClasses.length === 0 && (
+                              {kanbanColumns.practicas.length === 0 && (
                                 <div className="text-center text-[10px] text-gray-550 italic py-8">
                                   Arrastra clases aquí.
                                 </div>
                               )}
                             </div>
                           </div>
-                        );
-                      })()}
 
                       {/* COLUMN 3: FERIADOS */}
-                      {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.special_status === "Feriado");
-                        return (
-                          <div
+                      <div
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
@@ -608,11 +615,11 @@ export function CourseSchedulesPanel({
                             <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
                               <h4 className="font-bold text-xs text-white uppercase tracking-wider">🌴 Feriados</h4>
                               <span className="font-mono text-[10px] bg-neutral-850 px-2 py-0.5 rounded text-amber-500 font-bold font-sans">
-                                {colClasses.length}
+                                {kanbanColumns.feriados.length}
                               </span>
                             </div>
                             <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                              {colClasses.map((item: any) => (
+                              {kanbanColumns.feriados.map((item: any) => (
                                 <div
                                   key={item.originalIndex}
                                   draggable="true"
@@ -628,23 +635,16 @@ export function CourseSchedulesPanel({
                                   <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema (Feriado)"}</h5>
                                 </div>
                               ))}
-                              {colClasses.length === 0 && (
+                              {kanbanColumns.feriados.length === 0 && (
                                 <div className="text-center text-[10px] text-gray-555 italic py-8">
                                   Arrastra feriados aquí.
                                 </div>
                               )}
                             </div>
                           </div>
-                        );
-                      })()}
 
                       {/* COLUMN 4: EXAMEN / EVALUACIONES */}
-                      {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.special_status === "Examen");
-                        return (
-                          <div
+                      <div
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
@@ -655,11 +655,11 @@ export function CourseSchedulesPanel({
                             <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
                               <h4 className="font-bold text-xs text-white uppercase tracking-wider">🏆 Exámenes</h4>
                               <span className="font-mono text-[10px] bg-red-955 border border-red-900/30 px-2 py-0.5 rounded text-red-400 font-bold font-sans">
-                                {colClasses.length}
+                                {kanbanColumns.examenes.length}
                               </span>
                             </div>
                             <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                              {colClasses.map((item: any) => (
+                              {kanbanColumns.examenes.map((item: any) => (
                                 <div
                                   key={item.originalIndex}
                                   draggable="true"
@@ -678,15 +678,13 @@ export function CourseSchedulesPanel({
                                   </span>
                                 </div>
                               ))}
-                              {colClasses.length === 0 && (
+                              {kanbanColumns.examenes.length === 0 && (
                                 <div className="text-center text-[10px] text-gray-555 italic py-8">
                                   Arrastra exámenes aquí.
                                 </div>
                               )}
                             </div>
                           </div>
-                        );
-                      })()}
                     </div>
                   )}
                   </div>
