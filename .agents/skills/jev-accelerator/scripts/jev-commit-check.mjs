@@ -1,31 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { homedir } from 'node:os';
-import { TypeSafeClient, noul, choice } from '@typesafe-ai/sdk';
-
-function resolveApiKey() {
-  if (process.env.TYPESAFE_API_KEY) return process.env.TYPESAFE_API_KEY;
-  const localEnv = resolve(process.cwd(), '.env.local');
-  if (existsSync(localEnv)) {
-    const match = readFileSync(localEnv, 'utf-8').match(/TYPESAFE_API_KEY=([^\r\n]+)/);
-    if (match) return match[1].trim();
-  }
-  const homeEnv = resolve(homedir(), '.env');
-  if (existsSync(homeEnv)) {
-    const match = readFileSync(homeEnv, 'utf-8').match(/TYPESAFE_API_KEY=([^\r\n]+)/);
-    if (match) return match[1].trim();
-  }
-  return undefined;
-}
-
-const apiKey = resolveApiKey();
-if (!apiKey) {
-  console.error(JSON.stringify({ error: 'TYPESAFE_API_KEY not found' }));
-  process.exit(1);
-}
-
-const client = new TypeSafeClient({ apiKey });
+import { askJev } from './client.mjs';
 
 const commitMessage = process.argv.slice(2).join(' ').trim();
 if (!commitMessage) {
@@ -35,19 +9,21 @@ if (!commitMessage) {
 
 async function run() {
   try {
-    const res = await client.systemOne({
+    const res = await askJev({
       model: 'jev-latest',
       state: {
         commitMessage,
         specification: 'Format must strictly match: <type>(<scope>): <description>. Allowed types: feat, fix, docs, style, refactor, chore.'
       },
       questions: {
-        isValidConventionalCommit: noul(
-          'Does commitMessage strictly follow the format <type>(<scope>): <description> using one of the allowed types (feat, fix, docs, style, refactor, chore)?'
-        ),
-        inferredType: choice(
-          'What is the primary conventional commit type for this message?',
-          {
+        isValidConventionalCommit: {
+          type: 'noul',
+          instructions: 'Does commitMessage strictly follow the format <type>(<scope>): <description> using one of the allowed types (feat, fix, docs, style, refactor, chore)?'
+        },
+        inferredType: {
+          type: 'choice',
+          instructions: 'What is the primary conventional commit type for this message?',
+          criteria: {
             feat: 'New features or additions',
             fix: 'Bug fixes',
             docs: 'Documentation changes',
@@ -56,7 +32,7 @@ async function run() {
             chore: 'Maintenance, dependencies, tooling, or setup',
             invalid: 'Does not follow the conventional commit format'
           }
-        )
+        }
       }
     });
 

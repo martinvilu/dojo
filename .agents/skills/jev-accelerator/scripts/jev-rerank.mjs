@@ -1,31 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { homedir } from 'node:os';
-import { TypeSafeClient, choice } from '@typesafe-ai/sdk';
-
-function resolveApiKey() {
-  if (process.env.TYPESAFE_API_KEY) return process.env.TYPESAFE_API_KEY;
-  const localEnv = resolve(process.cwd(), '.env.local');
-  if (existsSync(localEnv)) {
-    const match = readFileSync(localEnv, 'utf-8').match(/TYPESAFE_API_KEY=([^\r\n]+)/);
-    if (match) return match[1].trim();
-  }
-  const homeEnv = resolve(homedir(), '.env');
-  if (existsSync(homeEnv)) {
-    const match = readFileSync(homeEnv, 'utf-8').match(/TYPESAFE_API_KEY=([^\r\n]+)/);
-    if (match) return match[1].trim();
-  }
-  return undefined;
-}
-
-const apiKey = resolveApiKey();
-if (!apiKey) {
-  console.error(JSON.stringify({ error: 'TYPESAFE_API_KEY not found' }));
-  process.exit(1);
-}
-
-const client = new TypeSafeClient({ apiKey });
+import { askJev } from './client.mjs';
 
 const args = process.argv.slice(2);
 const queryIdx = args.indexOf('--query');
@@ -54,17 +28,18 @@ for (const file of files.slice(0, 15)) {
 
 async function run() {
   try {
-    const res = await client.systemOne({
+    const res = await askJev({
       model: 'jev-latest',
       state: {
         taskDescription: query,
         candidateFiles: Object.keys(criteria)
       },
       questions: {
-        targetFile: choice(
-          'Which candidate file is most directly responsible for the task described in taskDescription?',
+        targetFile: {
+          type: 'choice',
+          instructions: 'Which candidate file is most directly responsible for the task described in taskDescription?',
           criteria
-        )
+        }
       }
     });
 

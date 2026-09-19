@@ -105,7 +105,38 @@ node .agents/skills/jev-accelerator/scripts/jev-cli.mjs \
   --instruction "Rate the stability and quality impact of this change" \
   --criteria '["Trivial or risky", "Moderate improvement", "High architectural improvement"]'
 ```
-*Returns:* `{ "type": "score", "score": 2, "confidence": 0.95 }`
+### 4. Technical & Educational Documentation Quality Auditor (`jev-doc-quality.mjs`)
+Evaluate markdown guides, manuals, class materials, or API specifications for pedagogical clarity, technical completeness, and actionable examples:
+
+```bash
+node .agents/skills/jev-accelerator/scripts/jev-doc-quality.mjs <path-to-document.md>
+```
+
+**Example Output:**
+```json
+{
+  "file": "README.md",
+  "overallQualityIndex": 62,
+  "qualityLevel": "BUENO",
+  "scores": {
+    "pedagogicalClarity": { "score": 0.75, "max": 3, "confidence": 0.52 },
+    "technicalCompleteness": { "score": 2.07, "max": 3, "confidence": 0.82 }
+  },
+  "checks": {
+    "hasRunnableExamples": true,
+    "hasRunnableExamplesProbability": 0.98,
+    "hasClearPrerequisites": true,
+    "hasClearPrerequisitesProbability": 0.97
+  },
+  "targetAudience": {
+    "level": "advanced",
+    "confidence": 0.91
+  }
+}
+```
+
+*Composite Scoring in Code*:
+$$\text{QualityIndex} = (\text{Pedagogical} / 3 \times 35) + (\text{Technical} / 3 \times 35) + (\text{Runnable} \times 15) + (\text{Prereqs} \times 15)$$
 
 ---
 
