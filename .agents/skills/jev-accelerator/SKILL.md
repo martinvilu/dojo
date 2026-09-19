@@ -135,8 +135,39 @@ node .agents/skills/jev-accelerator/scripts/jev-doc-quality.mjs <path-to-documen
 }
 ```
 
+### 5. Student C Submission & Git Repository Analyzer (`jev-c-analyzer.mjs`)
+Analyzes student Git repositories containing C projects (`.c`, `.h`, `Makefile`) evaluating memory safety, dynamic memory leaks, modularity, build system, and commit progression:
+
+```bash
+node .agents/skills/jev-accelerator/scripts/jev-c-analyzer.mjs <path-to-c-repo>
+```
+
+**Example Output:**
+```json
+{
+  "target": "/path/to/student_c_repo",
+  "gradeIndex": 80,
+  "assessment": "NOTABLE",
+  "dimensions": {
+    "memorySafety": {
+      "score": 2.24,
+      "max": 3,
+      "confidence": 0.75,
+      "staticAllocCount": 1,
+      "staticFreeCount": 1,
+      "unsafeFunctions": []
+    },
+    "errorHandling": { "score": 1.75, "max": 2, "confidence": 0.63 },
+    "modularity": { "score": 2, "max": 2, "confidence": 1 },
+    "buildSystem": { "hasProperMakefile": true, "probability": 0.97 },
+    "gitAuthorshipProgression": { "classification": "monolithic_dump", "confidence": 0.98 }
+  },
+  "filesAnalyzed": ["Makefile", "calc.c", "calc.h", "main.c"]
+}
+```
+
 *Composite Scoring in Code*:
-$$\text{QualityIndex} = (\text{Pedagogical} / 3 \times 35) + (\text{Technical} / 3 \times 35) + (\text{Runnable} \times 15) + (\text{Prereqs} \times 15)$$
+$$\text{Grade} = (\text{MemorySafety} / 3 \times 35) + (\text{ErrorHandling} / 2 \times 25) + (\text{Modularity} / 2 \times 20) + (\text{BuildSystem} \times 10) + (\text{GitDiscipline})$$
 
 ---
 
