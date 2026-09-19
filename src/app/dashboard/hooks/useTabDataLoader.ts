@@ -69,17 +69,23 @@ export function useTabDataLoader({
 
           const courseIds = safeCourses.map((c: any) => c.id || c.course?.id).filter(Boolean);
           if (courseIds.length > 0) {
+            // ⚡ Bolt: Performance Optimization
+            // Replaced O(N) Array.find() scans with an O(1) Map lookup
+            const courseNameMap = new Map<string, string>();
+            for (let i = 0; i < safeCourses.length; i++) {
+              const c = safeCourses[i];
+              const cid = c.id || c.course?.id;
+              if (cid) courseNameMap.set(cid, c.name || c.course?.name || "Cátedra");
+            }
+            const getCourseName = (cid: string) => courseNameMap.get(cid) || "Cátedra";
+
             const assignRes = profile?.role === "student"
               ? await api("getStudentAssignments", { courseIds })
               : await api("getTeacherAssignments", { courseIds });
             const rawAssignments = Array.isArray(assignRes) ? assignRes : (assignRes?.assignments || []);
-            const courseNameOf = (cid: string) =>
-              safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.name
-              || safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.course?.name
-              || "Cátedra";
             const loadedAssignments = rawAssignments.map((a: any) => ({
               ...a,
-              course_name: a.course_name || courseNameOf(a.course_id),
+              course_name: a.course_name || getCourseName(a.course_id),
             }));
             setAssignments(loadedAssignments);
 
@@ -88,7 +94,7 @@ export function useTabDataLoader({
               courseIds.map(async (cid: string) => {
                 try {
                   const detail = await api("getCourseDetails", { courseId: cid });
-                  const cName = detail?.name || safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.name || "Cátedra";
+                  const cName = detail?.name || getCourseName(cid);
                   const instances = detail?.class_instances || [];
                   instances.forEach((inst: any) => {
                     allClassInstances.push({
