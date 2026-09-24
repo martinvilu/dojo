@@ -290,7 +290,10 @@ async function cloneCourseExtraData(payload, context) {
         
         const assignmentData = {
             ...data,
-            course_id: String(newCourseId)
+            course_id: String(newCourseId),
+            // Cada tarea clonada necesita su propio secreto de autograding:
+            // reutilizarlo permitía publicar notas en ambos cursos.
+            sync_secret: generateSyncSecret()
         };
         Object.keys(assignmentData).forEach(k => assignmentData[k] === undefined && delete assignmentData[k]);
         

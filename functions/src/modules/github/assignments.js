@@ -57,7 +57,8 @@ async function archiveAssignment(payload, context) {
     
     await Promise.all(promises);
     await db.collection('assignments').doc(assignmentId).update({ is_archived: true });
-    return { success: true };
+    const count = subsSnap.docs.filter(doc => doc.data().repo_url).length;
+    return { success: true, count };
 }
 
 async function getTeacherAssignments(payload, context) {
@@ -77,30 +78,106 @@ async function getTeacherAssignments(payload, context) {
     return assignments;
 }
 
+const TEMPLATE_REPO_RE = /^([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]{1,100})$/;
+const EDITABLE_ASSIGNMENT_FIELDS = ['title', 'description', 'due_date', 'template_repo', 'is_group', 'create_feedback_pr'];
+const MAX_TITLE_LENGTH = 120;
+const MAX_DESCRIPTION_LENGTH = 10000;
+
+function invalid(message) {
+    return new HttpsError('invalid-argument', message);
+}
+
+/** Acepta `org/repo` o una URL de GitHub y devuelve `org/repo`. */
+function normalizeTemplateRepo(value) {
+    const text = String(value || '').trim()
+        .replace(/^https?:\/\/(www\.)?github\.com\//i, '')
+        .replace(/\.git$/i, '')
+        .replace(/\/+$/, '');
+    if (!TEMPLATE_REPO_RE.test(text)) {
+        throw invalid("El repositorio plantilla debe tener el formato 'organizacion/repositorio'.");
+    }
+    return text;
+}
+
+function parseDateOnly(value, label) {
+    const text = String(value || '').trim();
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T23:59:59` : text);
+    if (!text || Number.isNaN(date.getTime())) throw invalid(`La fecha ${label} no es válida.`);
+    return date;
+}
+
+/**
+ * Valida y normaliza los campos editables de una tarea (mejora 3.24).
+ * Con `partial` solo procesa los campos presentes (edición); si no, exige
+ * título. Ignora cualquier otro campo del payload (course_id, sync_secret…).
+ */
+async function sanitizeAssignmentFields(input, { db, courseId, partial = false }) {
+    const out = {};
+    const has = (key) => Object.prototype.hasOwnProperty.call(input, key) && input[key] !== undefined;
+
+    if (has('title') || !partial) {
+        const title = String(input.title || '').trim();
+        if (!title) throw invalid('La tarea necesita un título.');
+        if (title.length > MAX_TITLE_LENGTH) throw invalid(`El título admite hasta ${MAX_TITLE_LENGTH} caracteres.`);
+        out.title = title;
+    }
+    if (has('description')) {
+        const description = String(input.description);
+        if (description.length > MAX_DESCRIPTION_LENGTH) {
+            throw invalid(`La descripción admite hasta ${MAX_DESCRIPTION_LENGTH} caracteres.`);
+        }
+        out.description = description;
+    } else if (!partial) {
+        out.description = '';
+    }
+    if (has('template_repo') && String(input.template_repo).trim() !== '') {
+        out.template_repo = normalizeTemplateRepo(input.template_repo);
+    } else if (has('template_repo') || !partial) {
+        out.template_repo = '';
+    }
+    if (has('is_group') || !partial) out.is_group = Boolean(input.is_group);
+    if (has('create_feedback_pr') || !partial) out.create_feedback_pr = Boolean(input.create_feedback_pr);
+
+    if (has('due_date') && String(input.due_date).trim() !== '') {
+        const due = parseDateOnly(input.due_date, 'de entrega');
+        const cSnap = await db.collection('courses').doc(String(courseId)).get();
+        const startDate = cSnap && cSnap.exists ? cSnap.data().start_date : null;
+        if (startDate) {
+            const start = new Date(`${String(startDate).slice(0, 10)}T00:00:00`);
+            if (!Number.isNaN(start.getTime()) && due < start) {
+                throw invalid('La fecha de entrega no puede ser anterior al inicio de la cursada.');
+            }
+        }
+        out.due_date = String(input.due_date).trim();
+    } else if (has('due_date') || !partial) {
+        out.due_date = '';
+    }
+    return out;
+}
+
 async function createAssignment(payload, context) {
     const { db, admin } = context;
     const courseId = payload.course_id || payload.courseId || payload.course;
     if (!courseId) {
         throw new Error("El parámetro course_id es requerido para crear una tarea.");
     }
-    
-    const assignmentData = {
+
+    const fields = await sanitizeAssignmentFields({
+        title: payload.title ?? payload.name,
+        description: payload.description,
+        due_date: payload.due_date ?? payload.dueDate,
+        template_repo: payload.template_repo ?? payload.templateRepo,
+        is_group: payload.is_group ?? payload.isGroup,
+        create_feedback_pr: payload.create_feedback_pr ?? payload.createFeedbackPr
+    }, { db, courseId });
+
+    const ref = await db.collection('assignments').add({
         course_id: String(courseId),
-        title: payload.title || payload.name || 'Sin título',
-        description: payload.description || '',
-        due_date: payload.due_date || payload.dueDate || '',
-        template_repo: payload.template_repo || payload.templateRepo || '',
-        is_group: Boolean(payload.is_group || payload.isGroup),
-        create_feedback_pr: Boolean(payload.create_feedback_pr || payload.createFeedbackPr),
+        ...fields,
         is_archived: false,
         sync_secret: generateSyncSecret(),
         created_at: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    // Remove any undefined properties just in case
-    Object.keys(assignmentData).forEach(key => assignmentData[key] === undefined && delete assignmentData[key]);
-
-    const ref = await db.collection('assignments').add(assignmentData);
+    });
     return { id: ref.id };
 }
 
@@ -465,9 +542,18 @@ async function submitAssignment(payload, context) {
 
 async function updateAssignment(payload, context) {
     const { db } = context;
-    const dataToUpdate = { ...payload.data };
-    Object.keys(dataToUpdate).forEach(key => dataToUpdate[key] === undefined && delete dataToUpdate[key]);
-    await db.collection('assignments').doc(payload.assignmentId).update(dataToUpdate);
+    const ref = db.collection('assignments').doc(payload.assignmentId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new Error("La tarea no existe");
+
+    // Solo campos editables: course_id, sync_secret o peer_review no se
+    // pueden sobrescribir desde el formulario de edición.
+    const data = payload.data && typeof payload.data === 'object' ? payload.data : {};
+    const editable = Object.fromEntries(Object.entries(data).filter(([key]) => EDITABLE_ASSIGNMENT_FIELDS.includes(key)));
+    const dataToUpdate = await sanitizeAssignmentFields(editable, { db, courseId: snap.data().course_id, partial: true });
+    if (Object.keys(dataToUpdate).length === 0) throw invalid('No hay cambios válidos para guardar.');
+
+    await ref.update(dataToUpdate);
     return { success: true };
 }
 
