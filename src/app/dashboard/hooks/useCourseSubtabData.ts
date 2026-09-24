@@ -75,7 +75,7 @@ export function useCourseSubtabData({
     try {
       let courseAssignments = assignments;
       if (assignments.length === 0) {
-        const res = await api("getTeacherAssignments");
+        const res = await api("getTeacherAssignments", { courseIds: [cid] });
         courseAssignments = (res || []).filter((a: any) => a.course_id === cid);
         setAssignments(courseAssignments);
       }
@@ -129,7 +129,7 @@ export function useCourseSubtabData({
             const res = await api("getCourseDetails", { courseId: cid });
             setTeacherClasses(res?.class_instances || []);
           } else if (courseSubTab === "assignments") {
-            const res = await api("getTeacherAssignments");
+            const res = await api("getTeacherAssignments", { courseIds: [cid] });
             const courseAssignments = (res || []).filter((a: any) => a.course_id === cid);
             setAssignments(courseAssignments);
           } else if (courseSubTab === "announcements") {
