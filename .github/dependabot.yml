@@ -1,0 +1,46 @@
+# Actualizaciones automáticas de dependencias (mejora 5.08).
+# Los parches y minors de desarrollo se agrupan para reducir el ruido;
+# .github/workflows/dependabot-automerge.yml habilita el auto-merge de los
+# parches una vez que pasan los checks requeridos de "Tests".
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Argentina/Buenos_Aires
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      framework:
+        patterns: [next, eslint-config-next, react, react-dom, "@types/react", "@types/react-dom"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Argentina/Buenos_Aires
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(functions-deps)"
+    groups:
+      functions-dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci(actions)"
