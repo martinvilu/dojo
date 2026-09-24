@@ -12,18 +12,41 @@ Cada propuesta incluye una línea **Estado** verificada contra el código de `ma
 
 | Categoría | ✅ | 🟡 | ⬜ |
 |---|:---:|:---:|:---:|
-| 1. Frontend, UX/UI y Accesibilidad | 3 | 7 | 40 |
-| 2. Arquitectura y Calidad de Código | 9 | 6 | 35 |
-| 3. Backend, Firebase y Seguridad | 6 | 8 | 36 |
-| 4. Rendimiento y Web Vitals | 6 | 1 | 43 |
-| 5. Testing, CI/CD y Observabilidad | 6 | 6 | 38 |
-| **Total** | **30** | **28** | **192** |
+| 1. Frontend, UX/UI y Accesibilidad | 7 | 6 | 37 |
+| 2. Arquitectura y Calidad de Código | 11 | 6 | 33 |
+| 3. Backend, Firebase y Seguridad | 10 | 8 | 32 |
+| 4. Rendimiento y Web Vitals | 7 | 2 | 41 |
+| 5. Testing, CI/CD y Observabilidad | 9 | 5 | 36 |
+| **Total** | **44** | **27** | **179** |
 
 **Cambios en el diagnóstico desde la versión original del documento:**
 - Las Cloud Functions ya no viven en un único archivo: están separadas por dominio en `functions/src/modules/` y la callable `api` aplica autorización por acción (`functions/src/authz.js`) antes de despachar.
 - Existe validación con Zod en el cliente (`src/lib/schemas/`, `src/lib/env.ts`); falta extenderla a las Cloud Functions.
 - La auditoría de seguridad del 24/09/2026 (ver `status.md`) corrigió escalada de privilegios, fugas de secretos de curso a estudiantes, SSRF en Moodle y una RCE en Next.js; `npm audit` queda en 0.
+- El 24/09/2026 se implementó un lote de Fase 1 (ver registro abajo): sanitización de Markdown, accesibilidad de modales, validación de notas y tareas, webhook idempotente, healthcheck y CI de seguridad.
 - Siguen vigentes los monolitos de UI (`CourseSchedulesPanel.tsx` ~1.100 líneas, `AssignmentsPanel.tsx` ~630), el uso extendido de `any` (~440) y la ausencia de Playwright, Sentry y tests de componentes.
+
+**Registro de implementación — 24/09/2026 (Fase 1: estabilización y seguridad)**
+
+| Mejora | Commit | Resultado |
+|---|---|---|
+| 2.31 | `fix(security): sanitize user-authored markdown…` | Cierra un XSS almacenado en avisos y descripciones de clase. |
+| 1.01 · 1.02 | `feat(a11y): trap focus and close with Escape…` | Trampa de foco, Escape y restauración de foco en todos los modales. |
+| 1.13 | `feat(ui): replace window.confirm…` | Diálogo de confirmación accesible con tono destructivo. |
+| — | `fix(a11y): declare Spanish as the document language` | `<html lang="es">`. |
+| 3.41 | `fix(grades): validate grades server-side…` | Notas 0-10 validadas; corrige el escalado a Moodle (1/10 se publicaba como 100 %) y la importación entre cursos. |
+| 3.24 | `feat(assignments): validate assignment fields…` | Validación de tareas y secreto propio en tareas clonadas. |
+| — | `fix(dashboard): unwrap api responses…` | Listado de tareas tras crear/archivar y clonación de configuración vuelven a funcionar. |
+| 3.08 | `feat(webhook): make autograding grade delivery idempotent` | Sin entregas duplicadas ante reintentos. |
+| 3.50 | `feat(api): add /api/health endpoint…` | Endpoint para monitores de disponibilidad. |
+| 2.34 | `chore(deps): remove unused sonner…` | Dependencias sin uso eliminadas. |
+| 5.08 | `ci(deps): configure Dependabot…` | Actualizaciones semanales y auto-merge de parches. |
+| 5.19 · 5.31 | `ci(security): add weekly npm audit and CodeQL…` | Auditoría de dependencias y SAST continuos. |
+| 4.27 | `perf(attendance): lazy-load the QR scanner…` | -22,6 % de JS inicial en `/dashboard`. |
+| 1.33 | `feat(ui): show an offline banner…` | Aviso de conexión perdida/restablecida. |
+| 4.07 (parcial) | `refactor(firebase): replace deprecated enableIndexedDbPersistence…` | Caché offline compartida entre pestañas. |
+
+**Próximo lote sugerido (Fase 1 restante):** 3.18 tokens QR rotativos, 3.13 cifrado de tokens de GitHub/Moodle en reposo, 3.12 verificación de firma LTI 1.3, 3.05 rate limiting de la callable, 1.49 aviso de cambios sin guardar, 1.23/1.24 validación accesible de formularios y 2.07 schemas Zod en Cloud Functions.
 <!-- estado:fin -->
 
 ---
@@ -51,14 +74,14 @@ _Mejoras orientadas a la experiencia de usuario, diseño visual, usabilidad móv
 - **Archivos involucrados:** `src/modules/course/components/AdminPanel.tsx, src/modules/course/components/FeedbackModals.tsx`
 - **Propuesta técnica:** Incorporar un hook `useFocusTrap` o la biblioteca nativa headless UI / Radix Dialog para atrapar el tabulado dentro del modal y restaurar el foco al cerrarlo.
 - **Impacto y beneficio:** Cumplimiento estricto de WCAG 2.1 AA en navegación por teclado.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `src/hooks/useFocusTrap.ts` en BaseModal, CommandPalette y `ModalShell` (6 modales propios).
 
 ### 1.02. Soporte de cierre con tecla Escape en todas las ventanas modales
 - **Diagnóstico actual:** Algunos modales solo se pueden cerrar haciendo clic en la 'X' o fuera de ellos, sin escuchar el evento de teclado `Escape`.
 - **Archivos involucrados:** `src/modules/attendance/components/QrScannerModal.tsx, src/modules/mail/components/EmailManagementPanel.tsx`
 - **Propuesta técnica:** Agregar un listener global `keydown` para `Escape` en el contenedor de modal que invoque el callback de cierre.
 - **Impacto y beneficio:** Mejora inmediata de ergonomía y accesibilidad para teclado.
-- **Estado (24/09/2026):** 🟡 Parcial — BaseModal y CommandPalette cierran con Escape; faltan modales propios.
+- **Estado (24/09/2026):** ✅ Implementada — Escape cierra todos los modales vía `useFocusTrap`; solo reacciona el diálogo superior.
 
 ### 1.03. Migración de elementos <img> nativos a Next.js <Image />
 - **Diagnóstico actual:** Se utilizan etiquetas `<img>` estándar de HTML, lo que provoca advertencias de ESLint y no aprovecha WebP/AVIF ni lazy loading automático.
@@ -135,7 +158,7 @@ _Mejoras orientadas a la experiencia de usuario, diseño visual, usabilidad móv
 - **Archivos involucrados:** `src/modules/course/components/CourseSettingsPanel.tsx`
 - **Propuesta técnica:** Crear un componente `ConfirmationModal` reutilizable con estética Dojo, foco atrapado y descripción clara del impacto.
 - **Impacto y beneficio:** UI cohesiva y controlada, sin diálogos intrusivos del navegador.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `confirmAction()` + `ConfirmDialogHost` reemplazan los 15 `window.confirm()`.
 
 ### 1.14. Añadir tooltip accesible con teclado y retardo en botones con solo icono
 - **Diagnóstico actual:** Los botones como editar, borrar o anclar comentario carecen de tooltips informativos para usuarios visuales que navegan con teclado.
@@ -275,7 +298,7 @@ _Mejoras orientadas a la experiencia de usuario, diseño visual, usabilidad móv
 - **Archivos involucrados:** `src/app/dashboard/page.tsx`
 - **Propuesta técnica:** Escuchar `window.addEventListener('online')` y `offline` para desplegar un banner superior amigable.
 - **Impacto y beneficio:** Transparencia sobre el estado de la red para evitar pérdida de datos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `OfflineBanner` + `useOnlineStatus` en el layout raíz, con región `aria-live`.
 
 ### 1.34. Selector de materias con buscador integrado para usuarios con múltiples comisiones
 - **Diagnóstico actual:** Docentes con más de 6 comisiones deben desplazarse por un select largo e incómodo.
@@ -534,7 +557,7 @@ _Refactorización estructural, eliminación de componentes monolíticos, tipado 
 - **Archivos involucrados:** `src/modules/moodle/components/MoodleIntegrationPanel.tsx, src/modules/auth/components/AuthScreen.tsx`
 - **Propuesta técnica:** Reemplazar por `logger.info()`, `logger.warn()` y `logger.error()` con metadata del usuario.
 - **Impacto y beneficio:** Logs limpios en desarrollo y listos para monitoreo en producción.
-- **Estado (24/09/2026):** 🟡 Parcial — Queda 1 `console.log`; `src/lib/logger.ts` disponible.
+- **Estado (24/09/2026):** 🟡 Parcial — Sin `console.log` fuera de `src/lib/logger.ts`; quedan ~33 `console.error/warn` en componentes.
 
 ### 2.20. Creación de tipos específicos para integración de GitHub API
 - **Diagnóstico actual:** Los datos devueltos por GitHub (commits, pull requests, issues) se manejan como `any[]`.
@@ -618,7 +641,7 @@ _Refactorización estructural, eliminación de componentes monolíticos, tipado 
 - **Archivos involucrados:** `src/modules/course/components/CourseOverviewPanel.tsx, src/modules/mail/components/EmailManagementPanel.tsx`
 - **Propuesta técnica:** Crear un componente `<MarkdownRenderer content={text} />` que use `DOMPurify` de forma estandarizada.
 - **Impacto y beneficio:** Protección absoluta contra inyecciones XSS al renderizar Markdown de alumnos o docentes.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `src/lib/markdown.ts`: HTML crudo escapado y links/imágenes con esquemas permitidos; tests en `tests/unit/markdown.test.ts`.
 
 ### 2.32. Definición de contratos de datos para retroalimentación y peer review
 - **Diagnóstico actual:** La revisión entre pares contiene estructuras libres sin validación de rúbrica.
@@ -639,7 +662,7 @@ _Refactorización estructural, eliminación de componentes monolíticos, tipado 
 - **Archivos involucrados:** `package.json`
 - **Propuesta técnica:** Desinstalar dependencias duplicadas y limpiar imports residuales.
 - **Impacto y beneficio:** Menor peso del `node_modules` y menor superficie de vulnerabilidades.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — Eliminados `sonner` y `@types/marked`; `@typesafe-ai/sdk` se conserva para el roadmap Jev.
 
 ### 2.35. Creación de un Adapter para Moodle Web Services
 - **Diagnóstico actual:** Las llamadas REST a Moodle se hacen con URLs concatenadas y parámetros dispersos en el componente.
@@ -814,7 +837,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/app/api/cli/, functions/src/github/`
 - **Propuesta técnica:** Almacenar el `X-GitHub-Delivery` ID en una colección `processed_webhooks` y descartar entregas ya procesadas.
 - **Impacto y beneficio:** Garantía de que cada commit o PR se procesa exactamente una vez.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — Marcadores `processed_webhooks` (TTL 30 días), IDs deterministas y cabecera `X-Dojo-Delivery` en las plantillas.
 
 ### 3.09. Sanitización rigurosa de entradas en Cloud Functions para evitar NoSQL Injection
 - **Diagnóstico actual:** Los parámetros de búsqueda se pasan a consultas de Firestore sin sanitizar caracteres especiales.
@@ -828,7 +851,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/grades/audit.js`
 - **Propuesta técnica:** Crear un trigger `onDocumentUpdated` sobre entregas que guarde un log de auditoría en una subcolección protegida de solo lectura.
 - **Impacto y beneficio:** Respaldo legal y transparencia absoluta en reclamos de exámenes.
-- **Estado (24/09/2026):** 🟡 Parcial — `gradeSubmission` registra cada calificación en `audit_logs`.
+- **Estado (24/09/2026):** 🟡 Parcial — `gradeSubmission` audita cada nota normalizada; las importaciones masivas aún no generan entradas de auditoría.
 
 ### 3.11. Restricción de CORS estricta en endpoints de Next.js API y Cloud Functions
 - **Diagnóstico actual:** Las rutas admiten CORS permisivo o encabezados genéricos `*`.
@@ -926,7 +949,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/assignments/create.js`
 - **Propuesta técnica:** Validar en backend que `due_date > start_date` y que el repositorio plantilla tenga formato válido `org/repo`.
 - **Impacto y beneficio:** Datos consistentes y libres de contradicciones temporales.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `sanitizeAssignmentFields()`: título, `org/repo`, fecha de entrega ≥ inicio de cursada y whitelist en `updateAssignment`.
 
 ### 3.25. Notificaciones Push automáticas para consultas resueltas en foros
 - **Diagnóstico actual:** Cuando un docente marca una respuesta como 'Solución definitiva', el alumno no se entera a menos que ingrese a la app.
@@ -989,7 +1012,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/errors/codes.js`
 - **Propuesta técnica:** Crear diccionario de errores: `AUTH_INVALID_TOKEN`, `COURSE_NOT_FOUND`, `ASSIGNMENT_PAST_DUE`.
 - **Impacto y beneficio:** El frontend puede reaccionar y mostrar mensajes localizados amigables.
-- **Estado (24/09/2026):** 🟡 Parcial — El dispatcher propaga códigos `HttpsError` (`permission-denied`, `not-found`, `invalid-argument`).
+- **Estado (24/09/2026):** 🟡 Parcial — El dispatcher propaga `HttpsError` (`permission-denied`, `not-found`, `invalid-argument`) desde authz y validaciones.
 
 ### 3.34. Gestión de roles con Custom Claims de Firebase Auth en lugar de lecturas de Firestore
 - **Diagnóstico actual:** Actualmente cada verificación de rol en `firestore.rules` hace una lectura `get()` al documento `profiles/{uid}`.
@@ -1045,7 +1068,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/grades/validate.js`
 - **Propuesta técnica:** Asegurar en backend que `0 <= grade <= 10` y normalizar formatos con comas/puntos decimales.
 - **Impacto y beneficio:** Imposibilidad de guardar notas inválidas en los registros oficiales.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `functions/src/lib/grades.js`: 0-10 con coma/punto o nota conceptual, aplicado en UI, webhook, CSV y planilla.
 
 ### 3.42. Detección y alerta de plagio entre repositorios de alumnos en entregas de código
 - **Diagnóstico actual:** Los docentes deben clonar y comparar manualmente trabajos prácticos sospechosos de copia.
@@ -1108,7 +1131,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/app/api/health/route.ts`
 - **Propuesta técnica:** Crear `/api/health` que compruebe lectura de Firestore, latencia de red y responda estado 200/503 con diagnóstico.
 - **Impacto y beneficio:** Monitoreo proactivo con Uptime Kuma o Pingdom para alertar antes de que los alumnos noten caídas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `GET /api/health` (Firestore requerido, GitHub opcional con `?deep=1`), 200/503.
 
 
 ## Categoría 4: Rendimiento, Optimización y Web Vitals (Core Web Vitals)
@@ -1164,7 +1187,7 @@ _Optimización de tiempos de carga, reducción de bundle JS, virtualización de 
 - **Archivos involucrados:** `src/lib/firebase/clientApp.ts`
 - **Propuesta técnica:** Configurar `persistentMultipleTabManager` con límites de cache de 50 MB en la inicialización de Firestore.
 - **Impacto y beneficio:** Arranque ultrarrápido y control del almacenamiento local del navegador.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** 🟡 Parcial — `persistentLocalCache` con `persistentMultipleTabManager` reemplaza la API deprecada.
 
 ### 4.08. Eliminación de Polyfills redundantes en el bundle del cliente
 - **Diagnóstico actual:** Se incluyen dependencias y polyfills de ES5/ES6 innecesarios para navegadores modernos.
@@ -1304,7 +1327,7 @@ _Optimización de tiempos de carga, reducción de bundle JS, virtualización de 
 - **Archivos involucrados:** `src/modules/attendance/components/QrScannerModal.tsx`
 - **Propuesta técnica:** Cargar `html5-qrcode` mediante `import('html5-qrcode')` dinámicamente solo cuando se abre el modal.
 - **Impacto y beneficio:** Ahorro inmediato de peso en la carga inicial del alumno.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `QrScannerModal` con `next/dynamic` (`ssr: false`): -375 KB de JS inicial en `/dashboard`.
 
 ### 4.28. Optimización del Command Palette con almacenamiento en Trie o Map estructurado
 - **Diagnóstico actual:** La búsqueda lineal por subcadenas recorre todo el historial de clases y tareas en cada pulsación.
@@ -1486,7 +1509,7 @@ _Automatización de pruebas con Playwright y Jest, telemetría y monitoreo de er
 - **Archivos involucrados:** `src/lib/dates.ts, src/lib/clipboard.ts, src/lib/url.ts`
 - **Propuesta técnica:** Crear suites con Jest/Vitest que cubran casos límite (cambios de año, husos horarios, URLs malformadas).
 - **Impacto y beneficio:** Confianza total en las funciones fundacionales compartidas por toda la app.
-- **Estado (24/09/2026):** 🟡 Parcial — Tests nativos para `dates`, `env`, `cors` y verificación de webhooks.
+- **Estado (24/09/2026):** 🟡 Parcial — Tests nativos para `dates`, `env`, `cors`, webhooks, `markdown` y `health`.
 
 ### 5.03. Pruebas de integración de componentes React con React Testing Library
 - **Diagnóstico actual:** No existen tests de componentes que verifiquen el correcto renderizado de rangos ninja, alertas o modales.
@@ -1528,7 +1551,7 @@ _Automatización de pruebas con Playwright y Jest, telemetría y monitoreo de er
 - **Archivos involucrados:** `.github/dependabot.yml`
 - **Propuesta técnica:** Configurar reglas automáticas que fusionen parches si pasan el 100% de los tests en verde.
 - **Impacto y beneficio:** Dependencias siempre al día sin sobrecarga manual de mantenimiento.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — `.github/dependabot.yml` + auto-merge de parches (requiere auto-merge y checks obligatorios en `main`).
 
 ### 5.09. Validación de variables de entorno en tiempo de build con Zod (@t3-oss/env-nextjs)
 - **Diagnóstico actual:** Si falta una variable en `.env` (como API keys de Firebase), la app compila pero falla silenciosamente en runtime.
@@ -1605,7 +1628,7 @@ _Automatización de pruebas con Playwright y Jest, telemetría y monitoreo de er
 - **Archivos involucrados:** `.github/workflows/security.yml`
 - **Propuesta técnica:** Añadir un job semanal de GitHub Actions que ejecute `npm audit --audit-level=high`.
 - **Impacto y beneficio:** Protección proactiva contra dependencias comprometidas.
-- **Estado (24/09/2026):** 🟡 Parcial — `npm audit` limpio (0 vulnerabilidades) pero sin chequeo automático en CI.
+- **Estado (24/09/2026):** ✅ Implementada — Workflow `Security`: `npm audit --omit=dev --audit-level=high` en app y functions, semanal y por PR.
 
 ### 5.20. Estandarización de mensajes de commit mediante Commitlint
 - **Diagnóstico actual:** Se exige Conventional Commits pero la regla depende de la disciplina humana sin enforcement automatizado.
@@ -1689,7 +1712,7 @@ _Automatización de pruebas con Playwright y Jest, telemetría y monitoreo de er
 - **Archivos involucrados:** `.github/workflows/codeql.yml`
 - **Propuesta técnica:** Activar el workflow oficial de GitHub CodeQL para análisis semántico continuo.
 - **Impacto y beneficio:** Detección de vulnerabilidades complejas en tiempo de pull request.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (24/09/2026):** ✅ Implementada — CodeQL `security-extended` para JavaScript/TypeScript en el workflow `Security`.
 
 ### 5.32. Manejo de secretos de CI rotativos con GitHub Environments
 - **Diagnóstico actual:** Los secretos de CI están en un solo nivel sin diferenciar permisos de staging y producción.
