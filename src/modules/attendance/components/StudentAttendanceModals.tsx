@@ -1,6 +1,17 @@
 "use client";
 import React from "react";
-import QrScannerModal from "./QrScannerModal";
+import dynamic from "next/dynamic";
+
+// html5-qrcode is large and only needed once a student opens the scanner:
+// load it on demand, client-side only (it touches camera APIs).
+const QrScannerModal = dynamic(() => import("./QrScannerModal"), {
+  ssr: false,
+  loading: () => (
+    <div role="status" aria-live="polite" className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 text-xs text-gray-300">
+      Iniciando cámara…
+    </div>
+  ),
+});
 import ModalShell from "@/components/dashboard/ui/ModalShell";
 
 export function StudentAttendanceModals(props: any) {
