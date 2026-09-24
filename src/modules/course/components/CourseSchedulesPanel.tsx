@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useMemo } from 'react';
 import { api } from '@/lib/api';
-import { marked } from 'marked';
+import { renderMarkdown } from '@/lib/markdown';
 import ClassCommentsThread from '@/modules/course/components/comments/ClassCommentsThread';
 import AttendanceManager from '@/modules/attendance/components/AttendanceManager';
 
@@ -790,7 +790,7 @@ export function CourseSchedulesPanel({
                                           {ci.description && (
                                             <div 
                                               className="text-xs text-gray-400 bg-neutral-950 p-3 rounded-lg border border-neutral-900 markdown-body"
-                                              dangerouslySetInnerHTML={{ __html: marked.parse(ci.description) }}
+                                              dangerouslySetInnerHTML={{ __html: renderMarkdown(ci.description) }}
                                             />
                                           )}
                                           

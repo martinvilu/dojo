@@ -1,6 +1,6 @@
  
 "use client";
-import { marked } from 'marked';
+import { renderMarkdown } from '@/lib/markdown';
 import React, { useRef } from "react";
 import MarkdownToolbar from "@/components/dashboard/ui/MarkdownToolbar";
 
@@ -57,7 +57,7 @@ export function CourseAnnouncementsPanel(props: any) {
                         </div>
                         <div 
                           className="text-xs text-gray-300 leading-relaxed font-sans markdown-body"
-                          dangerouslySetInnerHTML={{ __html: marked.parse(a.message || "") }}
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(a.message) }}
                         />
                         
                         {profile?.role === "student" && (
