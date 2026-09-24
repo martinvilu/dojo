@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "npm run test:unit",
-    "test:unit": "node --experimental-strip-types --test tests/unit/*.test.ts",
+    "test:unit": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/unit/*.test.ts",
     "test:selenium": "node tests/selenium/run-all-tests.js",
     "test:rules": "npx -y firebase-tools@latest emulators:exec --only firestore --project demo-ninja-dojo-rules -- \"npx jest tests/firestore.rules.test.js --runInBand\"",
     "test:local": "./scripts/test-local.sh"
