@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${chivo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
