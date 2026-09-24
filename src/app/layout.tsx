@@ -3,6 +3,7 @@ import { Chivo } from "next/font/google";
 import "./globals.css";
 import { AppToaster } from "@/components/dashboard/ui/ToastNotification";
 import { ConfirmDialogHost } from "@/components/dashboard/ui/ConfirmDialog";
+import OfflineBanner from "@/components/dashboard/ui/OfflineBanner";
 
 const chivo = Chivo({
   variable: "--font-chivo",
@@ -25,6 +26,7 @@ export default function RootLayout({
       className={`${chivo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
+        <OfflineBanner />
         {children}
         <AppToaster />
         <ConfirmDialogHost />
