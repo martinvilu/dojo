@@ -7,6 +7,23 @@ admin.initializeApp();
 const db = admin.firestore();
 db.settings({ ignoreUndefinedProperties: true });
 
+const { ACTION_MODULES, loadActionHandler } = require('./src/actions');
+const { authorizeAction } = require('./src/authz');
+
+const SECRET_KEY_PATTERN = /token|secret|password|api_?key|sourcedid/i;
+
+/** Copia del payload apta para bitácoras: oculta credenciales y tokens. */
+function redactSecrets(value) {
+    if (Array.isArray(value)) return value.map(redactSecrets);
+    if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.entries(value).map(([key, inner]) => [
+            key,
+            SECRET_KEY_PATTERN.test(key) ? '[REDACTED]' : redactSecrets(inner)
+        ]));
+    }
+    return value;
+}
+
 async function syncGradeToMoodle(previousData, grade, feedback) {
     if (!previousData.moodle_lis_outcome_service_url || !previousData.moodle_lis_result_sourcedid) {
         logger.info("No Moodle LTI sync parameters found for submission:", previousData.id || "unknown");
@@ -104,152 +121,6 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
     }
 }
 
-const actionModules = {
-    // profile
-    getProfile: './src/modules/auth/profile',
-    updateProfile: './src/modules/auth/profile',
-    submitMatricula: './src/modules/auth/profile',
-    
-    // admin
-    approveUser: './src/modules/course/admin',
-    updateUserRole: './src/modules/course/admin',
-    updateUserProfile: './src/modules/course/admin',
-    getAdminUsers: './src/modules/course/admin',
-    getAdminCourses: './src/modules/course/admin',
-    getGlobalSettings: './src/modules/course/admin',
-    saveGlobalSettings: './src/modules/course/admin',
-    getAdminCourseDetails: './src/modules/course/admin',
-    deleteUser: './src/modules/course/admin',
-    
-    // attendance
-    markAttendance: './src/modules/attendance/attendance',
-    submitQrAttendance: './src/modules/attendance/attendance',
-    
-    // moodle
-    moodleAutoEnroll: './src/modules/integrations/moodle',
-    exportCourseToMoodleXml: './src/modules/integrations/moodle',
-    syncMoodleCourseRoster: './src/modules/integrations/moodle',
-    exportGradesToMoodleWebservice: './src/modules/integrations/moodle',
-    syncMoodleCourseContents: './src/modules/integrations/moodle',
-    getMoodleLtiDeepLinkContent: './src/modules/integrations/moodle',
-    
-    // courses
-    getCourseDetails: './src/modules/course/courses',
-    enrollCourse: './src/modules/course/courses',
-    createCourse: './src/modules/course/courses',
-    updateCourseName: './src/modules/course/courses',
-    getCourseTeachers: './src/modules/course/courses',
-    assignTeacher: './src/modules/course/courses',
-    removeTeacher: './src/modules/course/courses',
-    getTeacherCourses: './src/modules/course/courses',
-    getCourseSettings: './src/modules/course/courses',
-    updateCourseSettings: './src/modules/course/courses',
-    cloneCourseExtraData: './src/modules/course/courses',
-    getStudentCourses: './src/modules/course/courses',
-    getCourseRoster: './src/modules/course/courses',
-    deleteCourse: './src/modules/course/courses',
-    updateRosterStudentStatus: './src/modules/course/courses',
-    syncGuaraniRoster: './src/modules/course/courses',
-    addSecondaryEmail: './src/modules/auth/profile',
-    mergeProfiles: './src/modules/auth/profile',
-    getXpLogs: './src/modules/auth/profile',
-
-    logActivity: './src/modules/system/activity',
-    getActivityLogs: './src/modules/system/activity',
-    
-    // gmailAuth & Email Management
-    getGmailAuthUrl: './src/modules/mail/gmailAuth',
-    saveGmailAuthCode: './src/modules/mail/gmailAuth',
-    getGmailAuthStatus: './src/modules/mail/gmailAuth',
-    disconnectGmailAuth: './src/modules/mail/gmailAuth',
-    sendGmailNotification: './src/modules/mail/gmailAuth',
-    
-    // emailTemplates
-    getEmailTemplates: './src/modules/mail/emailTemplates',
-    saveEmailTemplate: './src/modules/mail/emailTemplates',
-    
-    // scheduledEmails
-    getScheduledEmails: './src/modules/mail/scheduledEmails',
-    createScheduledEmail: './src/modules/mail/scheduledEmails',
-    cancelScheduledEmail: './src/modules/mail/scheduledEmails',
-    triggerScheduledEmailNow: './src/modules/mail/scheduledEmails',
-    sendDirectStudentEmail: './src/modules/mail/scheduledEmails',
-    getMailLogs: './src/modules/mail/scheduledEmails',
-    
-    // schedule
-    saveScheduleVersion: './src/modules/course/schedule',
-    getScheduleVersions: './src/modules/course/schedule',
-    restoreScheduleVersion: './src/modules/course/schedule',
-    getComparisonCourses: './src/modules/course/schedule',
-    
-    // studyGroups
-    createStudyGroup: './src/modules/study_groups/studyGroups',
-    joinStudyGroup: './src/modules/study_groups/studyGroups',
-    leaveStudyGroup: './src/modules/study_groups/studyGroups',
-    getStudyGroups: './src/modules/study_groups/studyGroups',
-    findStudyBuddies: './src/modules/study_groups/studyGroups',
-    updateStudyGroupChatLinks: './src/modules/study_groups/studyGroups',
-    postStudyGroupMessage: './src/modules/study_groups/studyGroups',
-    getStudyGroupMessages: './src/modules/study_groups/studyGroups',
-    
-    // tutoring
-    registerAsTutor: './src/modules/tutoring/tutoring',
-    getCourseTutors: './src/modules/tutoring/tutoring',
-    bookTutoringSession: './src/modules/tutoring/tutoring',
-    getTutoringSessions: './src/modules/tutoring/tutoring',
-    updateTutoringSessionStatus: './src/modules/tutoring/tutoring',
-    
-    // notifications
-    notifyCourseStudents: './src/modules/notifications/notifications',
-    checkAndAlertStudentsAtRisk: './src/modules/notifications/notifications',
-    getDropoutRiskAnalysis: './src/modules/course/analytics',
-    enablePeerReview: './src/modules/github/peerreview',
-    getMyReviewAssignments: './src/modules/github/peerreview',
-    submitPeerReview: './src/modules/github/peerreview',
-    getPeerReviewFeedback: './src/modules/github/peerreview',
-    setSubmissionPortfolioVisibility: './src/modules/course/portfolio',
-    getMyPortfolio: './src/modules/course/portfolio',
-    getStudentNotifications: './src/modules/notifications/notifications',
-    markNotificationsRead: './src/modules/notifications/notifications',
-    
-    // backups
-    createSystemBackup: './src/modules/system/backups',
-    getSystemBackups: './src/modules/system/backups',
-    restoreBackupDocument: './src/modules/system/backups',
-    downloadSystemBackup: './src/modules/system/backups',
-    deleteBackup: './src/modules/system/backups',
-    
-    // announcements
-    createAnnouncement: './src/modules/course/announcements',
-    getTeacherAnnouncements: './src/modules/course/announcements',
-    getStudentAnnouncements: './src/modules/course/announcements',
-    acknowledgeAnnouncement: './src/modules/course/announcements',
-    getAnnouncementAcknowledgements: './src/modules/course/announcements',
-    
-    // stats
-    getTeacherDashboardStats: './src/modules/course/stats',
-    getCourseDashboardStats: './src/modules/course/stats',
-    
-    // assignments
-    archiveAssignment: './src/modules/github/assignments',
-    getTeacherAssignments: './src/modules/github/assignments',
-    createAssignment: './src/modules/github/assignments',
-    getAssignmentSubmissions: './src/modules/github/assignments',
-    toggleAccess: './src/modules/github/assignments',
-    massToggleAccess: './src/modules/github/assignments',
-    gradeSubmission: './src/modules/github/assignments',
-    getStudentAssignments: './src/modules/github/assignments',
-    acceptAssignment: './src/modules/github/assignments',
-    getStudentGithubActivity: './src/modules/github/assignments',
-    getStudentCommits: './src/modules/github/assignments',
-    submitAssignment: './src/modules/github/assignments',
-    updateAssignment: './src/modules/github/assignments',
-    syncGradesFromSpreadsheet: './src/modules/github/assignments',
-    addGroupCollaborator: './src/modules/github/assignments',
-
-    // plagiarism
-    detectAssignmentPlagiarism: './src/modules/github/plagiarism',
-};
 
 exports.api = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in.');
@@ -266,17 +137,17 @@ exports.api = onCall(async (request) => {
     };
     
     try {
-        const moduleName = actionModules[action];
-        if (!moduleName) throw new HttpsError('invalid-argument', `Acción desconocida: ${action}`);
-        
-        logger.info(`[API Call] Iniciando acción: ${action}`, { uid, payload_keys: Object.keys(payload || {}) });
-        const actionModule = require(moduleName);
-        
-        const handler = actionModule[action];
-        if (typeof handler !== 'function') {
-            throw new HttpsError('internal', `El manejador para ${action} no está implementado en ${moduleName}`);
+        const handler = loadActionHandler(action);
+        if (handler === null) throw new HttpsError('invalid-argument', `Acción desconocida: ${action}`);
+        if (!handler) {
+            throw new HttpsError('internal', `El manejador para ${action} no está implementado en ${ACTION_MODULES[action]}`);
         }
-        
+
+        const callerProfile = await getMyProfile();
+        const authorizedPayload = await authorizeAction(action, payload || {}, { uid, db, profile: callerProfile });
+
+        logger.info(`[API Call] Iniciando acción: ${action}`, { uid, payload_keys: Object.keys(payload || {}) });
+
         const context = {
             uid,
             request,
@@ -286,19 +157,19 @@ exports.api = onCall(async (request) => {
             syncGradeToMoodle
         };
         
-        const result = await handler(payload || {}, context);
+        const result = await handler(authorizedPayload, context);
 
         // Auto log write actions in activity_logs
         if (action !== 'getProfile' && action !== 'getActivityLogs' && action !== 'getStudentNotifications' && !action.startsWith('get')) {
             try {
-                const pData = await getMyProfile();
+                const pData = callerProfile;
                 await db.collection('activity_logs').add({
                     uid,
                     user_name: pData ? (pData.full_name || pData.email) : 'Usuario',
                     user_email: pData ? pData.email : '',
                     user_role: pData ? pData.role : 'student',
                     action: action,
-                    details: payload ? JSON.stringify(payload).substring(0, 200) : '',
+                    details: payload ? JSON.stringify(redactSecrets(payload)).substring(0, 200) : '',
                     timestamp: admin.firestore.FieldValue.serverTimestamp()
                 });
             } catch (e) {
@@ -310,6 +181,7 @@ exports.api = onCall(async (request) => {
         return result;
     } catch (e) {
         logger.error(`[API Error] Error en acción: ${action}`, { uid, error: e.message, stack: e.stack });
+        if (e instanceof HttpsError) throw e;
         throw new HttpsError('internal', e.message);
     }
 });

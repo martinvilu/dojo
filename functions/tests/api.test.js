@@ -78,11 +78,22 @@ describe('API Callable Function', () => {
 
   it('can create a new course', async () => {
     const db = admin.firestore();
+    db.collection().doc().get.mockResolvedValue({ exists: true, data: () => ({ role: 'admin' }) });
     await myFunctions.api.run({
       data: { action: 'createCourse', payload: { name: 'Test Course' } },
       auth: { uid: 'user_uid' }
     });
     expect(db.collection().add).toHaveBeenCalled();
+  });
+
+  it('rejects admin-only actions for non-admin callers', async () => {
+    const db = admin.firestore();
+    db.collection().doc().get.mockResolvedValue({ exists: true, data: () => ({ role: 'student' }) });
+    await expect(myFunctions.api.run({
+      data: { action: 'updateUserProfile', payload: { userId: 'victim', data: { role: 'admin' } } },
+      auth: { uid: 'attacker' }
+    })).rejects.toMatchObject({ code: 'permission-denied' });
+    expect(db.collection().doc().update).not.toHaveBeenCalled();
   });
 
   it('calendar endpoint returns 400 if course ID is missing', async () => {

@@ -58,6 +58,15 @@ describe('Subscription secret strength', () => {
     jest.clearAllMocks();
   });
 
+  // createCourse is admin-only: every document read returns an admin profile.
+  function actAsAdmin() {
+    db.collection().doc.mockReturnValue({
+      get: jest.fn().mockResolvedValue({ exists: true, data: () => ({ role: 'admin' }) }),
+      set: jest.fn(),
+      update: jest.fn()
+    });
+  }
+
   function createdPayloadsWithSecret(collectionName) {
     // The router also writes audit-log entries through collection.add; keep
     // only real domain payloads carrying the subscription secret.
@@ -67,6 +76,7 @@ describe('Subscription secret strength', () => {
   }
 
   it('generates a strong sync_secret when creating a course', async () => {
+    actAsAdmin();
     await myFunctions.api.run({
       data: { action: 'createCourse', payload: { name: 'Seguridad' } },
       auth: { uid: 'teacher_uid' }
@@ -92,6 +102,7 @@ describe('Subscription secret strength', () => {
   });
 
   it('never reuses the same secret across creations', async () => {
+    actAsAdmin();
     await myFunctions.api.run({
       data: { action: 'createCourse', payload: { name: 'A' } },
       auth: { uid: 'teacher_uid' }
