@@ -56,7 +56,10 @@ export function useDeepLinks({
       let updatedCourses = courses;
       if (ltiLaunch && courseId) {
         try {
-          await api("moodleAutoEnroll", { courseId });
+          const enrollment = await api("moodleAutoEnroll", { courseId });
+          if (enrollment?.status === "pending") {
+            showToast("Tu inscripción desde Moodle quedó pendiente de aprobación por el docente.", "success");
+          }
           const roleTab = profile.role === "admin" ? "getAdminCourses" : (profile.role === "teacher" ? "getTeacherCourses" : "getStudentCourses");
           const updated = await api(roleTab);
           setCourses(updated || []);

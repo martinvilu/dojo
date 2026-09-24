@@ -1,6 +1,7 @@
 const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
 const { randomBytes } = require('node:crypto');
+const { isSafeExternalUrl } = require('../../lib/urls');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -282,8 +283,9 @@ async function acceptAssignment(payload, context) {
         grade: '',
         feedback: '',
         is_locked: false,
-        moodle_lis_outcome_service_url: payload.moodle_lis_outcome_service_url || '',
-        moodle_lis_result_sourcedid: payload.moodle_lis_result_sourcedid || '',
+        // Solo se guardan parámetros LTI con un outcome service externo válido.
+        moodle_lis_outcome_service_url: isSafeExternalUrl(payload.moodle_lis_outcome_service_url) ? payload.moodle_lis_outcome_service_url : '',
+        moodle_lis_result_sourcedid: isSafeExternalUrl(payload.moodle_lis_outcome_service_url) ? String(payload.moodle_lis_result_sourcedid || '').slice(0, 512) : '',
         created_at: admin.firestore.FieldValue.serverTimestamp()
     });
     

@@ -9,6 +9,7 @@ db.settings({ ignoreUndefinedProperties: true });
 
 const { ACTION_MODULES, loadActionHandler } = require('./src/actions');
 const { authorizeAction } = require('./src/authz');
+const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 
 const SECRET_KEY_PATTERN = /token|secret|password|api_?key|sourcedid/i;
 
@@ -53,6 +54,13 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
     const outcomeUrl = previousData.moodle_lis_outcome_service_url;
     const sourcedId = previousData.moodle_lis_result_sourcedid;
 
+    // La URL la aporta el cliente al aceptar la tarea: nunca hacer POST a
+    // hosts internos o sin TLS (SSRF).
+    if (!isSafeExternalUrl(outcomeUrl)) {
+        logger.warn("URL de outcome service de Moodle rechazada:", previousData.id || "unknown");
+        return;
+    }
+
     // Convert grade to standard decimal (0.0 to 1.0)
     let numericGrade = parseFloat(grade);
     if (isNaN(numericGrade)) {
@@ -80,7 +88,7 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
     <replaceResultRequest>
       <resultRecord>
         <sourcedGUID>
-          <sourcedId>${sourcedId}</sourcedId>
+          <sourcedId>${escapeXml(sourcedId)}</sourcedId>
         </sourcedGUID>
         <result>
           <resultScore>

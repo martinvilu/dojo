@@ -22,6 +22,7 @@ describe('Moodle Integration Expanded Actions', () => {
             exists: true,
             data: () => ({
                 name: 'Algoritmos y Programación',
+                moodle_enabled: true,
                 start_date: '2026-03-01',
                 duration_weeks: 16,
                 class_instances: [
@@ -103,9 +104,52 @@ describe('Moodle Integration Expanded Actions', () => {
         };
     });
 
-    test('moodleAutoEnroll enrolls student or teacher automatically', async () => {
+    test('moodleAutoEnroll never grants a teacher seat from an LTI launch', async () => {
         const res = await moodleAutoEnroll({ courseId: 'c123' }, mockContext);
         expect(res.success).toBe(true);
+        expect(res.status).toBe('not_assigned');
+        const touchedTeachers = mockContext.db.collection.mock.calls.some(([c]) => c === 'course_teachers');
+        expect(touchedTeachers).toBe(true);
+    });
+
+    test('moodleAutoEnroll leaves new students pending teacher approval', async () => {
+        const rosterSet = jest.fn().mockResolvedValue(true);
+        const enrollmentSet = jest.fn().mockResolvedValue(true);
+        const base = mockContext.db.collection.getMockImplementation();
+        mockContext.db.collection.mockImplementation((coll) => {
+            if (coll === 'profiles') {
+                return { doc: () => ({ get: async () => ({ exists: true, data: () => ({ role: 'student' }) }) }) };
+            }
+            if (coll === 'course_roster') {
+                return { doc: () => ({ get: async () => ({ exists: false }), set: rosterSet }) };
+            }
+            if (coll === 'enrollments') {
+                return { doc: () => ({ set: enrollmentSet }) };
+            }
+            return base(coll);
+        });
+
+        const res = await moodleAutoEnroll({ courseId: 'c123' }, mockContext);
+        expect(res.status).toBe('pending');
+        expect(rosterSet).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending', student_id: 'teacher123' }));
+        expect(enrollmentSet).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }));
+    });
+
+    test('moodleAutoEnroll refuses courses without the Moodle integration', async () => {
+        const base = mockContext.db.collection.getMockImplementation();
+        mockContext.db.collection.mockImplementation((coll) => coll === 'courses'
+            ? { doc: () => ({ get: async () => ({ exists: true, data: () => ({ name: 'Sin Moodle' }) }) }) }
+            : base(coll));
+        await expect(moodleAutoEnroll({ courseId: 'c123' }, mockContext)).rejects.toThrow('no está habilitada');
+    });
+
+    test('Moodle web service actions reject internal or non-HTTPS hosts', async () => {
+        for (const moodleUrl of ['http://moodle.unrn.edu.ar', 'https://169.254.169.254', 'https://localhost:8443']) {
+            await expect(syncMoodleCourseRoster({
+                courseId: 'c1', moodleUrl, moodleToken: 't', moodleCourseId: '1'
+            }, mockContext)).rejects.toThrow('HTTPS pública');
+        }
+        expect(fetch).not.toHaveBeenCalled();
     });
 
     test('exportCourseToMoodleXml generates valid Moodle MBZ backup archive matching Moodle 4.2', async () => {

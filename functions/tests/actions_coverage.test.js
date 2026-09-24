@@ -408,8 +408,10 @@ describe('Full Coverage Actions Test Suite', () => {
     test('moodleActions', async () => {
       const ctx = createMockContext({ uid: 'u1' });
       ctx.docStore['profiles/u1'] = { full_name: 'User 1' };
+      ctx.docStore['courses/c1'] = { name: 'Course 1', moodle_enabled: true };
       const res = await moodleActions.moodleAutoEnroll({ courseId: 'c1' }, ctx);
       expect(res.success).toBe(true);
+      expect(res.status).toBe('pending');
     });
 
     test('courseActions', async () => {

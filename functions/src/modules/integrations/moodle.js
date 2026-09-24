@@ -1,5 +1,19 @@
 const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
+const { isSafeExternalUrl } = require('../../lib/urls');
+
+/**
+ * Arma la URL del endpoint REST de Moodle Web Services validando el host
+ * (HTTPS, no interno) y codificando cada parámetro de la query.
+ */
+function moodleRestEndpoint(moodleUrl, params = null) {
+    const base = String(moodleUrl || '').trim().replace(/\/+$/, '');
+    if (!isSafeExternalUrl(base)) {
+        throw new Error("La URL de Moodle debe ser una dirección HTTPS pública válida.");
+    }
+    const endpoint = `${base}/webservice/rest/server.php`;
+    return params ? `${endpoint}?${new URLSearchParams(params).toString()}` : endpoint;
+}
 
 function getCanonicalAppBaseUrl(providedUrl) {
     const CANONICAL = "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
@@ -20,46 +34,65 @@ function getCanonicalAppBaseUrl(providedUrl) {
     return clean;
 }
 
+/**
+ * Inscripción automática al volver de un launch LTI de Moodle.
+ *
+ * El launch llega al dashboard como parámetros de URL sin firma verificada,
+ * así que no se puede confiar en él para otorgar acceso: solo aplica a
+ * cursos con la integración Moodle habilitada, nunca otorga rol docente y
+ * deja a los estudiantes en estado 'pending' hasta que el docente los
+ * apruebe, igual que la inscripción por código de invitación.
+ */
 async function moodleAutoEnroll(payload, context) {
     const { uid, db, admin } = context;
     const { courseId } = payload;
     if (!courseId) throw new Error("Falta el ID del curso");
-    
+
+    const cSnap = await db.collection('courses').doc(courseId).get();
+    if (!cSnap.exists) throw new Error("Curso no encontrado");
+    if (!cSnap.data().moodle_enabled) {
+        throw new Error("La integración con Moodle no está habilitada para este curso.");
+    }
+
     const pSnap = await db.collection('profiles').doc(uid).get();
     const profile = pSnap.exists ? pSnap.data() : {};
-    
-    if (profile.role === 'teacher') {
-        const rosterRef = db.collection('course_teachers').doc(`${courseId}_${uid}`);
-        const rSnap = await rosterRef.get();
-        if (!rSnap.exists) {
-            await rosterRef.set({
-                course_id: courseId,
-                teacher_id: uid,
-                role: 'auxiliar'
-            });
-        }
-    } else {
-        const rosterRef = db.collection('course_roster').doc(`${courseId}_${uid}`);
-        const rSnap = await rosterRef.get();
-        if (!rSnap.exists) {
-            await rosterRef.set({
-                course_id: courseId,
-                student_id: uid,
-                enrolled_at: admin.firestore.FieldValue.serverTimestamp()
-            });
-        }
+
+    if (profile.role === 'teacher' || profile.role === 'admin') {
+        // Los docentes se asignan por código de invitación o desde administración.
+        const tSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+        return { success: true, enrolled: tSnap.exists, status: tSnap.exists ? 'teacher' : 'not_assigned' };
     }
-    
+
+    const rosterRef = db.collection('course_roster').doc(`${courseId}_${uid}`);
+    const rSnap = await rosterRef.get();
+    if (rSnap.exists) {
+        return { success: true, enrolled: true, status: rSnap.data().status || 'approved' };
+    }
+
+    await rosterRef.set({
+        course_id: courseId,
+        student_id: uid,
+        status: 'pending',
+        enrolled_at: admin.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('enrollments').doc(`${uid}_${courseId}`).set({
+        course_id: courseId,
+        student_id: uid,
+        status: 'pending',
+        enrolled_at: admin.firestore.FieldValue.serverTimestamp()
+    });
+
     await db.collection('audit_logs').add({
         action: 'moodle_auto_enroll',
         course_id: courseId,
         student_id: uid,
         actor_id: uid,
         actor_name: profile.full_name || profile.email || uid,
+        status: 'pending',
         created_at: admin.firestore.FieldValue.serverTimestamp()
     });
-    
-    return { success: true };
+
+    return { success: true, enrolled: true, status: 'pending' };
 }
 
 const zlib = require('zlib');
@@ -418,7 +451,12 @@ async function syncMoodleCourseRoster(payload, context) {
         throw new Error("Parámetros 'courseId', 'moodleUrl', 'moodleToken' y 'moodleCourseId' requeridos.");
     }
 
-    const endpoint = `${moodleUrl.replace(/\/$/, '')}/webservice/rest/server.php?wstoken=${moodleToken}&wsfunction=core_enrol_get_enrolled_users&moodlewsrestformat=json&courseid=${moodleCourseId}`;
+    const endpoint = moodleRestEndpoint(moodleUrl, {
+        wstoken: moodleToken,
+        wsfunction: 'core_enrol_get_enrolled_users',
+        moodlewsrestformat: 'json',
+        courseid: moodleCourseId
+    });
 
     const res = await fetch(endpoint);
     const users = await res.json();
@@ -475,6 +513,8 @@ async function exportGradesToMoodleWebservice(payload, context) {
         throw new Error("Parámetros de conexión a Moodle incompletos.");
     }
 
+    const endpoint = moodleRestEndpoint(moodleUrl);
+
     const subsSnap = await db.collection('submissions').where('assignment_id', '==', assignmentId).get();
     const submissions = subsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
@@ -486,7 +526,6 @@ async function exportGradesToMoodleWebservice(payload, context) {
         const moodleUserId = rosterSnap.exists ? rosterSnap.data().moodle_user_id : null;
 
         if (moodleUserId) {
-            const endpoint = `${moodleUrl.replace(/\/$/, '')}/webservice/rest/server.php`;
             const params = new URLSearchParams({
                 wstoken: moodleToken,
                 wsfunction: 'core_grades_update_grades',
@@ -522,7 +561,12 @@ async function syncMoodleCourseContents(payload, context) {
         throw new Error("Parámetros de conexión a Moodle incompletos.");
     }
 
-    const endpoint = `${moodleUrl.replace(/\/$/, '')}/webservice/rest/server.php?wstoken=${moodleToken}&wsfunction=core_course_get_contents&moodlewsrestformat=json&courseid=${moodleCourseId}`;
+    const endpoint = moodleRestEndpoint(moodleUrl, {
+        wstoken: moodleToken,
+        wsfunction: 'core_course_get_contents',
+        moodlewsrestformat: 'json',
+        courseid: moodleCourseId
+    });
 
     const res = await fetch(endpoint);
     const sections = await res.json();
