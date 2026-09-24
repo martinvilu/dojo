@@ -6,6 +6,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { api } from "@/lib/api";
 import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard";
 import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegrationPanel";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export function CourseSettingsPanel(props: any) {
   // The calendar feed is shared outside the teaching staff, so it uses the
@@ -311,8 +312,8 @@ export function CourseSettingsPanel(props: any) {
                           <div className="flex items-center space-x-2">
                             <button
                               type="button"
-                              onClick={() => {
-                                if (confirm(`¿Estás seguro de eliminar la ${comm}?`)) {
+                              onClick={async () => {
+                                if (await confirmAction({ message: `¿Estás seguro de eliminar la ${comm}?`, tone: "danger" })) {
                                   setTeacherCommissions((prev: any) => prev.filter((c: any) => c !== comm));
                                   setTeacherCommissionsMapping((prev: any) => {
                                     const copy = { ...prev };

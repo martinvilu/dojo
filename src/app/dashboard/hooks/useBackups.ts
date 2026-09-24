@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 interface UseBackupsArgs {
   setApiLoading: (v: boolean) => void;
@@ -52,7 +53,7 @@ export function useBackups({ setApiLoading }: UseBackupsArgs) {
   };
 
   const handleRestoreBackupDocument = async (backupId: string, collectionName: string, docId: string) => {
-    if (!confirm(`¿Seguro que querés restaurar el documento ${docId} de la colección ${collectionName}? Sobrescribirá los datos actuales en la base de datos remota.`)) return;
+    if (!(await confirmAction({ message: `¿Seguro que querés restaurar el documento ${docId} de la colección ${collectionName}? Sobrescribirá los datos actuales en la base de datos remota.`, tone: "danger" }))) return;
     setApiLoading(true);
     try {
       await api("restoreBackupDocument", { backupId, collectionName, docId });

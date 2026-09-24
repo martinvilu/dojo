@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth, functions } from "@/lib/firebase/clientApp";
 import { httpsCallable } from "firebase/functions";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 // Callable API helper
 const apiCall = httpsCallable(functions, "api");
@@ -64,7 +65,7 @@ export default function UsersPage() {
   }, [router]);
 
   const handleUpdateUserRole = async (targetUid: string, newRole: "admin" | "teacher" | "student") => {
-    if (!confirm(`¿Estás seguro de que deseas cambiar el rol del usuario a ${newRole === "admin" ? "Administrador" : newRole === "teacher" ? "Profesor" : "Estudiante"}?`)) return;
+    if (!(await confirmAction({ message: `¿Estás seguro de que deseas cambiar el rol del usuario a ${newRole === "admin" ? "Administrador" : newRole === "teacher" ? "Profesor" : "Estudiante"}?`, tone: "danger" }))) return;
     setUpdatingUid(targetUid);
     try {
       await api("updateUserRole", { targetUid, newRole });

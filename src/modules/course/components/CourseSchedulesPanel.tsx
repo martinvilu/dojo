@@ -5,6 +5,7 @@ import { renderMarkdown } from '@/lib/markdown';
 import ClassCommentsThread from '@/modules/course/components/comments/ClassCommentsThread';
 import AttendanceManager from '@/modules/attendance/components/AttendanceManager';
 import ModalShell from "@/components/dashboard/ui/ModalShell";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export interface ClassInstance {
   date: string;
@@ -75,12 +76,12 @@ export function CourseSchedulesPanel({
     return counts;
   }, [courseComments]);
 
-  const handleGenerateClasses = () => {
+  const handleGenerateClasses = async () => {
     if (!teacherStartDate || !teacherDuration || teacherSchedules.length === 0) {
       showToast("Primero configurá la fecha de inicio, duración en semanas y al menos un horario.", "success");
       return;
     }
-    if (!confirm("¿Seguro querés regenerar? Vas a perder los temas, links y estados especiales ya cargados.")) return;
+    if (!(await confirmAction({ message: "¿Seguro querés regenerar? Vas a perder los temas, links y estados especiales ya cargados.", tone: "danger" }))) return;
 
     const [y, m, d] = teacherStartDate.split("-").map(Number);
     const baseDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
@@ -222,7 +223,7 @@ export function CourseSchedulesPanel({
   };
 
   const handleRestoreVersion = async (versionId: string) => {
-    if (!confirm("¿Seguro que querés restaurar esta versión? Reemplazará tu cronograma actual en pantalla.")) return;
+    if (!(await confirmAction({ message: "¿Seguro que querés restaurar esta versión? Reemplazará tu cronograma actual en pantalla.", tone: "danger" }))) return;
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
     setApiLoading(true);

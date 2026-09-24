@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 interface UseAdminPanelArgs {
   getSelectedCourseId?: () => string | undefined;
@@ -35,7 +36,7 @@ export function useAdminPanel({
   const [globalCalendarUrl, setGlobalCalendarUrl] = useState("");
 
   const handleApproveUser = async (uid: string) => {
-    if (!confirm("¿Aprobar manualmente a este usuario?")) return;
+    if (!(await confirmAction({ message: "¿Aprobar manualmente a este usuario?" }))) return;
     setApiLoading(true);
     try {
       await api("approveUser", { targetUid: uid });
@@ -62,7 +63,7 @@ export function useAdminPanel({
   };
 
   const handleUpdateUserRole = async (uid: string, newRole: "admin" | "teacher" | "student") => {
-    if (!confirm(`¿Estás seguro de que deseas cambiar el rol del usuario a ${newRole === "admin" ? "Administrador" : newRole === "teacher" ? "Profesor" : "Estudiante"}?`)) return;
+    if (!(await confirmAction({ message: `¿Estás seguro de que deseas cambiar el rol del usuario a ${newRole === "admin" ? "Administrador" : newRole === "teacher" ? "Profesor" : "Estudiante"}?`, tone: "danger" }))) return;
     setApiLoading(true);
     try {
       await api("updateUserRole", { targetUid: uid, newRole });
@@ -107,7 +108,7 @@ export function useAdminPanel({
   const handleRemoveTeacher = async (teacherId: string) => {
     const cid = getSelectedCourseId?.();
     if (!cid) return;
-    if (!confirm("¿Desasignar a este profesor de la cátedra?")) return;
+    if (!(await confirmAction({ message: "¿Desasignar a este profesor de la cátedra?", tone: "danger" }))) return;
     setApiLoading(true);
     try {
       await api("removeTeacher", { courseId: cid, teacherId });

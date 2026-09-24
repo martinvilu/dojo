@@ -2,6 +2,7 @@
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
 import React, { useState, useEffect } from "react";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 interface EmailManagementPanelProps {
   courseId: string;
@@ -129,7 +130,7 @@ export default function EmailManagementPanel({
   };
 
   const handleTriggerNow = async (emailId: string) => {
-    if (!confirm("¿Deseás enviar este correo programado inmediatamente a los destinatarios?")) return;
+    if (!(await confirmAction({ message: "¿Deseás enviar este correo programado inmediatamente a los destinatarios?" }))) return;
     setLoading(true);
     try {
       const res = await api("triggerScheduledEmailNow", { emailId, courseId });
@@ -143,7 +144,7 @@ export default function EmailManagementPanel({
   };
 
   const handleCancelScheduled = async (emailId: string) => {
-    if (!confirm("¿Cancelar este correo programado?")) return;
+    if (!(await confirmAction({ message: "¿Cancelar este correo programado?", tone: "danger" }))) return;
     setLoading(true);
     try {
       await api("cancelScheduledEmail", { emailId });

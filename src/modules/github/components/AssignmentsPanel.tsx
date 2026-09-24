@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase/clientApp";
 import GithubActivityPanel from "./GithubActivityPanel";
 import PeerReviewSection from "./PeerReviewSection";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export default function AssignmentsPanel({
   selectedCourse,
@@ -99,7 +100,7 @@ export default function AssignmentsPanel({
   };
 
   const handleArchiveAssignment = async (id: string) => {
-    if (!confirm("¿Seguro que deseas archivar esta tarea? Los permisos en GitHub cambiarán a SOLO LECTURA.")) return;
+    if (!(await confirmAction({ message: "¿Seguro que deseas archivar esta tarea? Los permisos en GitHub cambiarán a SOLO LECTURA.", tone: "danger" }))) return;
     setApiLoading(true);
     try {
       const res = await api("archiveAssignment", { assignmentId: id });

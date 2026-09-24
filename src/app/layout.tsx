@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Chivo } from "next/font/google";
 import "./globals.css";
 import { AppToaster } from "@/components/dashboard/ui/ToastNotification";
+import { ConfirmDialogHost } from "@/components/dashboard/ui/ConfirmDialog";
 
 const chivo = Chivo({
   variable: "--font-chivo",
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         {children}
         <AppToaster />
+        <ConfirmDialogHost />
       </body>
     </html>
   );

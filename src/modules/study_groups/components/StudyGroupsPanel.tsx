@@ -3,6 +3,7 @@ import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
 import React, { useState } from "react";
 import BaseModal from "@/components/dashboard/ui/BaseModal";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 interface StudyGroup {
   id: string;
@@ -74,7 +75,7 @@ export default function StudyGroupsPanel({
   };
 
   const handleJoinStudyGroup = async (groupId: string) => {
-    if (!confirm("¿Querés unirte a este grupo?")) return;
+    if (!(await confirmAction({ message: "¿Querés unirte a este grupo?" }))) return;
     try {
       await api("joinStudyGroup", { groupId });
       const groupsList = await api("getStudyGroups", { courseId });
@@ -85,7 +86,7 @@ export default function StudyGroupsPanel({
   };
 
   const handleLeaveStudyGroup = async (groupId: string) => {
-    if (!confirm("¿Seguro que querés abandonar este grupo?")) return;
+    if (!(await confirmAction({ message: "¿Seguro que querés abandonar este grupo?", tone: "danger" }))) return;
     try {
       await api("leaveStudyGroup", { groupId });
       const groupsList = await api("getStudyGroups", { courseId });

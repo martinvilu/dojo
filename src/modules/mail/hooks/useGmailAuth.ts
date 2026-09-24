@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export function useGmailAuth(api: (action: string, payload?: any) => Promise<any>) {
   const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; email: string | null }>({
@@ -63,7 +64,7 @@ export function useGmailAuth(api: (action: string, payload?: any) => Promise<any
   };
 
   const handleDisconnect = async () => {
-    if (!confirm("¿Estás seguro de desvincular tu cuenta de Gmail? No se podrán enviar notificaciones desde tu correo.")) return;
+    if (!(await confirmAction({ message: "¿Estás seguro de desvincular tu cuenta de Gmail? No se podrán enviar notificaciones desde tu correo.", tone: "danger" }))) return;
     
     try {
       await api("disconnectGmailAuth");

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export interface ScheduleItem {
   day: string;
@@ -144,7 +145,7 @@ export function useTeacherCourseSettings({
 
   const handleCloneCourseConfig = async () => {
     if (!cloneSourceId) return;
-    if (!confirm("¿Seguro que querés clonar la configuración? Sobrescribirá tus horarios y duración.")) return;
+    if (!(await confirmAction({ message: "¿Seguro que querés clonar la configuración? Sobrescribirá tus horarios y duración.", tone: "danger" }))) return;
     setApiLoading(true);
     try {
       const cid = selectedCourse?.id || selectedCourse?.course?.id;
