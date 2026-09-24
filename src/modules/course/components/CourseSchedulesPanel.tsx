@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { renderMarkdown } from '@/lib/markdown';
 import ClassCommentsThread from '@/modules/course/components/comments/ClassCommentsThread';
 import AttendanceManager from '@/modules/attendance/components/AttendanceManager';
+import ModalShell from "@/components/dashboard/ui/ModalShell";
 
 export interface ClassInstance {
   date: string;
@@ -833,8 +834,9 @@ export function CourseSchedulesPanel({
                 )}
               </div>
       {isVersionModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-5xl w-full min-w-[280px] sm:min-w-[640px] shrink-0 mx-auto h-[85vh] flex flex-col justify-between shadow-2xl relative z-10">
+        <ModalShell onClose={() => { setIsVersionModalOpen(false); setSelectedVersionForDiff(null); setSelectedCourseForComparison(null); }} ariaLabel="Versiones de cronograma y comparación interanual"
+          overlayClassName="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-5xl w-full min-w-[280px] sm:min-w-[640px] shrink-0 mx-auto h-[85vh] flex flex-col justify-between shadow-2xl relative z-10">
             <div className="flex justify-between items-center pb-4 border-b border-neutral-800">
               <div>
                 <h3 className="text-lg font-bold text-white">Versiones de Cronograma & Comparación Interanual</h3>
@@ -1056,13 +1058,13 @@ export function CourseSchedulesPanel({
                 Cerrar Historial
               </button>
             </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       {isSaveVersionModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
+        <ModalShell onClose={() => setIsSaveVersionModalOpen(false)} ariaLabel="Guardar versión de cronograma"
+          overlayClassName="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-white">Guardar Versión de Cronograma</h3>
             <p className="text-xs text-gray-400">Esto creará un snapshot del cronograma en su estado actual.</p>
             <div>
@@ -1091,8 +1093,7 @@ export function CourseSchedulesPanel({
                 Guardar Versión
               </button>
             </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
     </>

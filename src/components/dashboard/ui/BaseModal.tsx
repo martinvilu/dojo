@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 export interface BaseModalProps {
   isOpen: boolean;
@@ -36,34 +37,28 @@ export default function BaseModal({
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  // Focus trap + Escape; waits for the portal target to be mounted.
+  const dialogRef = useFocusTrap<HTMLDivElement>(isOpen && mounted, { onEscape: onClose });
+  const titleId = useId();
 
   if (!isOpen || !mounted || typeof document === "undefined") return null;
 
   const content = (
     <div
       id={modalId}
-      role="dialog"
-      aria-modal="true"
       className={`fixed inset-0 bg-black/80 backdrop-blur-md ${zIndexClass} flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200`}
     >
       <div
-        className={`bg-neutral-900 border border-neutral-800 p-6 rounded-2xl shadow-2xl w-full ${maxWidthClass} ${minWidthClass} shrink-0 mx-auto max-h-[90vh] overflow-y-auto space-y-4 relative z-10 text-left pointer-events-auto`}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className={`bg-neutral-900 border border-neutral-800 p-6 rounded-2xl shadow-2xl w-full ${maxWidthClass} ${minWidthClass} shrink-0 mx-auto max-h-[90vh] overflow-y-auto space-y-4 relative z-10 text-left pointer-events-auto outline-none`}
       >
         <div className="flex justify-between items-start border-b border-neutral-800 pb-3">
           <div className="space-y-0.5">
-            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+            <h3 id={titleId} className="text-base font-bold text-white flex items-center space-x-2">
               {icon && <span className="shrink-0">{icon}</span>}
               <span>{title}</span>
             </h3>

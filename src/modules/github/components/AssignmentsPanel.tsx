@@ -5,6 +5,7 @@ import { query, collection, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import GithubActivityPanel from "./GithubActivityPanel";
 import PeerReviewSection from "./PeerReviewSection";
+import ModalShell from "@/components/dashboard/ui/ModalShell";
 
 export default function AssignmentsPanel({
   selectedCourse,
@@ -591,8 +592,9 @@ export default function AssignmentsPanel({
       {groupPromptModal?.isOpen && (() => {
         let inputVal = "";
         return (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
+          <ModalShell onClose={() => { groupPromptModal.resolve(null); setGroupPromptModal(null); }} ariaLabel="Nombre del equipo"
+            overlayClassName="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+            className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Nombre del Equipo</h3>
               <p className="text-xs text-gray-400 font-sans">Esta es una tarea grupal. Ingresá el nombre de tu equipo:</p>
               <input type="text" placeholder="Nombre del grupo" className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans" onChange={(e) => { inputVal = e.target.value; }} onKeyDown={(e) => { if (e.key === "Enter" && inputVal.trim()) { groupPromptModal.resolve(inputVal.trim()); setGroupPromptModal(null); } }} />
@@ -600,16 +602,16 @@ export default function AssignmentsPanel({
                 <button type="button" onClick={() => { groupPromptModal.resolve(null); setGroupPromptModal(null); }} className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer font-sans">Cancelar</button>
                 <button type="button" onClick={() => { if (inputVal.trim()) { groupPromptModal.resolve(inputVal.trim()); setGroupPromptModal(null); } else { showToast("Ingresa un nombre.", "success"); } }} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans">Confirmar</button>
               </div>
-            </div>
-          </div>
+          </ModalShell>
         );
       })()}
 
       {commentPromptModal?.isOpen && (() => {
         let inputVal = "";
         return (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
+          <ModalShell onClose={() => { commentPromptModal.resolve(null); setCommentPromptModal(null); }} ariaLabel="Comentarios de la entrega"
+            overlayClassName="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+            className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Comentarios de la Entrega</h3>
               <p className="text-xs text-gray-400 font-sans">¿Querés dejarle algún comentario al profesor sobre esta entrega? (Opcional):</p>
               <textarea placeholder="Escribe tu mensaje aquí..." className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 min-h-20 font-sans" onChange={(e) => { inputVal = e.target.value; }} />
@@ -617,8 +619,7 @@ export default function AssignmentsPanel({
                 <button type="button" onClick={() => { commentPromptModal.resolve(null); setCommentPromptModal(null); }} className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer font-sans">Cancelar</button>
                 <button type="button" onClick={() => { commentPromptModal.resolve(inputVal.trim()); setCommentPromptModal(null); }} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans">Enviar Entrega</button>
               </div>
-            </div>
-          </div>
+          </ModalShell>
         );
       })()}
     </div>

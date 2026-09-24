@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 export interface CommandResult {
   key: string;
@@ -59,11 +60,12 @@ export default function CommandPalette({ courses, classes, assignments, onNaviga
     if (isOpen) {
       setQuery("");
       setActiveIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
 
   const close = useCallback(() => setIsOpen(false), []);
+  // Keeps Tab inside the palette and returns focus to the trigger on close.
+  const dialogRef = useFocusTrap<HTMLDivElement>(isOpen, { initialFocus: () => inputRef.current });
 
   const results = useMemo<CommandResult[]>(() => {
     const q = normalize(query.trim());
@@ -159,6 +161,7 @@ export default function CommandPalette({ courses, classes, assignments, onNaviga
           role="presentation"
         >
           <div
+            ref={dialogRef}
             className="w-full max-w-xl bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
