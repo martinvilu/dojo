@@ -620,7 +620,7 @@ async function syncGradesFromSpreadsheet(payload, context) {
         if (!sSnap.empty) {
             batch.update(sSnap.docs[0].ref, { grade: nota, feedback: feedback, graded_at: admin.firestore.FieldValue.serverTimestamp() });
         } else {
-            const newSubRef = db.collection('submissions').doc();
+            const newSubRef = db.collection('submissions').doc(`${assignmentId}_${studentId}`);
             batch.set(newSubRef, {
                 assignment_id: assignmentId,
                 student_id: studentId,

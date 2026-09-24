@@ -82,8 +82,11 @@ jobs:
       - name: Publish grade to Ninja Dojo
         if: always()
         run: |
-          curl -sf -X POST "$WEBHOOK_URL" \
+          # X-Dojo-Delivery hace idempotente el envío: los reintentos de curl
+          # no duplican la nota; re-ejecutar el workflow genera otra entrega.
+          curl -sf --retry 3 --retry-all-errors -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
+            -H "X-Dojo-Delivery: ${{ github.run_id }}-${{ github.run_attempt }}" \
             -d "$(jq -n \
               --arg assignmentId "$ASSIGNMENT_ID" \
               --arg sync_secret "${{ secrets.NINJA_DOJO_SYNC_SECRET }}" \
