@@ -90,8 +90,8 @@ export default function AssignmentsPanel({
       }
       setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false);
 
-      const res = await api("getTeacherAssignments");
-      setAssignments((res.data || []).filter((a: any) => a.course_id === cid));
+      const res = await api("getTeacherAssignments", { courseIds: [cid] });
+      setAssignments((res || []).filter((a: any) => a.course_id === cid));
     } catch (err: any) {
       showToast("Error al gestionar tarea: " + err.message, "error");
     } finally {
@@ -104,10 +104,10 @@ export default function AssignmentsPanel({
     setApiLoading(true);
     try {
       const res = await api("archiveAssignment", { assignmentId: id });
-      showToast(`¡Tarea archivada! Permisos modificados en ${res.data.count} repositorios.`, "success");
+      showToast(`¡Tarea archivada! Permisos modificados en ${res?.count ?? 0} repositorios.`, "success");
       const cid = selectedCourse.id || selectedCourse.course?.id;
-      const r = await api("getTeacherAssignments");
-      setAssignments((r.data || []).filter((a: any) => a.course_id === cid));
+      const r = await api("getTeacherAssignments", { courseIds: [cid] });
+      setAssignments((r || []).filter((a: any) => a.course_id === cid));
     } catch (err: any) {
       showToast("Error al archivar la tarea: " + err.message, "error");
     } finally {

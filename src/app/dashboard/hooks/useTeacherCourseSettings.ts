@@ -149,10 +149,10 @@ export function useTeacherCourseSettings({
     setApiLoading(true);
     try {
       const cid = selectedCourse?.id || selectedCourse?.course?.id;
-      await api("cloneCourseExtraData", { sourceCourseId: cloneSourceId, targetCourseId: cid });
-      // Reload settings tab
-      const res = await api("getCourseSettings", { courseId: cid });
-      const data = res.data;
+      // Backend contract: courseId = source course, newCourseId = destination.
+      await api("cloneCourseExtraData", { courseId: cloneSourceId, newCourseId: cid });
+      // Reload settings tab (api() already unwraps the callable response)
+      const data = await api("getCourseSettings", { courseId: cid });
       setTeacherStartDate(data.start_date || "");
       setTeacherDuration(data.duration_weeks?.toString() || "");
       setTeacherCoverText(data.cover_text || "");
