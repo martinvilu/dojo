@@ -54,7 +54,8 @@ gantt
 *   **Estado:** `COMPLETADO / VINCULACIÓN DE PERFILES ACTIVA`.
 *   **Objetivo:** Matricular automáticamente al alumno en la materia de Ninja Dojo al ingresar por LTI y vincular su GitHub.
 *   **Detalle:**
-    *   La acción backend `moodleAutoEnroll` detecta si el estudiante o docente no forma parte del curso e inserta el registro correspondiente en la base de datos.
+    *   La acción backend `moodleAutoEnroll` solo opera sobre cursos existentes con `moodle_enabled`. Como el launch llega al dashboard sin firma LTI verificada, un estudiante nuevo queda inscripto en estado `pending` (roster + enrollment) hasta que el docente lo apruebe, igual que con el código de invitación. Nunca otorga rol docente: los docentes se asignan por código de invitación o desde administración.
+    *   Las URLs del outcome service (`lis_outcome_service_url`) y de Moodle Web Services se validan antes de usarse: HTTPS obligatorio y hosts públicos únicamente (sin localhost, IPs privadas ni endpoints de metadata).
     *   Si es la primera vez que ingresa, se le solicita a través del frontend vincular su perfil de GitHub mediante un prompt no intrusivo, garantizando que el alumno pueda aprovisionar y clonar repositorios de entrega inmediatamente.
 
 #### Fase 4: Sincronización del Calendario (Suscripción ICS)

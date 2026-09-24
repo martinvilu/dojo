@@ -56,7 +56,8 @@ El sistema implementa un modelo de Control de Acceso Basado en Roles (RBAC) con 
     *   **Subcolecciones de cursada**: asistencia legible por miembros y escribible solo por docentes asignados; token QR activo publicado solo por el docente; foros Q&A con updates restringidos a reacciones (participantes) o marca de mejor respuesta (docente); encuestas anónimas validadas por rating 1-5.
     *   **Colecciones privilegiadas**: `submissions`, `audit_logs`, `activity_logs`, `backups`, avisos, notificaciones, tutorías y configuración global no aceptan escrituras directas del cliente; se operan exclusivamente vía Cloud Functions con SDK admin.
 *   **Cloud Functions API**:
-    *   La acción callable única (`api`) decodifica el token de autenticación del llamador, resuelve su perfil y despacha al módulo correspondiente, que verifica rol/membresía antes de proceder (ej: cambio de roles reservado a `admin`).
+    *   La acción callable única (`api`) decodifica el token de autenticación del llamador, resuelve su perfil y, antes de despachar al módulo (`functions/src/actions.js`), aplica la política de acceso declarada para esa acción en `functions/src/authz.js`: `AUTHENTICATED`, `STAFF`, `ADMIN`, `staffOf(...)` o `memberOf(...)`. Las políticas de curso resuelven el curso desde el payload o desde el documento referenciado (tarea, entrega, aviso, correo programado, grupo) y validan membresía con los mismos IDs predecibles que las reglas. Una acción sin política se rechaza (`permission-denied`) y un test verifica que registro y políticas coincidan.
+    *   Los estudiantes reciben una proyección del curso sin `sync_secret`, códigos de invitación docentes ni credenciales, y del roster solo datos básicos de sus compañeros.
 
 ### Autenticación de las rutas App Router (`src/app/api/`):
 
@@ -64,11 +65,14 @@ Cada ruta usa exactamente un esquema, centralizado en `src/app/api/middleware/ap
 
 | Esquema | Helper | Rutas | Consumidor |
 |---|---|---|---|
-| Token de suscripción por curso (`sync_secret`) | `requireCourseSubscriptionToken` | `/api/calendar`, `/api/export/csv` | Google Sheets / clientes iCal |
+| Token de suscripción por curso (`sync_secret`, solo equipo docente) | `requireCourseSubscriptionToken` | `/api/calendar`, `/api/export/csv` | Google Sheets / clientes iCal |
+| Token de calendario por curso (`calendar_secret`, de solo lectura) | `requireCourseSubscriptionToken(..., { allowCalendarToken: true })` | `/api/calendar` | Clientes iCal de estudiantes |
 | Bearer JWT de Firebase Auth | `requireBearerUser` / `requireBearerProfile` | `/api/me`, `/api/cli/*` | Dojo CLI (modo cloud) y futuras rutas con identidad de usuario |
-| JWT firmado por la plataforma LTI | verificación propia del protocolo | `/api/lti/*` | Moodle 4.2+ |
+| `id_token` de la plataforma LTI (decodificado, **sin verificación de firma** todavía) | lectura de claims | `/api/lti/*` | Moodle 4.2+ |
 
-Convención: toda nueva ruta que actúe en nombre de un usuario debe usar `requireBearerProfile` (identidad + perfil para decisiones por rol) y jamás exponer `sync_secret`, códigos de invitación ni datos de terceros.
+Convención: toda nueva ruta que actúe en nombre de un usuario debe usar `requireBearerProfile` (identidad + perfil para decisiones por rol) y jamás exponer `sync_secret`, códigos de invitación ni datos de terceros. Los tokens se comparan en tiempo constante.
+
+Como el `id_token` LTI no se verifica contra el JWKS de la plataforma, los parámetros del launch solo se usan para navegar: ninguna decisión de acceso se basa en ellos (ver `moodleAutoEnroll`).
 
 ---
 

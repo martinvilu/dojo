@@ -22,10 +22,26 @@ Se ejecutaron las suites completas de verificación sobre la rama `main` con los
 | **Compilación de Producción** | `npm run build` | 15 rutas compiladas sin fallas de bundle | ✅ PASS |
 | **Chequeo de Tipos Estático** | `npx tsc --noEmit` | 0 errores en TypeScript 5 | ✅ PASS |
 | **Linter Estático** | `npm run lint` | 0 advertencias / 0 errores en ESLint 9 | ✅ PASS |
-| **Backend Unit Tests** | `cd functions && npm test` | 128 pruebas superadas en 14 suites Jest | ✅ PASS |
+| **Backend Unit Tests** | `cd functions && npm test` | 176 pruebas superadas en 19 suites Jest | ✅ PASS |
+| **Auditoría de dependencias** | `npm audit` (raíz y `functions/`) | 0 vulnerabilidades (Next.js 16.3.6) | ✅ PASS |
 | **Reglas de Seguridad Firestore**| `npm run test:rules` | 23 escenarios de RBAC validados en emulador local | ✅ PASS |
 | **Frontend Unit Tests** | `npm run test:unit` | 16 pruebas en 4 suites (`dates`, `env`, `cors`, `webhook`) | ✅ PASS |
 | **Conectividad con Jev** | `https://api.typesafe.ai/v1/systemone` | `noul: 0.98`, tokens: 309 in / 25 out (`jev-1.13.0`) | ✅ PASS |
+
+### 2.1. Auditoría de seguridad del 24/09/2026
+
+La revisión del backend detectó que la callable `api` ejecutaba casi todas las acciones sin verificar rol ni pertenencia al curso (el SDK admin ignora las reglas de Firestore). Se corrigió en `main`:
+
+| Hallazgo | Severidad | Corrección |
+|---|:---:|---|
+| Escalada a admin vía `updateUserProfile`; acciones de administración, cursos, tareas, notas, correos y Moodle sin control de acceso | Crítica | Capa `functions/src/authz.js` con política por acción, fail closed y test de paridad registro/políticas |
+| Next.js 16.3.0 con RCE sin autenticación (GHSA-2xp9-vwfh-vxw4, GHSA-p293-qw3h-jr36) | Crítica | Actualización a 16.3.6 + `npm audit fix` (sharp, baseline-browser-mapping, qs) |
+| Estudiantes recibían `teacher_invite_code` (otorga rol docente), `sync_secret` (exporta/importa notas) y credenciales del curso | Alta | Proyección de curso para estudiantes y nuevo `calendar_secret` de solo lectura para el feed iCal |
+| `moodleAutoEnroll` inscribía en cualquier curso, incluso como docente, a partir de parámetros LTI sin firma | Alta | Solo cursos con Moodle habilitado, sin rol docente, inscripción `pending` |
+| SSRF e inyección XML en la sincronización de notas LTI y en Moodle Web Services | Alta | `isSafeExternalUrl()` (HTTPS, hosts públicos) y `escapeXml()`; parámetros codificados |
+| `addGroupCollaborator` permitía modificar repos ajenos y mezclar tareas de otra cátedra | Media | Solo autor o docente; la tarea se deriva de la entrega |
+
+**Pendiente**: el `id_token` de los launches LTI (`/api/lti/*`) se decodifica sin verificar la firma contra el JWKS de Moodle; hoy solo se usa para navegar, pero cualquier uso futuro para decisiones de acceso requiere implementar esa verificación.
 
 ---
 
