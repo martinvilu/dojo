@@ -1,0 +1,73 @@
+name: Security
+
+# Auditoría continua (mejoras 5.19 y 5.31):
+#  - npm audit de la app y de Cloud Functions, que falla ante advisories
+#    high/critical en dependencias de producción;
+#  - análisis estático CodeQL de JavaScript/TypeScript.
+# Corre en cada PR y push a main, y semanalmente para detectar advisories
+# nuevos sobre dependencias que no cambiaron.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm-audit:
+    name: npm audit (${{ matrix.directory }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: [".", "functions"]
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Report all advisories (informational)
+        if: always()
+        run: npm audit || true
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - node_modules
+              - functions/node_modules
+              - .next
+              - functions/coverage
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:javascript-typescript"
