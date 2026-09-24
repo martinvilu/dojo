@@ -698,7 +698,8 @@ export function CourseSchedulesPanel({
                       <button
                         onClick={() => {
                           const cid = selectedCourse.id || selectedCourse.course?.id;
-                          window.open(`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(`${window.location.origin}/api/calendar?id=${cid}${selectedCourse?.sync_secret ? `&token=${selectedCourse.sync_secret}` : ""}`)}`, "_blank");
+                          const feedToken = selectedCourse?.calendar_secret || selectedCourse?.sync_secret;
+                          window.open(`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(`${window.location.origin}/api/calendar?id=${cid}${feedToken ? `&token=${feedToken}` : ""}`)}`, "_blank");
                         }}
                         className="px-4 py-2 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/80 rounded-xl text-xs font-bold text-purple-300 transition flex items-center space-x-2"
                       >

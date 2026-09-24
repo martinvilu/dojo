@@ -8,9 +8,12 @@ import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard
 import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegrationPanel";
 
 export function CourseSettingsPanel(props: any) {
+  // The calendar feed is shared outside the teaching staff, so it uses the
+  // read-only calendar token; sync_secret also unlocks grade exports/imports.
   const calendarFeedUrlFor = (course: any) => {
     const cid = course?.id || course?.course?.id || "";
-    const token = course?.sync_secret || course?.course?.sync_secret || "";
+    const token = course?.calendar_secret || course?.course?.calendar_secret
+      || course?.sync_secret || course?.course?.sync_secret || "";
     const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
     return `${origin}/api/calendar?id=${cid}&token=${token}`;
   };

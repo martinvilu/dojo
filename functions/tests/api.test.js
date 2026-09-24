@@ -151,6 +151,19 @@ describe('API Callable Function', () => {
     expect(res.send).toHaveBeenCalledWith(expect.stringContaining('BEGIN:VCALENDAR'));
   });
 
+  it('calendar endpoint accepts the read-only calendar_secret given to students', async () => {
+    const db = admin.firestore();
+    db.collection('courses').doc('c1').get = jest.fn().mockResolvedValue({
+      exists: true,
+      data: () => ({ name: 'Algoritmos', sync_secret: 'SECRETO1', calendar_secret: 'CALENDARIO1', class_instances: [] })
+    });
+
+    const res = { status: jest.fn().mockReturnThis(), set: jest.fn(), send: jest.fn() };
+    await myFunctions.calendar({ query: { id: 'c1', token: 'CALENDARIO1' } }, res);
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('BEGIN:VCALENDAR'));
+  });
+
   it('exportGradesCsv and exportAttendanceCsv were unified into the App Router route', () => {
     // GET /api/export/csv (src/app/api/export/csv/route.ts) reemplaza estos
     // endpoints; no deben volver a exponerse desde Functions.

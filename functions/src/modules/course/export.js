@@ -1,5 +1,6 @@
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
+const { matchesSecret } = require("../../lib/secrets");
 
 // Los exports CSV (notas / asistencia / roster) fueron unificados en el
 // App Router: GET /api/export/csv (ver src/app/api/export/csv/route.ts).
@@ -24,7 +25,7 @@ exports.importGrades = async (req, res) => {
         if (!cSnap.exists) return res.status(404).send("Materia no encontrada");
         const course = cSnap.data();
 
-        if (course.sync_secret !== token) return res.status(401).send("Token inválido");
+        if (!matchesSecret(token, course.sync_secret)) return res.status(401).send("Token inválido");
 
         let rows = [];
         const contentType = req.headers['content-type'] || '';

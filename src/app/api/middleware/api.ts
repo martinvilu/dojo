@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
@@ -91,10 +92,24 @@ export interface CourseSubscription {
   course: any;
 }
 
+/** Constant-time comparison of a provided token against the valid secrets. */
+function matchesSecret(provided: string, ...secrets: unknown[]): boolean {
+  if (!provided) return false;
+  const given = Buffer.from(provided);
+  return secrets.some((secret) => {
+    if (typeof secret !== "string" || secret.length === 0) return false;
+    const expected = Buffer.from(secret);
+    return expected.length === given.length && timingSafeEqual(expected, given);
+  });
+}
+
 /**
- * Validates the per-course subscription share token (sync_secret), the same
- * scheme used by the CSV export cloud functions. Returns the course snapshot
- * or a NextResponse ready to be returned by the caller.
+ * Validates the per-course subscription share token. Returns the course
+ * snapshot or a NextResponse ready to be returned by the caller.
+ *
+ * `sync_secret` is the staff token and unlocks every export. Routes that
+ * only publish the schedule pass `{ allowCalendarToken: true }` to also
+ * accept the read-only `calendar_secret` handed out to students.
  *
  * Usage:
  *   const sub = await requireCourseSubscriptionToken(request);
@@ -102,7 +117,8 @@ export interface CourseSubscription {
  */
 export async function requireCourseSubscriptionToken(
   request: Request,
-  courseIdParam: string = "id"
+  courseIdParam: string = "id",
+  { allowCalendarToken = false }: { allowCalendarToken?: boolean } = {}
 ): Promise<CourseSubscription | NextResponse> {
   const { searchParams } = new URL(request.url);
   const courseId = searchParams.get(courseIdParam) || searchParams.get("courseId") || "";
@@ -116,7 +132,10 @@ export async function requireCourseSubscriptionToken(
     if (!snap.exists) return jsonError(404, "Curso no encontrado");
 
     const course = snap.data();
-    if (!course?.sync_secret || course.sync_secret !== token) {
+    const validSecrets = allowCalendarToken
+      ? [course?.sync_secret, course?.calendar_secret]
+      : [course?.sync_secret];
+    if (!matchesSecret(token, ...validSecrets)) {
       return jsonError(401, "Token de suscripción inválido");
     }
     return { courseId, course };

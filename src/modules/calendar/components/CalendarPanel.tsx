@@ -29,6 +29,7 @@ export interface CourseFilter {
   id: string;
   name: string;
   sync_secret?: string;
+  calendar_secret?: string;
 }
 
 const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
@@ -308,7 +309,9 @@ export default function CalendarPanel({
   const handleGoogleCalendarSubscribe = () => {
     if (!singleVisibleCourse) return;
     const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
-    const tokenSuffix = singleVisibleCourse.sync_secret ? `&token=${singleVisibleCourse.sync_secret}` : "";
+    // Prefer the read-only calendar token: the feed URL ends up in third-party calendars.
+    const feedToken = singleVisibleCourse.calendar_secret || singleVisibleCourse.sync_secret;
+    const tokenSuffix = feedToken ? `&token=${feedToken}` : "";
     const feedUrl = `${origin}/api/calendar?id=${singleVisibleCourse.id}${tokenSuffix}`;
     const googleCalUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`;
     window.open(googleCalUrl, "_blank");

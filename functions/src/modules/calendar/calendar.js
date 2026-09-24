@@ -1,5 +1,6 @@
 const logger = require("firebase-functions/logger");
 const { getFirestore } = require("firebase-admin/firestore");
+const { matchesSecret } = require("../../lib/secrets");
 
 exports.calendar = async (req, res) => {
     const courseId = req.query.id;
@@ -13,10 +14,10 @@ exports.calendar = async (req, res) => {
 
         const course = cSnap.data();
 
-        // Feed de suscripción: usa el mismo esquema de token por curso que
-        // los endpoints CSV (sync_secret), que ya comparten los miembros de
-        // la cátedra para armar sus URLs de Google Calendar / Moodle.
-        if (!course.sync_secret || req.query.token !== course.sync_secret) {
+        // Feed de suscripción: acepta el token de solo lectura del calendario
+        // (calendar_secret, el que reciben los estudiantes) o el sync_secret
+        // del equipo docente.
+        if (!matchesSecret(req.query.token, course.calendar_secret, course.sync_secret)) {
             return res.status(401).send('Token de suscripción inválido');
         }
 

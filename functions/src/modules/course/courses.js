@@ -1,4 +1,5 @@
 const { randomBytes } = require('node:crypto');
+const { isCourseStaff } = require('../../authz');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -16,6 +17,13 @@ async function getCourseDetails(payload, context) {
     if (!cSnap.exists) throw new Error("Curso no encontrado");
     
     const data = cSnap.data();
+    if (!teacherSnap.exists && myProfile.role !== 'admin') {
+        // Estudiantes: sin credenciales, sin sync_secret (habilita exportar e
+        // importar notas) ni códigos de invitación docente (otorgan el rol).
+        await ensureCalendarSecret(db, courseId, data);
+        return { id: cSnap.id, ...projectCourseForStudent(data) };
+    }
+
     if (!data.sync_secret) {
         data.sync_secret = generateSyncSecret();
         await db.collection('courses').doc(courseId).update({
@@ -136,11 +144,19 @@ async function removeTeacher(payload, context) {
 // Excluye credenciales (github_token, tokens Moodle) que no deben
 // salir nunca del backend: el docente solo los edita, jamás los lee.
 const COURSE_PUBLIC_FIELDS = [
-    'name', 'sync_secret', 'start_date', 'duration_weeks', 'schedules',
-    'class_instances', 'commissions', 'commissions_mapping', 'cover_text',
-    'moodle_enabled', 'external_calendars', 'created_at', 'archived',
-    'invite_code'
+    'name', 'sync_secret', 'calendar_secret', 'start_date', 'duration_weeks',
+    'schedules', 'class_instances', 'commissions', 'commissions_mapping',
+    'cover_text', 'moodle_enabled', 'external_calendars', 'created_at',
+    'archived', 'invite_code'
 ];
+
+// Los estudiantes no reciben sync_secret: ese token también autoriza la
+// exportación CSV de notas/asistencia y la importación de notas. Para el
+// feed iCal reciben calendar_secret, que solo habilita el calendario.
+const STUDENT_COURSE_FIELDS = COURSE_PUBLIC_FIELDS.filter(field => field !== 'sync_secret');
+
+// Datos de compañeros visibles para estudiantes en el roster del curso.
+const PEER_PROFILE_FIELDS = ['full_name', 'email', 'github_user', 'avatar_url', 'role'];
 
 
 // Tokens de suscripción de 32 hex chars: resistentes a fuerza bruta
@@ -149,12 +165,28 @@ function generateSyncSecret() {
     return randomBytes(16).toString('hex').toUpperCase();
 }
 
-function projectCourse(data) {
+function pickFields(data, fields) {
     const projected = {};
-    for (const field of COURSE_PUBLIC_FIELDS) {
+    for (const field of fields) {
         if (data[field] !== undefined) projected[field] = data[field];
     }
     return projected;
+}
+
+function projectCourse(data) {
+    return pickFields(data, COURSE_PUBLIC_FIELDS);
+}
+
+function projectCourseForStudent(data) {
+    return pickFields(data, STUDENT_COURSE_FIELDS);
+}
+
+/** Genera (una única vez) el token de solo lectura del feed iCal del curso. */
+async function ensureCalendarSecret(db, courseId, data) {
+    if (data.calendar_secret) return data.calendar_secret;
+    data.calendar_secret = generateSyncSecret();
+    await db.collection('courses').doc(courseId).update({ calendar_secret: data.calendar_secret });
+    return data.calendar_secret;
 }
 
 async function getTeacherCourses(payload, context) {
@@ -200,13 +232,18 @@ async function getCourseSettings(payload, context) {
         data.sync_secret = generateSyncSecret();
         needsUpdate = true;
     }
+    if (!data.calendar_secret) {
+        data.calendar_secret = generateSyncSecret();
+        needsUpdate = true;
+    }
     
     if (needsUpdate) {
         await db.collection('courses').doc(courseId).update({
             invite_code: data.invite_code,
             teacher_invite_code: data.teacher_invite_code,
             assistant_invite_code: data.assistant_invite_code,
-            sync_secret: data.sync_secret || null
+            sync_secret: data.sync_secret || null,
+            calendar_secret: data.calendar_secret
         });
     }
     
@@ -287,22 +324,31 @@ async function getStudentCourses(payload, context) {
     const courses = [];
     for (const courseId of courseIds) {
         const cSnap = await db.collection('courses').doc(courseId).get();
-        if (cSnap.exists) courses.push({ id: cSnap.id, ...projectCourse(cSnap.data()) });
+        if (cSnap.exists) {
+            const data = cSnap.data();
+            await ensureCalendarSecret(db, courseId, data);
+            courses.push({ id: cSnap.id, ...projectCourseForStudent(data) });
+        }
     }
     return courses;
 }
 
 async function getCourseRoster(payload, context) {
-    const { db } = context;
+    const { uid, db, getMyProfile } = context;
+    const myProfile = getMyProfile ? await getMyProfile() : null;
+    const canSeeFullProfiles = (myProfile && myProfile.role === 'admin')
+        || await isCourseStaff(db, payload.courseId, uid);
+
     const snap = await db.collection('course_roster').where('course_id', '==', payload.courseId).get();
     const students = [];
     for (let doc of snap.docs) {
         const data = doc.data();
         const pSnap = await db.collection('profiles').doc(data.student_id).get();
         if (pSnap.exists) {
+            const profile = pSnap.data();
             students.push({
                 id: pSnap.id,
-                ...pSnap.data(),
+                ...(canSeeFullProfiles ? profile : pickFields(profile, PEER_PROFILE_FIELDS)),
                 roster_status: data.status || 'approved',
                 enrolled_at: data.enrolled_at
             });
@@ -440,5 +486,6 @@ module.exports = {
     getCourseRoster,
     updateRosterStudentStatus,
     syncGuaraniRoster,
-    projectCourse
+    projectCourse,
+    projectCourseForStudent
 };

@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * Subscription iCal feed for a course. Serves the real schedule from
- * Firestore behind the per-course sync_secret share token (same scheme as
- * the CSV export cloud functions).
+ * Firestore behind the per-course share token: either the read-only
+ * calendar_secret given to students or the staff sync_secret.
  */
 
 function icsDateTime(date: Date): string {
@@ -106,7 +106,7 @@ async function fetchExternalEvents(icsLines: string[], urls: string[]): Promise<
 }
 
 export async function GET(request: Request) {
-  const sub = await requireCourseSubscriptionToken(request);
+  const sub = await requireCourseSubscriptionToken(request, "id", { allowCalendarToken: true });
   if (sub instanceof NextResponse) return sub;
   const { courseId, course } = sub;
 

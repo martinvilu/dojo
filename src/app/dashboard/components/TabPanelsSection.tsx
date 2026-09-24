@@ -146,6 +146,7 @@ export function TabPanelsSection(props: TabPanelsSectionProps) {
             id: c.id || c.course?.id,
             name: c.name || c.course?.name || "Sin nombre",
             sync_secret: c.sync_secret || c.course?.sync_secret,
+            calendar_secret: c.calendar_secret || c.course?.calendar_secret,
           }))}
           activeCourseName="Global"
         />
