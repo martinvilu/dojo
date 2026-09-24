@@ -51,3 +51,6 @@ github-deploy-key.json
 
 # Firestore emulator debug log
 firestore-debug.log
+
+# Jest coverage reports (functions)
+functions/coverage/
