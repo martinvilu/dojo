@@ -2,6 +2,7 @@ const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
 const { randomBytes } = require('node:crypto');
 const { isSafeExternalUrl } = require('../../lib/urls');
+const { isCourseStaff, isCourseMember } = require('../../authz');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -541,10 +542,24 @@ async function syncGradesFromSpreadsheet(payload, context) {
 }
 
 async function addGroupCollaborator(payload, context) {
-    const { db, admin } = context;
+    const { uid, db, admin } = context;
     const subSnap = await db.collection('submissions').doc(payload.submissionId).get();
     if (!subSnap.exists) throw new Error("Entrega no encontrada");
     const sub = subSnap.data();
+
+    // La tarea sale siempre de la entrega: un assignmentId distinto en el
+    // payload permitiría usar el token de GitHub de otra cátedra.
+    const assignmentId = sub.assignment_id;
+    if (payload.assignmentId && payload.assignmentId !== assignmentId) {
+        throw new Error("La entrega no pertenece a la tarea indicada");
+    }
+    const assignmentSnap = await db.collection('assignments').doc(assignmentId).get();
+    if (!assignmentSnap.exists) throw new Error("La tarea no existe");
+    const assignment = assignmentSnap.data();
+
+    if (sub.student_id !== uid && !(await isCourseStaff(db, assignment.course_id, uid))) {
+        throw new Error("Solo el autor de la entrega o un docente del curso pueden sumar integrantes");
+    }
     
     const pSnap = await db.collection('profiles').where('email', '==', payload.email).get();
     if (pSnap.empty) throw new Error("No se encontró ningún estudiante registrado con ese correo");
@@ -552,9 +567,9 @@ async function addGroupCollaborator(payload, context) {
     const newStudentId = pSnap.docs[0].id;
     
     if (!newStudent.github_user) throw new Error("El estudiante no configuró su usuario de GitHub en el perfil");
-    
-    const assignmentSnap = await db.collection('assignments').doc(payload.assignmentId).get();
-    const assignment = assignmentSnap.data();
+    if (!(await isCourseMember(db, assignment.course_id, newStudentId))) {
+        throw new Error("El estudiante no está inscripto en este curso");
+    }
     
     const courseSnap = await db.collection('courses').doc(assignment.course_id).get();
     const course = courseSnap.data();
@@ -579,8 +594,8 @@ async function addGroupCollaborator(payload, context) {
         throw new Error(`Error de GitHub: ${err.message}`);
     }
     
-    await db.collection('submissions').doc(`${payload.assignmentId}_${newStudentId}`).set({
-        assignment_id: payload.assignmentId,
+    await db.collection('submissions').doc(`${assignmentId}_${newStudentId}`).set({
+        assignment_id: assignmentId,
         student_id: newStudentId,
         repo_url: sub.repo_url,
         grade: '',
