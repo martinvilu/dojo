@@ -124,6 +124,6 @@ describe('Webhook Logic', () => {
     const res = { set: jest.fn(), status: jest.fn().mockReturnThis(), send: jest.fn(), json: jest.fn() };
     
     await myFunctions.webhook(req, res);
-    expect(res.json).toHaveBeenCalledWith({ success: true, updatedCount: 1 });
+    expect(res.json).toHaveBeenCalledWith({ success: true, updatedCount: 1, rejected: [] });
   });
 });

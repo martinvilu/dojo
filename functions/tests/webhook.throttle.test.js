@@ -126,7 +126,7 @@ describe('Webhook brute-force throttle', () => {
       { method: 'POST', ip: '10.0.0.1', body: { assignmentId: 'a1', sync_secret: SECRET, grades: [{ matricula: 'M1', grade: '7' }] } },
       res
     );
-    expect(res.json).toHaveBeenCalledWith({ success: true, updatedCount: 1 });
+    expect(res.json).toHaveBeenCalledWith({ success: true, updatedCount: 1, rejected: [] });
   });
 
   it('returns 429 after MAX_ATTEMPTS failures even with a valid secret', async () => {
@@ -167,7 +167,7 @@ describe('Webhook brute-force throttle', () => {
       { method: 'POST', ip: '10.0.0.4', body: { assignmentId: 'a1', sync_secret: SECRET, grades: [{ matricula: 'M1', grade: '8' }] } },
       other
     );
-    expect(other.json).toHaveBeenCalledWith({ success: true, updatedCount: 1 });
+    expect(other.json).toHaveBeenCalledWith({ success: true, updatedCount: 1, rejected: [] });
   });
 
   it('resets the attempt counter once the window elapses', async () => {
@@ -194,7 +194,7 @@ describe('Webhook brute-force throttle', () => {
       { method: 'POST', ip: '10.0.0.5', body: { assignmentId: 'a1', sync_secret: SECRET, grades: [{ matricula: 'M1', grade: '9' }] } },
       afterWindow
     );
-    expect(afterWindow.json).toHaveBeenCalledWith({ success: true, updatedCount: 1 });
+    expect(afterWindow.json).toHaveBeenCalledWith({ success: true, updatedCount: 1, rejected: [] });
   });
 
   it('buckets requests without a resolvable IP together', async () => {
@@ -233,6 +233,6 @@ describe('Webhook brute-force throttle', () => {
       { method: 'POST', ip: '10.0.0.6', body: { assignmentId: 'a1', sync_secret: SECRET, grades: [{ matricula: 'M1', feedback: 'ok' }] } },
       res
     );
-    expect(res.json).toHaveBeenCalledWith({ success: true, updatedCount: 1 });
+    expect(res.json).toHaveBeenCalledWith({ success: true, updatedCount: 1, rejected: [] });
   });
 });

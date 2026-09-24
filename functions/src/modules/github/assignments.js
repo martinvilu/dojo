@@ -1,8 +1,10 @@
 const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
+const { HttpsError } = require('firebase-functions/v2/https');
 const { randomBytes } = require('node:crypto');
 const { isSafeExternalUrl } = require('../../lib/urls');
 const { isCourseStaff, isCourseMember } = require('../../authz');
+const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -135,16 +137,20 @@ async function gradeSubmission(payload, context) {
     if (!requesterProfile.exists || (requesterProfile.data().role !== 'teacher' && requesterProfile.data().role !== 'admin')) {
         throw new Error("No tienes permisos para calificar entregas");
     }
-    const { submissionId, grade, feedback } = payload;
+    const { submissionId } = payload;
     if (!submissionId) throw new Error("Falta el id de la entrega");
+    const normalized = normalizeGrade(payload.grade);
+    if (!normalized.ok) throw new HttpsError('invalid-argument', normalized.error);
+    const grade = normalized.value;
+    const feedback = normalizeFeedback(payload.feedback);
     
     // Get previous grade state for audit log diff
     const submissionDoc = await db.collection('submissions').doc(submissionId).get();
     const previousData = submissionDoc.exists ? submissionDoc.data() : {};
     
     await db.collection('submissions').doc(submissionId).update({
-        grade: String(grade || ''),
-        feedback: String(feedback || ''),
+        grade,
+        feedback,
         graded_at: admin.firestore.FieldValue.serverTimestamp()
     });
     
@@ -157,9 +163,9 @@ async function gradeSubmission(payload, context) {
         actor_id: uid,
         actor_name: requesterProfile.data().full_name || requesterProfile.data().email,
         previous_grade: previousData.grade || '',
-        new_grade: String(grade || ''),
+        new_grade: grade,
         previous_feedback: previousData.feedback || '',
-        new_feedback: String(feedback || ''),
+        new_feedback: feedback,
         created_at: admin.firestore.FieldValue.serverTimestamp()
     });
     
@@ -497,6 +503,7 @@ async function syncGradesFromSpreadsheet(payload, context) {
     }
     
     let updatedCount = 0;
+    const rejectedRows = [];
     const batch = db.batch();
     
     for (let i = 1; i < rows.length; i++) {
@@ -504,8 +511,13 @@ async function syncGradesFromSpreadsheet(payload, context) {
         if (!row[matriculaIdx]) continue;
         
         const matricula = row[matriculaIdx];
-        const nota = row[notaIdx] || '';
-        const feedback = feedbackIdx !== -1 ? (row[feedbackIdx] || '') : '';
+        const normalized = normalizeGrade(row[notaIdx]);
+        if (!normalized.ok) {
+            rejectedRows.push({ row: i + 1, matricula, reason: normalized.error });
+            continue;
+        }
+        const nota = normalized.value;
+        const feedback = normalizeFeedback(feedbackIdx !== -1 ? row[feedbackIdx] : '');
         
         if (!nota && !feedback) continue;
         
@@ -538,7 +550,7 @@ async function syncGradesFromSpreadsheet(payload, context) {
     }
     
     await batch.commit();
-    return { success: true, updatedCount };
+    return { success: true, updatedCount, rejectedRows };
 }
 
 async function addGroupCollaborator(payload, context) {

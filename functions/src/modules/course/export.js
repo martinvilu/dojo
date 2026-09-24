@@ -1,6 +1,7 @@
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
 const { matchesSecret } = require("../../lib/secrets");
+const { normalizeGrade, normalizeFeedback } = require("../../lib/grades");
 
 // Los exports CSV (notas / asistencia / roster) fueron unificados en el
 // App Router: GET /api/export/csv (ver src/app/api/export/csv/route.ts).
@@ -63,18 +64,41 @@ exports.importGrades = async (req, res) => {
 
         const batch = db.batch();
         let updatedCount = 0;
+        const rejected = [];
+        const assignmentCourse = new Map();
+
+        // El token es por curso: solo se aceptan entregas de tareas de ese curso.
+        const belongsToCourse = async (assignmentId) => {
+            if (!assignmentId) return false;
+            if (!assignmentCourse.has(assignmentId)) {
+                const aSnap = await db.collection('assignments').doc(String(assignmentId)).get();
+                assignmentCourse.set(assignmentId, aSnap.exists ? aSnap.data().course_id : null);
+            }
+            return assignmentCourse.get(assignmentId) === courseId;
+        };
 
         for (const row of rows) {
-            const { id_entrega, resultado, comentario_general } = row;
+            const { id_entrega, comentario_general } = row || {};
             if (!id_entrega) continue;
-            if (!resultado && !comentario_general) continue;
+            if (!row.resultado && !comentario_general) continue;
 
-            const subRef = db.collection('submissions').doc(id_entrega);
+            const normalized = normalizeGrade(row.resultado);
+            if (!normalized.ok) {
+                rejected.push({ id_entrega: String(id_entrega), reason: normalized.error });
+                continue;
+            }
+            const resultado = normalized.value;
+
+            const subRef = db.collection('submissions').doc(String(id_entrega));
             const subSnap = await subRef.get();
+            if (subSnap.exists && !(await belongsToCourse(subSnap.data().assignment_id))) {
+                rejected.push({ id_entrega: String(id_entrega), reason: 'La entrega no pertenece a este curso.' });
+                continue;
+            }
             if (subSnap.exists) {
                 batch.update(subRef, {
-                    grade: String(resultado || ''),
-                    feedback: String(comentario_general || ''),
+                    grade: resultado,
+                    feedback: normalizeFeedback(comentario_general),
                     graded_at: FieldValue.serverTimestamp()
                 });
                 
@@ -99,7 +123,7 @@ exports.importGrades = async (req, res) => {
         }
 
         await batch.commit();
-        res.status(200).send({ success: true, updatedCount });
+        res.status(200).send({ success: true, updatedCount, rejected });
 
     } catch (e) {
         logger.error(e);

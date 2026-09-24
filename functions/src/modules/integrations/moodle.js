@@ -1,6 +1,7 @@
 const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
 const { isSafeExternalUrl } = require('../../lib/urls');
+const { gradeToOutcomeScore, MAX_GRADE } = require('../../lib/grades');
 
 /**
  * Arma la URL del endpoint REST de Moodle Web Services validando el host
@@ -520,7 +521,9 @@ async function exportGradesToMoodleWebservice(payload, context) {
 
     let pushedCount = 0;
     for (let sub of submissions) {
-        if (!sub.grade) continue;
+        // Solo notas numéricas: una conceptual ("Aprobado") se enviaba como 0.
+        const score = gradeToOutcomeScore(sub.grade);
+        if (score === null) continue;
 
         const rosterSnap = await db.collection('course_roster').doc(`${courseId}_${sub.student_id}`).get();
         const moodleUserId = rosterSnap.exists ? rosterSnap.data().moodle_user_id : null;
@@ -535,7 +538,7 @@ async function exportGradesToMoodleWebservice(payload, context) {
                 itemname: `Tarea Dojo ${assignmentId}`,
                 itemnum: 0,
                 'grades[0][userid]': moodleUserId,
-                'grades[0][rawgrade]': parseFloat(sub.grade) || 0
+                'grades[0][rawgrade]': score * MAX_GRADE
             });
 
             try {

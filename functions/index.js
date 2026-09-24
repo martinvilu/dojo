@@ -10,6 +10,7 @@ db.settings({ ignoreUndefinedProperties: true });
 const { ACTION_MODULES, loadActionHandler } = require('./src/actions');
 const { authorizeAction } = require('./src/authz');
 const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
+const { gradeToOutcomeScore } = require('./src/lib/grades');
 
 const SECRET_KEY_PATTERN = /token|secret|password|api_?key|sourcedid/i;
 
@@ -61,18 +62,14 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
         return;
     }
 
-    // Convert grade to standard decimal (0.0 to 1.0)
-    let numericGrade = parseFloat(grade);
-    if (isNaN(numericGrade)) {
-        numericGrade = 0.0;
-    } else {
-        // If grade is out of 10, normalize to 1.0
-        if (numericGrade > 1.0) {
-            numericGrade = numericGrade / 10.0;
-        }
+    // Escala 0..10 -> 0.0..1.0. Las notas conceptuales ("Aprobado") no tienen
+    // equivalente numérico: antes se enviaban como 0 y una nota 1/10 se
+    // interpretaba como 100 %.
+    const numericGrade = gradeToOutcomeScore(grade);
+    if (numericGrade === null) {
+        logger.info("Nota no numérica: no se sincroniza con Moodle:", previousData.id || "unknown");
+        return;
     }
-    if (numericGrade > 1.0) numericGrade = 1.0;
-    if (numericGrade < 0.0) numericGrade = 0.0;
 
     logger.info(`Sincronizando nota ${numericGrade} con Moodle URL: ${outcomeUrl}`);
 

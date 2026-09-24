@@ -1,5 +1,6 @@
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
+const { normalizeGrade, normalizeFeedback } = require("../../lib/grades");
 
 // Throttle anti fuerza bruta del sync_secret. Ventana en memoria por
 // instancia: en serverless es un disuasivo best-effort (las instancias
@@ -65,11 +66,21 @@ exports.webhook = async (req, res) => {
             return res.status(401).send('Invalid secret');
         }
         
+        if (!Array.isArray(grades)) return res.status(400).send('grades debe ser un array');
+
         const batch = db.batch();
         let updatedCount = 0;
+        const rejected = [];
         
         for (const g of grades) {
-            if (!g.matricula || (!g.grade && !g.feedback)) continue;
+            if (!g || !g.matricula || (!g.grade && !g.feedback)) continue;
+            const normalized = normalizeGrade(g.grade);
+            if (!normalized.ok) {
+                rejected.push({ matricula: String(g.matricula), reason: normalized.error });
+                continue;
+            }
+            const grade = normalized.value;
+            const feedback = normalizeFeedback(g.feedback);
             
             const pSnap = await db.collection('profiles').where('matricula_unrn', '==', g.matricula).get();
             if (pSnap.empty) continue;
@@ -79,8 +90,8 @@ exports.webhook = async (req, res) => {
             
             if (!sSnap.empty) {
                 batch.update(sSnap.docs[0].ref, {
-                    grade: String(g.grade || ''),
-                    feedback: String(g.feedback || ''),
+                    grade,
+                    feedback,
                     graded_at: FieldValue.serverTimestamp()
                 });
                 updatedCount++;
@@ -90,8 +101,8 @@ exports.webhook = async (req, res) => {
                     assignment_id: assignmentId,
                     student_id: studentId,
                     repo_url: '',
-                    grade: String(g.grade || ''),
-                    feedback: String(g.feedback || ''),
+                    grade,
+                    feedback,
                     is_locked: false,
                     graded_at: FieldValue.serverTimestamp(),
                     created_at: FieldValue.serverTimestamp()
@@ -100,7 +111,7 @@ exports.webhook = async (req, res) => {
             }
         }
         await batch.commit();
-        res.json({ success: true, updatedCount });
+        res.json({ success: true, updatedCount, rejected });
     } catch(e) {
         logger.error("Error en webhook github:", e);
         res.status(500).json({ error: e.message });

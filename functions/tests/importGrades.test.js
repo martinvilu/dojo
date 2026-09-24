@@ -57,7 +57,7 @@ function seedCourse(courseId = 'c1', secret = COURSE.sync_secret) {
 
 function seedSubmission(id, data, exists = true) {
   const d = admin.firestore().collection('submissions').doc(id);
-  d.get.mockResolvedValue({ exists, data: () => data });
+  d.get.mockResolvedValue({ exists, data: () => ({ assignment_id: 'a1', ...data }) });
   return d;
 }
 
@@ -91,6 +91,9 @@ beforeEach(() => {
   admin.__state.batches.length = 0;
   jest.clearAllMocks();
   seedCourse();
+  // Assignment of course c1 (docs are keyed by id in this fake).
+  admin.firestore().collection('assignments').doc('a1').get
+    .mockResolvedValue({ exists: true, data: () => ({ course_id: 'c1' }) });
 });
 
 describe('importGrades endpoint', () => {
@@ -143,7 +146,7 @@ describe('importGrades endpoint', () => {
     }), res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.send).toHaveBeenCalledWith({ success: true, updatedCount: 1 });
+    expect(res.send).toHaveBeenCalledWith({ success: true, updatedCount: 1, rejected: [] });
 
     const batch = admin.__state.batches[0];
     expect(batch.update).toHaveBeenCalledWith(
@@ -183,7 +186,7 @@ describe('importGrades endpoint', () => {
       body: [{ id_entrega: 'ghost', resultado: '4' }]
     }), res);
 
-    expect(res.send).toHaveBeenCalledWith({ success: true, updatedCount: 0 });
+    expect(res.send).toHaveBeenCalledWith({ success: true, updatedCount: 0, rejected: [] });
     const batch = admin.__state.batches[0];
     expect(batch.update).not.toHaveBeenCalled();
     expect(batch.set).not.toHaveBeenCalled();
@@ -205,7 +208,7 @@ describe('importGrades endpoint', () => {
       expect.objectContaining({ id: 'sub3' }),
       expect.objectContaining({ grade: '7', feedback: 'bien pero mejorable' })
     );
-    expect(res.send).toHaveBeenCalledWith({ success: true, updatedCount: 1 });
+    expect(res.send).toHaveBeenCalledWith({ success: true, updatedCount: 1, rejected: [] });
   });
 
   it('parses comma-separated CSV payloads too', async () => {
@@ -244,5 +247,43 @@ describe('importGrades endpoint', () => {
     }), res);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.send).toHaveBeenCalledWith('Content-Type debe ser application/json o text/csv');
+  });
+
+  it('rejects out-of-range grades and normalizes decimal commas', async () => {
+    seedSubmission('sub5', { student_id: 's5' });
+    seedSubmission('sub6', { student_id: 's6' });
+    seedProfile('s5', {});
+    seedProfile('s6', {});
+
+    const res = makeRes();
+    await importGrades(makeReq({
+      body: [
+        { id_entrega: 'sub5', resultado: '15' },
+        { id_entrega: 'sub6', resultado: '7,5' }
+      ]
+    }), res);
+
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      updatedCount: 1,
+      rejected: [expect.objectContaining({ id_entrega: 'sub5' })]
+    }));
+    const batch = admin.__state.batches[0];
+    expect(batch.update).toHaveBeenCalledTimes(1);
+    expect(batch.update).toHaveBeenCalledWith(expect.objectContaining({ id: 'sub6' }), expect.objectContaining({ grade: '7.5' }));
+  });
+
+  it('refuses submissions from other courses even with a valid course token', async () => {
+    admin.firestore().collection('assignments').doc('foreign').get
+      .mockResolvedValue({ exists: true, data: () => ({ course_id: 'c2' }) });
+    seedSubmission('sub7', { student_id: 's7', assignment_id: 'foreign' });
+
+    const res = makeRes();
+    await importGrades(makeReq({ body: [{ id_entrega: 'sub7', resultado: '10' }] }), res);
+
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      updatedCount: 0,
+      rejected: [expect.objectContaining({ id_entrega: 'sub7', reason: 'La entrega no pertenece a este curso.' })]
+    }));
+    expect(admin.__state.batches[0].update).not.toHaveBeenCalled();
   });
 });
