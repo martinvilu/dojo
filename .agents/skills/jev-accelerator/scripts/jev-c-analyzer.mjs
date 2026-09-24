@@ -31,7 +31,7 @@ function findCFiles(dir, depth = 0) {
         }
       }
     }
-  } catch (e) {
+  } catch {
     // Ignore unreadable dirs
   }
   return results;
