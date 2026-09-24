@@ -1,6 +1,12 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  type Firestore,
+} from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
@@ -18,12 +24,22 @@ const firebaseConfig = {
 
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = createFirestore();
 export const functions = getFunctions(app);
 
-import { enableIndexedDbPersistence } from "firebase/firestore";
-if (typeof window !== "undefined") {
-  enableIndexedDbPersistence(db).catch((err) => {
-    console.warn("Firestore offline persistence error/precondition:", err.code);
-  });
+/**
+ * Browser: IndexedDB cache shared across tabs (replaces the deprecated
+ * enableIndexedDbPersistence, which only worked in a single tab and failed
+ * with `failed-precondition` in the others). Server: in-memory default.
+ */
+function createFirestore(): Firestore {
+  if (typeof window === "undefined") return getFirestore(app);
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    });
+  } catch {
+    // Already initialized (e.g. Fast Refresh re-evaluating this module).
+    return getFirestore(app);
+  }
 }
