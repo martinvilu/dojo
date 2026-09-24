@@ -63,6 +63,26 @@ export function CourseSchedulesPanel({
   const [selectedVersionForDiff, setSelectedVersionForDiff] = useState<any | null>(null);
   const [selectedCourseForComparison, setSelectedCourseForComparison] = useState<any | null>(null);
 
+  // ⚡ Bolt Optimization: Pre-compute Kanban columns to avoid O(N) array filtering across 4 columns every render
+  const kanbanColumns = useMemo(() => {
+    const cols = {
+      teoricas: [] as any[],
+      practicas: [] as any[],
+      feriados: [] as any[],
+      examenes: [] as any[]
+    };
+
+    (teacherClasses || []).forEach((c: any, i: number) => {
+      const item = { ...c, originalIndex: i };
+      if (c.type === "Teórica" && c.special_status === "Normal") cols.teoricas.push(item);
+      else if (c.type === "Práctica" && c.special_status === "Normal") cols.practicas.push(item);
+      else if (c.special_status === "Feriado") cols.feriados.push(item);
+      else if (c.special_status === "Examen") cols.examenes.push(item);
+    });
+
+    return cols;
+  }, [teacherClasses]);
+
   // Pre-compute comment counts to avoid O(N * M) filtering in render
   const commentCountsByClass = useMemo(() => {
     const counts = new Map<number, number>();
@@ -493,9 +513,7 @@ export function CourseSchedulesPanel({
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start select-none">
                       {/* COLUMN 1: TEÓRICA */}
                       {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.type === "Teórica" && c.special_status === "Normal");
+                        const colClasses = kanbanColumns.teoricas;
                         return (
                           <div
                             onDragOver={(e) => e.preventDefault()}
@@ -543,9 +561,7 @@ export function CourseSchedulesPanel({
 
                       {/* COLUMN 2: PRÁCTICA */}
                       {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.type === "Práctica" && c.special_status === "Normal");
+                        const colClasses = kanbanColumns.practicas;
                         return (
                           <div
                             onDragOver={(e) => e.preventDefault()}
@@ -593,9 +609,7 @@ export function CourseSchedulesPanel({
 
                       {/* COLUMN 3: FERIADOS */}
                       {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.special_status === "Feriado");
+                        const colClasses = kanbanColumns.feriados;
                         return (
                           <div
                             onDragOver={(e) => e.preventDefault()}
@@ -640,9 +654,7 @@ export function CourseSchedulesPanel({
 
                       {/* COLUMN 4: EXAMEN / EVALUACIONES */}
                       {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.special_status === "Examen");
+                        const colClasses = kanbanColumns.examenes;
                         return (
                           <div
                             onDragOver={(e) => e.preventDefault()}

@@ -32,6 +32,18 @@ export function CourseStudentsPanel({
     return `${origin}/api/export/csv?id=${cid}&type=roster&token=${token}`;
   };
 
+  // ⚡ Bolt Optimization: Pre-compute filtered roster to avoid O(N) array filtering during render
+  const filteredRoster = useMemo(() => {
+    return roster.filter((student: any) => {
+      if (student.role !== "student") return false;
+      const cid = selectedCourse?.id || selectedCourse?.course?.id;
+      const studentComm = student.commissions?.[cid] || "";
+      if (commissionFilter === "Todas") return true;
+      if (commissionFilter === "Sin Comisión") return studentComm === "";
+      return studentComm === commissionFilter;
+    });
+  }, [roster, selectedCourse, commissionFilter]);
+
   // Pre-compute attendance and submissions statistics for O(1) lookups during render and export
   // This avoids O(N) array filtering/finding inside maps across hundreds of rows
   const { attendanceStats, submissionsByStudent } = useMemo(() => {
@@ -399,15 +411,7 @@ export function CourseStudentsPanel({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-850 text-xs text-gray-300">
-                        {roster
-                          .filter((student: any) => {
-                            if (student.role !== "student") return false;
-                            const studentComm = student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
-                            if (commissionFilter === "Todas") return true;
-                            if (commissionFilter === "Sin Comisión") return studentComm === "";
-                            return studentComm === commissionFilter;
-                          })
-                          .map((student: any) => {
+                        {filteredRoster.map((student: any) => {
                             const attStats = attendanceStats.get(student.id) || { recordedCount: 0, presentOrLate: 0 };
                             const recordedCount = attStats.recordedCount;
                             const presentOrLate = attStats.presentOrLate;
