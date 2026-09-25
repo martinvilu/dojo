@@ -73,10 +73,15 @@ export function useTabDataLoader({
               ? await api("getStudentAssignments", { courseIds })
               : await api("getTeacherAssignments", { courseIds });
             const rawAssignments = Array.isArray(assignRes) ? assignRes : (assignRes?.assignments || []);
-            const courseNameOf = (cid: string) =>
-              safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.name
-              || safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.course?.name
-              || "Cátedra";
+            const courseMap = new Map<string, any>();
+            safeCourses.forEach((c: any) => {
+              const id = c.id || c.course?.id;
+              if (id) courseMap.set(id, c);
+            });
+            const courseNameOf = (cid: string) => {
+              const c = courseMap.get(cid);
+              return c?.name || c?.course?.name || "Cátedra";
+            };
             const loadedAssignments = rawAssignments.map((a: any) => ({
               ...a,
               course_name: a.course_name || courseNameOf(a.course_id),
@@ -88,7 +93,7 @@ export function useTabDataLoader({
               courseIds.map(async (cid: string) => {
                 try {
                   const detail = await api("getCourseDetails", { courseId: cid });
-                  const cName = detail?.name || safeCourses.find((x: any) => (x.id || x.course?.id) === cid)?.name || "Cátedra";
+                  const cName = detail?.name || courseNameOf(cid);
                   const instances = detail?.class_instances || [];
                   instances.forEach((inst: any) => {
                     allClassInstances.push({
