@@ -1,4 +1,9 @@
-const { computeRiskScore, riskLevel, WEIGHTS } = require('../src/modules/course/analytics');
+const {
+  computeRiskScore,
+  riskLevel,
+  getDropoutRiskAnalysis,
+  WEIGHTS
+} = require('../src/modules/course/analytics');
 
 describe('Dropout risk scoring', () => {
   it('returns a perfect score for an ideal student', () => {
@@ -34,7 +39,6 @@ describe('Dropout risk scoring', () => {
   });
 
   it('treats missing ratios as neutral-perfect (early term)', () => {
-    // undefined -> Number()||0 -> 0 penalty; forum activity keeps it at 0
     const { score } = computeRiskScore({ hasForumActivity: true });
     expect(score).toBe(0);
   });
@@ -55,7 +59,6 @@ describe('Dropout risk scoring', () => {
   });
 
   it('matches the documented worked example', () => {
-    // 75% asistencia, la mitad de las tareas pendientes, nada tarde, sin foro
     const { score } = computeRiskScore({
       attendanceRatio: 0.75, pendingRatio: 0.5, lateRatio: 0, hasForumActivity: false
     });
@@ -66,3 +69,147 @@ describe('Dropout risk scoring', () => {
     );
   });
 });
+
+describe('getDropoutRiskAnalysis', () => {
+  it('validates courseId, teacher access, and course existence', async () => {
+    await expect(getDropoutRiskAnalysis({}, { uid: 't1', db: {} })).rejects.toThrow(/courseId/i);
+
+    const dbNoAccess = {
+      collection: () => ({
+        doc: () => ({ get: async () => ({ exists: false }) })
+      })
+    };
+    await expect(getDropoutRiskAnalysis({ courseId: 'c1' }, { uid: 't1', db: dbNoAccess })).rejects.toThrow(/acceso/i);
+
+    const dbNoCourse = {
+      collection: (name) => ({
+        doc: () => ({ get: async () => ({ exists: name === 'course_teachers' }) })
+      })
+    };
+    await expect(getDropoutRiskAnalysis({ courseId: 'c1' }, { uid: 't1', db: dbNoCourse })).rejects.toThrow(/no encontrado/i);
+  });
+
+  it('aggregates attendance, assignments, late submissions, and forum activity sorted by risk descending', async () => {
+    const dueIso = '2026-04-01T00:00:00.000Z';
+    const lateMs = new Date('2026-04-05T00:00:00.000Z').getTime();
+    const onTimeMs = new Date('2026-03-30T00:00:00.000Z').getTime();
+
+    const db = {
+      collection: (name) => {
+        if (name === 'course_teachers') {
+          return { doc: () => ({ get: async () => ({ exists: true }) }) };
+        }
+        if (name === 'courses') {
+          return {
+            doc: () => ({
+              get: async () => ({
+                exists: true,
+                data: () => ({ class_instances: [{ id: 'cl1' }, { id: 'cl2' }] })
+              }),
+              collection: (sub) => {
+                if (sub === 'attendance') {
+                  return {
+                    get: async () => ({
+                      docs: [
+                        { data: () => ({ records: { s_good: 'present', s_risk: 'absent' } }) }
+                      ]
+                    })
+                  };
+                }
+                if (sub === 'class_comments') {
+                  return {
+                    get: async () => ({
+                      docs: [
+                        { data: () => ({ user_id: 's_good', is_best_answer: true }) },
+                        { data: () => ({ user_id: null }) }
+                      ]
+                    })
+                  };
+                }
+                return { get: async () => ({ docs: [] }) };
+              }
+            })
+          };
+        }
+        if (name === 'assignments') {
+          return {
+            where: () => ({
+              get: async () => ({
+                size: 2,
+                docs: [
+                  { id: 'a1', data: () => ({ due_date: dueIso }) },
+                  { id: 'a2', data: () => ({ due_date: dueIso }) }
+                ]
+              })
+            })
+          };
+        }
+        if (name === 'attendance') {
+          return {
+            where: () => ({
+              get: async () => ({
+                docs: [
+                  { data: () => ({ student_id: 's_good', status: 'late' }) },
+                  { data: () => ({ student_id: null }) }
+                ]
+              })
+            })
+          };
+        }
+        if (name === 'course_roster') {
+          return {
+            where: () => ({
+              where: () => ({
+                get: async () => ({
+                  docs: [
+                    { data: () => ({ student_id: 's_good' }) },
+                    { data: () => ({ student_id: 's_risk' }) }
+                  ]
+                })
+              })
+            })
+          };
+        }
+        if (name === 'profiles') {
+          return {
+            doc: (id) => ({
+              get: async () => (
+                id === 's_good'
+                  ? { exists: true, data: () => ({ full_name: 'Buen Estudiante', email: 'good@unrn.edu.ar', github_user: 'gooddev' }) }
+                  : { exists: false }
+              )
+            })
+          };
+        }
+        if (name === 'submissions') {
+          return {
+            where: (_f, _op, sid) => ({
+              get: async () => ({
+                docs: sid === 's_good'
+                  ? [
+                      { id: 'sub1', data: () => ({ assignment_id: 'a1', created_at: { toMillis: () => onTimeMs } }) },
+                      { id: 'sub2', data: () => ({ assignment_id: 'a2', created_at: { toMillis: () => lateMs } }) },
+                      { id: 'sub_other', data: () => ({ assignment_id: 'other_course_a' }) }
+                    ]
+                  : []
+              })
+            })
+          };
+        }
+        return {};
+      }
+    };
+
+    const report = await getDropoutRiskAnalysis({ courseId: 'c1' }, { uid: 't1', db });
+    expect(report.total_classes).toBe(2);
+    expect(report.total_assignments).toBe(2);
+    expect(report.students).toHaveLength(2);
+    // Highest risk first
+    expect(report.students[0].student_id).toBe('s_risk');
+    expect(report.students[0].level).toBe('ALTO');
+    expect(report.students[1].student_id).toBe('s_good');
+    expect(report.students[1].metrics.late).toBe(1);
+    expect(report.students[1].metrics.forum_best_answers).toBe(1);
+  });
+});
+

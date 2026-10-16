@@ -119,4 +119,53 @@ describe('Gmail OAuth Actions', () => {
         expect(res.messageId).toBe('msg_999');
         expect(res.emailSentFrom).toBe('docente@unrn.edu.ar');
     });
+
+    test('sendGmailNotification refreshes expired token before sending and handles errors', async () => {
+        mockDocData.expires_at = Date.now() - 10000; // expired
+
+        fetch.mockImplementation((url) => {
+            if (url.includes('oauth2.googleapis.com/token')) {
+                return Promise.resolve({
+                    json: () => Promise.resolve({
+                        access_token: 'refreshed_token_123',
+                        expires_in: 3600
+                    })
+                });
+            }
+            if (url.includes('upload/gmail/v1/users/me/messages/send')) {
+                return Promise.resolve({
+                    json: () => Promise.resolve({ id: 'msg_refreshed' })
+                });
+            }
+            return Promise.resolve({ json: () => Promise.resolve({}) });
+        });
+
+        const res = await sendGmailNotification({
+            to: 'alumno@unrn.edu.ar',
+            subject: 'Test refresh',
+            htmlBody: '<p>Body</p>'
+        }, mockContext);
+        expect(res.messageId).toBe('msg_refreshed');
+
+        // Missing parameters
+        await expect(sendGmailNotification({}, mockContext)).rejects.toThrow(/requeridos/i);
+
+        // Expired without refresh_token
+        mockDocData.refresh_token = null;
+        await expect(sendGmailNotification({
+            to: 'a@b.com',
+            subject: 's',
+            htmlBody: 'b'
+        }, mockContext)).rejects.toThrow(/venció/i);
+    });
+
+    test('saveGmailAuthCode rejects missing code or Google token error', async () => {
+        await expect(saveGmailAuthCode({}, mockContext)).rejects.toThrow(/Código OAuth/i);
+
+        fetch.mockResolvedValueOnce({
+            json: async () => ({ error: 'invalid_grant', error_description: 'Code expired' })
+        });
+        await expect(saveGmailAuthCode({ code: 'bad' }, mockContext)).rejects.toThrow(/Code expired/);
+    });
 });
+

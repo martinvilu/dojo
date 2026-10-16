@@ -64,9 +64,13 @@ async function getCourseDashboardStats(payload, context) {
                 if (!sData.grade) pendingCorrections++;
                 
                 // Check if on time
-                const assignment = assignmentsSnap.docs.find(a => a.id === sData.assignment_id).data();
-                if (sData.submitted_at && assignment.due_date) {
-                    if (sData.submitted_at.toDate() <= new Date(assignment.due_date)) {
+                const assignmentDoc = assignmentsSnap.docs.find(a => a.id === sData.assignment_id);
+                const assignment = assignmentDoc ? assignmentDoc.data() : null;
+                if (sData.submitted_at && assignment?.due_date) {
+                    const submittedDate = typeof sData.submitted_at.toDate === 'function'
+                        ? sData.submitted_at.toDate()
+                        : new Date(sData.submitted_at);
+                    if (submittedDate <= new Date(assignment.due_date)) {
                         onTimeSubmissions++;
                     }
                 }

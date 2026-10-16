@@ -31,9 +31,15 @@ describe("src/lib/health", () => {
     assert.strictEqual(healthHttpStatus(report), 200);
   });
 
-  it("times out slow probes", async () => {
-    const report = await runHealthChecks([{ name: "firestore", run: never, timeoutMs: 20 }]);
+  it("times out slow probes and handles non-Error rejections", async () => {
+    const report = await runHealthChecks([
+      { name: "firestore", run: never, timeoutMs: 20 },
+      { name: "cache", required: false, run: async () => { throw "string failure"; } },
+    ]);
     assert.strictEqual(report.checks.firestore.status, "timeout");
+    assert.strictEqual(report.checks.cache.status, "error");
+    assert.strictEqual(report.checks.cache.error, "Error");
     assert.strictEqual(report.status, "down");
   });
 });
+

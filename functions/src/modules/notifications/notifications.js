@@ -97,7 +97,7 @@ async function checkAndAlertStudentsAtRisk(payload, context) {
                 .where('created_at', '>=', oneWeekAgo)
                 .get();
                 
-            const alreadyNotified = recentNotifSnap.docs.some(d => d.data().message.includes("Alerta de Desempeño"));
+            const alreadyNotified = recentNotifSnap.docs.some(d => String(d.data().message || "").includes("Alerta de Desempeño"));
             
             if (!alreadyNotified) {
                 await db.collection('notifications').add({
@@ -148,14 +148,7 @@ async function markNotificationsRead(payload, context) {
     return { success: true };
 }
 
-module.exports = {
-    notifyCourseStudents,
-    checkAndAlertStudentsAtRisk,
-    getStudentNotifications,
-    markNotificationsRead
-};
-
-exports.sendDailySummaries = async (event) => {
+async function sendDailySummaries(event) {
     const { getFirestore, FieldValue } = require("firebase-admin/firestore");
     const logger = require("firebase-functions/logger");
     const db = getFirestore();
@@ -198,4 +191,13 @@ exports.sendDailySummaries = async (event) => {
         logger.error('Error sending daily summaries:', e);
     }
     return null;
+}
+
+module.exports = {
+    notifyCourseStudents,
+    checkAndAlertStudentsAtRisk,
+    getStudentNotifications,
+    markNotificationsRead,
+    sendDailySummaries
 };
+

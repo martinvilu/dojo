@@ -132,4 +132,105 @@ describe('Email Templates & Scheduled Emails Actions Suite', () => {
         expect(res.success).toBe(true);
         expect(res.emailSentTo).toBe('alumno@unrn.edu.ar');
     });
+
+    test('cancelScheduledEmail updates status to cancelled and validates emailId', async () => {
+        await expect(cancelScheduledEmail({}, mockContext)).rejects.toThrow(/ID de correo/i);
+        const res = await cancelScheduledEmail({ emailId: 'sch1' }, mockContext);
+        expect(res.success).toBe(true);
+    });
+
+    test('triggerScheduledEmailNow sends to single_student and all_students and handles send errors', async () => {
+        const { triggerScheduledEmailNow } = require('../src/modules/mail/scheduledEmails');
+        const { sendGmailNotification } = require('../src/modules/mail/gmailAuth');
+
+        await expect(triggerScheduledEmailNow({}, mockContext)).rejects.toThrow(/requeridos/i);
+
+        let emailDoc = {
+            exists: true,
+            data: () => ({
+                title: 'Aviso',
+                recipient_type: 'single_student',
+                target_student_id: 'stu1',
+                subject: 'Hola {{student_name}}',
+                body_html: '<p>{{student_name}} ({{student_email}})</p>',
+                status: 'pending'
+            })
+        };
+
+        mockContext.db.collection = jest.fn((coll) => {
+            if (coll === 'scheduled_emails') {
+                return {
+                    doc: () => ({
+                        get: async () => emailDoc,
+                        update: jest.fn().mockResolvedValue(true)
+                    })
+                };
+            }
+            if (coll === 'profiles') {
+                return {
+                    doc: (id) => ({
+                        get: async () => ({
+                            exists: true,
+                            data: () => ({ email: `${id}@unrn.edu.ar`, full_name: `Estudiante ${id}` })
+                        })
+                    })
+                };
+            }
+            if (coll === 'course_roster') {
+                return {
+                    where: () => ({
+                        get: async () => ({
+                            docs: [
+                                { data: () => ({ student_id: 'stu1' }) },
+                                { data: () => ({ student_id: 'stu2' }) }
+                            ]
+                        })
+                    })
+                };
+            }
+            return { add: jest.fn().mockResolvedValue({ id: 'log1' }) };
+        });
+
+        const singleRes = await triggerScheduledEmailNow({ emailId: 'sch1', courseId: 'c123' }, mockContext);
+        expect(singleRes).toEqual({ success: true, sentCount: 1, failedCount: 0 });
+
+        // Test all_students with one failure
+        emailDoc = {
+            exists: true,
+            data: () => ({
+                title: 'General',
+                recipient_type: 'all_students',
+                subject: 'General {{student_name}}',
+                body_html: '<p>General</p>',
+                status: 'pending'
+            })
+        };
+        sendGmailNotification
+            .mockResolvedValueOnce({ success: true })
+            .mockRejectedValueOnce(new Error('SMTP quota'));
+
+        const allRes = await triggerScheduledEmailNow({ emailId: 'sch2', courseId: 'c123' }, mockContext);
+        expect(allRes).toEqual({ success: true, sentCount: 1, failedCount: 1 });
+
+        // Cancelled email throws
+        emailDoc = { exists: true, data: () => ({ status: 'cancelled' }) };
+        await expect(triggerScheduledEmailNow({ emailId: 'sch3', courseId: 'c123' }, mockContext)).rejects.toThrow(/cancelado/i);
+    });
+
+    test('getMailLogs returns sorted mail logs for a course', async () => {
+        mockContext.db.collection = jest.fn(() => ({
+            where: () => ({
+                get: async () => ({
+                    docs: [
+                        { id: 'l1', data: () => ({ sent_at: 100 }) },
+                        { id: 'l2', data: () => ({ sent_at: 200 }) }
+                    ]
+                })
+            })
+        }));
+
+        const logs = await getMailLogs({ courseId: 'c123' }, mockContext);
+        expect(logs.map(l => l.id)).toEqual(['l2', 'l1']);
+    });
 });
+

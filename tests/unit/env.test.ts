@@ -30,4 +30,22 @@ describe("src/lib/env", () => {
     const res = validateEnv();
     assert.ok(typeof res.isValid === "boolean");
   });
+
+  it("reports invalid state when client or server env variables fail schema validation", () => {
+    const origUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const origNodeEnv = process.env.NODE_ENV;
+    try {
+      process.env.NEXT_PUBLIC_APP_URL = "invalid-url";
+      (process.env as Record<string, string | undefined>).NODE_ENV = "staging";
+      const res = validateEnv();
+      assert.strictEqual(res.isValid, false);
+      assert.strictEqual(res.client, null);
+      assert.strictEqual(res.server, null);
+    } finally {
+      if (origUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+      else process.env.NEXT_PUBLIC_APP_URL = origUrl;
+      (process.env as Record<string, string | undefined>).NODE_ENV = origNodeEnv;
+    }
+  });
 });
+

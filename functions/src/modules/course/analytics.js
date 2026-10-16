@@ -128,7 +128,7 @@ async function getDropoutRiskAnalysis(payload, context) {
             .filter(s => assignmentById[s.assignment_id]);
 
         const submittedIds = new Set(courseSubmissions.map(s => s.assignment_id));
-        const pendingCount = totalAssignments - courseSubmissions.length;
+        const pendingCount = Math.max(0, totalAssignments - submittedIds.size);
 
         let lateCount = 0;
         courseSubmissions.forEach(s => {
@@ -163,7 +163,7 @@ async function getDropoutRiskAnalysis(payload, context) {
                 attendance_present: presentCount,
                 attendance_total: totalClasses,
                 attendance_ratio: Math.round(attendanceRatio * 100),
-                submitted: courseSubmissions.length,
+                submitted: submittedIds.size,
                 pending: pendingCount,
                 total_assignments: totalAssignments,
                 late: lateCount,

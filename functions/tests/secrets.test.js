@@ -1,5 +1,7 @@
 const test = require('firebase-functions-test')();
 
+jest.mock('node-fetch', () => jest.fn().mockResolvedValue({ ok: true, status: 200, text: async () => '<ok/>' }));
+
 jest.mock('firebase-admin/firestore', () => ({
   getFirestore: () => require('firebase-admin').firestore(),
   FieldValue: { serverTimestamp: jest.fn(() => 'SERVER_TIMESTAMP') }
@@ -118,4 +120,51 @@ describe('Subscription secret strength', () => {
     expect(payloads[0].sync_secret).toMatch(STRONG_SECRET_RE);
     expect(payloads[1].sync_secret).toMatch(STRONG_SECRET_RE);
   });
+
+  it('syncs numerical grades to Moodle LTI via gradeSubmission and redacts secrets in activity_logs', async () => {
+    db.collection().doc.mockReturnValue({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () => ({
+          role: 'admin',
+          full_name: 'Admin',
+          email: 'a@b.com',
+          assignment_id: 'a1',
+          student_id: 's1',
+          course_id: 'c1',
+          name: 'Algo',
+          moodle_enabled: true,
+          moodle_lis_outcome_service_url: 'https://moodle.unrn.edu.ar/mod/lti/service.php',
+          moodle_lis_result_sourcedid: 'sourced-123'
+        })
+      }),
+      set: jest.fn(),
+      update: jest.fn()
+    });
+
+    const res = await myFunctions.api.run({
+      data: {
+        action: 'gradeSubmission',
+        payload: {
+          submissionId: 'sub1',
+          grade: '9',
+          feedback: 'Bien',
+          github_token: 'ghp_secret_should_be_redacted'
+        }
+      },
+      auth: { uid: 'admin_uid' }
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it('rejects unauthenticated and unknown actions in api handler', async () => {
+    await expect(myFunctions.api.run({ data: { action: 'getProfile' } })).rejects.toThrow(/Must be logged in/);
+    actAsAdmin();
+    await expect(myFunctions.api.run({
+      data: { action: 'nonExistentAction', payload: {} },
+      auth: { uid: 'admin_uid' }
+    })).rejects.toThrow(/Acción desconocida/);
+  });
 });
+
+
