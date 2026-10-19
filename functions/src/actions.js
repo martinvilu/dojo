@@ -35,6 +35,7 @@ const ACTION_MODULES = {
     
     // moodle
     moodleAutoEnroll: './modules/integrations/moodle',
+    consumeLtiLaunch: './modules/integrations/lti',
     exportCourseToMoodleXml: './modules/integrations/moodle',
     syncMoodleCourseRoster: './modules/integrations/moodle',
     exportGradesToMoodleWebservice: './modules/integrations/moodle',

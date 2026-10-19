@@ -197,6 +197,7 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | Acción | Política |
 |---|---|
 | `moodleAutoEnroll` | AUTHENTICATED: solo cursos con Moodle habilitado, nunca como docente, inscripción `pending` |
+| `consumeLtiLaunch` | AUTHENTICATED. Canjea una vez el ID de un launch verificado: vincula `iss\|sub` al perfil y devuelve `courseId`, `assignmentId`, `targetModule` y si hay AGS. `acceptAssignment` acepta `ltiLaunchId` para ligar la entrega al line item de Moodle |
 | `exportCourseToMoodleXml`, `getMoodleLtiDeepLinkContent` | staffOf(course) |
 | `syncMoodleCourseRoster`, `syncMoodleCourseContents` | titularOf(course). `syncMoodleCourseRoster` (igual que `syncGuaraniRoster`) compara el SHA-256 del padrón con el de la última sincronización (`courses.roster_sync`) y devuelve `unchanged: true` sin escribir si no cambió; `force: true` la fuerza |
 | `exportGradesToMoodleWebservice` | staffOf(course, assignment) |
@@ -222,9 +223,10 @@ Se sirven desde Firebase App Hosting en el mismo dominio que la app. Cada ruta u
 | `/api/me` | GET | `Authorization: Bearer <Firebase ID token>` | Perfil del usuario autenticado |
 | `/api/cli/courses` | GET | Bearer | Cursos del usuario (modo cloud de la Dojo CLI) |
 | `/api/cli/assignments?courseId={id}` | GET | Bearer + membresía | Tareas de un curso |
-| `/api/lti`, `/api/lti/launch` | POST (form) | `id_token` LTI (**sin verificar firma**) | Launch LTI 1.3 desde Moodle; redirige al módulo pedido (`targetModule`, `courseId`, `assignmentId` o sus variantes `custom_*`) |
-| `/api/lti/deeplink` | POST (form), GET | `id_token` LTI | Deep Linking: devuelve a Moodle enlaces a los módulos de la cátedra |
-| `/api/lti/jwks` | GET | Ninguna | Keyset público de la herramienta |
+| `/api/lti/login` | GET, POST | Iniciación OIDC de la plataforma configurada | Guarda `state` + `nonce` (10 min) y redirige al endpoint de autorización de Moodle |
+| `/api/lti`, `/api/lti/launch` | POST (form) | `id_token` LTI 1.3 **verificado** (RS256 contra el JWKS de Moodle, `iss`, `aud`, `exp`, `nonce`, `state`, deployment) | Guarda el launch verificado y redirige al dashboard con `lti_launch=<id>`. Un `LtiDeepLinkingRequest` de un docente muestra la selección de módulos. Sin LTI 1.3 configurado solo navega |
+| `/api/lti/deeplink` | POST (form) | `launchId` de un Deep Linking verificado | Devuelve a Moodle un `LtiDeepLinkingResponse` firmado con la clave de Ninja Dojo |
+| `/api/lti/jwks` | GET | Ninguna | Clave pública de Ninja Dojo (derivada de `LTI_TOOL_PRIVATE_KEY`) |
 
 Los tokens de suscripción se comparan en tiempo constante. Las respuestas con datos de curso llevan `Cache-Control: private, no-store`.
 

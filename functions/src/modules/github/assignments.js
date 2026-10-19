@@ -2,7 +2,6 @@ const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
 const { HttpsError } = require('firebase-functions/v2/https');
 const { randomBytes } = require('node:crypto');
-const { isSafeExternalUrl } = require('../../lib/urls');
 const { isCourseStaff, isCourseMember } = require('../../authz');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { dojoError } = require('../../lib/errors');
@@ -10,6 +9,7 @@ const { staffStudentProfile } = require('../../lib/projections');
 const { gradeAttribution } = require('../../lib/gradeAudit');
 const { normalizeEmail } = require('../../lib/validate');
 const { courseGithubToken } = require('../../lib/secretBox');
+const { agsFieldsForSubmission } = require('../integrations/lti');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -355,9 +355,9 @@ async function acceptAssignment(payload, context) {
         grade: '',
         feedback: '',
         is_locked: false,
-        // Solo se guardan parámetros LTI con un outcome service externo válido.
-        moodle_lis_outcome_service_url: isSafeExternalUrl(payload.moodle_lis_outcome_service_url) ? payload.moodle_lis_outcome_service_url : '',
-        moodle_lis_result_sourcedid: isSafeExternalUrl(payload.moodle_lis_outcome_service_url) ? String(payload.moodle_lis_result_sourcedid || '').slice(0, 512) : '',
+        // Datos de AGS (LTI 1.3) del launch verificado del propio usuario;
+        // nunca se aceptan URLs de notas enviadas por el navegador.
+        ...(await agsFieldsForSubmission(db, uid, payload.ltiLaunchId)),
         created_at: admin.firestore.FieldValue.serverTimestamp()
     });
     

@@ -19,6 +19,15 @@ else
   openssl rand -base64 32 | tr -d '\n' | firebase functions:secrets:set TOKEN_ENCRYPTION_KEY --project "$PROJECT" --data-file=-
 fi
 
+if secret_exists LTI_TOOL_PRIVATE_KEY; then
+  echo "LTI_TOOL_PRIVATE_KEY ya existe: no se regenera (Moodle tiene registrada su clave pública)."
+else
+  echo "Generando LTI_TOOL_PRIVATE_KEY (RSA 2048) para firmar mensajes LTI 1.3..."
+  openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 2>/dev/null | firebase functions:secrets:set LTI_TOOL_PRIVATE_KEY --project "$PROJECT" --data-file=-
+  echo "  Cargá la misma clave en App Hosting (variable LTI_TOOL_PRIVATE_KEY) para el JWKS y el Deep Linking:"
+  echo "  firebase apphosting:secrets:grantaccess LTI_TOOL_PRIVATE_KEY --project $PROJECT --backend dojo"
+fi
+
 for name in GMAIL_CLIENT_ID GMAIL_CLIENT_SECRET; do
   if secret_exists "$name"; then
     echo "$name ya existe."

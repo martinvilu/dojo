@@ -291,7 +291,7 @@ export default function AssignmentsPanel({
     }
     setApiLoading(true);
     try {
-      await api("acceptAssignment", { assignmentId, groupName, moodle_lis_outcome_service_url: moodleLtiParams?.current?.outcomeUrl || "", moodle_lis_result_sourcedid: moodleLtiParams?.current?.resultId || "" });
+      await api("acceptAssignment", { assignmentId, groupName, ltiLaunchId: moodleLtiParams?.current?.launchId });
       showToast("¡Repositorio creado!", "success");
       const cid = selectedCourse.id || selectedCourse.course?.id;
       const aRes = await api("getStudentAssignments", { courseIds: [cid] });

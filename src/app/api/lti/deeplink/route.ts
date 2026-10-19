@@ -1,10 +1,72 @@
+import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-
+import { adminDb } from "../../middleware/api";
+import { getLtiPlatform, toolBaseUrl, toolKid, LTI_CLAIMS } from "@/lib/lti/config";
+import { loadPrivateKey, signToolJwt } from "@/lib/lti/jwt";
+import { autoPostPage, type VerifiedLaunch } from "@/lib/lti/launch";
+import { LTI_MODULES } from "@/lib/lti/modules";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Respuesta de Deep Linking LTI 1.3 (mejora 3.12): el docente elige un
+ * módulo en la pantalla que muestra /api/lti/launch y acá se arma el
+ * LtiDeepLinkingResponse firmado con la clave de Ninja Dojo, que vuelve a
+ * Moodle por POST a deep_link_return_url. Sin LTI 1.3 configurado se usa el
+ * flujo LTI 1.1 (ContentItem) del simulador local.
+ */
 export async function POST(request: Request) {
+  const config = getLtiPlatform();
+  if (!config) return legacyPost(request);
+
+  const form = await request.formData();
+  const launchId = String(form.get("launchId") || "");
+  const selected = LTI_MODULES[String(form.get("selectedModule") || "")];
+  if (!launchId || !selected || launchId.includes("/")) {
+    return NextResponse.json({ error: "Selección de Deep Linking inválida" }, { status: 400 });
+  }
+
+  const db = adminDb();
+  const ref = db.collection("lti_launches").doc(launchId);
+  const snap = await ref.get();
+  const launch = snap.exists ? (snap.data() as VerifiedLaunch & { expires_at: { toMillis: () => number } }) : null;
+  if (!launch || launch.messageType !== "LtiDeepLinkingRequest" || !launch.deepLinking || launch.expires_at.toMillis() < Date.now()) {
+    return NextResponse.json({ error: "La sesión de Deep Linking expiró: volvé a abrirla desde Moodle." }, { status: 401 });
+  }
+  if (!launch.isInstructor) return NextResponse.json({ error: "Solo el equipo docente puede agregar módulos" }, { status: 403 });
+
+  const privateKey = loadPrivateKey(process.env.LTI_TOOL_PRIVATE_KEY);
+  if (!privateKey) return NextResponse.json({ error: "Falta LTI_TOOL_PRIVATE_KEY en Ninja Dojo" }, { status: 503 });
+
+  const now = Math.floor(Date.now() / 1000);
+  const jwt = signToolJwt({
+    iss: config.clientId,
+    aud: config.issuer,
+    iat: now,
+    exp: now + 300,
+    nonce: randomBytes(16).toString("base64url"),
+    [LTI_CLAIMS.messageType]: "LtiDeepLinkingResponse",
+    [LTI_CLAIMS.version]: "1.3.0",
+    [LTI_CLAIMS.deploymentId]: launch.deploymentId,
+    [LTI_CLAIMS.contentItems]: [{
+      type: "ltiResourceLink",
+      title: selected.title,
+      text: selected.text,
+      url: `${toolBaseUrl()}/api/lti/launch`,
+      custom: { targetModule: selected.target, ...(launch.courseId ? { courseId: launch.courseId } : {}) },
+    }],
+    ...(launch.deepLinking.data ? { [LTI_CLAIMS.data]: launch.deepLinking.data } : {}),
+  }, privateKey, toolKid());
+
+  await ref.delete();
+  logger.info("[LTI DeepLink] respuesta firmada", { target: selected.target });
+  return new NextResponse(autoPostPage(launch.deepLinking.returnUrl, { JWT: jwt }, "Enviando selección a Moodle..."), {
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+  });
+}
+
+async function legacyPost(request: Request) {
   try {
     const contentType = request.headers.get("content-type") || "";
     let returnUrl = "";

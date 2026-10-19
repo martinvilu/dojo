@@ -30,7 +30,7 @@ export function CourseDetailSection(props: {
   currentUser: any;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  moodleLtiParams: { current: { outcomeUrl?: string, resultId?: string } };
+  moodleLtiParams: { current: { launchId?: string } };
   selectedCourse: any;
   setSelectedCourse: (c: any) => void;
   courseSubTab: string;

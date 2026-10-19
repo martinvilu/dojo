@@ -41,7 +41,7 @@ describe('handleSubmissionGradeChange (mejoras 3.10 y 3.19)', () => {
       syncGradeToMoodle: jest.fn().mockResolvedValue()
     };
   };
-  const lti = { moodle_lis_outcome_service_url: 'https://moodle.example/outcome', moodle_lis_result_sourcedid: 'x' };
+  const lti = { lti_ags_lineitem: 'https://moodle.example/mod/lti/services.php/2/lineitems/7/lineitem', lti_user_sub: '42' };
 
   it('audits and syncs LTI submissions when the grade changes, whatever the source', async () => {
     const d = deps();

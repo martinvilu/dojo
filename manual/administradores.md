@@ -90,12 +90,13 @@ La herramienta se registra en Moodle con URLs del **dominio de la app** (App Hos
 
 | Dato | Valor |
 |---|---|
-| URL de la herramienta / launch | `https://<dominio>/api/lti/launch` |
+| URL de la herramienta / launch / redirección | `https://<dominio>/api/lti/launch` |
+| URL de inicio de sesión (OIDC) | `https://<dominio>/api/lti/login` |
 | Keyset (JWKS) | `https://<dominio>/api/lti/jwks` |
-| Deep Linking (Content Selection URL) | `https://<dominio>/api/lti/deeplink` |
+| Deep Linking (URL de selección de contenido) | `https://<dominio>/api/lti/launch` |
 | Servicios | Assignment and Grade Services, Names and Role Provisioning |
 
-Cada docente encuentra la guía completa de registro en **Ajustes Cátedra → 🎓 Integración Moodle → 📖 Guía de Registro LTI**. El detalle técnico está en [MOODLE_INTEGRATION.md](../docs/MOODLE_INTEGRATION.md).
+Después de registrarla, cargá en Ninja Dojo los datos que muestra Moodle (issuer, ID de cliente, endpoints y deployment) como variables del servidor; sin ellos, los ingresos desde Moodle solo navegan y las notas no vuelven al libro de calificaciones. Cada docente encuentra la guía completa de registro en **Ajustes Cátedra → 🎓 Integración Moodle → 📖 Guía de Registro LTI**. El detalle técnico está en [MOODLE_INTEGRATION.md](../docs/MOODLE_INTEGRATION.md).
 
 ```{note}
 Los estudiantes que llegan desde Moodle por primera vez se inscriben solos solo en cátedras con Moodle habilitado, nunca como docentes, y en estado pendiente.

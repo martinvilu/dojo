@@ -53,7 +53,7 @@ async function handleSubmissionGradeChange({ db, serverTimestamp, syncGradeToMoo
     const entry = gradeChangeAudit(submissionId, before, after);
     if (!entry) return { audited: false, synced: false };
     await db.collection('audit_logs').add({ ...entry, created_at: serverTimestamp() });
-    const shouldSync = entry.previous_grade !== entry.new_grade && Boolean(after.moodle_lis_outcome_service_url);
+    const shouldSync = entry.previous_grade !== entry.new_grade && Boolean(after.lti_ags_lineitem);
     if (shouldSync) await syncGradeToMoodle({ id: submissionId, ...after }, after.grade, after.feedback);
     return { audited: true, synced: shouldSync };
 }

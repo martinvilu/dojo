@@ -75,6 +75,7 @@ const ACTION_POLICIES = {
 
     // moodle
     moodleAutoEnroll: AUTHENTICATED,
+    consumeLtiLaunch: AUTHENTICATED,
     exportCourseToMoodleXml: staffOf('course'),
     syncMoodleCourseRoster: titularOf('course'),
     exportGradesToMoodleWebservice: staffOf('course', 'assignment'),

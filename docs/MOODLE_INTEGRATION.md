@@ -1,82 +1,109 @@
-# Integración con Moodle (4.2+) - Guía y Hoja de Ruta
+# Integración con Moodle (4.2+)
 
-Este documento describe la hoja de ruta y la estrategia técnica para integrar **Ninja Dojo** con **Moodle (versión 4.2 o superior)** utilizando el estándar **LTI (Learning Tools Interoperability) 1.3** y una estructura de URIs REST unificadas.
+Ninja Dojo se integra con Moodle de dos maneras:
 
----
+1. **LTI 1.3 Advantage**: Moodle abre Ninja Dojo como herramienta externa (con login OIDC y token firmado), los docentes insertan módulos por **Deep Linking** y las notas vuelven al libro de calificaciones por **AGS** (Assignment and Grade Services).
+2. **Moodle Web Services (REST)**: desde **Ajustes Cátedra → Integración Moodle**, el docente sincroniza alumnos, importa contenidos y exporta notas o un respaldo XML usando un `wstoken` que no se guarda.
 
-## 1. URIs Dedicadas (Estructura REST)
-
-La plataforma cuenta con rutas REST-compliant que resuelven dinámicamente el recurso solicitado y guían al usuario en su Dashboard interactivo:
-
-*   **Tareas / Actividades**: `/dashboard/activities/[id]` (Redirige internamente a `/dashboard?assignmentId=[id]`)
-*   **Cátedras / Cursos**: `/dashboard/courses/[id]` (Redirige internamente a `/dashboard?courseId=[id]`)
-*   **Usuarios**: `/dashboard/users/[id]` (Redirige internamente a `/dashboard?userId=[id]`)
-
-Esta arquitectura permite registrar cualquier enlace directo en Moodle (como un recurso URL o Herramienta Externa) de modo que al hacer clic se enfoque directamente al alumno en la tarea o curso asignado.
+Además, el feed iCal de cada cátedra (`/api/calendar?id=…&token=…`) se puede suscribir como calendario externo en Moodle.
 
 ---
 
-## 2. Hoja de Ruta (Roadmap) de Sincronización
+## 1. Flujo LTI 1.3
 
 ```mermaid
-gantt
-    title Integración y Sincronización con Moodle 4.2+
-    dateFormat  YYYY-MM-DD
-    section Fase 1: SSO & LTI Launch
-    API Endpoints LTI 1.3        :done, des1, 2026-07-15, 1d
-    Validación de JWT & SSO     :active, des2, 2026-07-16, 3d
-    section Fase 2: Calificaciones
-    Gradebook Sync Service (AGS) : 2026-07-19, 4d
-    section Fase 3: Roles & Alumnos
-    Names & Roles Provisioning   : 2026-07-23, 3d
-    section Fase 4: Calendario
-    Sincronización Cronograma API: 2026-07-26, 4d
+sequenceDiagram
+    participant M as Moodle
+    participant L as /api/lti/login
+    participant A as /api/lti/launch
+    participant D as Dashboard
+    participant F as Cloud Functions
+    M->>L: iniciación OIDC (iss, login_hint, target_link_uri)
+    L->>L: guarda state + nonce (lti_states, 10 min)
+    L->>M: redirección a auth.php (state, nonce, redirect_uri)
+    M->>A: POST id_token + state
+    A->>A: consume state, verifica firma RS256 (JWKS de Moodle), iss, aud, exp, nonce, deployment
+    A->>A: guarda el launch verificado (lti_launches, 1 h)
+    A->>D: /dashboard?lti_launch=<id>&courseId&subTab
+    D->>F: consumeLtiLaunch(id)
+    F->>F: vincula iss|sub al usuario y devuelve el contexto
+    D->>F: acceptAssignment(ltiLaunchId)
+    F->>F: guarda lti_ags_lineitem y lti_user_sub en la entrega
+    Note over F,M: Al calificar, onSubmissionGradeChange publica la nota por AGS
 ```
 
-### 📋 Hitos del Roadmap:
+**Garantías:**
 
-#### Fase 1: Enlaces Directos LTI 1.3 y Single Sign-On (SSO)
-*   **Estado:** `COMPLETADO`.
-*   **Objetivo:** Permitir a alumnos ingresar a tareas grupales o individuales de Ninja Dojo con un clic desde Moodle sin re-autenticarse.
-*   **Detalle:** 
-    *   Moodle realiza un `POST` al endpoint `/api/lti/launch` enviando un token firmado con JWT.
-    *   Ninja Dojo decodifica el token, identifica el correo del alumno y lo redirecciona a su URI REST específica.
+- El `id_token` se acepta solo con firma RS256 válida contra el JWKS de la plataforma configurada, emisor y audiencia correctos, vigente, con un `nonce` emitido por Ninja Dojo y un `state` de un solo uso.
+- Ningún dato del launch viaja por la URL del dashboard: solo un ID que el backend canjea una única vez y queda ligado al usuario que lo usó.
+- La URL de notas (line item de AGS) sale del launch verificado. El navegador ya no puede proponer una.
+- Solo los roles docentes de Moodle (`Instructor`, `Administrator`, `ContentDeveloper`, `TeachingAssistant`) pueden usar Deep Linking.
+- La inscripción automática (`moodleAutoEnroll`) sigue creando inscripciones `pending` y nunca otorga rol docente.
 
-#### Fase 2: Sincronización Automática de Calificaciones (LTI AGS)
-*   **Estado:** `COMPLETADO`.
-*   **Objetivo:** Exportar notas corregidas en Ninja Dojo directo al libro de calificaciones de Moodle.
-*   **Detalle:** 
-    *   Soporte para LTI Assignment and Grade Service (AGS) y llamadas legacy POX XML.
-    *   Cuando un docente califica una entrega desde la pestaña de tareas de Ninja Dojo, se dispara un webhook asíncrono que actualiza la puntuación en Moodle mediante una petición HTTP `POST` a su API de Outcomes.
-    *   Sincronización robusta con normalización automática de escalas a rango decimal de 0.0 a 1.0.
+**Sin LTI 1.3 configurado** (por ejemplo, con el simulador `public/test-lti.html`), `/api/lti/launch` solo navega: no toma identidad, roles ni URLs de notas del pedido.
 
-#### Fase 3: Sincronización de Inscripciones & Auto-Enrollment
-*   **Estado:** `COMPLETADO / VINCULACIÓN DE PERFILES ACTIVA`.
-*   **Objetivo:** Matricular automáticamente al alumno en la materia de Ninja Dojo al ingresar por LTI y vincular su GitHub.
-*   **Detalle:**
-    *   La acción backend `moodleAutoEnroll` solo opera sobre cursos existentes con `moodle_enabled`. Como el launch llega al dashboard sin firma LTI verificada, un estudiante nuevo queda inscripto en estado `pending` (roster + enrollment) hasta que el docente lo apruebe, igual que con el código de invitación. Nunca otorga rol docente: los docentes se asignan por código de invitación o desde administración.
-    *   Las URLs del outcome service (`lis_outcome_service_url`) y de Moodle Web Services se validan antes de usarse: HTTPS obligatorio y hosts públicos únicamente (sin localhost, IPs privadas ni endpoints de metadata).
-    *   Si es la primera vez que ingresa, se le solicita a través del frontend vincular su perfil de GitHub mediante un prompt no intrusivo, garantizando que el alumno pueda aprovisionar y clonar repositorios de entrega inmediatamente.
+## 2. Configuración
 
-#### Fase 4: Sincronización del Calendario (Suscripción ICS)
-*   **Estado:** `COMPLETADO`.
-*   **Objetivo:** Reflejar las clases planificadas y entregas de Ninja Dojo en el calendario de Moodle.
-*   **Detalle:**
-    *   Se expone el endpoint público de sincronización de calendario `/calendar?id=[courseId]` que exporta toda la cursada en formato de archivo `.ics` estándar RFC 5545 (incluyendo clases normales, virtuales, exámenes e integrando calendarios externos del docente).
-    *   Los profesores copian esta URL directa desde la pestaña Ajustes de Cátedra y la configuran en Moodle como una suscripción a calendario externo para mantener actualizados los eventos en Moodle.
+### 2.1. En Moodle
 
----
+*Administración del sitio → Extensiones → Actividades → Herramienta externa → Gestionar herramientas → Configurar una herramienta manualmente*:
 
-## 3. Configuración del Endpoint LTI en Moodle
+| Campo | Valor |
+|---|---|
+| Versión LTI | LTI 1.3 |
+| URL de la herramienta | `https://<dominio>/api/lti/launch` |
+| Tipo de clave pública | URL del conjunto de claves (Keyset URL) |
+| URL del keyset público | `https://<dominio>/api/lti/jwks` |
+| URL de inicio de sesión | `https://<dominio>/api/lti/login` |
+| URI de redireccionamiento | `https://<dominio>/api/lti/launch` |
+| Soporta Deep Linking | Sí — URL de selección de contenido: `https://<dominio>/api/lti/launch` |
+| Servicios | IMS LTI Assignment and Grade Services: *Usar este servicio para sincronizar calificaciones*; Names and Role Provisioning: *Usar este servicio* |
+| Privacidad | Compartir nombre y correo: *Siempre* |
 
-1.  **Registrar la Herramienta Externa:**
-    *   Navegar a *Administración del sitio > Extensiones > Herramientas externas > Gestionar herramientas*.
-    *   Elegir **Configurar herramienta manualmente** e introducir:
-        *   **URL de la herramienta:** `https://dojo.com/api/lti/launch`
-        *   **Versión LTI:** `LTI 1.3`
-        *   **URL de inicio de sesión único (OIDC):** `https://dojo.com/api/lti/login`
-        *   **Redirección URI:** `https://dojo.com/api/lti/launch`
-        *   **Keyset URL:** `https://dojo.com/api/lti/jwks`
-2.  **Agregar Enlace Directo a Tareas:**
-    *   En un curso de Moodle, añadir una **Herramienta Externa**.
-    *   Ingresar el enlace REST de la tarea como URL (ej. `https://dojo.com/dashboard/activities/[ID_TAREA]`). Moodle enviará automáticamente el ID de la tarea como parámetro personalizado en el token de lanzamiento.
+Al guardar, Moodle muestra los datos de la plataforma: **ID de cliente**, **ID de despliegue**, **URL de la plataforma (issuer)**, **endpoint de autenticación**, **URL del keyset** y **URL del token de acceso**.
+
+### 2.2. En Ninja Dojo
+
+Con esos datos se configuran las variables del servidor:
+
+| Variable | Dónde | Valor (Moodle) |
+|---|---|---|
+| `LTI_PLATFORM_ISSUER` | App Hosting | URL de la plataforma (p. ej. `https://moodle.unrn.edu.ar`) |
+| `LTI_CLIENT_ID` | App Hosting y `functions/.env.<proyecto>` | ID de cliente |
+| `LTI_PLATFORM_AUTH_URL` | App Hosting | Endpoint de autenticación (`…/mod/lti/auth.php`) |
+| `LTI_PLATFORM_JWKS_URL` | App Hosting | URL del keyset (`…/mod/lti/certs.php`) |
+| `LTI_PLATFORM_TOKEN_URL` | `functions/.env.<proyecto>` | URL del token de acceso (`…/mod/lti/token.php`) |
+| `LTI_DEPLOYMENT_IDS` | App Hosting | ID(s) de despliegue aceptados, separados por coma |
+| `LTI_TOOL_PRIVATE_KEY` | Secret Manager (Functions y App Hosting) | Clave RSA privada de Ninja Dojo. La genera `scripts/setup-secrets.sh` |
+| `LTI_TOOL_KID` | Opcional | Identificador de la clave (por defecto `dojo-lti-1`) |
+| `NEXT_PUBLIC_APP_URL` | App Hosting | Dominio público de la app |
+
+`/api/lti/jwks` publica la clave pública derivada de `LTI_TOOL_PRIVATE_KEY`. Si la clave cambia, Moodle la vuelve a leer del keyset.
+
+### 2.3. Enlaces a actividades
+
+Al agregar la herramienta externa en un curso de Moodle, el docente puede:
+
+- Usar **Seleccionar contenido** (Deep Linking) y elegir un módulo de Ninja Dojo. Se inserta un enlace LTI con `targetModule` y `courseId` como parámetros personalizados.
+- O definir a mano parámetros personalizados (`courseId=…`, `assignmentId=…`, `targetModule=assignments`).
+
+## 3. Calificaciones (AGS)
+
+Cuando una entrega aceptada desde un launch con AGS recibe una nota numérica, desde cualquier vía (UI, planilla, CSV o autograding), el trigger `onSubmissionGradeChange`:
+
+1. Obtiene un token OAuth2 `client_credentials` con una aserción JWT firmada por Ninja Dojo (`scope …/lti-ags/scope/score`).
+2. Publica `POST {lineitem}/scores` con la nota sobre 10 (`scoreMaximum: 10`), el comentario y `gradingProgress: FullyGraded`.
+3. Registra el intento en `audit_logs` (`moodle_grade_sync`). Si falla por un error de red o de Moodle, el trigger se reintenta.
+
+Las notas conceptuales («Aprobado») no tienen equivalente numérico y no se publican. Si la cátedra tiene Moodle deshabilitado, no se sincroniza nada.
+
+## 4. Moodle Web Services (REST)
+
+| Acción | Uso |
+|---|---|
+| `syncMoodleCourseRoster` | Importa el roster del curso de Moodle (`core_enrol_get_enrolled_users`). Omite la escritura si el padrón no cambió (checksum) |
+| `syncMoodleCourseContents` | Trae secciones y temas como clases |
+| `exportGradesToMoodleWebservice` | Exporta las notas de una tarea |
+| `exportCourseToMoodleXml` | Respaldo XML de la cátedra |
+
+Las URLs de Moodle se validan antes de usarse: HTTPS y hosts públicos, sin `localhost`, IPs privadas ni endpoints de metadata. El `wstoken` se envía en cada operación y no se persiste.

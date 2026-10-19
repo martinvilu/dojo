@@ -865,7 +865,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/app/api/lti/route.ts`
 - **Propuesta técnica:** Adoptar el estándar oficial IMS LTI 1.3 con intercambio de claves JWKS y Deep Linking.
 - **Impacto y beneficio:** Compatibilidad estándar con cualquier plataforma de campus virtual moderno.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — LTI 1.3 Advantage real (`src/lib/lti/`): login OIDC con `state`/`nonce` de un solo uso, verificación RS256 del `id_token` contra el JWKS de Moodle (emisor, audiencia, vigencia, deployment), launches verificados canjeados por `consumeLtiLaunch`, Deep Linking firmado, JWKS propio y notas por AGS (OAuth2 con aserción JWT). Reemplaza la decodificación sin firma, el JWKS falso y el POX sin firma. **Acción externa pendiente**: registrar la herramienta en Moodle y cargar las variables `LTI_*`.
 
 ### 3.13. Cifrado de tokens de Moodle y GitHub en reposo en Firestore
 - **Diagnóstico actual:** Los tokens de acceso personales se guardan en texto plano en la colección de configuraciones.

@@ -8,7 +8,7 @@ const { defineSecret } = require("firebase-functions/params");
 // creados con scripts/setup-secrets.sh: declarar un secreto inexistente hace
 // fallar el deploy. Firebase los inyecta en process.env, así que el código
 // que los lee no cambia. Sin el flag se usan variables de entorno comunes.
-const SECRET_NAMES = ['TOKEN_ENCRYPTION_KEY', 'GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET'];
+const SECRET_NAMES = ['TOKEN_ENCRYPTION_KEY', 'GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET', 'LTI_TOOL_PRIVATE_KEY'];
 const secrets = process.env.DOJO_SECRETS_FROM_SECRET_MANAGER === 'true'
     ? SECRET_NAMES.map((name) => defineSecret(name))
     : [];
@@ -30,8 +30,8 @@ db.settings({ ignoreUndefinedProperties: true });
 
 const { ACTION_MODULES, loadActionHandler } = require('./src/actions');
 const { authorizeAction } = require('./src/authz');
-const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 const { gradeToOutcomeScore } = require('./src/lib/grades');
+const { postScore } = require('./src/lib/ltiAgs');
 const { enforceRateLimit } = require('./src/lib/rateLimit');
 const { dojoError, toHttpsError } = require('./src/lib/errors');
 const { validatePayload } = require('./src/lib/validate');
@@ -51,106 +51,52 @@ function redactSecrets(value) {
     return value;
 }
 
-async function syncGradeToMoodle(previousData, grade, feedback) {
-    if (!previousData.moodle_lis_outcome_service_url || !previousData.moodle_lis_result_sourcedid) {
-        logger.info("No Moodle LTI sync parameters found for submission:", previousData.id || "unknown");
-        return;
-    }
+/**
+ * Publica la nota de una entrega lanzada desde Moodle con LTI Advantage AGS
+ * (mejora 3.12). Las notas conceptuales no tienen equivalente numérico y no
+ * se envían. Cada intento queda en audit_logs.
+ */
+async function syncGradeToMoodle(submission, grade, feedback) {
+    if (!submission.lti_ags_lineitem || !submission.lti_user_sub) return;
 
-    // Verify if Moodle integration is enabled for this course
-    if (previousData.assignment_id) {
-        try {
-            const assignmentDoc = await db.collection('assignments').doc(previousData.assignment_id).get();
-            if (assignmentDoc.exists) {
-                const assignment = assignmentDoc.data();
-                const courseDoc = await db.collection('courses').doc(assignment.course_id).get();
-                if (courseDoc.exists) {
-                    const course = courseDoc.data();
-                    if (!course.moodle_enabled) {
-                        logger.info("Moodle integration is disabled for this course:", course.name);
-                        return;
-                    }
-                }
-            }
-        } catch (e) {
-            logger.error("Error verifying moodle_enabled setting in course:", e);
+    if (submission.assignment_id) {
+        const assignmentDoc = await db.collection('assignments').doc(submission.assignment_id).get();
+        const courseId = assignmentDoc.exists ? assignmentDoc.data().course_id : null;
+        const courseDoc = courseId ? await db.collection('courses').doc(courseId).get() : null;
+        if (courseDoc && courseDoc.exists && !courseDoc.data().moodle_enabled) {
+            logger.info("Moodle deshabilitado para el curso: no se sincroniza la nota", submission.id);
+            return;
         }
     }
 
-    const outcomeUrl = previousData.moodle_lis_outcome_service_url;
-    const sourcedId = previousData.moodle_lis_result_sourcedid;
-
-    // La URL la aporta el cliente al aceptar la tarea: nunca hacer POST a
-    // hosts internos o sin TLS (SSRF).
-    if (!isSafeExternalUrl(outcomeUrl)) {
-        logger.warn("URL de outcome service de Moodle rechazada:", previousData.id || "unknown");
+    // 0..10 -> 0..1 para la auditoría; AGS recibe la nota sobre 10.
+    const outcome = gradeToOutcomeScore(grade);
+    if (outcome === null) {
+        logger.info("Nota no numérica: no se sincroniza con Moodle:", submission.id || "unknown");
         return;
     }
 
-    // Escala 0..10 -> 0.0..1.0. Las notas conceptuales ("Aprobado") no tienen
-    // equivalente numérico: antes se enviaban como 0 y una nota 1/10 se
-    // interpretaba como 100 %.
-    const numericGrade = gradeToOutcomeScore(grade);
-    if (numericGrade === null) {
-        logger.info("Nota no numérica: no se sincroniza con Moodle:", previousData.id || "unknown");
-        return;
-    }
-
-    logger.info(`Sincronizando nota ${numericGrade} con Moodle URL: ${outcomeUrl}`);
-
-    const xmlPayload = `<?xml version="1.0" encoding="UTF-8"?>
-<imsx_POXEnvelopeRequest xmlns="http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
-  <imsx_POXHeader>
-    <imsx_POXRequestHeaderInfo>
-      <imsx_version>V1.0</imsx_version>
-      <imsx_messageIdentifier>${Date.now()}</imsx_messageIdentifier>
-    </imsx_POXRequestHeaderInfo>
-  </imsx_POXHeader>
-  <imsx_POXBody>
-    <replaceResultRequest>
-      <resultRecord>
-        <sourcedGUID>
-          <sourcedId>${escapeXml(sourcedId)}</sourcedId>
-        </sourcedGUID>
-        <result>
-          <resultScore>
-            <language>es</language>
-            <textString>${numericGrade.toFixed(2)}</textString>
-          </resultScore>
-        </result>
-      </resultRecord>
-    </replaceResultRequest>
-  </imsx_POXBody>
-</imsx_POXEnvelopeRequest>`;
-
+    let status = null;
+    let error = null;
     try {
-        const fetch = require('node-fetch');
-        const response = await fetch(outcomeUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/xml',
-                'Authorization': 'OAuth realm=""'
-            },
-            body: xmlPayload
-        });
-        
-        const resText = await response.text();
-        logger.info("Respuesta de sincronización con Moodle:", response.status, resText);
-        
-        await db.collection('audit_logs').add({
-            action: 'moodle_grade_sync',
-            submission_id: previousData.id || '',
-            status: response.ok ? 'success' : 'failure',
-            status_code: response.status,
-            grade: String(grade),
-            normalized_grade: numericGrade,
-            created_at: FieldValue.serverTimestamp()
-        });
-    } catch (err) {
-        logger.error("Error al sincronizar nota con Moodle:", err);
+        status = await postScore({ lineitem: submission.lti_ags_lineitem, userId: submission.lti_user_sub, score: outcome * 10, comment: feedback });
+    } catch (e) {
+        error = e.message;
+        logger.error("Error al sincronizar nota con Moodle (AGS):", e.message);
     }
+    await db.collection('audit_logs').add({
+        action: 'moodle_grade_sync',
+        submission_id: submission.id || '',
+        status: status && status < 300 ? 'success' : 'failure',
+        status_code: status,
+        error,
+        grade: String(grade),
+        normalized_grade: outcome,
+        created_at: FieldValue.serverTimestamp()
+    });
+    // Un error de red o de Moodle se relanza para que el trigger reintente.
+    if (error || (status && status >= 500)) throw new Error(error || `Moodle respondió ${status}`);
 }
-
 
 exports.api = onCall({ secrets }, async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in.');
@@ -258,7 +204,7 @@ exports.cleanupAssignmentData = onDocumentDeleted('assignments/{assignmentId}', 
 // Todo cambio de nota o feedback, venga de donde venga: se audita (mejora
 // 3.10) y, si la entrega llegó por LTI, se sincroniza con Moodle (mejora
 // 3.19). Como trigger, Firebase reintenta ante fallas transitorias.
-exports.onSubmissionGradeChange = onDocumentWritten('submissions/{submissionId}', async (event) => {
+exports.onSubmissionGradeChange = onDocumentWritten({ document: 'submissions/{submissionId}', secrets }, async (event) => {
     const { handleSubmissionGradeChange } = require('./src/lib/gradeAudit');
     const before = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
     const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
