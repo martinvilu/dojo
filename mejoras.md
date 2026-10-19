@@ -851,7 +851,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/grades/audit.js`
 - **Propuesta técnica:** Crear un trigger `onDocumentUpdated` sobre entregas que guarde un log de auditoría en una subcolección protegida de solo lectura.
 - **Impacto y beneficio:** Respaldo legal y transparencia absoluta en reclamos de exámenes.
-- **Estado (24/09/2026):** 🟡 Parcial — `gradeSubmission` audita cada nota normalizada; las importaciones masivas aún no generan entradas de auditoría.
+- **Estado (19/10/2026):** ✅ Implementada — Trigger `auditSubmissionGrades` (`onDocumentWritten` de `submissions`) audita todo cambio de nota/feedback; cada vía (UI, planilla, CSV, autograding) deja `graded_by` y `grade_source`, y el historial muestra el origen.
 
 ### 3.11. Restricción de CORS estricta en endpoints de Next.js API y Cloud Functions
 - **Diagnóstico actual:** Las rutas admiten CORS permisivo o encabezados genéricos `*`.

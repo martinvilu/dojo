@@ -1,3 +1,4 @@
+const { gradeAttribution } = require('../../lib/gradeAudit');
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
 const { matchesSecret } = require("../../lib/secrets");
@@ -99,7 +100,8 @@ exports.importGrades = async (req, res) => {
                 batch.update(subRef, {
                     grade: resultado,
                     feedback: normalizeFeedback(comentario_general),
-                    graded_at: FieldValue.serverTimestamp()
+                    graded_at: FieldValue.serverTimestamp(),
+                    ...gradeAttribution('csv_import', null, 'Importación CSV')
                 });
                 
                 const studentId = subSnap.data().student_id;

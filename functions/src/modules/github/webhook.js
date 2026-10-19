@@ -2,6 +2,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
 const { normalizeGrade, normalizeFeedback } = require("../../lib/grades");
 const { matchesSecret } = require("../../lib/secrets");
+const { gradeAttribution } = require('../../lib/gradeAudit');
 
 // Idempotencia (mejora 3.08): cada entrega identificada por cabecera se
 // procesa una sola vez; el marcador expira por TTL de Firestore.
@@ -136,7 +137,8 @@ exports.webhook = async (req, res) => {
                 batch.update(sSnap.docs[0].ref, {
                     grade,
                     feedback,
-                    graded_at: FieldValue.serverTimestamp()
+                    graded_at: FieldValue.serverTimestamp(),
+                    ...gradeAttribution('autograding')
                 });
                 updatedCount++;
             } else {
@@ -149,6 +151,7 @@ exports.webhook = async (req, res) => {
                     repo_url: '',
                     grade,
                     feedback,
+                    ...gradeAttribution('autograding'),
                     is_locked: false,
                     graded_at: FieldValue.serverTimestamp(),
                     created_at: FieldValue.serverTimestamp()

@@ -7,6 +7,7 @@ const { isCourseStaff, isCourseMember } = require('../../authz');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { dojoError } = require('../../lib/errors');
 const { staffStudentProfile } = require('../../lib/projections');
+const { gradeAttribution } = require('../../lib/gradeAudit');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -227,25 +228,13 @@ async function gradeSubmission(payload, context) {
     const submissionDoc = await db.collection('submissions').doc(submissionId).get();
     const previousData = submissionDoc.exists ? submissionDoc.data() : {};
     
+    // La auditoría la escribe el trigger auditSubmissionGrades a partir de
+    // la atribución que queda en la entrega (mejora 3.10).
     await db.collection('submissions').doc(submissionId).update({
         grade,
         feedback,
-        graded_at: admin.firestore.FieldValue.serverTimestamp()
-    });
-    
-    // Write immutable audit log
-    await db.collection('audit_logs').add({
-        action: 'grade_submission',
-        submission_id: submissionId,
-        assignment_id: previousData.assignment_id || '',
-        student_id: previousData.student_id || '',
-        actor_id: uid,
-        actor_name: requesterProfile.data().full_name || requesterProfile.data().email,
-        previous_grade: previousData.grade || '',
-        new_grade: grade,
-        previous_feedback: previousData.feedback || '',
-        new_feedback: feedback,
-        created_at: admin.firestore.FieldValue.serverTimestamp()
+        graded_at: admin.firestore.FieldValue.serverTimestamp(),
+        ...gradeAttribution('manual', uid, requesterProfile.data().full_name || requesterProfile.data().email)
     });
     
     // Trigger background grade sync with Moodle LTI if applicable
@@ -592,6 +581,9 @@ async function syncGradesFromSpreadsheet(payload, context) {
     
     let updatedCount = 0;
     const rejectedRows = [];
+    const actorSnap = await db.collection('profiles').doc(context.uid).get();
+    const actor = actorSnap.exists ? actorSnap.data() : {};
+    const attribution = gradeAttribution('spreadsheet', context.uid || null, actor.full_name || actor.email || null);
     const batch = db.batch();
     
     for (let i = 1; i < rows.length; i++) {
@@ -620,7 +612,7 @@ async function syncGradesFromSpreadsheet(payload, context) {
             .get();
             
         if (!sSnap.empty) {
-            batch.update(sSnap.docs[0].ref, { grade: nota, feedback: feedback, graded_at: admin.firestore.FieldValue.serverTimestamp() });
+            batch.update(sSnap.docs[0].ref, { grade: nota, feedback: feedback, graded_at: admin.firestore.FieldValue.serverTimestamp(), ...attribution });
         } else {
             const newSubRef = db.collection('submissions').doc(`${assignmentId}_${studentId}`);
             batch.set(newSubRef, {
@@ -629,6 +621,7 @@ async function syncGradesFromSpreadsheet(payload, context) {
                 repo_url: '',
                 grade: nota,
                 feedback: feedback,
+                ...attribution,
                 is_locked: false,
                 graded_at: admin.firestore.FieldValue.serverTimestamp(),
                 created_at: admin.firestore.FieldValue.serverTimestamp()

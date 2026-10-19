@@ -1,6 +1,6 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onDocumentDeleted } = require("firebase-functions/v2/firestore");
+const { onDocumentDeleted, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -228,4 +228,14 @@ exports.cleanupAssignmentData = onDocumentDeleted('assignments/{assignmentId}', 
     const { cleanupAssignmentData } = require('./src/modules/system/cleanup');
     const counts = await cleanupAssignmentData(db, event.params.assignmentId);
     logger.info(`[cleanup] Tarea ${event.params.assignmentId} eliminada`, counts);
+});
+
+// Auditoría inmutable de toda modificación de nota o feedback (mejora 3.10).
+exports.auditSubmissionGrades = onDocumentWritten('submissions/{submissionId}', async (event) => {
+    const { gradeChangeAudit } = require('./src/lib/gradeAudit');
+    const before = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
+    const entry = gradeChangeAudit(event.params.submissionId, before, after);
+    if (!entry) return;
+    await db.collection('audit_logs').add({ ...entry, created_at: admin.firestore.FieldValue.serverTimestamp() });
 });

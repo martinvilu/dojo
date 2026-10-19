@@ -8,6 +8,13 @@ import PeerReviewSection from "./PeerReviewSection";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
+const GRADE_SOURCE_LABELS: Record<string, string> = {
+  spreadsheet: "planilla de Google Sheets",
+  csv_import: "importación CSV",
+  autograding: "autograding",
+  unknown: "origen desconocido",
+};
+
 export default function AssignmentsPanel({
   selectedCourse,
   profile,
@@ -505,7 +512,7 @@ export default function AssignmentsPanel({
                                     {expandedAuditLogs[sub.id].map((log: any) => (
                                       <div key={log.id} className="text-[10.5px] border-b border-neutral-900 pb-2 last:border-b-0 space-y-1">
                                         <div className="flex justify-between text-gray-500">
-                                          <span>Modificado por: <strong className="text-gray-300">{log.actor_name}</strong></span>
+                                          <span>Modificado por: <strong className="text-gray-300">{log.actor_name}</strong>{log.source && log.source !== "manual" && <span className="ml-1 text-gray-400">({GRADE_SOURCE_LABELS[log.source] || log.source})</span>}</span>
                                           <span>{log.created_at?.toDate ? log.created_at.toDate().toLocaleString("es-AR") : "Ahora"}</span>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-1">
