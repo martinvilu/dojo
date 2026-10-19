@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2024-05-18 - Replacing nested `.filter()` inside `forEach` with Hash Maps
+**Learning:** O(N) array filtering inside loops (e.g. `roster.forEach`) across large dataset combinations (`courseAttendance` and `courseSubmissions`) creates hidden O(N²) scaling bottlenecks. In this project, iterating object entries across arrays to build stats adds significant CPU overhead during renders.
+**Action:** Always pre-compute relationships into Hash Maps or Sets outside iterations for O(1) lookups instead of using `.some` and `.filter` to reduce complexity from `O(R * (A + S))` to `O(A + S + R * M)`.
