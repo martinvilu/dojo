@@ -24,11 +24,12 @@ await api("gradeSubmission", { submissionId, grade: "8,5", feedback: "Bien" });
 `api(action, payload)` llama a `httpsCallable(functions, "api")` con `{ action, payload }`. El dispatcher (`functions/index.js`):
 
 1. Rechaza llamadas sin sesión (`unauthenticated`).
-2. Aplica el **rate limit** (`functions/src/lib/rateLimit.js`): 120 llamadas por minuto por usuario y límites propios para acciones sensibles (matrícula, códigos de invitación, QR, correos, respaldos, plagio). Al superarlo responde `resource-exhausted` con `details.code = "RATE_LIMITED"` y `retryAfterSeconds`.
-3. Valida el payload (`functions/src/lib/validate.js`): objeto de hasta 512 KB y 20 niveles; todo campo de primer nivel con forma de ID (`id`, `*Id`, `*_id`, `*Uid`) y `courseIds` deben ser IDs de documento seguros (sin `/`, sin `__…__`, ≤ 256 caracteres). Si no, `INVALID_ARGUMENT`.
-4. Busca la acción en `functions/src/actions.js`. Si no existe, responde `invalid-argument: Acción desconocida`.
-5. Carga el perfil del llamador y aplica la **política de acceso** declarada en `functions/src/authz.js`. Una acción sin política se rechaza (`permission-denied`, fail closed).
-6. Ejecuta el handler con el SDK admin y registra la llamada en la bitácora, redactando las claves que parecen secretos (`token`, `secret`, `password`, `api_key`, `sourcedid`).
+2. Rechaza tokens de sesiones revocadas (`AUTH_SESSION_REVOKED`): si el `auth_time` del token es anterior a `tokensValidAfterTime` del usuario (cambio de contraseña o `signOutEverywhere`).
+3. Aplica el **rate limit** (`functions/src/lib/rateLimit.js`): 120 llamadas por minuto por usuario y límites propios para acciones sensibles (matrícula, códigos de invitación, QR, correos, respaldos, plagio). Al superarlo responde `resource-exhausted` con `details.code = "RATE_LIMITED"` y `retryAfterSeconds`.
+4. Valida el payload (`functions/src/lib/validate.js`): objeto de hasta 512 KB y 20 niveles; todo campo de primer nivel con forma de ID (`id`, `*Id`, `*_id`, `*Uid`) y `courseIds` deben ser IDs de documento seguros (sin `/`, sin `__…__`, ≤ 256 caracteres). Si no, `INVALID_ARGUMENT`.
+5. Busca la acción en `functions/src/actions.js`. Si no existe, responde `invalid-argument: Acción desconocida`.
+6. Carga el perfil del llamador y aplica la **política de acceso** declarada en `functions/src/authz.js`. Una acción sin política se rechaza (`permission-denied`, fail closed).
+7. Ejecuta el handler con el SDK admin y registra la llamada en la bitácora, redactando las claves que parecen secretos (`token`, `secret`, `password`, `api_key`, `sourcedid`).
 
 Todo error llega al cliente como `HttpsError` con un **código semántico** en `details.code` (`functions/src/lib/errors.js`) y el mensaje en español para mostrar al usuario:
 
@@ -36,7 +37,7 @@ Todo error llega al cliente como `HttpsError` con un **código semántico** en `
 |---|---|
 | `invalid-argument` | `INVALID_ARGUMENT`, `VALIDATION_FAILED`, `UNKNOWN_ACTION` |
 | `not-found` | `NOT_FOUND`, `COURSE_NOT_FOUND`, `ASSIGNMENT_NOT_FOUND`, `SUBMISSION_NOT_FOUND`, `PROFILE_NOT_FOUND`, `STUDY_GROUP_NOT_FOUND`, `BACKUP_NOT_FOUND`, `SESSION_NOT_FOUND`, `SCHEDULE_VERSION_NOT_FOUND` |
-| `unauthenticated` | `UNAUTHENTICATED`, `AUTH_INVALID_TOKEN` |
+| `unauthenticated` | `UNAUTHENTICATED`, `AUTH_INVALID_TOKEN`, `AUTH_SESSION_REVOKED` (el cliente cierra la sesión y vuelve al login) |
 | `permission-denied` | `FORBIDDEN`, `ADMIN_ONLY`, `NOT_COURSE_MEMBER`, `ASSISTANT_NOT_ALLOWED` |
 | `failed-precondition` | `FAILED_PRECONDITION`, `ASSIGNMENT_PAST_DUE`, `GITHUB_NOT_CONFIGURED`, `MOODLE_NOT_CONFIGURED` |
 | `already-exists` | `ALREADY_EXISTS` |
@@ -81,6 +82,7 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `getProfile` | AUTHENTICATED | Devuelve el perfil y lo crea en el primer login con el email, nombre y foto del **ID token verificado** (rol `student`, estado `pending`, salvo los emails de `SEED_ADMIN_EMAILS` / `SEED_TEACHER_EMAILS`). Registra cada inicio de sesión nuevo en `profiles/{uid}/security_log` |
 | `exportMyData` | AUTHENTICATED | JSON con todos los datos personales de la cuenta (perfil, membresías, entregas, asistencia, foros, revisiones escritas, tutorías, grupos, XP, notificaciones y accesos), sin datos de terceros. Límite 5/h |
 | `requestAccountDeletion` / `cancelAccountDeletion` | AUTHENTICATED | Marca o retira el pedido de baja (`deletion_requested_at`, motivo opcional); la baja la ejecuta un admin con `deleteUser` |
+| `signOutEverywhere` | AUTHENTICATED | Revoca los refresh tokens del usuario: todas sus sesiones se cierran en la próxima llamada |
 | `getSecurityLog` | AUTHENTICATED | Últimos 20 inicios de sesión propios: fecha, proveedor, user agent e IP enmascarada |
 | `updateProfile` | AUTHENTICATED | Nombre, usuario de GitHub, matrícula y cohorte propios |
 | `submitMatricula` | AUTHENTICATED | Valida `UNRN-` + ≥5 dígitos y aprueba la cuenta |

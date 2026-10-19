@@ -8,7 +8,7 @@ Cómo ingresar a Jutsu Classroom, activar la cuenta y dejar el perfil listo. Val
 
 En la pantalla de inicio podés:
 
-- **Iniciar sesión** con correo y contraseña. El ícono del ojo muestra u oculta la contraseña.
+- **Iniciar sesión** con correo y contraseña. El ícono del ojo muestra u oculta la contraseña. Si no la recordás, escribí tu correo y tocá **¿Olvidaste tu contraseña?**: te llega un enlace para crear una nueva.
 - **Registrarte gratis** con un correo y una contraseña nuevos.
 - Entrar con **Google** o **GitHub** (botones debajo de «O ingresar con»).
 
@@ -42,6 +42,7 @@ En el mismo panel también podés:
 - Ver el enlace a tu **Portafolio Público** y la **bitácora de XP** (estudiantes).
 - **Autorizar tu casilla de Gmail** para enviar correos desde la plataforma (docentes; ver [Docentes → Correos](docentes.md)).
 - En **📦 Tus datos personales**, descargar todo lo que la plataforma guarda de tu cuenta (**Descargar mis datos**) o **pedir la baja de tu cuenta**. La baja la ejecuta un administrador; mientras tanto podés cancelarla.
+- En **🛡️ Contraseña y sesiones**, cambiar tu contraseña (si ingresás con correo) o **cerrar sesión en todos los dispositivos**. Al cambiar la contraseña se cierran tus sesiones en los demás dispositivos.
 - Revisar la **🔐 Actividad de inicio de sesión**: tus últimos 20 ingresos con dispositivo, método y una IP parcial. Si ves uno que no reconocés, cambiá tu contraseña y avisá a la coordinación.
 
 ## 4. Moverse por la plataforma

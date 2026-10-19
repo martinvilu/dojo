@@ -15,6 +15,7 @@ const { gradeToOutcomeScore } = require('./src/lib/grades');
 const { enforceRateLimit } = require('./src/lib/rateLimit');
 const { dojoError, toHttpsError } = require('./src/lib/errors');
 const { validatePayload } = require('./src/lib/validate');
+const { assertSessionNotRevoked } = require('./src/lib/sessionGuard');
 
 const SECRET_KEY_PATTERN = /token|secret|password|api_?key|sourcedid/i;
 
@@ -147,6 +148,7 @@ exports.api = onCall(async (request) => {
     
     try {
         await enforceRateLimit(action, uid, { db, logger });
+        await assertSessionNotRevoked(admin.auth(), { uid, ...(request.auth.token || {}) }, { logger });
 
         const handler = loadActionHandler(action);
         if (handler === null) throw dojoError('UNKNOWN_ACTION', `Acción desconocida: ${action}`);

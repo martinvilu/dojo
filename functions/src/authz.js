@@ -39,6 +39,7 @@ const ACTION_POLICIES = {
     // perfil propio
     getProfile: AUTHENTICATED,
     getSecurityLog: AUTHENTICATED,
+    signOutEverywhere: AUTHENTICATED,
     exportMyData: AUTHENTICATED,
     requestAccountDeletion: AUTHENTICATED,
     cancelAccountDeletion: AUTHENTICATED,

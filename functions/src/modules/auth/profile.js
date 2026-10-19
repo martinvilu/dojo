@@ -2,6 +2,7 @@ const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 const { dojoError } = require('../../lib/errors');
 const { normalizeEmail } = require('../../lib/validate');
+const { forgetSession } = require('../../lib/sessionGuard');
 
 const SECURITY_LOG_LIMIT = 20;
 
@@ -99,6 +100,14 @@ async function getProfile(payload, context) {
     }
     data.last_login = admin.firestore.Timestamp.now();
     return data;
+}
+
+/** Revoca todas las sesiones del usuario en todos sus dispositivos. */
+async function signOutEverywhere(payload, context) {
+    const { uid, admin: adminSdk } = context;
+    await (adminSdk || admin).auth().revokeRefreshTokens(uid);
+    forgetSession(uid);
+    return { success: true };
 }
 
 async function getSecurityLog(payload, context) {
@@ -229,6 +238,7 @@ async function getXpLogs(payload, context) {
 module.exports = {
     getProfile,
     getSecurityLog,
+    signOutEverywhere,
     maskIp,
     updateProfile,
     addSecondaryEmail,

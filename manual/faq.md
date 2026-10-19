@@ -14,6 +14,18 @@ El navegador bloquea el almacenamiento de sesión o las cookies de terceros (pas
 2. Abrí la plataforma en una ventana normal, fuera del modo incógnito.
 3. Si sigue fallando, ingresá con correo y contraseña.
 
+### Olvidé mi contraseña
+
+En la pantalla de ingreso escribí tu correo y tocá **¿Olvidaste tu contraseña?**. Si tu cuenta usa correo y contraseña, te llega un enlace para crear una nueva. Si ingresás con Google o GitHub, la contraseña se recupera en ese proveedor.
+
+### «Demasiados intentos fallidos»
+
+Después de varios intentos con una contraseña incorrecta, la cuenta se bloquea temporalmente por seguridad. Esperá unos minutos o restablecé la contraseña.
+
+### «Tu sesión se cerró…» al volver a la plataforma
+
+Se cambió la contraseña de tu cuenta o se usó **Cerrar sesión en todos los dispositivos**. Volvé a ingresar. Si no fuiste vos, cambiá la contraseña y avisá a la coordinación.
+
 ### Quedé en «Registro en Proceso de Aprobación»
 
 - **Si sos estudiante de la UNRN**: ingresá tu matrícula con el formato `UNRN-12345` (UNRN- y al menos 5 dígitos) y presioná **Validar Matrícula**.

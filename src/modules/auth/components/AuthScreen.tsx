@@ -7,6 +7,7 @@ import {
   GithubAuthProvider, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   onAuthStateChanged
 } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -24,6 +25,33 @@ function AuthScreenContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [notice, setNotice] = useState(() => {
+    const reason = searchParams.get("reason");
+    if (reason === "session_revoked") return "Tu sesión se cerró porque cambió la contraseña o se cerraron las sesiones de la cuenta. Volvé a ingresar.";
+    if (reason === "signed_out_everywhere") return "Cerraste la sesión en todos tus dispositivos.";
+    return "";
+  });
+
+  const handleForgotPassword = async () => {
+    setError("");
+    if (!email) {
+      setError("Escribí tu correo arriba y volvé a tocar «¿Olvidaste tu contraseña?».");
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+    } catch (err: any) {
+      // No revelamos si el correo existe: el mensaje es el mismo.
+      if (err?.code === "auth/invalid-email") {
+        setError("El correo no es válido.");
+        setLoading(false);
+        return;
+      }
+    }
+    setNotice("Si el correo tiene una cuenta con contraseña, te enviamos un enlace para restablecerla. Revisá también la carpeta de spam.");
+    setLoading(false);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -62,6 +90,8 @@ function AuthScreenContent() {
         setError("Credenciales incorrectas.");
       } else if (err.code === "auth/weak-password") {
         setError("La contraseña debe tener al menos 6 caracteres.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Demasiados intentos fallidos. Por seguridad la cuenta quedó bloqueada temporalmente: esperá unos minutos o restablecé tu contraseña.");
       } else {
         setError(err.message || "Ocurrió un error al autenticar.");
       }
@@ -227,6 +257,11 @@ function AuthScreenContent() {
                 </p>
               </div>
 
+              {notice && !error && (
+                <div role="status" aria-live="polite" className="mb-5 p-3.5 bg-blue-950/50 border border-blue-800/70 rounded-xl text-blue-200 text-xs break-words">
+                  {notice}
+                </div>
+              )}
               {error && (
                 <div role="alert" aria-live="assertive" className="mb-5 p-3.5 bg-red-950/60 border border-red-800/80 rounded-xl text-red-400 text-xs break-words">
                   {error}
@@ -281,6 +316,15 @@ function AuthScreenContent() {
                       )}
                     </button>
                   </div>
+                  {!isRegistering && (
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="mt-1.5 text-[11px] text-blue-400 hover:text-blue-300 underline cursor-pointer focus-visible:outline-2 focus-visible:outline-blue-500 rounded"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  )}
                 </div>
 
                 <button

@@ -970,7 +970,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/auth/bruteForceProtection.js`
 - **Propuesta técnica:** Implementar contador en Firestore con bloqueo temporal de 15 minutos tras 5 intentos fallidos consecutivos.
 - **Impacto y beneficio:** Resguardo contra ataques automatizados de diccionario.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — Se apoya en el bloqueo nativo de Firebase Auth ante intentos fallidos (`auth/too-many-requests`), ahora con mensaje claro y recuperación de contraseña. No se agregó un contador propio: el backend no ve los intentos fallidos y un contador alimentado por el cliente permitiría bloquear cuentas ajenas. Un bloqueo configurable requiere Identity Platform.
 
 ### 3.28. Manejo de estados de suscripción con Firebase Emulators en CI y local
 - **Diagnóstico actual:** La configuración del emulador depende de scripts manuales y versiones específicas de Java.
@@ -984,7 +984,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/modules/auth/components/AuthScreen.tsx`
 - **Propuesta técnica:** Invocar `admin.auth().revokeRefreshTokens(uid)` en el backend tras el reseteo de clave.
 - **Impacto y beneficio:** Cierre de brechas de seguridad ante cuentas comprometidas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/sessionGuard.js`: el dispatcher rechaza ID tokens anteriores a `tokensValidAfterTime` (`AUTH_SESSION_REVOKED`, el cliente cierra sesión). Nueva acción `signOutEverywhere`, cambio de contraseña con reautenticación en **Mi Perfil** (Firebase revoca los refresh tokens) y «¿Olvidaste tu contraseña?» en el login.
 
 ### 3.30. Sanitización de nombres de archivo y tipos MIME en subida de adjuntos
 - **Diagnóstico actual:** Alumnos podrían subir scripts maliciosos camuflados como PDFs o imágenes en entregas.
