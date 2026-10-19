@@ -1082,7 +1082,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/integrations/siu.js`
 - **Propuesta técnica:** Exponer un endpoint seguro con autenticación mTLS que emita el acta de regularidades en formato JSON para el SIU.
 - **Impacto y beneficio:** Eliminación de errores humanos en la transcripción de notas finales.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — `GET /api/siu/acta` devuelve el acta de regularidades en JSON (asistencia, tareas aprobadas, promedio y condición REGULAR/LIBRE con umbrales configurables), autenticada con el token docente y firmada con `X-Dojo-Signature` (HMAC-SHA256). **Pendiente**: mTLS, que requiere un balanceador o Cloud Run con certificados de cliente, y la integración del lado de SIU.
 
 ### 3.44. Registro de User-Agent e IP en inicios de sesión para detección de anomalías
 - **Diagnóstico actual:** No hay registro de auditoría de sesiones para detectar inicios de sesión concurrentes desde ubicaciones dispares.

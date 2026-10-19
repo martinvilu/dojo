@@ -222,6 +222,7 @@ Se sirven desde Firebase App Hosting en el mismo dominio que la app. Cada ruta u
 | `/api/health` | GET, HEAD | Ninguna | Estado de la plataforma. Ver §2.1 |
 | `/api/calendar?id={courseId}&token={secret}` | GET | `calendar_secret` o `sync_secret` del curso | Feed iCalendar (RFC 5545) con clases, exámenes, feriados y entregas |
 | `/api/export/csv?id={courseId}&token={sync_secret}&type={tipo}` | GET | `sync_secret` (solo equipo docente) | CSV separado por `;`. `type`: `grades` (por defecto), `attendance` / `asistencia`, `roster` / `alumnos` / `alertas` |
+| `/api/siu/acta?id={courseId}&token={sync_secret}` | GET | `sync_secret` (solo equipo docente) | Acta de regularidades en JSON para SIU Guaraní: por estudiante, legajo, asistencia, tareas aprobadas, promedio y `condicion` (`REGULAR` / `LIBRE`). Parámetros opcionales `min_attendance` (75) y `min_grade` (4). Cabecera `X-Dojo-Signature: sha256=<HMAC del cuerpo con el token>` |
 | `/api/me` | GET | `Authorization: Bearer <Firebase ID token>` | Perfil del usuario autenticado |
 | `/api/cli/courses` | GET | Bearer | Cursos del usuario (modo cloud de la Dojo CLI) |
 | `/api/cli/assignments?courseId={id}` | GET | Bearer + membresía | Tareas de un curso |

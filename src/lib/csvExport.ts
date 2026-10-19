@@ -28,14 +28,14 @@ function chunk<T>(list: T[], size: number): T[][] {
 }
 
 /** Perfiles en una sola lectura por lotes (getAll). */
-async function loadProfiles(db: any, ids: string[]): Promise<Map<string, any>> {
+export async function loadProfiles(db: any, ids: string[]): Promise<Map<string, any>> {
   if (ids.length === 0) return new Map();
   const snaps = await db.getAll(...ids.map((id) => db.collection("profiles").doc(id)));
   return new Map(snaps.map((snap: any, i: number) => [ids[i], snap.exists ? snap.data() : {}]));
 }
 
 /** Estudiantes del curso (roster + inscripciones), sin escanear toda la colección. */
-async function courseStudentIds(db: any, courseId: string): Promise<{ ids: string[]; rosterStatus: Map<string, string> }> {
+export async function courseStudentIds(db: any, courseId: string): Promise<{ ids: string[]; rosterStatus: Map<string, string> }> {
   const [rosterSnap, enrollSnap] = await Promise.all([
     db.collection("course_roster").where("course_id", "==", courseId).get(),
     db.collection("enrollments").where("course_id", "==", courseId).get(),
@@ -49,7 +49,7 @@ async function courseStudentIds(db: any, courseId: string): Promise<{ ids: strin
   return { ids: [...rosterStatus.keys()], rosterStatus };
 }
 
-async function courseSubmissions(db: any, assignmentIds: string[]): Promise<any[]> {
+export async function courseSubmissions(db: any, assignmentIds: string[]): Promise<any[]> {
   const subs: any[] = [];
   for (const group of chunk(assignmentIds, IN_LIMIT)) {
     const snap = await db.collection("submissions").where("assignment_id", "in", group).get();
