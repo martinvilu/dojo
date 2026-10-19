@@ -1,11 +1,12 @@
 const logger = require("firebase-functions/logger");
 const { projectCourse } = require('./courses');
+const { dojoError } = require('../../lib/errors');
 
 async function approveUser(payload, context) {
     const { db, getMyProfile } = context;
     const { targetUid } = payload;
     const myProfile = await getMyProfile();
-    if (myProfile.role !== 'admin') throw new Error("Solo admins pueden aprobar usuarios");
+    if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', "Solo admins pueden aprobar usuarios");
     
     await db.collection('profiles').doc(targetUid).update({
         account_status: 'approved'
@@ -17,8 +18,8 @@ async function updateUserRole(payload, context) {
     const { db, getMyProfile } = context;
     const { targetUid, newRole } = payload;
     const myProfile = await getMyProfile();
-    if (myProfile.role !== 'admin') throw new Error("Solo admins pueden cambiar roles de usuario");
-    if (!['admin', 'teacher', 'student'].includes(newRole)) throw new Error("Rol inválido");
+    if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', "Solo admins pueden cambiar roles de usuario");
+    if (!['admin', 'teacher', 'student'].includes(newRole)) throw dojoError('INVALID_ARGUMENT', "Rol inválido");
     
     await db.collection('profiles').doc(targetUid).update({
         role: newRole
@@ -75,7 +76,7 @@ async function getGlobalSettings(payload, context) {
 async function saveGlobalSettings(payload, context) {
     const { db, getMyProfile } = context;
     const myProfile = await getMyProfile();
-    if (myProfile.role !== 'admin') throw new Error('Only admin can save global settings');
+    if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', 'Only admin can save global settings');
     await db.collection('globals').doc('settings').set(payload, { merge: true });
     return { success: true };
 }
@@ -84,7 +85,7 @@ async function getAdminCourseDetails(payload, context) {
     const { db } = context;
     const courseId = payload.courseId;
     const cSnap = await db.collection('courses').doc(courseId).get();
-    if (!cSnap.exists) throw new Error("Course not found");
+    if (!cSnap.exists) throw dojoError('COURSE_NOT_FOUND', "Course not found");
     const course = cSnap.data();
     course.id = courseId;
     
@@ -117,7 +118,7 @@ async function deleteUser(payload, context) {
     const { db, admin, getMyProfile } = context;
     const { targetUid } = payload;
     const myProfile = await getMyProfile();
-    if (myProfile.role !== 'admin') throw new Error("Solo los administradores pueden borrar usuarios");
+    if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', "Solo los administradores pueden borrar usuarios");
 
     // 1. Delete from Firebase Auth
     try {

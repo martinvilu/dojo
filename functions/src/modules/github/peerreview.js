@@ -1,5 +1,6 @@
 const { FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
+const { dojoError } = require('../../lib/errors');
 
 /**
  * Rubric-based peer review between students.
@@ -28,14 +29,14 @@ function simpleHash(str) {
 
 function validateRubric(rubric) {
     if (!Array.isArray(rubric) || rubric.length === 0 || rubric.length > 8) {
-        throw new Error("La rúbrica debe tener entre 1 y 8 criterios.");
+        throw dojoError('INVALID_ARGUMENT', "La rúbrica debe tener entre 1 y 8 criterios.");
     }
     return rubric.map((c) => {
         const name = String(c.name || "").trim();
         const maxPoints = Number(c.maxPoints);
-        if (!name) throw new Error("Cada criterio necesita un nombre.");
+        if (!name) throw dojoError('INVALID_ARGUMENT', "Cada criterio necesita un nombre.");
         if (!Number.isFinite(maxPoints) || maxPoints < 0 || maxPoints > 100) {
-            throw new Error(`Puntaje máximo inválido para "${name}" (0-100).`);
+            throw dojoError('INVALID_ARGUMENT', `Puntaje máximo inválido para "${name}" (0-100).`);
         }
         return { name, maxPoints };
     });
@@ -43,16 +44,16 @@ function validateRubric(rubric) {
 
 async function requireCourseTeacher(db, courseId, uid) {
     const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+    if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
 }
 
 async function enablePeerReview(payload, context) {
     const { uid, db } = context;
     const { assignmentId, enabled, rubric } = payload;
-    if (!assignmentId) throw new Error("El parámetro assignmentId es requerido");
+    if (!assignmentId) throw dojoError('INVALID_ARGUMENT', "El parámetro assignmentId es requerido");
 
     const aSnap = await db.collection('assignments').doc(assignmentId).get();
-    if (!aSnap.exists) throw new Error("La tarea no existe");
+    if (!aSnap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "La tarea no existe");
     await requireCourseTeacher(db, aSnap.data().course_id, uid);
 
     const update = {
@@ -92,7 +93,7 @@ function pickReviewees(assignmentId, myId, submitters, alreadyReviewed, count = 
 async function getMyReviewAssignments(payload, context) {
     const { uid, db } = context;
     const { courseId } = payload;
-    if (!courseId) throw new Error("El parámetro courseId es requerido");
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "El parámetro courseId es requerido");
 
     const assignmentsSnap = await db.collection('assignments')
         .where('course_id', '==', courseId)
@@ -142,35 +143,35 @@ async function submitPeerReview(payload, context) {
     const { uid, db } = context;
     const { assignmentId, revieweeId, scores, comment } = payload;
     if (!assignmentId || !revieweeId || typeof scores !== 'object' || scores === null) {
-        throw new Error("Faltan parámetros requeridos");
+        throw dojoError('INVALID_ARGUMENT', "Faltan parámetros requeridos");
     }
-    if (revieweeId === uid) throw new Error("No podés revisarte a vos mismo.");
+    if (revieweeId === uid) throw dojoError('FORBIDDEN', "No podés revisarte a vos mismo.");
 
     const aSnap = await db.collection('assignments').doc(assignmentId).get();
-    if (!aSnap.exists) throw new Error("La tarea no existe");
+    if (!aSnap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "La tarea no existe");
     const assignment = aSnap.data();
-    if (!assignment.peer_review?.enabled) throw new Error("La revisión entre pares no está activa para esta tarea.");
+    if (!assignment.peer_review?.enabled) throw dojoError('FAILED_PRECONDITION', "La revisión entre pares no está activa para esta tarea.");
 
     const rubric = assignment.peer_review.rubric || [];
     const normalizedScores = {};
     for (const criterion of rubric) {
         const value = Number(scores[criterion.name]);
         if (!Number.isFinite(value) || value < 0 || value > criterion.maxPoints) {
-            throw new Error(`Puntaje inválido para "${criterion.name}" (0-${criterion.maxPoints}).`);
+            throw dojoError('INVALID_ARGUMENT', `Puntaje inválido para "${criterion.name}" (0-${criterion.maxPoints}).`);
         }
         normalizedScores[criterion.name] = value;
     }
 
     const submitters = new Set(await listSubmitters(db, assignmentId));
-    if (!submitters.has(uid)) throw new Error("Debés entregar tu propia resolución antes de revisar a tus pares.");
-    if (!submitters.has(revieweeId)) throw new Error("El compañero elegido no tiene entrega en esta tarea.");
+    if (!submitters.has(uid)) throw dojoError('FAILED_PRECONDITION', "Debés entregar tu propia resolución antes de revisar a tus pares.");
+    if (!submitters.has(revieweeId)) throw dojoError('FAILED_PRECONDITION', "El compañero elegido no tiene entrega en esta tarea.");
 
     const dupSnap = await db.collection('peer_reviews')
         .where('assignment_id', '==', assignmentId)
         .where('reviewer_id', '==', uid)
         .get();
     if (dupSnap.docs.some(d => d.data().reviewee_id === revieweeId)) {
-        throw new Error("Ya revisaste a este compañero para esta tarea.");
+        throw dojoError('ALREADY_EXISTS', "Ya revisaste a este compañero para esta tarea.");
     }
 
     const ref = await db.collection('peer_reviews').add({
@@ -188,10 +189,10 @@ async function submitPeerReview(payload, context) {
 async function getPeerReviewFeedback(payload, context) {
     const { uid, db } = context;
     const { assignmentId } = payload;
-    if (!assignmentId) throw new Error("El parámetro assignmentId es requerido");
+    if (!assignmentId) throw dojoError('INVALID_ARGUMENT', "El parámetro assignmentId es requerido");
 
     const aSnap = await db.collection('assignments').doc(assignmentId).get();
-    if (!aSnap.exists) throw new Error("La tarea no existe");
+    if (!aSnap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "La tarea no existe");
     const assignment = aSnap.data();
 
     const reviewsSnap = await db.collection('peer_reviews')

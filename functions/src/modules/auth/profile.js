@@ -1,4 +1,5 @@
 const admin = require("firebase-admin");
+const { dojoError } = require('../../lib/errors');
 
 async function getProfile(payload, context) {
     const { uid, db, authUser } = context;
@@ -57,11 +58,11 @@ async function updateProfile(payload, context) {
 async function addSecondaryEmail(payload, context) {
     const { uid, db } = context;
     const email = (payload.email || '').trim().toLowerCase();
-    if (!email || !email.includes('@')) throw new Error("Email secundario inválido");
+    if (!email || !email.includes('@')) throw dojoError('INVALID_ARGUMENT', "Email secundario inválido");
 
     const pRef = db.collection('profiles').doc(uid);
     const pSnap = await pRef.get();
-    if (!pSnap.exists) throw new Error("Perfil no encontrado");
+    if (!pSnap.exists) throw dojoError('PROFILE_NOT_FOUND', "Perfil no encontrado");
 
     const currentSec = pSnap.data().secondary_emails || [];
     if (!currentSec.includes(email)) {
@@ -74,10 +75,10 @@ async function addSecondaryEmail(payload, context) {
 async function mergeProfiles(payload, context) {
     const { db, getMyProfile } = context;
     const myProfile = await getMyProfile();
-    if (myProfile.role !== 'admin') throw new Error("Solo los administradores pueden fusionar perfiles");
+    if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', "Solo los administradores pueden fusionar perfiles");
 
     const { targetUid, sourceUid } = payload; // merge sourceUid into targetUid
-    if (!targetUid || !sourceUid || targetUid === sourceUid) throw new Error("Parámetros de fusión inválidos");
+    if (!targetUid || !sourceUid || targetUid === sourceUid) throw dojoError('INVALID_ARGUMENT', "Parámetros de fusión inválidos");
 
     const targetRef = db.collection('profiles').doc(targetUid);
     const sourceRef = db.collection('profiles').doc(sourceUid);
@@ -85,7 +86,7 @@ async function mergeProfiles(payload, context) {
     const tSnap = await targetRef.get();
     const sSnap = await sourceRef.get();
 
-    if (!tSnap.exists || !sSnap.exists) throw new Error("Uno o ambos perfiles no existen");
+    if (!tSnap.exists || !sSnap.exists) throw dojoError('PROFILE_NOT_FOUND', "Uno o ambos perfiles no existen");
 
     const sData = sSnap.data();
     const tData = tSnap.data();
@@ -125,7 +126,7 @@ async function submitMatricula(payload, context) {
     const { uid, db } = context;
     const { matricula } = payload;
     if (!matricula || !/^UNRN-\d{5,}$/.test(matricula)) {
-        throw new Error("Formato de matrícula inválido. Debe ser UNRN- seguido de al menos 5 dígitos.");
+        throw dojoError('INVALID_ARGUMENT', "Formato de matrícula inválido. Debe ser UNRN- seguido de al menos 5 dígitos.");
     }
     await db.collection('profiles').doc(uid).update({
         matricula_unrn: matricula,

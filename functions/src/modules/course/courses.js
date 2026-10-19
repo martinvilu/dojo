@@ -1,5 +1,6 @@
 const { randomBytes } = require('node:crypto');
 const { isCourseStaff } = require('../../authz');
+const { dojoError } = require('../../lib/errors');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -10,11 +11,11 @@ async function getCourseDetails(payload, context) {
     const myProfile = await getMyProfile();
     
     if (!rosterSnap.exists && !teacherSnap.exists && enrollSnap.empty && myProfile.role !== 'admin') {
-        throw new Error("No tienes acceso a este curso");
+        throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
     }
     
     const cSnap = await db.collection('courses').doc(courseId).get();
-    if (!cSnap.exists) throw new Error("Curso no encontrado");
+    if (!cSnap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
     
     const data = cSnap.data();
     if (!teacherSnap.exists && myProfile.role !== 'admin') {
@@ -80,7 +81,7 @@ async function enrollCourse(payload, context) {
         return { success: true };
     }
     
-    throw new Error("Código de invitación inválido");
+    throw dojoError('INVALID_ARGUMENT', "Código de invitación inválido");
 }
 
 async function createCourse(payload, context) {
@@ -101,7 +102,7 @@ async function createCourse(payload, context) {
 async function deleteCourse(payload, context) {
     const { db } = context;
     const { courseId } = payload;
-    if (!courseId) throw new Error("ID de cátedra requerido");
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "ID de cátedra requerido");
     await db.collection('courses').doc(courseId).delete();
     return { success: true };
 }
@@ -209,7 +210,7 @@ async function getCourseSettings(payload, context) {
     const isSysAdmin = profileSnap.exists && profileSnap.data().role === 'admin';
     if (!isSysAdmin) {
         const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-        if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+        if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
     }
     
     const cSnap = await db.collection('courses').doc(courseId).get();
@@ -257,8 +258,8 @@ async function updateCourseSettings(payload, context) {
     const isSysAdmin = profileSnap.exists && profileSnap.data().role === 'admin';
     if (!isSysAdmin) {
         const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-        if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
-        if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
+        if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
+        if (accessSnap.data().role === 'ayudante') throw dojoError('ASSISTANT_NOT_ALLOWED', "Los ayudantes de cátedra no pueden modificar la planificación base.");
     }
     
     await db.collection('courses').doc(courseId).update(payload.data);
@@ -363,7 +364,7 @@ async function getCourseRoster(payload, context) {
 async function updateRosterStudentStatus(payload, context) {
     const { db } = context;
     const { courseId, studentId, status } = payload; // status: 'approved' | 'pending' | 'observador' | 'removed'
-    if (!courseId || !studentId) throw new Error("Faltan parámetros");
+    if (!courseId || !studentId) throw dojoError('INVALID_ARGUMENT', "Faltan parámetros");
     
     if (status === 'removed') {
         await db.collection('course_roster').doc(`${courseId}_${studentId}`).delete();
@@ -386,7 +387,7 @@ async function updateRosterStudentStatus(payload, context) {
 async function syncGuaraniRoster(payload, context) {
     const { db, admin } = context;
     const { courseId, rows } = payload; // rows: array of { legajo, alumno, document, status, email }
-    if (!courseId || !Array.isArray(rows)) throw new Error("Datos de sincronización inválidos");
+    if (!courseId || !Array.isArray(rows)) throw dojoError('INVALID_ARGUMENT', "Datos de sincronización inválidos");
 
     // Fetch existing roster
     const existingSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();

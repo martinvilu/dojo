@@ -1,8 +1,9 @@
+const { dojoError } = require('../../lib/errors');
 async function registerAsTutor(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, topics, availability } = payload;
     const profileSnap = await db.collection('profiles').doc(uid).get();
-    if (!profileSnap.exists) throw new Error("Perfil no encontrado");
+    if (!profileSnap.exists) throw dojoError('PROFILE_NOT_FOUND', "Perfil no encontrado");
     const pData = profileSnap.data();
     
     await db.collection('tutors').doc(`${courseId}_${uid}`).set({
@@ -28,7 +29,7 @@ async function bookTutoringSession(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, tutorId, dateTime, topic } = payload;
     const profileSnap = await db.collection('profiles').doc(uid).get();
-    if (!profileSnap.exists) throw new Error("Perfil no encontrado");
+    if (!profileSnap.exists) throw dojoError('PROFILE_NOT_FOUND', "Perfil no encontrado");
     const pData = profileSnap.data();
     
     const tutorProf = await db.collection('profiles').doc(tutorId).get();
@@ -71,11 +72,11 @@ async function updateTutoringSessionStatus(payload, context) {
     const { sessionId, status } = payload;
     const ref = db.collection('tutoring_sessions').doc(sessionId);
     const doc = await ref.get();
-    if (!doc.exists) throw new Error("Sesión no encontrada");
+    if (!doc.exists) throw dojoError('SESSION_NOT_FOUND', "Sesión no encontrada");
     
     const data = doc.data();
     if (data.tutor_id !== uid && data.student_id !== uid) {
-        throw new Error("No tienes permiso para modificar esta sesión");
+        throw dojoError('FORBIDDEN', "No tienes permiso para modificar esta sesión");
     }
     
     await ref.update({ status });

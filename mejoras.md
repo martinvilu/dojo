@@ -1012,7 +1012,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/errors/codes.js`
 - **Propuesta técnica:** Crear diccionario de errores: `AUTH_INVALID_TOKEN`, `COURSE_NOT_FOUND`, `ASSIGNMENT_PAST_DUE`.
 - **Impacto y beneficio:** El frontend puede reaccionar y mostrar mensajes localizados amigables.
-- **Estado (24/09/2026):** 🟡 Parcial — El dispatcher propaga `HttpsError` (`permission-denied`, `not-found`, `invalid-argument`) desde authz y validaciones.
+- **Estado (19/10/2026):** ✅ Implementada — Diccionario `functions/src/lib/errors.js` (27 códigos, p. ej. `COURSE_NOT_FOUND`, `NOT_COURSE_MEMBER`, `GITHUB_NOT_CONFIGURED`, `RATE_LIMITED`); los 155 `throw new Error` de los handlers usan `dojoError` y el dispatcher envía el código en `details.code`.
 
 ### 3.34. Gestión de roles con Custom Claims de Firebase Auth en lugar de lecturas de Firestore
 - **Diagnóstico actual:** Actualmente cada verificación de rol en `firestore.rules` hace una lectura `get()` al documento `profiles/{uid}`.

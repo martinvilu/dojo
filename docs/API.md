@@ -29,7 +29,21 @@ await api("gradeSubmission", { submissionId, grade: "8,5", feedback: "Bien" });
 4. Carga el perfil del llamador y aplica la **política de acceso** declarada en `functions/src/authz.js`. Una acción sin política se rechaza (`permission-denied`, fail closed).
 5. Ejecuta el handler con el SDK admin y registra la llamada en la bitácora, redactando las claves que parecen secretos (`token`, `secret`, `password`, `api_key`, `sourcedid`).
 
-Los errores no controlados de un handler llegan al cliente como `internal` con el mensaje original.
+Todo error llega al cliente como `HttpsError` con un **código semántico** en `details.code` (`functions/src/lib/errors.js`) y el mensaje en español para mostrar al usuario:
+
+| Estado | Códigos |
+|---|---|
+| `invalid-argument` | `INVALID_ARGUMENT`, `VALIDATION_FAILED`, `UNKNOWN_ACTION` |
+| `not-found` | `NOT_FOUND`, `COURSE_NOT_FOUND`, `ASSIGNMENT_NOT_FOUND`, `SUBMISSION_NOT_FOUND`, `PROFILE_NOT_FOUND`, `STUDY_GROUP_NOT_FOUND`, `BACKUP_NOT_FOUND`, `SESSION_NOT_FOUND`, `SCHEDULE_VERSION_NOT_FOUND` |
+| `unauthenticated` | `UNAUTHENTICATED`, `AUTH_INVALID_TOKEN` |
+| `permission-denied` | `FORBIDDEN`, `ADMIN_ONLY`, `NOT_COURSE_MEMBER`, `ASSISTANT_NOT_ALLOWED` |
+| `failed-precondition` | `FAILED_PRECONDITION`, `ASSIGNMENT_PAST_DUE`, `GITHUB_NOT_CONFIGURED`, `MOODLE_NOT_CONFIGURED` |
+| `already-exists` | `ALREADY_EXISTS` |
+| `resource-exhausted` | `RATE_LIMITED` (con `retryAfterSeconds`) |
+| `unavailable` | `UPSTREAM_ERROR` (GitHub, Moodle, Gmail o Google Sheets fallaron) |
+| `internal` | `INTERNAL` |
+
+Los handlers lanzan `dojoError('COURSE_NOT_FOUND', 'Curso no encontrado')`; un `Error` genérico se reporta como `INTERNAL`.
 
 ### 1.2. Políticas de acceso
 

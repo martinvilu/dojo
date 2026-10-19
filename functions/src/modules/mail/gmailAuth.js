@@ -1,5 +1,6 @@
 const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
+const { dojoError } = require('../../lib/errors');
 
 // Environment variables or fallback credentials
 const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID || "MOCK_CLIENT_ID.apps.googleusercontent.com";
@@ -30,7 +31,7 @@ async function getGmailAuthUrl(payload, context) {
 async function saveGmailAuthCode(payload, context) {
     const { uid, db, admin } = context;
     const { code, redirectUri } = payload;
-    if (!code) throw new Error("Código OAuth no proporcionado");
+    if (!code) throw dojoError('INVALID_ARGUMENT', "Código OAuth no proporcionado");
 
     const rUri = redirectUri || "http://localhost:3000/dashboard";
 
@@ -49,7 +50,7 @@ async function saveGmailAuthCode(payload, context) {
 
     const tokens = await tokenRes.json();
     if (tokens.error) {
-        throw new Error(`Error en autorización Google: ${tokens.error_description || tokens.error}`);
+        throw dojoError('UPSTREAM_ERROR', `Error en autorización Google: ${tokens.error_description || tokens.error}`);
     }
 
     // Get user email from userinfo endpoint
@@ -104,12 +105,12 @@ async function sendGmailNotification(payload, context) {
     const { to, subject, htmlBody } = payload;
 
     if (!to || !subject || !htmlBody) {
-        throw new Error("Parámetros 'to', 'subject' y 'htmlBody' requeridos.");
+        throw dojoError('INVALID_ARGUMENT', "Parámetros 'to', 'subject' y 'htmlBody' requeridos.");
     }
 
     const doc = await db.collection("gmail_credentials").doc(uid).get();
     if (!doc.exists) {
-        throw new Error("No has vinculado tu cuenta de Gmail para enviar notificaciones.");
+        throw dojoError('FAILED_PRECONDITION', "No has vinculado tu cuenta de Gmail para enviar notificaciones.");
     }
 
     const creds = doc.data();
@@ -118,7 +119,7 @@ async function sendGmailNotification(payload, context) {
     // Refresh access token if expired
     if (!accessToken || Date.now() >= (creds.expires_at - 60000)) {
         if (!creds.refresh_token) {
-            throw new Error("El permiso de Gmail venció. Por favor vuelve a vincular tu cuenta.");
+            throw dojoError('FAILED_PRECONDITION', "El permiso de Gmail venció. Por favor vuelve a vincular tu cuenta.");
         }
 
         const refreshRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -134,7 +135,7 @@ async function sendGmailNotification(payload, context) {
 
         const newTokens = await refreshRes.json();
         if (newTokens.error) {
-            throw new Error(`Error al renovar token de Gmail: ${newTokens.error_description || newTokens.error}`);
+            throw dojoError('UPSTREAM_ERROR', `Error al renovar token de Gmail: ${newTokens.error_description || newTokens.error}`);
         }
 
         accessToken = newTokens.access_token;
@@ -173,7 +174,7 @@ async function sendGmailNotification(payload, context) {
 
     const sendData = await sendRes.json();
     if (sendData.error) {
-        throw new Error(`Error al enviar mail por Gmail API: ${sendData.error.message || JSON.stringify(sendData.error)}`);
+        throw dojoError('UPSTREAM_ERROR', `Error al enviar mail por Gmail API: ${sendData.error.message || JSON.stringify(sendData.error)}`);
     }
 
     return { success: true, messageId: sendData.id, emailSentFrom: creds.email };

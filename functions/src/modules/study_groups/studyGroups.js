@@ -1,8 +1,9 @@
+const { dojoError } = require('../../lib/errors');
 async function createStudyGroup(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, name, description, schedulePrefs } = payload;
     const profileSnap = await db.collection('profiles').doc(uid).get();
-    if (!profileSnap.exists) throw new Error("Perfil no encontrado");
+    if (!profileSnap.exists) throw dojoError('PROFILE_NOT_FOUND', "Perfil no encontrado");
     
     const groupRef = await db.collection('study_groups').add({
         course_id: courseId,
@@ -21,7 +22,7 @@ async function joinStudyGroup(payload, context) {
     const { groupId } = payload;
     const groupRef = db.collection('study_groups').doc(groupId);
     const doc = await groupRef.get();
-    if (!doc.exists) throw new Error("Grupo no encontrado");
+    if (!doc.exists) throw dojoError('STUDY_GROUP_NOT_FOUND', "Grupo no encontrado");
     
     const members = doc.data().members || [];
     if (members.includes(uid)) return { success: true };
@@ -37,7 +38,7 @@ async function leaveStudyGroup(payload, context) {
     const { groupId } = payload;
     const groupRef = db.collection('study_groups').doc(groupId);
     const doc = await groupRef.get();
-    if (!doc.exists) throw new Error("Grupo no encontrado");
+    if (!doc.exists) throw dojoError('STUDY_GROUP_NOT_FOUND', "Grupo no encontrado");
     
     const members = doc.data().members || [];
     const newMembers = members.filter(m => m !== uid);
@@ -108,10 +109,10 @@ async function updateStudyGroupChatLinks(payload, context) {
     const { groupId, whatsappUrl, telegramUrl, discordUrl } = payload;
     const gRef = db.collection('study_groups').doc(groupId);
     const gSnap = await gRef.get();
-    if (!gSnap.exists) throw new Error("Grupo no encontrado");
+    if (!gSnap.exists) throw dojoError('STUDY_GROUP_NOT_FOUND', "Grupo no encontrado");
 
     const members = gSnap.data().members || [];
-    if (!members.includes(uid)) throw new Error("Solo los miembros del grupo pueden actualizar los enlaces");
+    if (!members.includes(uid)) throw dojoError('FORBIDDEN', "Solo los miembros del grupo pueden actualizar los enlaces");
 
     await gRef.update({
         whatsapp_url: whatsappUrl || '',
@@ -124,14 +125,14 @@ async function updateStudyGroupChatLinks(payload, context) {
 async function postStudyGroupMessage(payload, context) {
     const { uid, db, admin } = context;
     const { groupId, content } = payload;
-    if (!content || !content.trim()) throw new Error("El contenido del mensaje no puede estar vacío");
+    if (!content || !content.trim()) throw dojoError('INVALID_ARGUMENT', "El contenido del mensaje no puede estar vacío");
 
     const gRef = db.collection('study_groups').doc(groupId);
     const gSnap = await gRef.get();
-    if (!gSnap.exists) throw new Error("Grupo no encontrado");
+    if (!gSnap.exists) throw dojoError('STUDY_GROUP_NOT_FOUND', "Grupo no encontrado");
 
     const members = gSnap.data().members || [];
-    if (!members.includes(uid)) throw new Error("Solo los miembros del grupo pueden publicar mensajes");
+    if (!members.includes(uid)) throw dojoError('FORBIDDEN', "Solo los miembros del grupo pueden publicar mensajes");
 
     const pSnap = await db.collection('profiles').doc(uid).get();
     const authorName = pSnap.exists ? (pSnap.data().full_name || pSnap.data().email) : 'Miembro';
@@ -150,10 +151,10 @@ async function getStudyGroupMessages(payload, context) {
     const { uid, db } = context;
     const { groupId } = payload;
     const gSnap = await db.collection('study_groups').doc(groupId).get();
-    if (!gSnap.exists) throw new Error("Grupo no encontrado");
+    if (!gSnap.exists) throw dojoError('STUDY_GROUP_NOT_FOUND', "Grupo no encontrado");
 
     const members = gSnap.data().members || [];
-    if (!members.includes(uid)) throw new Error("Solo los miembros del grupo pueden leer el tablón");
+    if (!members.includes(uid)) throw dojoError('FORBIDDEN', "Solo los miembros del grupo pueden leer el tablón");
 
     const mSnap = await db.collection('study_groups').doc(groupId).collection('messages').orderBy('created_at', 'asc').get();
     return mSnap.docs.map(d => {

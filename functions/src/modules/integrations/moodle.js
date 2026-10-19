@@ -2,6 +2,7 @@ const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
 const { isSafeExternalUrl } = require('../../lib/urls');
 const { gradeToOutcomeScore, MAX_GRADE } = require('../../lib/grades');
+const { dojoError } = require('../../lib/errors');
 
 /**
  * Arma la URL del endpoint REST de Moodle Web Services validando el host
@@ -10,7 +11,7 @@ const { gradeToOutcomeScore, MAX_GRADE } = require('../../lib/grades');
 function moodleRestEndpoint(moodleUrl, params = null) {
     const base = String(moodleUrl || '').trim().replace(/\/+$/, '');
     if (!isSafeExternalUrl(base)) {
-        throw new Error("La URL de Moodle debe ser una dirección HTTPS pública válida.");
+        throw dojoError('INVALID_ARGUMENT', "La URL de Moodle debe ser una dirección HTTPS pública válida.");
     }
     const endpoint = `${base}/webservice/rest/server.php`;
     return params ? `${endpoint}?${new URLSearchParams(params).toString()}` : endpoint;
@@ -47,12 +48,12 @@ function getCanonicalAppBaseUrl(providedUrl) {
 async function moodleAutoEnroll(payload, context) {
     const { uid, db, admin } = context;
     const { courseId } = payload;
-    if (!courseId) throw new Error("Falta el ID del curso");
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "Falta el ID del curso");
 
     const cSnap = await db.collection('courses').doc(courseId).get();
-    if (!cSnap.exists) throw new Error("Curso no encontrado");
+    if (!cSnap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
     if (!cSnap.data().moodle_enabled) {
-        throw new Error("La integración con Moodle no está habilitada para este curso.");
+        throw dojoError('MOODLE_NOT_CONFIGURED', "La integración con Moodle no está habilitada para este curso.");
     }
 
     const pSnap = await db.collection('profiles').doc(uid).get();
@@ -141,10 +142,10 @@ function packTarGz(files) {
 async function exportCourseToMoodleXml(payload, context) {
     const { db } = context;
     const { courseId } = payload;
-    if (!courseId) throw new Error("ID de cátedra requerido");
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "ID de cátedra requerido");
 
     const courseSnap = await db.collection('courses').doc(courseId).get();
-    if (!courseSnap.exists) throw new Error("Cátedra no encontrada");
+    if (!courseSnap.exists) throw dojoError('COURSE_NOT_FOUND', "Cátedra no encontrada");
     const course = courseSnap.data();
 
     const assignmentsSnap = await db.collection('assignments').where('course_id', '==', courseId).get();
@@ -449,7 +450,7 @@ async function syncMoodleCourseRoster(payload, context) {
     const { courseId, moodleUrl, moodleToken, moodleCourseId } = payload;
 
     if (!courseId || !moodleUrl || !moodleToken || !moodleCourseId) {
-        throw new Error("Parámetros 'courseId', 'moodleUrl', 'moodleToken' y 'moodleCourseId' requeridos.");
+        throw dojoError('INVALID_ARGUMENT', "Parámetros 'courseId', 'moodleUrl', 'moodleToken' y 'moodleCourseId' requeridos.");
     }
 
     const endpoint = moodleRestEndpoint(moodleUrl, {
@@ -463,11 +464,11 @@ async function syncMoodleCourseRoster(payload, context) {
     const users = await res.json();
 
     if (users.exception || users.errorcode) {
-        throw new Error(`Error en API de Moodle: ${users.message || users.errorcode}`);
+        throw dojoError('UPSTREAM_ERROR', `Error en API de Moodle: ${users.message || users.errorcode}`);
     }
 
     if (!Array.isArray(users)) {
-        throw new Error("Respuesta inválida de Moodle Web Services");
+        throw dojoError('UPSTREAM_ERROR', "Respuesta inválida de Moodle Web Services");
     }
 
     let syncedCount = 0;
@@ -511,7 +512,7 @@ async function exportGradesToMoodleWebservice(payload, context) {
     const { courseId, moodleUrl, moodleToken, moodleCourseId, assignmentId } = payload;
 
     if (!courseId || !moodleUrl || !moodleToken || !moodleCourseId || !assignmentId) {
-        throw new Error("Parámetros de conexión a Moodle incompletos.");
+        throw dojoError('MOODLE_NOT_CONFIGURED', "Parámetros de conexión a Moodle incompletos.");
     }
 
     const endpoint = moodleRestEndpoint(moodleUrl);
@@ -561,7 +562,7 @@ async function syncMoodleCourseContents(payload, context) {
     const { courseId, moodleUrl, moodleToken, moodleCourseId } = payload;
 
     if (!courseId || !moodleUrl || !moodleToken || !moodleCourseId) {
-        throw new Error("Parámetros de conexión a Moodle incompletos.");
+        throw dojoError('MOODLE_NOT_CONFIGURED', "Parámetros de conexión a Moodle incompletos.");
     }
 
     const endpoint = moodleRestEndpoint(moodleUrl, {
@@ -575,16 +576,16 @@ async function syncMoodleCourseContents(payload, context) {
     const sections = await res.json();
 
     if (sections.exception || sections.errorcode) {
-        throw new Error(`Error en Moodle WS: ${sections.message || sections.errorcode}`);
+        throw dojoError('UPSTREAM_ERROR', `Error en Moodle WS: ${sections.message || sections.errorcode}`);
     }
 
     if (!Array.isArray(sections)) {
-        throw new Error("Respuesta inválida de Moodle Web Services");
+        throw dojoError('UPSTREAM_ERROR', "Respuesta inválida de Moodle Web Services");
     }
 
     const courseRef = db.collection('courses').doc(courseId);
     const cSnap = await courseRef.get();
-    if (!cSnap.exists) throw new Error("Cátedra no encontrada.");
+    if (!cSnap.exists) throw dojoError('COURSE_NOT_FOUND', "Cátedra no encontrada.");
 
     const currentClasses = cSnap.data().class_instances || [];
     const newClasses = [...currentClasses];
@@ -617,7 +618,7 @@ async function syncMoodleCourseContents(payload, context) {
 async function getMoodleLtiDeepLinkContent(payload, context) {
     const { db } = context;
     const { courseId, baseUrl } = payload;
-    if (!courseId) throw new Error("Parámetro 'courseId' requerido.");
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "Parámetro 'courseId' requerido.");
 
     const appBaseUrl = getCanonicalAppBaseUrl(baseUrl || payload.baseUrl);
     const assignmentsSnap = await db.collection('assignments').where('course_id', '==', courseId).get();

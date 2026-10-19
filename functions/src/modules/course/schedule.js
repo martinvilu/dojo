@@ -1,9 +1,10 @@
+const { dojoError } = require('../../lib/errors');
 async function saveScheduleVersion(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, versionName, classInstances } = payload;
     const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
-    if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
+    if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
+    if (accessSnap.data().role === 'ayudante') throw dojoError('ASSISTANT_NOT_ALLOWED', "Los ayudantes de cátedra no pueden modificar la planificación base.");
     
     const profileSnap = await db.collection('profiles').doc(uid).get();
     const teacherName = profileSnap.exists ? (profileSnap.data().full_name || profileSnap.data().email) : 'Docente';
@@ -23,7 +24,7 @@ async function getScheduleVersions(payload, context) {
     const { uid, db } = context;
     const courseId = payload.courseId;
     const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+    if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
     
     const snap = await db.collection('schedule_versions')
         .where('course_id', '==', courseId)
@@ -44,11 +45,11 @@ async function restoreScheduleVersion(payload, context) {
     const { uid, db } = context;
     const { courseId, versionId } = payload;
     const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
-    if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
+    if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
+    if (accessSnap.data().role === 'ayudante') throw dojoError('ASSISTANT_NOT_ALLOWED', "Los ayudantes de cátedra no pueden modificar la planificación base.");
     
     const verSnap = await db.collection('schedule_versions').doc(versionId).get();
-    if (!verSnap.exists) throw new Error("Versión de cronograma no encontrada");
+    if (!verSnap.exists) throw dojoError('SCHEDULE_VERSION_NOT_FOUND', "Versión de cronograma no encontrada");
     
     const classInstances = verSnap.data().class_instances;
     await db.collection('courses').doc(courseId).update({

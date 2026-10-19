@@ -12,6 +12,7 @@ const { authorizeAction } = require('./src/authz');
 const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 const { gradeToOutcomeScore } = require('./src/lib/grades');
 const { enforceRateLimit } = require('./src/lib/rateLimit');
+const { dojoError, toHttpsError } = require('./src/lib/errors');
 
 const SECRET_KEY_PATTERN = /token|secret|password|api_?key|sourcedid/i;
 
@@ -146,7 +147,7 @@ exports.api = onCall(async (request) => {
         await enforceRateLimit(action, uid, { db, logger });
 
         const handler = loadActionHandler(action);
-        if (handler === null) throw new HttpsError('invalid-argument', `Acción desconocida: ${action}`);
+        if (handler === null) throw dojoError('UNKNOWN_ACTION', `Acción desconocida: ${action}`);
         if (!handler) {
             throw new HttpsError('internal', `El manejador para ${action} no está implementado en ${ACTION_MODULES[action]}`);
         }
@@ -188,9 +189,10 @@ exports.api = onCall(async (request) => {
         logger.info(`[API Call] Acción completada: ${action}`, { uid });
         return result;
     } catch (e) {
-        logger.error(`[API Error] Error en acción: ${action}`, { uid, error: e.message, stack: e.stack });
-        if (e instanceof HttpsError) throw e;
-        throw new HttpsError('internal', e.message);
+        const httpsError = toHttpsError(e);
+        const log = httpsError.code === 'internal' ? logger.error : logger.warn;
+        log(`[API Error] Error en acción: ${action}`, { uid, code: httpsError.details && httpsError.details.code, error: e.message, stack: e.stack });
+        throw httpsError;
     }
 });
 

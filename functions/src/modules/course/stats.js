@@ -1,3 +1,4 @@
+const { dojoError } = require('../../lib/errors');
 async function getTeacherDashboardStats(payload, context) {
     const { uid, db } = context;
     const cSnap = await db.collection('course_teachers').where('teacher_id', '==', uid).get();
@@ -34,7 +35,7 @@ async function getCourseDashboardStats(payload, context) {
     
     // Check teacher auth
     const ctSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!ctSnap.exists) throw new Error("No tienes acceso a las estadísticas de este curso");
+    if (!ctSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a las estadísticas de este curso");
 
     const courseSnap = await db.collection('courses').doc(courseId).get();
     const courseData = courseSnap.data();

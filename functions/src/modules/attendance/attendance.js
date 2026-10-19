@@ -2,6 +2,7 @@ const logger = require("firebase-functions/logger");
 const { randomBytes, randomUUID } = require('node:crypto');
 const { QR_PERIOD_SECONDS, isValidQrCode } = require('../../lib/qrToken');
 const { awardXp } = require('../../lib/xp');
+const { dojoError } = require('../../lib/errors');
 
 const MAX_DISTANCE_METERS = 150;
 // La sesión de QR vive como mucho una jornada de clase; el documento se
@@ -28,7 +29,7 @@ function parseCoordinate(value, max) {
 
 function parseClassNumber(value) {
     const n = Number(value);
-    if (!Number.isInteger(n) || n < 0 || n > 1000) throw new Error("Número de clase inválido.");
+    if (!Number.isInteger(n) || n < 0 || n > 1000) throw dojoError('INVALID_ARGUMENT', "Número de clase inválido.");
     return n;
 }
 
@@ -90,13 +91,13 @@ async function submitQrAttendance(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, token } = payload;
     if (!courseId || payload.classNumber === undefined || !token) {
-        throw new Error("Faltan datos para procesar la asistencia");
+        throw dojoError('INVALID_ARGUMENT', "Faltan datos para procesar la asistencia");
     }
     const classNumber = parseClassNumber(payload.classNumber);
 
     const profileSnap = await db.collection('profiles').doc(uid).get();
     if (!profileSnap.exists || profileSnap.data().role !== "student") {
-        throw new Error("Solo los estudiantes pueden firmar asistencia. Los profesores y administradores no registran asistencia.");
+        throw dojoError('FORBIDDEN', "Solo los estudiantes pueden firmar asistencia. Los profesores y administradores no registran asistencia.");
     }
 
     const qrDoc = await db.collection('courses').doc(courseId).collection('active_qr').doc('current').get();
@@ -104,15 +105,15 @@ async function submitQrAttendance(payload, context) {
     const now = Date.now();
     const expiresAt = qrData ? toMillis(qrData.expires_at) : null;
     if (!qrData || !qrData.secret || (expiresAt !== null && expiresAt <= now)) {
-        throw new Error("No hay un código de asistencia activo en este momento.");
+        throw dojoError('FAILED_PRECONDITION', "No hay un código de asistencia activo en este momento.");
     }
 
     if (Number(qrData.classNumber) !== classNumber) {
-        throw new Error("Este código corresponde a una clase diferente.");
+        throw dojoError('INVALID_ARGUMENT', "Este código corresponde a una clase diferente.");
     }
 
     if (!isValidQrCode(qrData.secret, token, now, qrData.period || QR_PERIOD_SECONDS)) {
-        throw new Error("El código de asistencia ha expirado o no es válido. Por favor, escanea el código QR actual de la pantalla.");
+        throw dojoError('INVALID_ARGUMENT', "El código de asistencia ha expirado o no es válido. Por favor, escanea el código QR actual de la pantalla.");
     }
 
     // Si el docente fijó la ubicación del aula, la del estudiante es
@@ -121,11 +122,11 @@ async function submitQrAttendance(payload, context) {
         const lat = parseCoordinate(payload.lat, 90);
         const lng = parseCoordinate(payload.lng, 180);
         if (lat === null || lng === null) {
-            throw new Error("Esta clase requiere tu ubicación para firmar asistencia. Habilitá el GPS y el permiso de ubicación del navegador.");
+            throw dojoError('FAILED_PRECONDITION', "Esta clase requiere tu ubicación para firmar asistencia. Habilitá el GPS y el permiso de ubicación del navegador.");
         }
         const distance = haversineMeters(qrData.lat, qrData.lng, lat, lng);
         if (distance > MAX_DISTANCE_METERS) {
-            throw new Error(`Estás demasiado lejos del aula para registrar asistencia. Distancia: ${Math.round(distance)}m (máximo ${MAX_DISTANCE_METERS}m).`);
+            throw dojoError('FAILED_PRECONDITION', `Estás demasiado lejos del aula para registrar asistencia. Distancia: ${Math.round(distance)}m (máximo ${MAX_DISTANCE_METERS}m).`);
         }
     }
 

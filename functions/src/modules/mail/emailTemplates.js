@@ -1,3 +1,4 @@
+const { dojoError } = require('../../lib/errors');
 const DEFAULT_TEMPLATES = {
     alert_risk: {
         id: "alert_risk",
@@ -65,7 +66,7 @@ async function saveEmailTemplate(payload, context) {
     const { courseId, templateId, name, subject, bodyHtml } = payload;
 
     if (!courseId || !templateId || !subject || !bodyHtml) {
-        throw new Error("Parámetros 'courseId', 'templateId', 'subject' y 'bodyHtml' requeridos.");
+        throw dojoError('INVALID_ARGUMENT', "Parámetros 'courseId', 'templateId', 'subject' y 'bodyHtml' requeridos.");
     }
 
     const docId = `${courseId}_${templateId}`;

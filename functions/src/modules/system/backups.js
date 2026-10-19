@@ -1,7 +1,8 @@
+const { dojoError } = require('../../lib/errors');
 async function createSystemBackup(payload, context) {
     const { uid, db, admin, getMyProfile } = context;
     const profile = await getMyProfile();
-    if (profile.role !== 'admin') throw new Error("Acceso denegado");
+    if (profile.role !== 'admin') throw dojoError('FORBIDDEN', "Acceso denegado");
     
     const coursesSnap = await db.collection('courses').get();
     const coursesBackup = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -26,7 +27,7 @@ async function createSystemBackup(payload, context) {
 async function getSystemBackups(payload, context) {
     const { db, getMyProfile } = context;
     const profile = await getMyProfile();
-    if (profile.role !== 'admin') throw new Error("Acceso denegado");
+    if (profile.role !== 'admin') throw dojoError('FORBIDDEN', "Acceso denegado");
     
     const snap = await db.collection('backups').orderBy('created_at', 'desc').get();
     return snap.docs.map(d => {
@@ -45,18 +46,18 @@ async function getSystemBackups(payload, context) {
 async function restoreBackupDocument(payload, context) {
     const { db, getMyProfile } = context;
     const profile = await getMyProfile();
-    if (profile.role !== 'admin') throw new Error("Acceso denegado");
+    if (profile.role !== 'admin') throw dojoError('FORBIDDEN', "Acceso denegado");
     
     const { backupId, collectionName, docId } = payload;
     const backupSnap = await db.collection('backups').doc(backupId).get();
-    if (!backupSnap.exists) throw new Error("Respaldo no encontrado");
+    if (!backupSnap.exists) throw dojoError('BACKUP_NOT_FOUND', "Respaldo no encontrado");
     const backupData = backupSnap.data();
     
     const collectionData = backupData[collectionName];
-    if (!collectionData) throw new Error(`Colección ${collectionName} no disponible en el respaldo`);
+    if (!collectionData) throw dojoError('NOT_FOUND', `Colección ${collectionName} no disponible en el respaldo`);
     
     const docData = collectionData.find(d => d.id === docId);
-    if (!docData) throw new Error(`Documento con ID ${docId} no encontrado en este respaldo`);
+    if (!docData) throw dojoError('NOT_FOUND', `Documento con ID ${docId} no encontrado en este respaldo`);
     
     const { id, ...dataToRestore } = docData;
     await db.collection(collectionName).doc(docId).set(dataToRestore);
@@ -67,21 +68,21 @@ async function restoreBackupDocument(payload, context) {
 async function downloadSystemBackup(payload, context) {
     const { db, getMyProfile } = context;
     const profile = await getMyProfile();
-    if (profile.role !== 'admin') throw new Error("Acceso denegado");
+    if (profile.role !== 'admin') throw dojoError('FORBIDDEN', "Acceso denegado");
     
     const { backupId } = payload;
     const doc = await db.collection('backups').doc(backupId).get();
-    if (!doc.exists) throw new Error("Respaldo no encontrado");
+    if (!doc.exists) throw dojoError('BACKUP_NOT_FOUND', "Respaldo no encontrado");
     return doc.data();
 }
 
 async function deleteBackup(payload, context) {
     const { db, getMyProfile } = context;
     const profile = await getMyProfile();
-    if (profile.role !== 'admin') throw new Error("Acceso denegado");
+    if (profile.role !== 'admin') throw dojoError('FORBIDDEN', "Acceso denegado");
     
     const { backupId } = payload;
-    if (!backupId) throw new Error("ID de respaldo requerido");
+    if (!backupId) throw dojoError('INVALID_ARGUMENT', "ID de respaldo requerido");
     await db.collection('backups').doc(backupId).delete();
     return { success: true };
 }

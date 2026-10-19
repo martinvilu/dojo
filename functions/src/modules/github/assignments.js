@@ -5,6 +5,7 @@ const { randomBytes } = require('node:crypto');
 const { isSafeExternalUrl } = require('../../lib/urls');
 const { isCourseStaff, isCourseMember } = require('../../authz');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
+const { dojoError } = require('../../lib/errors');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -18,15 +19,15 @@ async function archiveAssignment(payload, context) {
     
     // Check teacher auth
     const aSnap = await db.collection('assignments').doc(assignmentId).get();
-    if (!aSnap.exists) throw new Error("La tarea no existe");
+    if (!aSnap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "La tarea no existe");
     const assignment = aSnap.data();
     
     const accessSnap = await db.collection('course_teachers').doc(`${assignment.course_id}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a esta materia");
+    if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a esta materia");
     
     const courseSnap = await db.collection('courses').doc(assignment.course_id).get();
     const course = courseSnap.data();
-    if (!course.github_token) throw new Error("El profesor aún no ha configurado el token de GitHub.");
+    if (!course.github_token) throw dojoError('GITHUB_NOT_CONFIGURED', "El profesor aún no ha configurado el token de GitHub.");
     
     const githubHeaders = {
         'Authorization': `token ${course.github_token}`,
@@ -159,7 +160,7 @@ async function createAssignment(payload, context) {
     const { db, admin } = context;
     const courseId = payload.course_id || payload.courseId || payload.course;
     if (!courseId) {
-        throw new Error("El parámetro course_id es requerido para crear una tarea.");
+        throw dojoError('INVALID_ARGUMENT', "El parámetro course_id es requerido para crear una tarea.");
     }
 
     const fields = await sanitizeAssignmentFields({
@@ -212,10 +213,10 @@ async function gradeSubmission(payload, context) {
     const { uid, db, admin, syncGradeToMoodle } = context;
     const requesterProfile = await db.collection('profiles').doc(uid).get();
     if (!requesterProfile.exists || (requesterProfile.data().role !== 'teacher' && requesterProfile.data().role !== 'admin')) {
-        throw new Error("No tienes permisos para calificar entregas");
+        throw dojoError('FORBIDDEN', "No tienes permisos para calificar entregas");
     }
     const { submissionId } = payload;
-    if (!submissionId) throw new Error("Falta el id de la entrega");
+    if (!submissionId) throw dojoError('INVALID_ARGUMENT', "Falta el id de la entrega");
     const normalized = normalizeGrade(payload.grade);
     if (!normalized.ok) throw new HttpsError('invalid-argument', normalized.error);
     const grade = normalized.value;
@@ -275,7 +276,7 @@ async function acceptAssignment(payload, context) {
     const assignmentId = payload.assignmentId;
     
     const aSnap = await db.collection('assignments').doc(assignmentId).get();
-    if (!aSnap.exists) throw new Error("La tarea no existe");
+    if (!aSnap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "La tarea no existe");
     const assignment = aSnap.data();
     
     const cSnap = await db.collection('courses').doc(assignment.course_id).get();
@@ -283,10 +284,10 @@ async function acceptAssignment(payload, context) {
     
     const pSnap = await db.collection('profiles').doc(uid).get();
     const profile = pSnap.data();
-    if (!profile.github_user) throw new Error("Debes configurar tu usuario de GitHub en tu perfil académico antes de aceptar la tarea.");
+    if (!profile.github_user) throw dojoError('FAILED_PRECONDITION', "Debes configurar tu usuario de GitHub en tu perfil académico antes de aceptar la tarea.");
     
-    if (!course.github_token) throw new Error("El profesor aún no ha configurado el token de GitHub para esta materia.");
-    if (!assignment.template_repo) throw new Error("Esta tarea no tiene un repositorio de plantilla configurado.");
+    if (!course.github_token) throw dojoError('GITHUB_NOT_CONFIGURED', "El profesor aún no ha configurado el token de GitHub para esta materia.");
+    if (!assignment.template_repo) throw dojoError('FAILED_PRECONDITION', "Esta tarea no tiene un repositorio de plantilla configurado.");
     
     const repoName = `${assignment.title.replace(/\s+/g, '-')}-${profile.github_user}`;
     const orgName = course.github_org;
@@ -307,7 +308,7 @@ async function acceptAssignment(payload, context) {
     
     if (!createRes.ok) {
         const errBody = await createRes.text();
-        throw new Error(`Error al crear repo en GitHub: ${errBody}`);
+        throw dojoError('UPSTREAM_ERROR', `Error al crear repo en GitHub: ${errBody}`);
     }
     
     await fetch(`https://api.github.com/repos/${orgName}/${repoName}/collaborators/${profile.github_user}`, {
@@ -379,7 +380,7 @@ async function acceptAssignment(payload, context) {
 async function getStudentGithubActivity(payload, context) {
     const { uid, db } = context;
     const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
-    if (!sSnap.exists) throw new Error("Entrega no encontrada");
+    if (!sSnap.exists) throw dojoError('SUBMISSION_NOT_FOUND', "Entrega no encontrada");
     const sub = sSnap.data();
 
     let authorized = (sub.student_id === uid);
@@ -389,19 +390,19 @@ async function getStudentGithubActivity(payload, context) {
             authorized = true;
         }
     }
-    if (!authorized) throw new Error("Acceso no autorizado a la actividad de GitHub");
+    if (!authorized) throw dojoError('FORBIDDEN', "Acceso no autorizado a la actividad de GitHub");
 
     const aSnap = await db.collection('assignments').doc(sub.assignment_id).get();
     const cSnap = await db.collection('courses').doc(aSnap.data().course_id).get();
     const token = cSnap.data().github_token;
-    if (!token) throw new Error("El profesor no configuró el token de GitHub.");
+    if (!token) throw dojoError('GITHUB_NOT_CONFIGURED', "El profesor no configuró el token de GitHub.");
 
     const cleanRepoUrl = (sub.repo_url || '').trim().replace(/\/$/, '').replace(/\.git$/, '');
     const repoParts = cleanRepoUrl.replace(/^https?:\/\/github\.com\//, '').split('/');
     const owner = repoParts[0];
     const repoName = repoParts[1];
     
-    if (!owner || !repoName) throw new Error("URL de repositorio de GitHub no válida.");
+    if (!owner || !repoName) throw dojoError('INVALID_ARGUMENT', "URL de repositorio de GitHub no válida.");
     
     const githubHeaders = {
         'Authorization': `token ${token}`,
@@ -484,7 +485,7 @@ async function getStudentGithubActivity(payload, context) {
 async function getStudentCommits(payload, context) {
     const { uid, db } = context;
     const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
-    if (!sSnap.exists) throw new Error("Entrega no encontrada");
+    if (!sSnap.exists) throw dojoError('SUBMISSION_NOT_FOUND', "Entrega no encontrada");
     const sub = sSnap.data();
 
     let authorized = (sub.student_id === uid);
@@ -494,12 +495,12 @@ async function getStudentCommits(payload, context) {
             authorized = true;
         }
     }
-    if (!authorized) throw new Error("Acceso no autorizado o entrega no válida");
+    if (!authorized) throw dojoError('FORBIDDEN', "Acceso no autorizado o entrega no válida");
 
     const aSnap = await db.collection('assignments').doc(sub.assignment_id).get();
     const cSnap = await db.collection('courses').doc(aSnap.data().course_id).get();
     const token = cSnap.data().github_token;
-    if (!token) throw new Error("El profesor no configuró el token de GitHub.");
+    if (!token) throw dojoError('GITHUB_NOT_CONFIGURED', "El profesor no configuró el token de GitHub.");
 
     const repoParts = sub.repo_url.replace('https://github.com/', '').split('/');
     
@@ -515,7 +516,7 @@ async function getStudentCommits(payload, context) {
         headers: githubHeaders
     });
 
-    if (!res.ok) throw new Error("Error obteniendo commits: " + await res.text());
+    if (!res.ok) throw dojoError('UPSTREAM_ERROR', "Error obteniendo commits: " + await res.text());
     const commits = await res.json();
     
     return commits.map(c => ({
@@ -529,7 +530,7 @@ async function getStudentCommits(payload, context) {
 async function submitAssignment(payload, context) {
     const { uid, db, admin } = context;
     const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
-    if (!sSnap.exists || sSnap.data().student_id !== uid) throw new Error("Entrega no encontrada o no autorizada");
+    if (!sSnap.exists || sSnap.data().student_id !== uid) throw dojoError('NOT_FOUND', "Entrega no encontrada o no autorizada");
     
     await sSnap.ref.update({
         status: 'submitted',
@@ -544,7 +545,7 @@ async function updateAssignment(payload, context) {
     const { db } = context;
     const ref = db.collection('assignments').doc(payload.assignmentId);
     const snap = await ref.get();
-    if (!snap.exists) throw new Error("La tarea no existe");
+    if (!snap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "La tarea no existe");
 
     // Solo campos editables: course_id, sync_secret o peer_review no se
     // pueden sobrescribir desde el formulario de edición.
@@ -563,7 +564,7 @@ async function syncGradesFromSpreadsheet(payload, context) {
     const sheetUrl = payload.sheetUrl;
     
     const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    if (!match) throw new Error("URL de Google Sheets inválida. Asegurate de copiar el enlace completo.");
+    if (!match) throw dojoError('INVALID_ARGUMENT', "URL de Google Sheets inválida. Asegurate de copiar el enlace completo.");
     const docId = match[1];
     
     let gid = "0";
@@ -573,11 +574,11 @@ async function syncGradesFromSpreadsheet(payload, context) {
     const csvUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
     
     const response = await fetch(csvUrl);
-    if (!response.ok) throw new Error("No se pudo acceder a la planilla. ¿Está configurada como 'Cualquier persona con el enlace puede leer'?");
+    if (!response.ok) throw dojoError('UPSTREAM_ERROR', "No se pudo acceder a la planilla. ¿Está configurada como 'Cualquier persona con el enlace puede leer'?");
     
     const csvText = await response.text();
     const rows = csvText.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-    if (rows.length < 2) throw new Error("La planilla está vacía o no tiene el formato correcto.");
+    if (rows.length < 2) throw dojoError('INVALID_ARGUMENT', "La planilla está vacía o no tiene el formato correcto.");
     
     const headers = rows[0].map(h => h.toLowerCase());
     const matriculaIdx = headers.findIndex(h => h.includes('matricula') || h.includes('matrícula'));
@@ -585,7 +586,7 @@ async function syncGradesFromSpreadsheet(payload, context) {
     const feedbackIdx = headers.findIndex(h => h.includes('feedback') || h.includes('devolucion') || h.includes('comentario'));
     
     if (matriculaIdx === -1 || notaIdx === -1) {
-        throw new Error("La planilla debe tener al menos las columnas 'Matricula' y 'Nota'. Podés descargar la plantilla sugerida.");
+        throw dojoError('INVALID_ARGUMENT', "La planilla debe tener al menos las columnas 'Matricula' y 'Nota'. Podés descargar la plantilla sugerida.");
     }
     
     let updatedCount = 0;
@@ -642,31 +643,31 @@ async function syncGradesFromSpreadsheet(payload, context) {
 async function addGroupCollaborator(payload, context) {
     const { uid, db, admin } = context;
     const subSnap = await db.collection('submissions').doc(payload.submissionId).get();
-    if (!subSnap.exists) throw new Error("Entrega no encontrada");
+    if (!subSnap.exists) throw dojoError('SUBMISSION_NOT_FOUND', "Entrega no encontrada");
     const sub = subSnap.data();
 
     // La tarea sale siempre de la entrega: un assignmentId distinto en el
     // payload permitiría usar el token de GitHub de otra cátedra.
     const assignmentId = sub.assignment_id;
     if (payload.assignmentId && payload.assignmentId !== assignmentId) {
-        throw new Error("La entrega no pertenece a la tarea indicada");
+        throw dojoError('FAILED_PRECONDITION', "La entrega no pertenece a la tarea indicada");
     }
     const assignmentSnap = await db.collection('assignments').doc(assignmentId).get();
-    if (!assignmentSnap.exists) throw new Error("La tarea no existe");
+    if (!assignmentSnap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "La tarea no existe");
     const assignment = assignmentSnap.data();
 
     if (sub.student_id !== uid && !(await isCourseStaff(db, assignment.course_id, uid))) {
-        throw new Error("Solo el autor de la entrega o un docente del curso pueden sumar integrantes");
+        throw dojoError('FORBIDDEN', "Solo el autor de la entrega o un docente del curso pueden sumar integrantes");
     }
     
     const pSnap = await db.collection('profiles').where('email', '==', payload.email).get();
-    if (pSnap.empty) throw new Error("No se encontró ningún estudiante registrado con ese correo");
+    if (pSnap.empty) throw dojoError('NOT_FOUND', "No se encontró ningún estudiante registrado con ese correo");
     const newStudent = pSnap.docs[0].data();
     const newStudentId = pSnap.docs[0].id;
     
-    if (!newStudent.github_user) throw new Error("El estudiante no configuró su usuario de GitHub en el perfil");
+    if (!newStudent.github_user) throw dojoError('FAILED_PRECONDITION', "El estudiante no configuró su usuario de GitHub en el perfil");
     if (!(await isCourseMember(db, assignment.course_id, newStudentId))) {
-        throw new Error("El estudiante no está inscripto en este curso");
+        throw dojoError('NOT_COURSE_MEMBER', "El estudiante no está inscripto en este curso");
     }
     
     const courseSnap = await db.collection('courses').doc(assignment.course_id).get();
@@ -689,7 +690,7 @@ async function addGroupCollaborator(payload, context) {
     
     if (!addRes.ok) {
         const err = await addRes.json();
-        throw new Error(`Error de GitHub: ${err.message}`);
+        throw dojoError('UPSTREAM_ERROR', `Error de GitHub: ${err.message}`);
     }
     
     await db.collection('submissions').doc(`${assignmentId}_${newStudentId}`).set({
