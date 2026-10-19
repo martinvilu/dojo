@@ -21,14 +21,35 @@ cd functions && npm install    # Cloud Functions (Node 22, CommonJS)
 cd .. && npm run dev           # http://localhost:3000
 ```
 
-> ⚠️ **El entorno local apunta a producción.** `src/lib/firebase/clientApp.ts` fija el proyecto `jutsu-classroom-mrtin` y no conecta los emuladores, así que `npm run dev` lee y escribe datos reales y llama a las Cloud Functions desplegadas. Para experimentar sin riesgo, usá los tests (que corren contra mocks o el emulador) o una cuenta de prueba.
+### 2.0. Desarrollar contra emuladores (recomendado)
+
+```bash
+npm run emulators          # terminal 1: Auth, Firestore y Functions (UI en http://localhost:4000)
+npm run seed:emulators     # terminal 2: datos de prueba en el emulador
+npm run dev:emulators      # terminal 2: la app conectada a los emuladores
+```
+
+`dev:emulators` define `NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true` y el proyecto `demo-ninja-dojo`: nada sale de tu máquina. `functions/.env.demo-ninja-dojo` crea como admin a `admin@jutsu.com` y como docente a `teacher@jutsu.com` en su primer login (registralos desde la pantalla de ingreso).
+
+> ⚠️ `npm run dev` (sin emuladores) usa el proyecto definido en `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, que por defecto es **producción** (`jutsu-classroom-mrtin`).
+
+### 2.0.1. Entornos
+
+| Alias (`.firebaserc`) | Proyecto | Uso |
+|---|---|---|
+| `dev` | `demo-ninja-dojo` | Emuladores locales (los proyectos `demo-*` nunca tocan la nube) |
+| `staging` | `jutsu-classroom-staging` | Pre-producción. **Hay que crearlo** en la consola de Firebase y cargar sus `NEXT_PUBLIC_FIREBASE_*` |
+| `prod` / `default` | `jutsu-classroom-mrtin` | Producción |
+
+`firebase use staging && firebase deploy --only functions,firestore` despliega el backend en staging; la app toma el proyecto de `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` y `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`.
 
 ### 2.1. Variables de entorno
 
 | Variable | Dónde | Uso |
 |---|---|---|
 | `NEXT_PUBLIC_FIREBASE_API_KEY` | `.env` / `.env.local` | API key web de Firebase (pública por diseño; hay un valor por defecto) |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `.env.local` | Validadas por `src/lib/env.ts` (opcionales) |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | `.env.local` / App Hosting | Proyecto Firebase del entorno (por defecto, producción) |
+| `NEXT_PUBLIC_USE_FIREBASE_EMULATORS` | `npm run dev:emulators` | `true` conecta Auth (9099), Firestore (8080) y Functions (5001) locales |
 | `NEXT_PUBLIC_APP_URL` | App Hosting | URL pública; se usa para armar enlaces LTI y de suscripción |
 | `GITHUB_WEBHOOK_SECRET` | App Hosting | Validado por `src/lib/env.ts` |
 | `TYPESAFE_API_KEY` | `.env.local` | Cliente de TypeSafe/Jev (ver `status.md`) |
@@ -110,7 +131,7 @@ Un commit por cambio lógico. Los PRs de bots se integran con un commit semánti
 
 ## 6. Datos de prueba (seed)
 
-> ⚠️ `seed.sh` escribe con `curl` directo en el Firestore del proyecto **de producción** `jutsu-classroom-mrtin`, con el token de tu sesión de Firebase CLI. Sobrescribe los documentos con esos IDs. No lo corras salvo que sepas exactamente qué vas a pisar.
+Usá `npm run seed:emulators` (con `npm run emulators` corriendo). Los dos scripts de seed se niegan a escribir en un proyecto real salvo que exportes `SEED_ALLOW_REAL_PROJECT=<id del proyecto>`: `seed.sh` escribe con `curl` en el Firestore de **producción** y `functions/seed.js` usa el Admin SDK contra el proyecto de `GCLOUD_PROJECT`.
 
 | Rol | Email | UID | Estado inicial | Cátedra |
 | :-- | :--- | :--- | :--- | :--- |
@@ -118,7 +139,7 @@ Un commit por cambio lógico. Los PRs de bots se integran con un commit semánti
 | Profesor | `kakashi@jutsu.com` | `teacher123` | `approved` | Titular de `course123` |
 | Estudiante | `student@jutsu.com` | `student123` | `pending` | Inscripto en `course123` |
 
-Se crean además 20 estudiantes (`student_extra_1`…`student_extra_20`) inscriptos en `course123` con estados alternados y matrículas `UNRN-10010+`, y una entrega precargada de Naruto Uzumaki para probar calificación y actividad de GitHub. `functions/seed.js` carga datos equivalentes con el Admin SDK y también apunta a `jutsu-classroom-mrtin`: para usarlo contra el emulador, exportá antes `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080`. En el emulador de Functions, `SEED_ADMIN_EMAILS` / `SEED_TEACHER_EMAILS` crean cuentas privilegiadas en el primer login.
+Se crean además 20 estudiantes (`student_extra_1`…`student_extra_20`) inscriptos en `course123` con estados alternados y matrículas `UNRN-10010+`, y una entrega precargada de Naruto Uzumaki para probar calificación y actividad de GitHub. En el emulador de Functions, `SEED_ADMIN_EMAILS` / `SEED_TEACHER_EMAILS` (en `functions/.env.demo-ninja-dojo`) crean cuentas privilegiadas en el primer login.
 
 ## 7. Problemas frecuentes
 

@@ -1,6 +1,10 @@
 {
   "projects": {
-    "jutsu-main": "jutsu-classroom-mrtin"
+    "default": "jutsu-classroom-mrtin",
+    "prod": "jutsu-classroom-mrtin",
+    "jutsu-main": "jutsu-classroom-mrtin",
+    "staging": "jutsu-classroom-staging",
+    "dev": "demo-ninja-dojo"
   },
   "targets": {},
   "etags": {}

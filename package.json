@@ -11,7 +11,10 @@
     "test:unit": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/unit/*.test.ts",
     "test:selenium": "node tests/selenium/run-all-tests.js",
     "test:rules": "npx -y firebase-tools@latest emulators:exec --only firestore --project demo-ninja-dojo-rules -- \"npx jest tests/firestore.rules.test.js --runInBand\"",
-    "test:local": "./scripts/test-local.sh"
+    "test:local": "./scripts/test-local.sh",
+    "emulators": "firebase emulators:start --only auth,firestore,functions --project demo-ninja-dojo",
+    "dev:emulators": "NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-ninja-dojo next dev",
+    "seed:emulators": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=demo-ninja-dojo node functions/seed.js"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "^0.6.0",

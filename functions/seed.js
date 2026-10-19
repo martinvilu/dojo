@@ -1,11 +1,19 @@
 const admin = require('firebase-admin');
 
-// Ensure we run against the right project
-process.env.GCLOUD_PROJECT = 'jutsu-classroom-mrtin';
+// Por defecto el seed corre contra el emulador (proyecto demo-ninja-dojo).
+// Escribir en un proyecto real exige SEED_ALLOW_REAL_PROJECT=<id del
+// proyecto>, para no pisar datos de producción por error.
+const projectId = process.env.GCLOUD_PROJECT || 'demo-ninja-dojo';
+const usesEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
+if (!usesEmulator && process.env.SEED_ALLOW_REAL_PROJECT !== projectId) {
+  console.error(`Seed cancelado: no hay FIRESTORE_EMULATOR_HOST y el proyecto "${projectId}" es real.\n` +
+    `Usá "npm run seed:emulators" o, si de verdad querés escribir en ${projectId}, ` +
+    `SEED_ALLOW_REAL_PROJECT=${projectId}.`);
+  process.exit(1);
+}
+process.env.GCLOUD_PROJECT = projectId;
 
-admin.initializeApp({
-  projectId: "jutsu-classroom-mrtin"
-});
+admin.initializeApp({ projectId });
 
 const db = admin.firestore();
 

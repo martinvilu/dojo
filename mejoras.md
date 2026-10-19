@@ -1033,7 +1033,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `.firebaserc`
 - **Propuesta técnica:** Configurar targets en `.firebaserc`: `dojo-dev`, `dojo-staging` y `dojo-prod`.
 - **Impacto y beneficio:** Aislamiento riguroso de datos de cursadas activas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Aliases `dev` (`demo-ninja-dojo`), `staging` y `prod` en `.firebaserc`; el cliente toma el proyecto de `NEXT_PUBLIC_FIREBASE_*` y se conecta a los emuladores con `npm run dev:emulators`; `npm run emulators` / `seed:emulators` y seeds que se niegan a escribir en proyectos reales. Pendiente externo: crear el proyecto `jutsu-classroom-staging`.
 
 ### 3.37. Verificación de integridad de checksums en sincronizaciones masivas de alumnos
 - **Diagnóstico actual:** Sincronizar el padrón de alumnos de Moodle sobreescribe registros sin detectar si hubo cambios reales.
