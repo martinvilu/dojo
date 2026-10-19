@@ -39,7 +39,7 @@ Todo error llega al cliente como `HttpsError` con un **código semántico** en `
 | `not-found` | `NOT_FOUND`, `COURSE_NOT_FOUND`, `ASSIGNMENT_NOT_FOUND`, `SUBMISSION_NOT_FOUND`, `PROFILE_NOT_FOUND`, `STUDY_GROUP_NOT_FOUND`, `BACKUP_NOT_FOUND`, `SESSION_NOT_FOUND`, `SCHEDULE_VERSION_NOT_FOUND` |
 | `unauthenticated` | `UNAUTHENTICATED`, `AUTH_INVALID_TOKEN`, `AUTH_SESSION_REVOKED` (el cliente cierra la sesión y vuelve al login) |
 | `permission-denied` | `FORBIDDEN`, `ADMIN_ONLY`, `NOT_COURSE_MEMBER`, `ASSISTANT_NOT_ALLOWED` |
-| `failed-precondition` | `FAILED_PRECONDITION`, `ASSIGNMENT_PAST_DUE`, `GITHUB_NOT_CONFIGURED`, `MOODLE_NOT_CONFIGURED` |
+| `failed-precondition` | `FAILED_PRECONDITION`, `ASSIGNMENT_PAST_DUE`, `ENROLLMENT_INACTIVE`, `GITHUB_NOT_CONFIGURED`, `MOODLE_NOT_CONFIGURED` |
 | `already-exists` | `ALREADY_EXISTS` |
 | `resource-exhausted` | `RATE_LIMITED` (con `retryAfterSeconds`) |
 | `unavailable` | `UPSTREAM_ERROR` (GitHub, Moodle, Gmail o Google Sheets fallaron) |
@@ -145,8 +145,8 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `toggleAccess` / `massToggleAccess` | staffOf(submission) / titularOf(assignment) | Marca una entrega (o todas las de la tarea) como bloqueada (`is_locked`) |
 | `syncGradesFromSpreadsheet` | staffOf(assignment) | Importa notas desde la URL de una planilla de Google Sheets |
 | `getStudentAssignments` | AUTHENTICATED + courseIds de miembro | |
-| `acceptAssignment` | memberOf(assignment) | Crea el repositorio del estudiante desde la plantilla |
-| `submitAssignment` | AUTHENTICATED | Marca la entrega como presentada (el handler verifica la autoría) |
+| `acceptAssignment` | memberOf(assignment) | Crea el repositorio del estudiante desde la plantilla. Rechaza con `ENROLLMENT_INACTIVE` si el padrón sincronizado (Moodle / SIU Guaraní) lo marcó como `observador` |
+| `submitAssignment` | AUTHENTICATED | Marca la entrega como presentada (el handler verifica la autoría y que la inscripción siga activa) |
 | `addGroupCollaborator` | memberOf(submission) | Solo el autor de la entrega o el equipo docente |
 | `getStudentGithubActivity`, `getStudentCommits` | AUTHENTICATED | Commits, PRs y comentarios del repositorio |
 | `detectAssignmentPlagiarism` | staffOf(assignment) | Similitud por fingerprints k-gram entre entregas |

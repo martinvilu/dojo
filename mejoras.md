@@ -1117,7 +1117,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/students/validateEnrollment.js`
 - **Propuesta técnica:** Verificar estado de matriculación activa con la API de Moodle antes de registrar recepciones de TP.
 - **Impacto y beneficio:** Alineación perfecta con los padrones oficiales de la facultad.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `assertActiveEnrollment` (`functions/src/lib/enrollmentStatus.js`) rechaza `acceptAssignment` y `submitAssignment` con `ENROLLMENT_INACTIVE` cuando el padrón sincronizado (Moodle / SIU Guaraní, o el docente) marcó al estudiante como `observador`. Usa el último estado sincronizado: no consulta Moodle en cada entrega porque el `wstoken` no se guarda.
 
 ### 3.49. Auditoría de cumplimiento GDPR / Ley de Protección de Datos Personales
 - **Diagnóstico actual:** No existe una función que permita al estudiante descargar todos sus datos o solicitar borrado de cuenta.

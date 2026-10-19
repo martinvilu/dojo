@@ -10,6 +10,7 @@ const { gradeAttribution } = require('../../lib/gradeAudit');
 const { normalizeEmail } = require('../../lib/validate');
 const { courseGithubToken } = require('../../lib/secretBox');
 const { agsFieldsForSubmission } = require('../integrations/lti');
+const { assertActiveEnrollment } = require('../../lib/enrollmentStatus');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -265,6 +266,8 @@ async function acceptAssignment(payload, context) {
     if (!aSnap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "La tarea no existe");
     const assignment = aSnap.data();
     
+    await assertActiveEnrollment(db, assignment.course_id, uid);
+
     const cSnap = await db.collection('courses').doc(assignment.course_id).get();
     const course = cSnap.data();
     
@@ -518,6 +521,8 @@ async function submitAssignment(payload, context) {
     const { uid, db, admin } = context;
     const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
     if (!sSnap.exists || sSnap.data().student_id !== uid) throw dojoError('NOT_FOUND', "Entrega no encontrada o no autorizada");
+    const subAssignment = await db.collection('assignments').doc(sSnap.data().assignment_id).get();
+    await assertActiveEnrollment(db, subAssignment.exists ? subAssignment.data().course_id : null, uid);
     
     await sSnap.ref.update({
         status: 'submitted',

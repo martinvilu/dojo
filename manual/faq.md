@@ -94,6 +94,10 @@ Abriste el escáner desde otra clase. Volvé a **Escanear QR** desde la barra la
 
 Revisá tu correo y las notificaciones de GitHub: tenés que aceptar la invitación como colaborador del repositorio en la organización de la materia.
 
+### «Tu inscripción en esta cátedra no está activa según el padrón oficial»
+
+La última sincronización con Moodle o SIU Guaraní no te encontró en el padrón de la materia (por ejemplo, por una baja o un cambio de comisión). Podés seguir viendo la cátedra, pero no entregar. Consultá con el equipo docente para que revise tu inscripción.
+
 ### Mis commits no aparecen
 
 - Confirmá que hiciste `git push` al repositorio de la tarea (no a un fork propio).

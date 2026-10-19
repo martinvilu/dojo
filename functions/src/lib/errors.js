@@ -35,6 +35,7 @@ const ERROR_CODES = Object.freeze({
     // Estado del sistema
     FAILED_PRECONDITION: 'failed-precondition',
     ASSIGNMENT_PAST_DUE: 'failed-precondition',
+    ENROLLMENT_INACTIVE: 'failed-precondition',
     GITHUB_NOT_CONFIGURED: 'failed-precondition',
     MOODLE_NOT_CONFIGURED: 'failed-precondition',
     ALREADY_EXISTS: 'already-exists',
