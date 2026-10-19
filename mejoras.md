@@ -991,7 +991,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/storage/validateUpload.js`
 - **Propuesta técnica:** Validar con `file-type` (magic bytes) en Cloud Storage triggers y renombrar con UUIDs no ejecutables.
 - **Impacto y beneficio:** Prevención absoluta de ejecución remota de código (RCE).
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada (preventiva) — La plataforma no recibe adjuntos de clientes (las entregas son repos de GitHub); `storage.rules` bloquea toda lectura y escritura directa en Cloud Storage y los archivos del backend se sirven solo con URLs firmadas. Una subida futura debe pasar por una función que valide magic bytes y renombre.
 
 ### 3.31. Configuración de alertas de presupuesto y consumo anómalo en Google Cloud
 - **Diagnóstico actual:** Un bucle infinito de lecturas en un useEffect podría generar costos no deseados en Firestore.

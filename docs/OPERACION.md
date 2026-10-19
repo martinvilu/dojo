@@ -34,6 +34,7 @@ firebase login
 firebase use jutsu-main
 firebase deploy --only firestore:rules        # solo reglas
 firebase deploy --only firestore:indexes      # solo índices (incluye la política TTL)
+firebase deploy --only storage                # reglas de Cloud Storage (bloquean el acceso directo de clientes)
 firebase deploy --only functions:api          # una función
 firebase deploy --only functions,firestore    # todo el backend
 ```
