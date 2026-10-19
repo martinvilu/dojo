@@ -21,7 +21,7 @@ const RESERVED_WORDS = new Set(['nan', 'infinity']);
 const GRADE_ERROR = `La nota debe ser un número entre 0 y ${MAX_GRADE} o una calificación conceptual (ej. "Aprobado").`;
 
 /**
- * @returns {{ ok: true, value: string } | { ok: false, error: string }}
+ * @returns {{ ok: boolean, value?: string, error?: string }}
  */
 function normalizeGrade(raw) {
     if (raw === null || raw === undefined) return { ok: true, value: '' };

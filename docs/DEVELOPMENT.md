@@ -80,7 +80,8 @@ Los archivos `.env*` están en `.gitignore`. Nunca commitear tokens de GitHub, M
 | `npx tsc --noEmit` | Chequeo de tipos | ✔ |
 | `npm run lint` | ESLint 9 (`eslint-config-next`) | ✔ |
 | `npm run test:unit` | Tests de `src/lib` y utilidades con `node --test` y `--experimental-strip-types` (`tests/unit/*.test.ts`) | ✔ 48 |
-| `cd functions && npm test` | Jest del backend (`functions/tests/`) | ✔ 239 |
+| `cd functions && npm run typecheck` | TypeScript (`checkJs`) sobre el JavaScript de Cloud Functions | ✔ 0 errores |
+| `cd functions && npm test` | Jest del backend (`functions/tests/`) | ✔ 332 |
 | `npm run test:rules` | Reglas de Firestore contra el emulador (`tests/firestore.rules.test.js`) | ✔ 23 |
 | `npm run test:selenium` | E2E Selenium contra un mock server (`tests/selenium/`, 14 módulos) | ✔ 56 |
 | `npm run test:local` | Levanta `npm run dev` con instrucciones para simular LTI | — |

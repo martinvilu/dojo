@@ -788,7 +788,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/index.js`
 - **Propuesta técnica:** Configurar TypeScript con `tsconfig.json` en `functions/` y migrar a módulos ESM (`import/export`).
 - **Impacto y beneficio:** Prevención de errores de ejecución en producción y tipado compartido con el frontend.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — `functions/tsconfig.json` con `checkJs`: TypeScript verifica estáticamente todo el backend (0 errores, tipos JSDoc en las librerías) y el CI lo exige (`npm run typecheck`). La conversión de sintaxis a archivos `.ts`/ESM queda pendiente: cambia el pipeline de deploy (paso de build) y, con los tipos actuales, aportaría poco sobre esta verificación.
 
 ### 3.02. Modularización de Cloud Functions por dominio de negocio
 - **Diagnóstico actual:** Todas las funciones (auth, moodle, notas, reportes) residen en un solo archivo masivo de más de 500 líneas.

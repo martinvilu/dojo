@@ -22,6 +22,11 @@ async function validAfterSeconds(auth, uid, now) {
     return validAfter;
 }
 
+/**
+ * @param {any} auth
+ * @param {any} token
+ * @param {{ logger?: any, now?: number }} [options]
+ */
 async function assertSessionNotRevoked(auth, token, { logger, now = Date.now() } = {}) {
     if (!token || !token.uid || !token.auth_time) return;
     let validAfter;

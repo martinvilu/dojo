@@ -166,10 +166,10 @@ exports.api = onCall({ secrets, enforceAppCheck }, async (request) => {
 
         logger.info(`[API Call] Acción completada: ${action}`, { uid });
         return result;
-    } catch (e) {
+    } catch (/** @type {any} */ e) {
         const httpsError = toHttpsError(e);
         const log = httpsError.code === 'internal' ? logger.error : logger.warn;
-        log(`[API Error] Error en acción: ${action}`, { uid, code: httpsError.details && httpsError.details.code, error: e.message, stack: e.stack });
+        log(`[API Error] Error en acción: ${action}`, { uid, code: /** @type {any} */ (httpsError.details)?.code, error: e.message, stack: e.stack });
         throw httpsError;
     }
 });

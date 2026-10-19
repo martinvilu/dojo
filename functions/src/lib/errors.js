@@ -73,15 +73,18 @@ function dojoError(code, message, extra) {
 /**
  * Convierte cualquier error lanzado por un handler en un HttpsError con
  * `details.code`. Los errores genéricos se reportan como INTERNAL.
+ * @param {any} e
+ * @returns {HttpsError}
  */
 function toHttpsError(e) {
     if (e instanceof DojoError) {
         return new HttpsError(e.status, e.message, { code: e.code, ...(e.extra || {}) });
     }
     if (e instanceof HttpsError) {
-        if (e.details && e.details.code) return e;
+        const details = /** @type {any} */ (e.details);
+        if (details && details.code) return e;
         const code = DEFAULT_CODE_BY_STATUS[e.code] || 'INTERNAL';
-        return new HttpsError(e.code, e.message, { ...(e.details || {}), code });
+        return new HttpsError(e.code, e.message, { ...(details || {}), code });
     }
     return new HttpsError('internal', (e && e.message) || 'Error interno', { code: 'INTERNAL' });
 }

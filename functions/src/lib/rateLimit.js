@@ -97,6 +97,9 @@ async function consumePersistent(db, key, policy, now) {
 /**
  * Lanza `resource-exhausted` si el usuario superó el límite global o el de
  * la acción. `logger` es opcional (para no acoplar los tests).
+ * @param {string} action
+ * @param {string} uid
+ * @param {{ db?: any, logger?: any, now?: number }} [options]
  */
 async function enforceRateLimit(action, uid, { db, logger, now = Date.now() } = {}) {
     const global = consumeMemory(`global:${uid}`, GLOBAL_POLICY, now);

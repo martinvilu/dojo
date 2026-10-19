@@ -11,7 +11,13 @@
 const ROLES = ['student', 'teacher', 'admin'];
 const RANK = { student: 1, teacher: 2, admin: 3 };
 
-/** @returns {Promise<boolean>} true si el claim cambió. */
+/**
+ * @param {any} auth
+ * @param {string} uid
+ * @param {string} role
+ * @param {{ previousRole?: string }} [options]
+ * @returns {Promise<boolean>} true si el claim cambió.
+ */
 async function syncRoleClaim(auth, uid, role, { previousRole } = {}) {
     if (!ROLES.includes(role)) return false;
     const user = await auth.getUser(uid);

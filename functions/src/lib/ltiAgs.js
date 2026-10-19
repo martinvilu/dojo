@@ -67,6 +67,8 @@ function scoresUrl(lineitem) {
 /**
  * Publica la nota (0..10) de `userId` en `lineitem`. Devuelve el status HTTP.
  * Lanza si falta configuración o la URL no es segura.
+ * @param {{ lineitem: string, userId: string, score: number, comment?: string }} score
+ * @param {{ env?: Record<string, string | undefined>, fetchImpl?: any, now?: number }} [options]
  */
 async function postScore({ lineitem, userId, score, comment }, { env, fetchImpl = fetch, now = Date.now() } = {}) {
     const config = agsConfig(env);

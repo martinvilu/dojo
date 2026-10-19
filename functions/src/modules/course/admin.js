@@ -77,6 +77,7 @@ async function getAdminCourses(payload, context) {
     const coursesSnap = await db.collection('courses').get();
     const courses = [];
     for (let doc of coursesSnap.docs) {
+        /** @type {any} */
         const c = { id: doc.id, ...projectCourse(doc.data()) };
         const raw = doc.data();
         if (raw.deleted_at) {

@@ -537,7 +537,7 @@ async function exportGradesToMoodleWebservice(payload, context) {
         const moodleUserId = rosterSnap.exists ? rosterSnap.data().moodle_user_id : null;
 
         if (moodleUserId) {
-            const params = new URLSearchParams({
+            const params = new URLSearchParams(/** @type {any} */ ({
                 wstoken: moodleToken,
                 wsfunction: 'core_grades_update_grades',
                 moodlewsrestformat: 'json',
@@ -547,7 +547,7 @@ async function exportGradesToMoodleWebservice(payload, context) {
                 itemnum: 0,
                 'grades[0][userid]': moodleUserId,
                 'grades[0][rawgrade]': score * MAX_GRADE
-            });
+            }));
 
             try {
                 await fetch(endpoint, { method: 'POST', body: params });

@@ -26,6 +26,7 @@ function isEncrypted(value) {
     return typeof value === 'string' && value.startsWith(PREFIX);
 }
 
+/** @param {string} plain @param {{ env?: any, logger?: any }} [options] */
 function encryptSecret(plain, { env, logger } = {}) {
     if (typeof plain !== 'string' || plain === '' || isEncrypted(plain)) return plain;
     const key = loadKey(env);
@@ -43,6 +44,7 @@ function encryptSecret(plain, { env, logger } = {}) {
     return PREFIX + [iv, tag, data].map((b) => b.toString('base64url')).join(':');
 }
 
+/** @param {string} value @param {{ env?: any }} [options] */
 function decryptSecret(value, { env } = {}) {
     if (!isEncrypted(value)) return value;
     const key = loadKey(env);
