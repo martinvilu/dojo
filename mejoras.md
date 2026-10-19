@@ -977,7 +977,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `tests/firestore.rules.test.js`
 - **Propuesta técnica:** Crear un contenedor Docker estandarizado para los emuladores de Firebase local.
 - **Impacto y beneficio:** Entorno de pruebas idéntico en las computadoras de todos los colaboradores.
-- **Estado (24/09/2026):** 🟡 Parcial — Suite de reglas con el emulador de Firestore en CI (`npm run test:rules`).
+- **Estado (19/10/2026):** ✅ Implementada — `docker/emulators.Dockerfile` (Node 22, Java 21 y Firebase CLI fijos) y `docker compose up emulators` levantan Auth, Firestore y Functions en el proyecto `demo-ninja-dojo`; verificado con un smoke test de la callable contra los emuladores.
 
 ### 3.29. Desconexión y revocación automática de sesiones ante cambio de contraseña
 - **Diagnóstico actual:** Si un usuario cambia su contraseña, las sesiones abiertas en otros navegadores o dispositivos pueden permanecer activas.
@@ -1607,7 +1607,7 @@ _Automatización de pruebas con Playwright y Jest, telemetría y monitoreo de er
 - **Archivos involucrados:** `docker-compose.yml`
 - **Propuesta técnica:** Diseñar un `docker-compose.yml` que orqueste la app, emuladores y Moodle de prueba con un solo comando `docker compose up`.
 - **Impacto y beneficio:** Onboarding de nuevos programadores en menos de 10 minutos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `docker-compose.yml`: servicio `emulators` (con healthcheck) y `app` (`next dev` conectado a los emuladores) con volúmenes propios de `node_modules`; `docker compose up` deja el entorno completo en http://localhost:3000.
 
 ### 5.17. Simulador de Moodle local para pruebas de desarrollo (LTI Mock Server)
 - **Diagnóstico actual:** Probar la integración con Moodle requiere acceso a servidores reales de la universidad o túneles ngrok.

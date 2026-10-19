@@ -55,3 +55,6 @@ firestore-debug.log
 
 # Jest coverage reports (functions)
 functions/coverage/
+
+# Config de emuladores generada por docker/start-emulators.sh
+firebase.docker.json

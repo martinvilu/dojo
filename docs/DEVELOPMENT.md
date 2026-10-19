@@ -33,7 +33,16 @@ npm run dev:emulators      # terminal 2: la app conectada a los emuladores
 
 > ⚠️ `npm run dev` (sin emuladores) usa el proyecto definido en `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, que por defecto es **producción** (`jutsu-classroom-mrtin`).
 
-### 2.0.1. Entornos
+### 2.0.1. Con Docker
+
+```bash
+docker compose up             # emuladores + app en http://localhost:3000
+docker compose up emulators   # solo emuladores (UI en http://localhost:4000)
+```
+
+`docker/emulators.Dockerfile` fija Node 22, Java 21 y Firebase CLI; no hace falta instalar nada más que Docker. Los `node_modules` del contenedor viven en volúmenes propios para no mezclarse con los del host.
+
+### 2.0.2. Entornos
 
 | Alias (`.firebaserc`) | Proyecto | Uso |
 |---|---|---|

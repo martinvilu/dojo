@@ -1,0 +1,9 @@
+node_modules
+functions/node_modules
+.next
+.git
+coverage
+functions/coverage
+*.log
+.env*
+github-deploy-key.json
