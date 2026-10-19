@@ -100,11 +100,17 @@ Si el docente activó la revisión entre pares en una tarea, en **👥 Revisión
 
 La revisión es anónima: tu compañero ve el promedio por criterio y los comentarios, pero no quién los escribió.
 
-## 5. Avisos
+## 5. Notificaciones
+
+La campana 🔔 junto al título de la barra lateral muestra cuántas notificaciones tenés sin leer: correcciones de tus entregas, mensajes tuyos marcados como solución en el foro, alertas de la cátedra y otros avisos. Abrila para ver la lista; cada notificación con enlace te lleva a la cátedra correspondiente. **Marcar todas como leídas** limpia el contador.
+
+Si en tu perfil elegiste el resumen diario, también las recibís agrupadas por correo a las 20:00.
+
+## 6. Avisos
 
 En **Avisos** ves los comunicados de la cátedra. Presioná **Confirmar Recepción** en cada uno: el docente ve quién lo leyó y cuándo.
 
-## 6. Calendario
+## 7. Calendario
 
 **Calendario Global** reúne clases, exámenes, feriados y fechas de entrega de todas tus materias.
 
@@ -117,7 +123,7 @@ Para llevar el calendario a tu teléfono:
 - **📥 Exportar .ics**: descarga un archivo para importar en Google Calendar, Apple Calendar u Outlook. Es una foto del momento: no se actualiza solo.
 - **📅 Añadir a Google Calendar** o la URL de **📅 Suscribirse a Calendario**: suscripción que se actualiza sola cuando el docente cambia el cronograma.
 
-## 7. Rango Ninja y medallas
+## 8. Rango Ninja y medallas
 
 Al entrar a una cátedra ves tu tarjeta de **Rango Ninja de Cursada**:
 
@@ -139,7 +145,7 @@ Cada 100 XP subís un nivel: **Genin** (niveles 1–2), **Chūnin** (3–4) y **
 
 **📜 Ver bitácora XP ↗** abre el historial en **Mi Perfil**.
 
-## 8. Grupos de estudio
+## 9. Grupos de estudio
 
 En la pestaña **👥 Grupos de Estudio**:
 
@@ -147,7 +153,7 @@ En la pestaña **👥 Grupos de Estudio**:
 - **Unirme al Grupo** / **Abandonar Grupo** en los grupos existentes.
 - **🔍 Emparejamiento Inteligente**: elegí tu **preferencia horaria** y buscá compañeros que estudien en tus mismos horarios.
 
-## 9. Tutorías entre pares
+## 10. Tutorías entre pares
 
 En la pestaña **🎓 Tutorías**:
 

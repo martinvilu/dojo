@@ -200,4 +200,4 @@ Las notas numéricas se envían a Moodle al calificar, si la cátedra tiene Mood
 
 ## 11. Calendario
 
-**Calendario Global** muestra las clases, exámenes, feriados y entregas de todas tus cátedras, con las mismas opciones que ven los estudiantes (ver [Estudiantes §6](estudiantes.md)).
+**Calendario Global** muestra las clases, exámenes, feriados y entregas de todas tus cátedras, con las mismas opciones que ven los estudiantes (ver [Estudiantes §7](estudiantes.md)).

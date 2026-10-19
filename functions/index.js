@@ -1,6 +1,6 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onDocumentDeleted, onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onDocumentDeleted, onDocumentWritten, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -240,5 +240,16 @@ exports.onSubmissionGradeChange = onDocumentWritten('submissions/{submissionId}'
     await handleSubmissionGradeChange(
         { db, serverTimestamp: () => admin.firestore.FieldValue.serverTimestamp(), syncGradeToMoodle },
         event.params.submissionId, before, after
+    );
+});
+
+// Aviso al estudiante cuando su mensaje se marca como solución (mejora 3.25).
+exports.onClassCommentUpdated = onDocumentUpdated('courses/{courseId}/class_comments/{commentId}', async (event) => {
+    const { notifyBestAnswer } = require('./src/modules/notifications/forum');
+    await notifyBestAnswer(
+        { db, serverTimestamp: () => admin.firestore.FieldValue.serverTimestamp() },
+        event.params.courseId,
+        event.data.before.data(),
+        event.data.after.data()
     );
 });

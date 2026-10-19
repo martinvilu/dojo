@@ -178,7 +178,7 @@ async function sendDailySummaries(event) {
             batch.set(summaryRef, {
                 student_id: studentId,
                 message: `Resumen Diario: Tenés ${notifs.length} nuevas actualizaciones (calificaciones, cambios de clase, etc.)`,
-                link: '/estudiante/notificaciones',
+                link: '/dashboard',
                 read: false,
                 created_at: FieldValue.serverTimestamp()
             });

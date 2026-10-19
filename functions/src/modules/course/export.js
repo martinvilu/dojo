@@ -115,7 +115,7 @@ exports.importGrades = async (req, res) => {
                 batch.set(notifRef, {
                     student_id: studentId,
                     message: `Tu entrega ha sido corregida. ${resultado ? 'Nota: ' + resultado : ''}`,
-                    link: '/estudiante/tareas',
+                    link: `/dashboard?courseId=${encodeURIComponent(courseId)}&subTab=assignments`,
                     read: false,
                     is_daily_pending,
                     created_at: FieldValue.serverTimestamp()

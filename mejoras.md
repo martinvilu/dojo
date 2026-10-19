@@ -956,7 +956,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/notifications/forum.js`
 - **Propuesta técnica:** Enviar notificación Web Push o email automático notificando al estudiante que su duda fue resuelta.
 - **Impacto y beneficio:** Disminución de la ansiedad estudiantil y retroalimentación veloz.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Trigger `onClassCommentUpdated` notifica al autor cuando su mensaje se marca como solución (in-app y, con preferencia de resumen, por mail diario). Nueva campana 🔔 en el dashboard: hasta ahora ninguna pantalla mostraba las notificaciones. Web Push queda pendiente (requiere clave VAPID de FCM).
 
 ### 3.26. Gestión de transacciones de Firestore para conteos concurrentes de XP
 - **Diagnóstico actual:** Si un estudiante recibe múltiples puntos concurrentes, escrituras paralelas pueden sobreescribir el XP acumulado.

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { User } from "firebase/auth";
 import type { UserProfile } from "../hooks/useAuthProfile";
+import NotificationBell from "@/components/dashboard/ui/NotificationBell";
 
 interface SidebarProps {
   profile: UserProfile | null;
@@ -41,10 +42,15 @@ export function Sidebar({
         <span aria-hidden="true">{isSidebarCollapsed ? "▶" : "◀"}</span>
       </button>
 
-      <div className="overflow-hidden">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-amber-500 bg-clip-text text-transparent truncate">
-          {isSidebarCollapsed ? "🥷" : "Ninja Dojo"}
-        </h1>
+      <div>
+        <div className={`flex items-center gap-2 ${isSidebarCollapsed ? "md:flex-col" : "justify-between"}`}>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-amber-500 bg-clip-text text-transparent truncate">
+            {isSidebarCollapsed ? "🥷" : "Ninja Dojo"}
+          </h1>
+          {profile?.role === "student" && profile?.account_status === "approved" && (
+            <NotificationBell compact={isSidebarCollapsed} />
+          )}
+        </div>
         {!isSidebarCollapsed && (
           <p className="text-xs text-text-secondary mt-1 uppercase tracking-wider font-semibold truncate animate-fade-in">
             {profile?.role === "admin" ? "Administrador" : profile?.role === "teacher" ? "Profesor" : "Estudiante"}
