@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { fuzzyScore } from "@/lib/fuzzy";
 
 export interface CommandResult {
   key: string;
@@ -21,12 +22,6 @@ interface CommandPaletteProps {
   assignments: any[];
   onNavigate: (result: CommandResult) => void;
 }
-
-const normalize = (s: string) =>
-  (s || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
 
 const TYPE_META: Record<CommandResult["type"], { label: string; icon: string }> = {
   course: { label: "Cátedra", icon: "📚" },
@@ -68,11 +63,13 @@ export default function CommandPalette({ courses, classes, assignments, onNaviga
   const dialogRef = useFocusTrap<HTMLDivElement>(isOpen, { initialFocus: () => inputRef.current });
 
   const results = useMemo<CommandResult[]>(() => {
-    const q = normalize(query.trim());
-    const out: CommandResult[] = [];
-
-    const push = (r: CommandResult) => {
-      if (out.length < 12 && !out.some((x) => x.key === r.key)) out.push(r);
+    const q = query.trim();
+    const scored: { score: number; result: CommandResult }[] = [];
+    const seen = new Set<string>();
+    const add = (score: number | null, result: CommandResult) => {
+      if (score === null || seen.has(result.key)) return;
+      seen.add(result.key);
+      scored.push({ score, result });
     };
 
     // Precompute a map for O(1) lookups instead of O(N) array search on each iteration
@@ -81,49 +78,55 @@ export default function CommandPalette({ courses, classes, assignments, onNaviga
       const id = c.id || c.course?.id;
       if (id) courseMap.set(id, c);
     });
-
-    const courseRefOf = (cid?: string) =>
-      cid ? courseMap.get(cid) || null : null;
+    const courseRefOf = (cid?: string) => (cid ? courseMap.get(cid) || null : null);
 
     // Courses always listed when they match or when nothing was typed
     courses.forEach((c: any) => {
       const id = c.id || c.course?.id;
       if (!id) return;
-      if (!q || normalize(c.name).includes(q)) {
-        push({ key: `course-${id}`, type: "course", title: c.name || "Cátedra", subtitle: "Cátedra", courseRef: c });
-      }
+      add(q ? fuzzyScore(q, c.name) : 0, { key: `course-${id}`, type: "course", title: c.name || "Cátedra", subtitle: "Cátedra", courseRef: c });
     });
 
     if (q) {
+      // Búsqueda difusa (mejora 3.40): sin acentos, palabras en cualquier
+      // orden y tolerante a errores de tipeo; el nombre de la cátedra suma
+      // como contexto con menos peso que el título.
+      const withContext = (title: string, context?: string) => {
+        const main = fuzzyScore(q, title);
+        if (main !== null) return main;
+        const ctx = context ? fuzzyScore(q, `${title} ${context}`) : null;
+        return ctx === null ? null : ctx / 2;
+      };
+
       classes.forEach((cl: any) => {
-        const topic = normalize(cl.topic);
-        if (topic && topic.includes(q)) {
-          push({
-            key: `class-${cl.course_id}-${cl.classNumber ?? cl.date}`,
-            type: "class",
-            title: cl.topic,
-            subtitle: `${cl.course_name || "Cátedra"}${cl.date ? ` · ${String(cl.date).slice(0, 10)}` : ""}`,
-            courseRef: courseRefOf(cl.course_id),
-            subTab: "schedules",
-          });
-        }
+        if (!cl.topic) return;
+        add(withContext(cl.topic, cl.course_name), {
+          key: `class-${cl.course_id}-${cl.classNumber ?? cl.date}`,
+          type: "class",
+          title: cl.topic,
+          subtitle: `${cl.course_name || "Cátedra"}${cl.date ? ` · ${String(cl.date).slice(0, 10)}` : ""}`,
+          courseRef: courseRefOf(cl.course_id),
+          subTab: "schedules",
+        });
       });
 
       assignments.forEach((a: any) => {
-        if (normalize(a.title).includes(q)) {
-          push({
-            key: `assign-${a.id}`,
-            type: "assignment",
-            title: a.title,
-            subtitle: a.course_name || a.course_id ? `${a.course_name || ""}${a.due_date ? ` · ${String(a.due_date).slice(0, 10)}` : ""}` : undefined,
-            courseRef: courseRefOf(a.course_id),
-            subTab: "assignments",
-          });
-        }
+        if (!a.title) return;
+        add(withContext(a.title, a.course_name), {
+          key: `assign-${a.id}`,
+          type: "assignment",
+          title: a.title,
+          subtitle: a.course_name || a.course_id ? `${a.course_name || ""}${a.due_date ? ` · ${String(a.due_date).slice(0, 10)}` : ""}` : undefined,
+          courseRef: courseRefOf(a.course_id),
+          subTab: "assignments",
+        });
       });
     }
 
-    return out;
+    return scored
+      .sort((x, y) => y.score - x.score)
+      .slice(0, 12)
+      .map((x) => x.result);
   }, [query, courses, classes, assignments]);
 
   const pick = useCallback(

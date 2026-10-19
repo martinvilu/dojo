@@ -1061,7 +1061,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/search/index.js`
 - **Propuesta técnica:** Sincronizar documentos de tareas y alumnos con un motor de búsqueda indexado mediante triggers.
 - **Impacto y beneficio:** Búsqueda instantánea de alumnos por coincidencia fonética o errores ortográficos comunes.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — Sin servicio externo: `src/lib/fuzzy.ts` da a la paleta ⌘K búsqueda sin acentos, con palabras en cualquier orden, tolerancia a errores de tipeo (Damerau-Levenshtein) y ranking por relevancia. Un índice de texto completo del lado del servidor (Algolia/Typesense) requiere contratar el servicio y sincronizarlo con triggers.
 
 ### 3.41. Validación de integridad de calificaciones numéricas en el servidor
 - **Diagnóstico actual:** Un cliente alterado podría enviar calificaciones con valores ilógicos como `15` o números negativos.
