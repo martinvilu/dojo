@@ -145,6 +145,7 @@ const ACTION_MODULES = {
     getTeacherAssignments: './modules/github/assignments',
     createAssignment: './modules/github/assignments',
     getAssignmentSubmissions: './modules/github/assignments',
+    getCourseSubmissions: './modules/github/courseSubmissions',
     toggleAccess: './modules/github/assignments',
     massToggleAccess: './modules/github/assignments',
     gradeSubmission: './modules/github/assignments',

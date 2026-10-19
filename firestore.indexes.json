@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "submissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "assignment_id", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "webhook_dead_letters",
       "queryScope": "COLLECTION",
       "fields": [

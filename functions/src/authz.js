@@ -170,6 +170,7 @@ const ACTION_POLICIES = {
     getTeacherAssignments: withScopedCourseIds(STAFF, 'staff'),
     createAssignment: titularOf('course'),
     getAssignmentSubmissions: staffOf('assignment'),
+    getCourseSubmissions: staffOf('course'),
     toggleAccess: staffOf('submission'),
     massToggleAccess: titularOf('assignment'),
     gradeSubmission: staffOf('submission'),

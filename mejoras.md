@@ -942,7 +942,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/modules/course/components/CourseOverviewPanel.tsx`
 - **Propuesta técnica:** Diseñar índices compuestos en Firestore para consultar directamente `where('status', '==', 'submitted').where('grade', '==', null)`.
 - **Impacto y beneficio:** Ahorro de miles de lecturas de Firestore por sesión y carga instantánea.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Nueva acción `getCourseSubmissions`: una llamada por curso con consultas `in` por lotes de 30 tareas, perfiles en un único `getAll` y filtro de pendientes en el servidor (índice compuesto `assignment_id + status`). Reemplaza en el dashboard las N llamadas a `getAssignmentSubmissions` (cada una con N lecturas de perfiles).
 
 ### 3.24. Validación estricta de estructura en creación de tareas docentes
 - **Diagnóstico actual:** Un docente podría crear accidentalmente tareas con fechas de entrega anteriores a la fecha de inicio.

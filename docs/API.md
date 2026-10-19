@@ -140,6 +140,7 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `archiveAssignment` | titularOf(assignment) | Pasa la tarea a solo lectura |
 | `getTeacherAssignments` | STAFF + courseIds de staff | |
 | `getAssignmentSubmissions` | staffOf(assignment) | |
+| `getCourseSubmissions` | staffOf(course) | Todas las entregas del curso en una llamada (consultas `in` por lotes, perfiles con `getAll`), con `assignmentId` y `assignmentTitle`. `pendingOnly: true` devuelve solo las entregadas sin nota (índice `assignment_id + status`) |
 | `gradeSubmission` | staffOf(submission) | Nota 0–10 (coma o punto decimal) o conceptual de letras (`Aprobado`); feedback ≤ 5000 caracteres; queda en historial inmutable |
 | `toggleAccess` / `massToggleAccess` | staffOf(submission) / titularOf(assignment) | Marca una entrega (o todas las de la tarea) como bloqueada (`is_locked`) |
 | `syncGradesFromSpreadsheet` | staffOf(assignment) | Importa notas desde la URL de una planilla de Google Sheets |
