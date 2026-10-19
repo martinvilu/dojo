@@ -61,6 +61,8 @@ El sistema implementa un modelo de Control de Acceso Basado en Roles (RBAC) con 
 
 ### Autenticación de las rutas App Router (`src/app/api/`):
 
+Los parámetros y respuestas de cada ruta, y el catálogo completo de acciones de la callable con su política, están en [API.md](API.md).
+
 Cada ruta usa exactamente un esquema, centralizado en `src/app/api/middleware/api.ts`:
 
 | Esquema | Helper | Rutas | Consumidor |
@@ -69,6 +71,7 @@ Cada ruta usa exactamente un esquema, centralizado en `src/app/api/middleware/ap
 | Token de calendario por curso (`calendar_secret`, de solo lectura) | `requireCourseSubscriptionToken(..., { allowCalendarToken: true })` | `/api/calendar` | Clientes iCal de estudiantes |
 | Bearer JWT de Firebase Auth | `requireBearerUser` / `requireBearerProfile` | `/api/me`, `/api/cli/*` | Dojo CLI (modo cloud) y futuras rutas con identidad de usuario |
 | `id_token` de la plataforma LTI (decodificado, **sin verificación de firma** todavía) | lectura de claims | `/api/lti/*` | Moodle 4.2+ |
+| Ninguna (respuesta sin datos sensibles) | — | `/api/health` | Monitores de disponibilidad |
 
 Convención: toda nueva ruta que actúe en nombre de un usuario debe usar `requireBearerProfile` (identidad + perfil para decisiones por rol) y jamás exponer `sync_secret`, códigos de invitación ni datos de terceros. Los tokens se comparan en tiempo constante.
 
