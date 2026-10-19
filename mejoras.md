@@ -816,7 +816,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/middleware/rateLimit.js`
 - **Propuesta técnica:** Integrar un middleware con Redis o Firestore / Token Bucket que limite a un máximo de N peticiones por minuto por IP/UID.
 - **Impacto y beneficio:** Protección contra abusos y control estricto de costos en la facturación de Firebase.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/rateLimit.js`: límite global de 120 llamadas/min por usuario (memoria) y ventanas persistidas en `rate_limits` (TTL) para 16 acciones sensibles; responde `resource-exhausted` con `RATE_LIMITED`.
 
 ### 3.06. Rotación y protección segura de secretos con Google Secret Manager
 - **Diagnóstico actual:** Secretos como el token de bot de GitHub y tokens de Moodle se cargan desde variables de entorno planas en Functions.

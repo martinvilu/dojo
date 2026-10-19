@@ -24,9 +24,10 @@ await api("gradeSubmission", { submissionId, grade: "8,5", feedback: "Bien" });
 `api(action, payload)` llama a `httpsCallable(functions, "api")` con `{ action, payload }`. El dispatcher (`functions/index.js`):
 
 1. Rechaza llamadas sin sesión (`unauthenticated`).
-2. Busca la acción en `functions/src/actions.js`. Si no existe, responde `invalid-argument: Acción desconocida`.
-3. Carga el perfil del llamador y aplica la **política de acceso** declarada en `functions/src/authz.js`. Una acción sin política se rechaza (`permission-denied`, fail closed).
-4. Ejecuta el handler con el SDK admin y registra la llamada en la bitácora, redactando las claves que parecen secretos (`token`, `secret`, `password`, `api_key`, `sourcedid`).
+2. Aplica el **rate limit** (`functions/src/lib/rateLimit.js`): 120 llamadas por minuto por usuario y límites propios para acciones sensibles (matrícula, códigos de invitación, QR, correos, respaldos, plagio). Al superarlo responde `resource-exhausted` con `details.code = "RATE_LIMITED"` y `retryAfterSeconds`.
+3. Busca la acción en `functions/src/actions.js`. Si no existe, responde `invalid-argument: Acción desconocida`.
+4. Carga el perfil del llamador y aplica la **política de acceso** declarada en `functions/src/authz.js`. Una acción sin política se rechaza (`permission-denied`, fail closed).
+5. Ejecuta el handler con el SDK admin y registra la llamada en la bitácora, redactando las claves que parecen secretos (`token`, `secret`, `password`, `api_key`, `sourcedid`).
 
 Los errores no controlados de un handler llegan al cliente como `internal` con el mensaje original.
 

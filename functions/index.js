@@ -11,6 +11,7 @@ const { ACTION_MODULES, loadActionHandler } = require('./src/actions');
 const { authorizeAction } = require('./src/authz');
 const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 const { gradeToOutcomeScore } = require('./src/lib/grades');
+const { enforceRateLimit } = require('./src/lib/rateLimit');
 
 const SECRET_KEY_PATTERN = /token|secret|password|api_?key|sourcedid/i;
 
@@ -142,6 +143,8 @@ exports.api = onCall(async (request) => {
     };
     
     try {
+        await enforceRateLimit(action, uid, { db, logger });
+
         const handler = loadActionHandler(action);
         if (handler === null) throw new HttpsError('invalid-argument', `Acción desconocida: ${action}`);
         if (!handler) {
