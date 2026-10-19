@@ -1,5 +1,6 @@
 const admin = require("firebase-admin");
 const { dojoError } = require('../../lib/errors');
+const { normalizeEmail } = require('../../lib/validate');
 
 async function getProfile(payload, context) {
     const { uid, db, authUser } = context;
@@ -57,8 +58,8 @@ async function updateProfile(payload, context) {
 
 async function addSecondaryEmail(payload, context) {
     const { uid, db } = context;
-    const email = (payload.email || '').trim().toLowerCase();
-    if (!email || !email.includes('@')) throw dojoError('INVALID_ARGUMENT', "Email secundario inválido");
+    const email = normalizeEmail(payload.email);
+    if (!email) throw dojoError('INVALID_ARGUMENT', "Email secundario inválido");
 
     const pRef = db.collection('profiles').doc(uid);
     const pSnap = await pRef.get();

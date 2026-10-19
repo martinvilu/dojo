@@ -14,6 +14,7 @@ const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 const { gradeToOutcomeScore } = require('./src/lib/grades');
 const { enforceRateLimit } = require('./src/lib/rateLimit');
 const { dojoError, toHttpsError } = require('./src/lib/errors');
+const { validatePayload } = require('./src/lib/validate');
 
 const SECRET_KEY_PATTERN = /token|secret|password|api_?key|sourcedid/i;
 
@@ -154,7 +155,7 @@ exports.api = onCall(async (request) => {
         }
 
         const callerProfile = await getMyProfile();
-        const authorizedPayload = await authorizeAction(action, payload || {}, { uid, db, profile: callerProfile });
+        const authorizedPayload = await authorizeAction(action, validatePayload(payload), { uid, db, profile: callerProfile });
 
         logger.info(`[API Call] Iniciando acción: ${action}`, { uid, payload_keys: Object.keys(payload || {}) });
 

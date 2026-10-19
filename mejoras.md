@@ -844,7 +844,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/moodle/sync.js`
 - **Propuesta técnica:** Validar y limpiar strings antes de armar queries compuestas.
 - **Impacto y beneficio:** Seguridad defensiva profunda contra inyecciones NoSQL.
-- **Estado (24/09/2026):** 🟡 Parcial — La capa `authz` valida identificadores y membresía antes de cada handler.
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/validate.js`: el dispatcher valida tamaño (512 KB) y profundidad del payload, y que todo campo de ID y `courseIds` sea un ID de documento seguro (sin `/` ni `__…__`); emails normalizados antes de consultar y código de invitación tipado.
 
 ### 3.10. Implementación de auditoría inmutable (Audit Log) de cambios de calificaciones
 - **Diagnóstico actual:** Cuando un docente modifica una nota, solo se sobreescribe el documento sin dejar historial inmutable.

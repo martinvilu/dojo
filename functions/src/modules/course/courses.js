@@ -39,7 +39,10 @@ async function getCourseDetails(payload, context) {
 
 async function enrollCourse(payload, context) {
     const { uid, db, admin } = context;
-    const code = payload.code.trim();
+    if (typeof payload.code !== 'string' || !/^[A-Za-z0-9-]{4,20}$/.test(payload.code.trim())) {
+        throw dojoError('INVALID_ARGUMENT', "Código de invitación inválido");
+    }
+    const code = payload.code.trim().toUpperCase();
     const isActive = (s) => !s.empty && !isDeleted(s.docs[0].data());
     const snap = await db.collection('courses').where('invite_code', '==', code).get();
     if (isActive(snap)) {

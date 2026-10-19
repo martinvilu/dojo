@@ -25,9 +25,10 @@ await api("gradeSubmission", { submissionId, grade: "8,5", feedback: "Bien" });
 
 1. Rechaza llamadas sin sesión (`unauthenticated`).
 2. Aplica el **rate limit** (`functions/src/lib/rateLimit.js`): 120 llamadas por minuto por usuario y límites propios para acciones sensibles (matrícula, códigos de invitación, QR, correos, respaldos, plagio). Al superarlo responde `resource-exhausted` con `details.code = "RATE_LIMITED"` y `retryAfterSeconds`.
-3. Busca la acción en `functions/src/actions.js`. Si no existe, responde `invalid-argument: Acción desconocida`.
-4. Carga el perfil del llamador y aplica la **política de acceso** declarada en `functions/src/authz.js`. Una acción sin política se rechaza (`permission-denied`, fail closed).
-5. Ejecuta el handler con el SDK admin y registra la llamada en la bitácora, redactando las claves que parecen secretos (`token`, `secret`, `password`, `api_key`, `sourcedid`).
+3. Valida el payload (`functions/src/lib/validate.js`): objeto de hasta 512 KB y 20 niveles; todo campo de primer nivel con forma de ID (`id`, `*Id`, `*_id`, `*Uid`) y `courseIds` deben ser IDs de documento seguros (sin `/`, sin `__…__`, ≤ 256 caracteres). Si no, `INVALID_ARGUMENT`.
+4. Busca la acción en `functions/src/actions.js`. Si no existe, responde `invalid-argument: Acción desconocida`.
+5. Carga el perfil del llamador y aplica la **política de acceso** declarada en `functions/src/authz.js`. Una acción sin política se rechaza (`permission-denied`, fail closed).
+6. Ejecuta el handler con el SDK admin y registra la llamada en la bitácora, redactando las claves que parecen secretos (`token`, `secret`, `password`, `api_key`, `sourcedid`).
 
 Todo error llega al cliente como `HttpsError` con un **código semántico** en `details.code` (`functions/src/lib/errors.js`) y el mensaje en español para mostrar al usuario:
 

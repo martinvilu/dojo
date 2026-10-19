@@ -8,6 +8,7 @@ const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { dojoError } = require('../../lib/errors');
 const { staffStudentProfile } = require('../../lib/projections');
 const { gradeAttribution } = require('../../lib/gradeAudit');
+const { normalizeEmail } = require('../../lib/validate');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -654,7 +655,9 @@ async function addGroupCollaborator(payload, context) {
         throw dojoError('FORBIDDEN', "Solo el autor de la entrega o un docente del curso pueden sumar integrantes");
     }
     
-    const pSnap = await db.collection('profiles').where('email', '==', payload.email).get();
+    const email = normalizeEmail(payload.email);
+    if (!email) throw dojoError('INVALID_ARGUMENT', "Email inválido");
+    const pSnap = await db.collection('profiles').where('email', '==', email).get();
     if (pSnap.empty) throw dojoError('NOT_FOUND', "No se encontró ningún estudiante registrado con ese correo");
     const newStudent = pSnap.docs[0].data();
     const newStudentId = pSnap.docs[0].id;
