@@ -2,6 +2,7 @@
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
 import React, { useState } from "react";
+import SecurityLogSection from "./SecurityLogSection";
 
 interface UserProfile {
   id: string;
@@ -346,6 +347,11 @@ export default function ProfilePanel({
           </a>
         </div>
       )}
+
+      {/* ACTIVIDAD DE INICIO DE SESIÓN (mejora 3.44) */}
+      <div className="bg-bg-secondary p-6 rounded-2xl border border-border-custom shadow-sm">
+        <SecurityLogSection />
+      </div>
 
       {/* LOG DE PUNTOS DE EXPERIENCIA (XP) */}
       <div className="bg-bg-secondary p-6 rounded-2xl border border-border-custom space-y-4 shadow-sm">

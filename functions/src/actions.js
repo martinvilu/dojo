@@ -8,6 +8,7 @@
 const ACTION_MODULES = {
     // profile
     getProfile: './modules/auth/profile',
+    getSecurityLog: './modules/auth/profile',
     updateProfile: './modules/auth/profile',
     submitMatricula: './modules/auth/profile',
     

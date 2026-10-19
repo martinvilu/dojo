@@ -1089,7 +1089,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/auth/auditLogin.js`
 - **Propuesta técnica:** Guardar metadata básica de inicio de sesión en un historial de seguridad accesible por el alumno en 'Mi Perfil'.
 - **Impacto y beneficio:** Detección inmediata de cuentas compartidas o comprometidas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `getProfile` registra cada inicio de sesión nuevo (`auth_time`) con IP, user agent y proveedor en `profiles/{uid}/security_log` (últimos 20); **Mi Perfil** muestra la actividad con IP enmascarada.
 
 ### 3.45. Protección de endpoints contra ataques DDoS mediante Cloudflare o Firebase App Check
 - **Diagnóstico actual:** Cualquier script externo puede consumir endpoints de Next.js sin verificar si el cliente es la app oficial.

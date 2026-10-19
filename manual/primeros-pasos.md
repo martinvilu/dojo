@@ -41,6 +41,7 @@ En el mismo panel también podés:
 - **Vincular correos secundarios** (por ejemplo, el institucional o el de SIU Guaraní) para unificar tu historial.
 - Ver el enlace a tu **Portafolio Público** y la **bitácora de XP** (estudiantes).
 - **Autorizar tu casilla de Gmail** para enviar correos desde la plataforma (docentes; ver [Docentes → Correos](docentes.md)).
+- Revisar la **🔐 Actividad de inicio de sesión**: tus últimos 20 ingresos con dispositivo, método y una IP parcial. Si ves uno que no reconocés, cambiá tu contraseña y avisá a la coordinación.
 
 ## 4. Moverse por la plataforma
 

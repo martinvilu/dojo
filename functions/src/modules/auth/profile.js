@@ -1,46 +1,121 @@
 const admin = require("firebase-admin");
+const logger = require("firebase-functions/logger");
 const { dojoError } = require('../../lib/errors');
 const { normalizeEmail } = require('../../lib/validate');
 
+const SECURITY_LOG_LIMIT = 20;
+
+function clientIp(request) {
+    const raw = request && request.rawRequest;
+    if (!raw) return null;
+    const forwarded = raw.headers && raw.headers['x-forwarded-for'];
+    const ip = (typeof forwarded === 'string' && forwarded.split(',')[0].trim()) || raw.ip || null;
+    return ip ? String(ip).slice(0, 64) : null;
+}
+
+/** IPv4 sin el último octeto / IPv6 sin los últimos grupos, para mostrar. */
+function maskIp(ip) {
+    if (!ip) return null;
+    if (ip.includes('.')) return ip.split('.').slice(0, 3).join('.') + '.x';
+    return ip.split(':').slice(0, 3).join(':') + ':…';
+}
+
+/**
+ * Registra cada inicio de sesión nuevo (un auth_time distinto al último
+ * visto) en profiles/{uid}/security_log, conservando los últimos 20
+ * (mejora 3.44). Nunca hace fallar el login.
+ */
+async function recordLogin(db, ref, profile, authUser, request) {
+    const authTime = Number(authUser.auth_time) || null;
+    if (!authTime || profile.last_auth_time === authTime) return;
+    const headers = (request && request.rawRequest && request.rawRequest.headers) || {};
+    const entry = {
+        auth_time: new Date(authTime * 1000),
+        provider: (authUser.firebase && authUser.firebase.sign_in_provider) || null,
+        ip: clientIp(request),
+        user_agent: typeof headers['user-agent'] === 'string' ? headers['user-agent'].slice(0, 300) : null,
+        recorded_at: new Date()
+    };
+    const log = ref.collection('security_log');
+    await log.doc(String(authTime)).set(entry);
+    await ref.update({ last_auth_time: authTime });
+    const old = await log.orderBy('auth_time', 'desc').offset(SECURITY_LOG_LIMIT).get();
+    if (!old.empty) {
+        const batch = db.batch();
+        old.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+    }
+}
+
 async function getProfile(payload, context) {
-    const { uid, db, authUser } = context;
+    const { uid, db, request } = context;
+    const authUser = context.authUser || {};
     const ref = db.collection('profiles').doc(uid);
     let pSnap = await ref.get();
-    
+    // La identidad sale solo del ID token verificado: el payload lo controla
+    // el cliente y no puede elegir su email (ni, por ende, auto-promoverse
+    // con SEED_ADMIN_EMAILS).
+    const email = normalizeEmail(authUser.email) || '';
+
     if (!pSnap.exists) {
         let role = 'student';
         // Auto-promoción SOLO para seeds locales: configurá SEED_ADMIN_EMAILS
         // en .env del emulador. Nunca activo en producción por defecto.
         const seedEmails = String(process.env.SEED_ADMIN_EMAILS || '')
             .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-        const email = (authUser?.email || payload?.email || '').toLowerCase();
-        if (seedEmails.includes(email)) {
+        if (email && seedEmails.includes(email)) {
             role = process.env.SEED_TEACHER_EMAILS && String(process.env.SEED_TEACHER_EMAILS)
                 .split(',').map(e => e.trim().toLowerCase()).includes(email) ? 'teacher' : 'admin';
         }
 
+        const name = typeof authUser.name === 'string' && authUser.name.trim() ? authUser.name.trim().slice(0, 120) : (email ? email.split('@')[0] : 'Usuario');
         const profileData = {
             id: uid,
-            full_name: authUser?.name || (email ? email.split('@')[0] : 'User'),
+            full_name: name,
             email: email,
             role: role,
-            avatar_url: authUser?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser?.name || 'User')}`,
+            avatar_url: typeof authUser.picture === 'string' && authUser.picture.startsWith('https://') ? authUser.picture : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
             account_status: role === 'student' ? 'pending' : 'approved',
             created_at: admin.firestore.FieldValue.serverTimestamp(),
             last_login: admin.firestore.FieldValue.serverTimestamp()
         };
         await ref.set(profileData, { merge: true });
         pSnap = await ref.get();
-      if (!pSnap.exists) return profileData;
+        if (!pSnap.exists) return profileData;
     } else {
-        await ref.update({
-            last_login: admin.firestore.FieldValue.serverTimestamp()
-        });
+        const update = { last_login: admin.firestore.FieldValue.serverTimestamp() };
+        // Perfiles creados sin email (el backend no recibía el token): se
+        // completan con el email verificado del proveedor.
+        if (!pSnap.data().email && email) update.email = email;
+        await ref.update(update);
     }
-    
+
     const data = pSnap.data();
+    if (!data.email && email) data.email = email;
+    try {
+        await recordLogin(db, ref, data, authUser, request);
+    } catch (e) {
+        logger.warn('[getProfile] No se pudo registrar el inicio de sesión:', e.message);
+    }
     data.last_login = admin.firestore.Timestamp.now();
     return data;
+}
+
+async function getSecurityLog(payload, context) {
+    const { uid, db } = context;
+    const snap = await db.collection('profiles').doc(uid).collection('security_log')
+        .orderBy('auth_time', 'desc').limit(SECURITY_LOG_LIMIT).get();
+    const toIso = (v) => (v && typeof v.toDate === 'function' ? v.toDate() : new Date(v)).toISOString();
+    return snap.docs.map((d) => {
+        const e = d.data();
+        return {
+            id: d.id,
+            auth_time: e.auth_time ? toIso(e.auth_time) : null,
+            provider: e.provider || null,
+            ip: maskIp(e.ip),
+            user_agent: e.user_agent || null
+        };
+    });
 }
 
 async function updateProfile(payload, context) {
@@ -153,6 +228,8 @@ async function getXpLogs(payload, context) {
 
 module.exports = {
     getProfile,
+    getSecurityLog,
+    maskIp,
     updateProfile,
     addSecondaryEmail,
     mergeProfiles,

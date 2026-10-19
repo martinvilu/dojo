@@ -38,6 +38,7 @@ const withScopedCourseIds = (policy, scope) => ({ ...policy, scopeCourseIds: sco
 const ACTION_POLICIES = {
     // perfil propio
     getProfile: AUTHENTICATED,
+    getSecurityLog: AUTHENTICATED,
     updateProfile: AUTHENTICATED,
     submitMatricula: AUTHENTICATED,
     addSecondaryEmail: AUTHENTICATED,

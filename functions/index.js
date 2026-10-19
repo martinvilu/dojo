@@ -161,6 +161,9 @@ exports.api = onCall(async (request) => {
 
         const context = {
             uid,
+            // Claims del ID token ya verificado por onCall: única fuente de
+            // identidad (email, nombre, foto, proveedor, auth_time).
+            authUser: request.auth.token || {},
             request,
             db,
             admin,

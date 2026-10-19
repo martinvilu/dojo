@@ -78,7 +78,8 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 
 | Acción | Política | Descripción |
 |---|---|---|
-| `getProfile` | AUTHENTICATED | Devuelve el perfil y lo crea en el primer login (rol `student`, estado `pending`, salvo los emails de `SEED_ADMIN_EMAILS` / `SEED_TEACHER_EMAILS`) |
+| `getProfile` | AUTHENTICATED | Devuelve el perfil y lo crea en el primer login con el email, nombre y foto del **ID token verificado** (rol `student`, estado `pending`, salvo los emails de `SEED_ADMIN_EMAILS` / `SEED_TEACHER_EMAILS`). Registra cada inicio de sesión nuevo en `profiles/{uid}/security_log` |
+| `getSecurityLog` | AUTHENTICATED | Últimos 20 inicios de sesión propios: fecha, proveedor, user agent e IP enmascarada |
 | `updateProfile` | AUTHENTICATED | Nombre, usuario de GitHub, matrícula y cohorte propios |
 | `submitMatricula` | AUTHENTICATED | Valida `UNRN-` + ≥5 dígitos y aprueba la cuenta |
 | `addSecondaryEmail` | AUTHENTICATED | Vincula un correo adicional |
