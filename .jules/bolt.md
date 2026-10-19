@@ -30,3 +30,6 @@
 ## 2023-10-27 - O(N*M) Array Scans in Render Loops
 **Learning:** Found an $O(N \times M)$ anti-pattern in `src/app/dashboard/hooks/useTabDataLoader.ts` where `Array.prototype.find()` was being used inside a `.map()` block across hundreds of courses and assignments. Multiple iterations compounded to cause significant overhead.
 **Action:** Replace nested `find()` calls inside `map` operations by pre-computing a single $O(N)$ `Map` of the target data structure (like `courseNameMap = new Map()`) before the loop, and use $O(1)$ `.get()` lookups inside the loop.
+## 2023-10-28 - O(N) Array filtering during Kanban render
+**Learning:** Found multiple instances where arrays of React components were rendered using `.map().filter()` iteratively over four kanban columns inside `CourseSchedulesPanel.tsx`, calculating the same `O(N)` loop on every re-render. Similarly, `CourseStudentsPanel.tsx` recalculated its filtered roster inline inside the render `{roster.filter().map()}`.
+**Action:** When working on Kanban-style UI or filtered lists, use `useMemo` to pre-compute and categorize items into O(1) properties (e.g. `kanbanColumns.teoricas`) to eliminate redundant mapping during the component render cycle.
