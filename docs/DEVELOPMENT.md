@@ -62,7 +62,9 @@ docker compose up emulators   # solo emuladores (UI en http://localhost:4000)
 | `NEXT_PUBLIC_APP_URL` | App Hosting | URL pública; se usa para armar enlaces LTI y de suscripción |
 | `GITHUB_WEBHOOK_SECRET` | App Hosting | Validado por `src/lib/env.ts` |
 | `TYPESAFE_API_KEY` | `.env.local` | Cliente de TypeSafe/Jev (ver `status.md`) |
-| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET` | Functions | OAuth de Gmail para el envío de correos (sin ellas se usan valores *mock*) |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET` | Functions (Secret Manager) | OAuth de Gmail para el envío de correos (sin ellas se usan valores *mock*) |
+| `TOKEN_ENCRYPTION_KEY` | Functions (Secret Manager) | Clave AES-256 (32 bytes en base64) para cifrar los tokens de GitHub |
+| `DOJO_SECRETS_FROM_SECRET_MANAGER` | `functions/.env.<proyecto>` | `true` hace que las funciones lean los tres secretos anteriores de Secret Manager (ver [OPERACION §6.1](OPERACION.md)) |
 | `SEED_ADMIN_EMAILS` | Functions (solo emulador) | Emails que se crean como `admin` en el primer login |
 | `SEED_TEACHER_EMAILS` | Functions (solo emulador) | Subconjunto de `SEED_ADMIN_EMAILS` que se crea como `teacher` |
 

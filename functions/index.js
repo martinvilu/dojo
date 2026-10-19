@@ -1,6 +1,17 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onDocumentDeleted, onDocumentWritten, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { defineSecret } = require("firebase-functions/params");
+
+// Secretos desde Google Secret Manager (mejora 3.06). Se activa con
+// DOJO_SECRETS_FROM_SECRET_MANAGER=true en functions/.env.<proyecto> una vez
+// creados con scripts/setup-secrets.sh: declarar un secreto inexistente hace
+// fallar el deploy. Firebase los inyecta en process.env, así que el código
+// que los lee no cambia. Sin el flag se usan variables de entorno comunes.
+const SECRET_NAMES = ['TOKEN_ENCRYPTION_KEY', 'GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET'];
+const secrets = process.env.DOJO_SECRETS_FROM_SECRET_MANAGER === 'true'
+    ? SECRET_NAMES.map((name) => defineSecret(name))
+    : [];
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { FieldValue, Timestamp } = require("firebase-admin/firestore");
@@ -141,7 +152,7 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
 }
 
 
-exports.api = onCall(async (request) => {
+exports.api = onCall({ secrets }, async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in.');
     const uid = request.auth.uid;
     const { action, payload } = request.data;
@@ -226,7 +237,7 @@ exports.importGrades = onRequest(async (req, res) => {
     return handler(req, res);
 });
 
-exports.sendDailySummaries = onSchedule({ schedule: 'every day 20:00', timeZone: 'America/Argentina/Buenos_Aires' }, async (event) => {
+exports.sendDailySummaries = onSchedule({ schedule: 'every day 20:00', timeZone: 'America/Argentina/Buenos_Aires', secrets }, async (event) => {
     const handler = require('./src/modules/notifications/notifications').sendDailySummaries;
     return handler(event);
 });

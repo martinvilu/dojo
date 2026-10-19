@@ -823,7 +823,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/index.js, .env`
 - **Propuesta técnica:** Utilizar `defineSecret` de Firebase Functions v2 y Google Cloud Secret Manager.
 - **Impacto y beneficio:** Almacenamiento seguro, encriptado y con auditoría de acceso de claves maestras.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — Código listo: con `DOJO_SECRETS_FROM_SECRET_MANAGER=true` las funciones declaran `TOKEN_ENCRYPTION_KEY`, `GMAIL_CLIENT_ID` y `GMAIL_CLIENT_SECRET` con `defineSecret` y `scripts/setup-secrets.sh` los crea. **Acción externa pendiente**: correr el script contra el proyecto (requiere permisos de Secret Manager) y commitear el flag; sin los secretos creados el deploy fallaría, por eso viene apagado.
 
 ### 3.07. Migración de Cloud Functions v1 a Firebase Functions v2
 - **Diagnóstico actual:** El proyecto utiliza `firebase-functions` con APIs de primera generación (Gen 1).

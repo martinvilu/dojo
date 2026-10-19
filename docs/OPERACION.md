@@ -100,7 +100,19 @@ gcloud firestore export gs://<bucket>/backups/$(date +%F) --project jutsu-classr
 | Token de Moodle (`wstoken`) | Curso | Solo backend | Rotarlo en Moodle y actualizarlo en la integración Moodle |
 | OAuth de Gmail | Functions (`GMAIL_CLIENT_ID/SECRET`) + tokens por docente | Backend | Reautorizar desde **Mi Perfil → Autorización de Gmail** |
 
-La UI no tiene un botón de rotación (ver [ROADMAP H8](ROADMAP.md)). Los secretos viejos de 8 caracteres siguen siendo válidos hasta que se regeneren. El detalle de esa migración está en el [Runbook CSV](RUNBOOK_DESPLIEGUE_CSV.md).
+La UI no tiene un botón de rotación (ver [ROADMAP H8](ROADMAP.md)). ### 6.1. Secret Manager
+
+Los secretos de Cloud Functions (`TOKEN_ENCRYPTION_KEY`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`) pueden vivir en Google Secret Manager en lugar de variables de entorno:
+
+```bash
+scripts/setup-secrets.sh jutsu-classroom-mrtin   # crea los secretos y agrega el flag
+git add functions/.env.jutsu-classroom-mrtin && git commit -m "chore(ops): enable Secret Manager secrets"
+firebase deploy --only functions                 # o push a main
+```
+
+El script genera `TOKEN_ENCRYPTION_KEY` (32 bytes aleatorios) si no existe, pide los valores de OAuth de Gmail y escribe `DOJO_SECRETS_FROM_SECRET_MANAGER=true` en `functions/.env.<proyecto>`. Con ese flag, `api` y `sendDailySummaries` declaran los secretos y Firebase los inyecta en tiempo de ejecución. **No actives el flag sin crear los secretos**: el deploy falla si falta alguno. Después del primer deploy, ejecutá la acción `encryptStoredSecrets` (admin) para cifrar los tokens de GitHub existentes.
+
+Los secretos viejos de 8 caracteres siguen siendo válidos hasta que se regeneren. El detalle de esa migración está en el [Runbook CSV](RUNBOOK_DESPLIEGUE_CSV.md).
 
 ## 7. Gestión de cuentas
 
