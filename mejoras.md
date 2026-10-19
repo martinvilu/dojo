@@ -921,7 +921,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/modules/auth/components/AuthScreen.tsx, functions/src/auth/validateEmail.js`
 - **Propuesta técnica:** Forzar en Firebase Auth Blocking Functions (Before User Created) que el correo termine en `@unrn.edu.ar` o dominio autorizado.
 - **Impacto y beneficio:** Acceso restringido exclusivamente a la comunidad universitaria oficial.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Ajuste global `allowed_email_domains` (formulario en **Configuración**): las cuentas nuevas de otros dominios quedan pendientes con `email_domain_blocked`, no pueden autoaprobarse con la matrícula y las aprueba un admin. Sin Identity Platform no hay blocking function `beforeUserCreated`: la restricción se aplica al crear el perfil.
 
 ### 3.21. Implementación de Soft Deletes (Borrado Lógico) para materias y cursos
 - **Diagnóstico actual:** Eliminar un curso borra documentos en cascada de forma destructiva e irreversible.

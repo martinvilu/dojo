@@ -31,6 +31,10 @@ Se cambió la contraseña de tu cuenta o se usó **Cerrar sesión en todos los d
 - **Si sos estudiante de la UNRN**: ingresá tu matrícula con el formato `UNRN-12345` (UNRN- y al menos 5 dígitos) y presioná **Validar Matrícula**.
 - **Si sos docente o no tenés matrícula**: un administrador tiene que aprobar tu cuenta. Avisale a la coordinación.
 
+### «Tu correo no pertenece a un dominio institucional habilitado»
+
+La plataforma solo aprueba automáticamente cuentas con correo institucional. Ingresá con tu correo de la universidad, o esperá a que un administrador apruebe tu cuenta.
+
 ### «Formato de matrícula inválido»
 
 La matrícula tiene que empezar con `UNRN-` en mayúsculas, seguida solo de números (mínimo 5). Ejemplo válido: `UNRN-10234`.

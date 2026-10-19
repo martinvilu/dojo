@@ -70,6 +70,17 @@ async function getProfile(payload, context) {
                 .split(',').map(e => e.trim().toLowerCase()).includes(email) ? 'teacher' : 'admin';
         }
 
+        // Dominios institucionales (mejora 3.20): con la lista configurada,
+        // una cuenta de otro dominio queda pendiente y no puede autoaprobarse
+        // con la matrícula; un admin decide si la aprueba.
+        let emailDomainBlocked = false;
+        if (role === 'student') {
+            const settingsSnap = await db.collection('globals').doc('settings').get();
+            const allowed = settingsSnap.exists ? (settingsSnap.data().allowed_email_domains || []) : [];
+            const domain = email.split('@')[1] || '';
+            emailDomainBlocked = allowed.length > 0 && !allowed.some((d) => domain === d || domain.endsWith(`.${d}`));
+        }
+
         const name = typeof authUser.name === 'string' && authUser.name.trim() ? authUser.name.trim().slice(0, 120) : (email ? email.split('@')[0] : 'Usuario');
         const profileData = {
             id: uid,
@@ -78,6 +89,7 @@ async function getProfile(payload, context) {
             role: role,
             avatar_url: typeof authUser.picture === 'string' && authUser.picture.startsWith('https://') ? authUser.picture : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
             account_status: role === 'student' ? 'pending' : 'approved',
+            email_domain_blocked: emailDomainBlocked,
             created_at: admin.firestore.FieldValue.serverTimestamp(),
             last_login: admin.firestore.FieldValue.serverTimestamp()
         };
@@ -220,6 +232,10 @@ async function mergeProfiles(payload, context) {
 async function submitMatricula(payload, context) {
     const { uid, db } = context;
     const { matricula } = payload;
+    const current = await db.collection('profiles').doc(uid).get();
+    if (current.exists && current.data().email_domain_blocked) {
+        throw dojoError('FORBIDDEN', "Tu correo no pertenece a un dominio institucional habilitado: un administrador tiene que aprobar tu cuenta.");
+    }
     if (!matricula || !/^UNRN-\d{5,}$/.test(matricula)) {
         throw dojoError('INVALID_ARGUMENT', "Formato de matrícula inválido. Debe ser UNRN- seguido de al menos 5 dígitos.");
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import GlobalSettingsForm from "./GlobalSettingsForm";
 
 interface UserProfile {
   id: string;
@@ -22,8 +23,6 @@ interface AdminPanelProps {
   activeTab: string;
   courses: any[];
   users: UserProfile[];
-  globalCalendarUrl: string;
-  setGlobalCalendarUrl: (val: string) => void;
   newCourseName: string;
   setNewCourseName: (val: string) => void;
   newCourseOrg: string;
@@ -35,7 +34,6 @@ interface AdminPanelProps {
   handleUpdateUserProfile?: (uid: string, data: any) => Promise<void> | void;
   handleApproveUser: (uid: string) => void;
   handleDeleteUser: (uid: string) => void;
-  handleSaveSettings: (e: React.FormEvent) => void;
   viewCourseDetails: (course: any) => void;
 }
 
@@ -43,8 +41,6 @@ export default function AdminPanel({
   activeTab,
   courses,
   users,
-  globalCalendarUrl,
-  setGlobalCalendarUrl,
   newCourseName,
   setNewCourseName,
   newCourseOrg,
@@ -56,7 +52,6 @@ export default function AdminPanel({
   handleUpdateUserProfile,
   handleApproveUser,
   handleDeleteUser,
-  handleSaveSettings,
   viewCourseDetails,
 }: AdminPanelProps) {
   const [sortField, setSortField] = useState<string>("full_name");
@@ -343,26 +338,7 @@ export default function AdminPanel({
       {activeTab === "admin-settings" && (
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-text-primary">Configuración Global del Sistema</h2>
-          <form onSubmit={handleSaveSettings} className="bg-bg-secondary p-6 rounded-2xl border border-border-custom space-y-4 max-w-xl">
-            <div>
-              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
-                URL de Calendario Global (.ics)
-              </label>
-              <input
-                type="url"
-                value={globalCalendarUrl}
-                onChange={(e) => setGlobalCalendarUrl(e.target.value)}
-                placeholder="https://example.com/calendar.ics"
-                className="w-full bg-bg-primary border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 text-text-primary"
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition cursor-pointer"
-            >
-              Guardar Configuración
-            </button>
-          </form>
+          <GlobalSettingsForm />
         </div>
       )}
 

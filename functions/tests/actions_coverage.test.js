@@ -149,6 +149,7 @@ describe('Full Coverage Actions Test Suite', () => {
       
       expect(ctx.docStore['profiles/u1']).toEqual({
         account_status: 'approved',
+        email_domain_blocked: false,
         role: 'teacher',
         cohorte: '2025'
       });
@@ -184,9 +185,14 @@ describe('Full Coverage Actions Test Suite', () => {
 
     test('getGlobalSettings & saveGlobalSettings & deleteUser', async () => {
       const ctx = createMockContext();
-      await adminActions.saveGlobalSettings({ key: 'val' }, ctx);
+      await adminActions.saveGlobalSettings({ key: 'val', globalCalendarIcsUrl: 'https://cal.example/x.ics', allowed_email_domains: '@UNRN.edu.ar, unrn.edu.ar alumnos.unrn.edu.ar' }, ctx);
       const settings = await adminActions.getGlobalSettings({}, ctx);
-      expect(settings.key).toBe('val');
+      // Solo se guardan las claves conocidas, normalizadas.
+      expect(settings.key).toBeUndefined();
+      expect(settings.globalCalendarIcsUrl).toBe('https://cal.example/x.ics');
+      expect(settings.allowed_email_domains).toEqual(['unrn.edu.ar', 'alumnos.unrn.edu.ar']);
+      await expect(adminActions.saveGlobalSettings({ allowed_email_domains: 'no es un dominio' }, ctx)).rejects.toThrow('Dominios inválidos');
+      await expect(adminActions.saveGlobalSettings({ globalCalendarIcsUrl: 'http://inseguro' }, ctx)).rejects.toThrow('https://');
 
       ctx.docStore['profiles/u2'] = { full_name: 'Bob' };
       await adminActions.deleteUser({ targetUid: 'u2' }, ctx);

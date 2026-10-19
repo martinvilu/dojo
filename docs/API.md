@@ -98,7 +98,7 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `approveUser`, `updateUserRole`, `updateUserProfile` | ADMIN | Gestión de cuentas. `updateUserProfile` acepta solo `full_name`, `role`, `matricula_unrn`, `cohorte`, `commission` y `account_status`. Todo cambio de rol actualiza el custom claim `role` del usuario (si el rol baja, revoca sus sesiones) |
 | `deleteUser` | ADMIN | Borra Auth, perfil, inscripciones y asignaciones docentes |
 | `getGlobalSettings` | AUTHENTICATED | Configuración global (p. ej., calendario ICS institucional) |
-| `saveGlobalSettings` | ADMIN | Guarda la configuración global |
+| `saveGlobalSettings` | ADMIN | Guarda la configuración global: `globalCalendarIcsUrl` (https) y `allowed_email_domains` (hasta 20 dominios). Otras claves se ignoran |
 | `logActivity` | AUTHENTICATED | Registra un evento de actividad propio |
 | `getActivityLogs` | ADMIN | Bitácora de actividad |
 | `createSystemBackup`, `getSystemBackups`, `downloadSystemBackup`, `restoreBackupDocument`, `deleteBackup` | ADMIN | Respaldos y restauración granular |

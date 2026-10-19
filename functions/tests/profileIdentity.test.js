@@ -85,3 +85,29 @@ describe('security log (mejora 3.44)', () => {
     expect(maskIp(null)).toBeNull();
   });
 });
+
+describe('institutional email domains (mejora 3.20)', () => {
+  const { submitMatricula } = require('../src/modules/auth/profile');
+  const settings = { 'globals/settings': { allowed_email_domains: ['unrn.edu.ar'] } };
+
+  it('flags new accounts outside the allowed domains and blocks self-approval', async () => {
+    const db = memDb({ ...settings });
+    const p = await getProfile({}, { uid: 'g1', db, request: request(), authUser: { email: 'alguien@gmail.com', auth_time: 1 } });
+    expect(p).toMatchObject({ account_status: 'pending', email_domain_blocked: true });
+    await expect(submitMatricula({ matricula: 'UNRN-12345' }, { uid: 'g1', db })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  it('accepts the domain and its subdomains', async () => {
+    const db = memDb({ ...settings });
+    const a = await getProfile({}, { uid: 'a1', db, request: request(), authUser: { email: 'ana@unrn.edu.ar', auth_time: 1 } });
+    const b = await getProfile({}, { uid: 'b1', db, request: request(), authUser: { email: 'beto@alumnos.unrn.edu.ar', auth_time: 1 } });
+    expect(a.email_domain_blocked).toBe(false);
+    expect(b.email_domain_blocked).toBe(false);
+  });
+
+  it('does not restrict anything when no domains are configured', async () => {
+    const db = memDb();
+    const p = await getProfile({}, { uid: 'c1', db, request: request(), authUser: { email: 'x@gmail.com', auth_time: 1 } });
+    expect(p.email_domain_blocked).toBe(false);
+  });
+});

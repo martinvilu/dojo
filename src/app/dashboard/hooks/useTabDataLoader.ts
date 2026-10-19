@@ -9,7 +9,6 @@ interface UseTabDataLoaderArgs {
   setSelectedCourse: (c: any) => void;
   setCourses: (courses: any[]) => void;
   setUsers: (users: any[]) => void;
-  setGlobalCalendarUrl: (url: string) => void;
   setSystemBackups: (backups: any[]) => void;
   setAssignments: (assignments: any[]) => void;
   setTeacherClasses: (classes: any[]) => void;
@@ -29,7 +28,7 @@ interface UseTabDataLoaderArgs {
 export function useTabDataLoader({
   activeTab, profile,
   setSelectedCourse, setCourses, setUsers,
-  setGlobalCalendarUrl, setSystemBackups,
+  setSystemBackups,
   setAssignments, setTeacherClasses,
   setProfileName, setProfileMatricula, setProfileCohorte, setProfileGithubUser, setXpLogs,
   setApiLoading, setError
@@ -48,9 +47,6 @@ export function useTabDataLoader({
         } else if (activeTab === "admin-users") {
           const res = await api("getAdminUsers");
           setUsers(res || []);
-        } else if (activeTab === "admin-settings") {
-          const res = await api("getGlobalSettings");
-          setGlobalCalendarUrl(res?.globalCalendarIcsUrl || "");
         } else if (activeTab === "admin-backups") {
           const res = await api("getSystemBackups");
           setSystemBackups(res || []);

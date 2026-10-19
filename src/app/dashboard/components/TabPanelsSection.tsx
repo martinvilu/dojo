@@ -22,8 +22,6 @@ interface TabPanelsSectionProps {
   teacherClasses: any[];
   selectedCourse: any;
   // admin
-  globalCalendarUrl: string;
-  setGlobalCalendarUrl: (v: string) => void;
   newCourseName: string;
   setNewCourseName: (v: string) => void;
   newCourseOrg: string;
@@ -35,7 +33,6 @@ interface TabPanelsSectionProps {
   handleUpdateUserProfile: (uid: string, data: any) => Promise<void> | void;
   handleApproveUser: (uid: string) => Promise<void> | void;
   handleDeleteUser: (uid: string) => Promise<void> | void;
-  handleSaveSettings: (e: React.FormEvent) => Promise<void> | void;
   systemBackups: any[];
   onCreateBackup: () => void;
   onDownloadBackup: (backupId: string) => void;
@@ -85,8 +82,6 @@ export function TabPanelsSection(props: TabPanelsSectionProps) {
           activeTab={activeTab}
           courses={courses}
           users={users}
-          globalCalendarUrl={props.globalCalendarUrl}
-          setGlobalCalendarUrl={props.setGlobalCalendarUrl}
           newCourseName={props.newCourseName}
           setNewCourseName={props.setNewCourseName}
           newCourseOrg={props.newCourseOrg}
@@ -98,7 +93,6 @@ export function TabPanelsSection(props: TabPanelsSectionProps) {
           handleUpdateUserProfile={props.handleUpdateUserProfile}
           handleApproveUser={props.handleApproveUser}
           handleDeleteUser={props.handleDeleteUser}
-          handleSaveSettings={props.handleSaveSettings}
           viewCourseDetails={props.viewCourseDetails}
         />
       )}

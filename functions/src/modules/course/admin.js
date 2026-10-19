@@ -10,7 +10,8 @@ async function approveUser(payload, context) {
     if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', "Solo admins pueden aprobar usuarios");
     
     await db.collection('profiles').doc(targetUid).update({
-        account_status: 'approved'
+        account_status: 'approved',
+        email_domain_blocked: false
     });
     return { success: true };
 }
@@ -108,12 +109,33 @@ async function getGlobalSettings(payload, context) {
     return snap.exists ? snap.data() : {};
 }
 
+const DOMAIN_RE = /^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+
+/** Normaliza la lista de dominios de correo habilitados (mejora 3.20). */
+function normalizeDomains(value) {
+    const list = Array.isArray(value) ? value : String(value || '').split(/[,\s]+/);
+    const domains = [...new Set(list.map((d) => String(d).trim().toLowerCase().replace(/^@/, '')).filter(Boolean))];
+    const invalid = domains.filter((d) => !DOMAIN_RE.test(d) || d.length > 253);
+    if (invalid.length) throw dojoError('INVALID_ARGUMENT', `Dominios inválidos: ${invalid.join(', ')}`);
+    if (domains.length > 20) throw dojoError('INVALID_ARGUMENT', "Máximo 20 dominios.");
+    return domains;
+}
+
 async function saveGlobalSettings(payload, context) {
     const { db, getMyProfile } = context;
     const myProfile = await getMyProfile();
-    if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', 'Only admin can save global settings');
-    await db.collection('globals').doc('settings').set(payload, { merge: true });
-    return { success: true };
+    if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', 'Solo los administradores pueden guardar la configuración global');
+    const update = {};
+    if (payload.globalCalendarIcsUrl !== undefined) {
+        const url = String(payload.globalCalendarIcsUrl || '').trim();
+        if (url && !/^https:\/\/\S+$/.test(url)) throw dojoError('INVALID_ARGUMENT', "La URL del calendario debe empezar con https://");
+        update.globalCalendarIcsUrl = url;
+    }
+    if (payload.allowed_email_domains !== undefined) {
+        update.allowed_email_domains = normalizeDomains(payload.allowed_email_domains);
+    }
+    await db.collection('globals').doc('settings').set(update, { merge: true });
+    return { success: true, ...update };
 }
 
 async function getAdminCourseDetails(payload, context) {
@@ -183,6 +205,7 @@ async function deleteUser(payload, context) {
 }
 
 module.exports = {
+    normalizeDomains,
     approveUser,
     updateUserRole,
     updateUserProfile,

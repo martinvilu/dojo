@@ -64,6 +64,8 @@ Las entregas y notas históricas se conservan.
 
 ## 3. Configuración global
 
+**Dominios de correo habilitados** restringe el registro autónomo a correos institucionales (por ejemplo `unrn.edu.ar`, que incluye `alumnos.unrn.edu.ar`). Una cuenta nueva de otro dominio queda **pendiente** y no puede aprobarse sola con la matrícula: aparece en **Usuarios** y la aprobás vos si corresponde (por ejemplo, un docente invitado). Dejalo vacío para no restringir.
+
 En **Configuración → Configuración Global del Sistema**, cargá la URL de un calendario ICS institucional (por ejemplo, el de feriados y mesas de examen de la universidad) y presioná **Guardar Configuración**.
 
 ```{note}

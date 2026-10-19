@@ -82,10 +82,9 @@ export default function DashboardPage() {
     selectedNewTeacherId, setSelectedNewTeacherId,
     newCourseName, setNewCourseName,
     newCourseOrg, setNewCourseOrg,
-    globalCalendarUrl, setGlobalCalendarUrl,
     handleApproveUser, handleDeleteUser, handleUpdateUserRole, handleUpdateUserProfile,
     handleAssignTeacher, handleRemoveTeacher,
-    handleCreateCourse, handleDeleteCourse, handleRestoreCourse, handleSaveSettings
+    handleCreateCourse, handleDeleteCourse, handleRestoreCourse
   } = useAdminPanel({
     getSelectedCourseId: () => selectedCourse?.id || selectedCourse?.course?.id,
     setCourses, setCourseTeachers, setApiLoading, setError
@@ -232,7 +231,6 @@ export default function DashboardPage() {
   useTabDataLoader({
     activeTab, profile,
     setSelectedCourse, setCourses, setUsers,
-    setGlobalCalendarUrl,
     setSystemBackups,
     setAssignments, setTeacherClasses,
     setProfileName, setProfileMatricula, setProfileCohorte, setProfileGithubUser,
@@ -295,6 +293,7 @@ export default function DashboardPage() {
         apiLoading={apiLoading}
         onSubmit={handleSubmitMatricula}
         onLogout={handleLogout}
+        domainBlocked={Boolean((profile as any).email_domain_blocked)}
       />
     );
   }
@@ -350,10 +349,9 @@ export default function DashboardPage() {
         {/* TOP-LEVEL TAB PANELS (admin / teacher / student / calendar / profile) */}
         <TabPanelsSection {...{
           profile, activeTab, courses, users, assignments, teacherClasses, selectedCourse,
-          globalCalendarUrl, setGlobalCalendarUrl,
           newCourseName, setNewCourseName, newCourseOrg, setNewCourseOrg,
           handleCreateCourse, handleDeleteCourse, handleRestoreCourse, handleUpdateUserRole, handleUpdateUserProfile,
-          handleApproveUser, handleDeleteUser, handleSaveSettings,
+          handleApproveUser, handleDeleteUser,
           systemBackups,
           onCreateBackup: handleCreateBackup,
           onDownloadBackup: handleDownloadBackup,
