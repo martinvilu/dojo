@@ -256,3 +256,11 @@ exports.onClassCommentUpdated = onDocumentUpdated('courses/{courseId}/class_comm
         event.data.after.data()
     );
 });
+
+// Reintentos con backoff exponencial de eventos de autograding que fallaron
+// por errores transitorios (mejora 3.38).
+exports.retryWebhookDeadLetters = onSchedule({ schedule: 'every 10 minutes', timeZone: 'America/Argentina/Buenos_Aires' }, async () => {
+    const { retryDeadLetters } = require('./src/modules/github/webhook');
+    const summary = await retryDeadLetters(db);
+    if (summary.done || summary.retried || summary.failed) logger.info('[webhook] cola de reintentos', summary);
+});

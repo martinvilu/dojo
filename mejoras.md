@@ -1047,7 +1047,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/queues/dlq.js`
 - **Propuesta técnica:** Reenviar eventos fallidos a una cola Pub/Sub Dead Letter para reintento automático con backoff exponencial.
 - **Impacto y beneficio:** Cero pérdida de entregas de estudiantes.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — El webhook encola en `webhook_dead_letters` los eventos validados cuya escritura falla (responde 202) y `retryWebhookDeadLetters` (cada 10 min) los reprocesa con backoff exponencial hasta 6 intentos. Se usa Firestore en lugar de Pub/Sub: mismo resultado sin infraestructura extra.
 
 ### 3.39. Manejo granular de permisos para Ayudantes de Cátedra (Teaching Assistants)
 - **Diagnóstico actual:** Los ayudantes de cátedra requieren corregir tareas pero no deberían poder eliminar comisiones ni borrar materias.
