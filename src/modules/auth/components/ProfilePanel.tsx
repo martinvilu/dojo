@@ -3,6 +3,7 @@ import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
 import React, { useState } from "react";
 import SecurityLogSection from "./SecurityLogSection";
+import DataPrivacySection from "./DataPrivacySection";
 
 interface UserProfile {
   id: string;
@@ -15,6 +16,7 @@ interface UserProfile {
   cohorte?: string;
   github_user?: string;
   secondary_emails?: string[];
+  deletion_requested_at?: unknown;
 }
 
 interface ProfilePanelProps {
@@ -347,6 +349,11 @@ export default function ProfilePanel({
           </a>
         </div>
       )}
+
+      {/* DATOS PERSONALES (mejora 3.49) */}
+      <div className="bg-bg-secondary p-6 rounded-2xl border border-border-custom shadow-sm">
+        <DataPrivacySection deletionRequested={Boolean(profile?.deletion_requested_at)} />
+      </div>
 
       {/* ACTIVIDAD DE INICIO DE SESIÓN (mejora 3.44) */}
       <div className="bg-bg-secondary p-6 rounded-2xl border border-border-custom shadow-sm">

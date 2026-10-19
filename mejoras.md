@@ -1124,7 +1124,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/privacy/exportData.js`
 - **Propuesta técnica:** Implementar endpoint `exportUserData` que emita un archivo `.zip` con todos sus aportes y calificaciones.
 - **Impacto y beneficio:** Cumplimiento ético y legal de normativas de privacidad de datos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `exportMyData` devuelve en JSON todos los datos personales de la cuenta (sin datos de terceros) y `requestAccountDeletion`/`cancelAccountDeletion` registran el pedido de baja; **Mi Perfil** permite descargar los datos y pedir la baja, y el admin ve la etiqueta «Pidió la baja» en **Usuarios**. Formato JSON en lugar de .zip.
 
 ### 3.50. Healthcheck Endpoint profundo para monitoreo de estado del sistema
 - **Diagnóstico actual:** No existe un endpoint que verifique la conectividad en tiempo real entre Next.js, Firestore y GitHub API.

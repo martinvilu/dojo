@@ -79,6 +79,8 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | Acción | Política | Descripción |
 |---|---|---|
 | `getProfile` | AUTHENTICATED | Devuelve el perfil y lo crea en el primer login con el email, nombre y foto del **ID token verificado** (rol `student`, estado `pending`, salvo los emails de `SEED_ADMIN_EMAILS` / `SEED_TEACHER_EMAILS`). Registra cada inicio de sesión nuevo en `profiles/{uid}/security_log` |
+| `exportMyData` | AUTHENTICATED | JSON con todos los datos personales de la cuenta (perfil, membresías, entregas, asistencia, foros, revisiones escritas, tutorías, grupos, XP, notificaciones y accesos), sin datos de terceros. Límite 5/h |
+| `requestAccountDeletion` / `cancelAccountDeletion` | AUTHENTICATED | Marca o retira el pedido de baja (`deletion_requested_at`, motivo opcional); la baja la ejecuta un admin con `deleteUser` |
 | `getSecurityLog` | AUTHENTICATED | Últimos 20 inicios de sesión propios: fecha, proveedor, user agent e IP enmascarada |
 | `updateProfile` | AUTHENTICATED | Nombre, usuario de GitHub, matrícula y cohorte propios |
 | `submitMatricula` | AUTHENTICATED | Valida `UNRN-` + ≥5 dígitos y aprueba la cuenta |

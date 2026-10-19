@@ -37,6 +37,8 @@ const ACTION_POLICIES = {
     detectAssignmentPlagiarism: { limit: 10, windowMs: 10 * MINUTE },
     bookTutoringSession: { limit: 10, windowMs: HOUR },
     postStudyGroupMessage: { limit: 30, windowMs: MINUTE },
+    exportMyData: { limit: 5, windowMs: HOUR },
+    requestAccountDeletion: { limit: 5, windowMs: HOUR },
 };
 
 /**

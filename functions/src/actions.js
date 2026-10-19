@@ -9,6 +9,9 @@ const ACTION_MODULES = {
     // profile
     getProfile: './modules/auth/profile',
     getSecurityLog: './modules/auth/profile',
+    exportMyData: './modules/auth/privacy',
+    requestAccountDeletion: './modules/auth/privacy',
+    cancelAccountDeletion: './modules/auth/privacy',
     updateProfile: './modules/auth/profile',
     submitMatricula: './modules/auth/profile',
     

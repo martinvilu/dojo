@@ -39,6 +39,9 @@ const ACTION_POLICIES = {
     // perfil propio
     getProfile: AUTHENTICATED,
     getSecurityLog: AUTHENTICATED,
+    exportMyData: AUTHENTICATED,
+    requestAccountDeletion: AUTHENTICATED,
+    cancelAccountDeletion: AUTHENTICATED,
     updateProfile: AUTHENTICATED,
     submitMatricula: AUTHENTICATED,
     addSecondaryEmail: AUTHENTICATED,

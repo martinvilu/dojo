@@ -14,6 +14,8 @@ interface UserProfile {
   commission?: string;
   created_at?: any;
   last_login?: any;
+  deletion_requested_at?: any;
+  deletion_reason?: string | null;
 }
 
 interface AdminPanelProps {
@@ -300,6 +302,11 @@ export default function AdminPanel({
                       }`}>
                         {u.account_status === "approved" ? "Aprobado" : "Pendiente"}
                       </span>
+                      {u.deletion_requested_at && (
+                        <span title={u.deletion_reason ? `Motivo: ${u.deletion_reason}` : "Sin motivo"} className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300">
+                          Pidió la baja
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 flex items-center space-x-2">
                       <button

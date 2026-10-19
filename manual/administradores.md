@@ -47,6 +47,9 @@ Las cátedras también tienen códigos de invitación de docente (`T-…`) y de 
 
 ### 2.4. Borrar un usuario
 
+Los usuarios que pidieron la baja desde **Mi Perfil** aparecen en **Usuarios** con la etiqueta **Pidió la baja** (pasá el mouse para ver el motivo). Ejecutá la baja con el procedimiento de abajo; antes conviene recordarle que descargue sus datos.
+
+
 1. En la fila del usuario, presioná **Borrar**.
 2. Leé la **Advertencia: Borrar Usuario** y confirmá con **Sí, borrar permanentemente**.
 
