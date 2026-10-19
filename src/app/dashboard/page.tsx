@@ -5,6 +5,7 @@ import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
 import { api } from "@/lib/api";
+import { auth } from "@/lib/firebase/clientApp";
 import { useTheme } from "./hooks/useTheme";
 import { useGithubPromptModal } from "./hooks/useGithubPromptModal";
 import { useClassFeedback } from "./hooks/useClassFeedback";
@@ -252,7 +253,8 @@ export default function DashboardPage() {
     if (!enrollCode) return;
     setApiLoading(true);
     try {
-      await api("enrollCourse", { code: enrollCode.toUpperCase().trim() });
+      const enrollRes = await api("enrollCourse", { code: enrollCode.toUpperCase().trim() });
+      if (enrollRes?.claimsRefreshRequired) await auth.currentUser?.getIdToken(true).catch(() => {});
       setEnrollCode("");
       const res = await api("getStudentCourses");
       setCourses(res || []);

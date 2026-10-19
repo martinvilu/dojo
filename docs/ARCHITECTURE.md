@@ -49,6 +49,7 @@ El sistema implementa un modelo de Control de Acceso Basado en Roles (RBAC) con 
     *   Posibilidad de confirmar el acuse de recibo de avisos y realizar entregas de tareas asignadas.
 
 ### Implementación Técnica de Seguridad:
+*   **Rol en el token**: el rol (`student`, `teacher`, `admin`) viaja como custom claim `role` de Firebase Auth. Lo actualizan los cambios de rol y se autocorrige en cada inicio de sesión; las reglas lo usan y recurren al perfil solo si el token no lo trae.
 *   **Reglas de Firestore (`firestore.rules`)**:
     *   Denegación por defecto: todo lo no listado explícitamente queda inaccesible para el cliente.
     *   **Perfiles (`profiles`)**: cada usuario solo puede leer su propio perfil (el aprovisionamiento ocurre en el backend). Docentes y administradores únicamente pueden editar el mapa de comisiones sobre perfiles de estudiantes.

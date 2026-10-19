@@ -1,6 +1,7 @@
 const logger = require("firebase-functions/logger");
 const { projectCourse } = require('./courses');
 const { dojoError } = require('../../lib/errors');
+const { ROLES, syncRoleClaim } = require('../../lib/claims');
 
 async function approveUser(payload, context) {
     const { db, getMyProfile } = context;
@@ -15,21 +16,49 @@ async function approveUser(payload, context) {
 }
 
 async function updateUserRole(payload, context) {
-    const { db, getMyProfile } = context;
+    const { db, getMyProfile, admin } = context;
     const { targetUid, newRole } = payload;
     const myProfile = await getMyProfile();
     if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', "Solo admins pueden cambiar roles de usuario");
     if (!['admin', 'teacher', 'student'].includes(newRole)) throw dojoError('INVALID_ARGUMENT', "Rol inválido");
     
+    const before = await db.collection('profiles').doc(targetUid).get();
     await db.collection('profiles').doc(targetUid).update({
         role: newRole
     });
+    await syncClaimSafely(admin, targetUid, newRole, before.exists ? before.data().role : undefined);
     return { success: true };
 }
 
+// Campos del perfil que un admin puede editar desde Usuarios.
+const ADMIN_EDITABLE_PROFILE_FIELDS = ['full_name', 'role', 'matricula_unrn', 'cohorte', 'commission', 'account_status'];
+
+async function syncClaimSafely(admin, uid, role, previousRole) {
+    try {
+        await syncRoleClaim(admin.auth(), uid, role, { previousRole });
+    } catch (e) {
+        // El perfil ya cambió; el claim se corrige en el próximo login.
+        logger.warn('[admin] no se pudo actualizar el custom claim de rol:', uid, e.message);
+    }
+}
+
 async function updateUserProfile(payload, context) {
-    const { db } = context;
-    await db.collection('profiles').doc(payload.userId).update(payload.data);
+    const { db, admin } = context;
+    const data = payload.data;
+    if (!payload.userId || !data || typeof data !== 'object' || Array.isArray(data)) {
+        throw dojoError('INVALID_ARGUMENT', "Datos de perfil inválidos");
+    }
+    const unknown = Object.keys(data).filter((k) => !ADMIN_EDITABLE_PROFILE_FIELDS.includes(k));
+    if (unknown.length) throw dojoError('INVALID_ARGUMENT', `Campos no editables: ${unknown.join(', ')}`);
+    if (data.role !== undefined && !ROLES.includes(data.role)) throw dojoError('INVALID_ARGUMENT', "Rol inválido");
+    if (data.account_status !== undefined && !['pending', 'approved'].includes(data.account_status)) {
+        throw dojoError('INVALID_ARGUMENT', "Estado de cuenta inválido");
+    }
+    const before = await db.collection('profiles').doc(payload.userId).get();
+    await db.collection('profiles').doc(payload.userId).update(data);
+    if (data.role !== undefined) {
+        await syncClaimSafely(admin, payload.userId, data.role, before.exists ? before.data().role : undefined);
+    }
     return { success: true };
 }
 

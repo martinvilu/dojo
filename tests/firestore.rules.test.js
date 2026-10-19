@@ -90,6 +90,24 @@ describe("unauthenticated access", () => {
   });
 });
 
+describe("role custom claims (mejora 3.34)", () => {
+  /** Instancia con claims explícitos en el token. */
+  const withClaims = (uid, claims) => delegateOf(testEnv.authenticatedContext(uid, claims));
+
+  it("uses the role claim when present, without needing the profile", async () => {
+    // Usuario sin documento de perfil pero con claim de admin.
+    await assertSucceeds(getDocs(query(collection(withClaims("nuevoAdmin", { role: "admin" }), "audit_logs"))));
+    await assertFails(getDocs(query(collection(withClaims("alguien", { role: "student" }), "audit_logs"))));
+  });
+
+  it("the claim wins over the profile and the profile is the fallback", async () => {
+    // TEACHER tiene perfil de docente: sin claim lee la bitácora; con un claim
+    // de estudiante (rol bajado y token ya renovado) deja de poder.
+    await assertSucceeds(getDocs(query(collection(user(TEACHER), "audit_logs"))));
+    await assertFails(getDocs(query(collection(withClaims(TEACHER, { role: "student" }), "audit_logs"))));
+  });
+});
+
 describe("profiles", () => {
   it("allows reading only the own profile", async () => {
     await assertSucceeds(getDoc(doc(user(STUDENT), `profiles/${STUDENT}`)));

@@ -61,6 +61,12 @@ export function useAuthProfile({ setActiveTab, setApiLoading, setError }: UseAut
           profileRes = await api("getProfile");
         }
 
+        // El backend actualizó el custom claim de rol: se fuerza un token
+        // nuevo para que las reglas de Firestore lo vean (mejora 3.34).
+        if (profileRes?.claims_refresh_required) {
+          await user.getIdToken(true).catch(() => {});
+        }
+
         const userProfile = profileRes as UserProfile;
         setProfile(userProfile);
 

@@ -1019,7 +1019,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/auth/setClaims.js, firestore.rules`
 - **Propuesta técnica:** Configurar Custom Claims (`role: 'teacher' | 'student' | 'admin'`) en el token JWT del usuario.
 - **Impacto y beneficio:** Ahorro masivo de lecturas en Firestore y reglas de seguridad 10 veces más rápidas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Custom claim `role` (`functions/src/lib/claims.js`) sincronizado en cambios de rol, códigos docentes y autocorrección en cada login (el cliente refresca el token). Las reglas usan `myRole()` (claim con respaldo en el perfil) y si el rol baja se revocan las sesiones. `updateUserProfile` pasa a lista blanca de campos.
 
 ### 3.35. Migración de almacenamiento de sesiones de Selenium a Firestore Mock local
 - **Diagnóstico actual:** Los tests E2E usan credenciales reales contra proyectos en la nube que ensucian datos.

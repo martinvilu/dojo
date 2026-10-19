@@ -3,6 +3,7 @@ const logger = require("firebase-functions/logger");
 const { dojoError } = require('../../lib/errors');
 const { normalizeEmail } = require('../../lib/validate');
 const { forgetSession } = require('../../lib/sessionGuard');
+const { syncRoleClaim } = require('../../lib/claims');
 
 const SECURITY_LOG_LIMIT = 20;
 
@@ -97,6 +98,15 @@ async function getProfile(payload, context) {
         await recordLogin(db, ref, data, authUser, request);
     } catch (e) {
         logger.warn('[getProfile] No se pudo registrar el inicio de sesión:', e.message);
+    }
+    // Autocorrección del custom claim de rol (mejora 3.34): si el token no
+    // trae el rol del perfil, se actualiza y el cliente refresca su token.
+    if (data.role && authUser.role !== data.role) {
+        try {
+            data.claims_refresh_required = await syncRoleClaim(admin.auth(), uid, data.role);
+        } catch (e) {
+            logger.warn('[getProfile] No se pudo sincronizar el claim de rol:', e.message);
+        }
     }
     data.last_login = admin.firestore.Timestamp.now();
     return data;

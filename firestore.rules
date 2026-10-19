@@ -22,12 +22,21 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data;
     }
 
+    // Rol desde el custom claim del token (mejora 3.34): evita un get() del
+    // perfil por evaluación. Si el token todavía no trae el claim, se usa
+    // el perfil como respaldo.
+    function myRole() {
+      return request.auth.token.get('role', null) != null
+        ? request.auth.token.role
+        : myProfile().role;
+    }
+
     function isAdmin() {
-      return signedIn() && myProfile().role == 'admin';
+      return signedIn() && myRole() == 'admin';
     }
 
     function isTeacherRole() {
-      return signedIn() && myProfile().role == 'teacher';
+      return signedIn() && myRole() == 'teacher';
     }
 
     function isTeacherOf(courseId) {
@@ -119,7 +128,7 @@ service cloud.firestore {
         allow create: if isMemberOf(courseId)
           && request.resource.data.keys().hasOnly(['classNumber', 'user_id', 'user_name', 'user_role', 'content', 'reactions', 'created_at'])
           && request.resource.data.user_id == request.auth.uid
-          && request.resource.data.get('user_role', myProfile().role) == myProfile().role
+          && request.resource.data.get('user_role', myRole()) == myRole()
           && request.resource.data.get('user_name', '') is string
           && request.resource.data.get('user_name', '').size() <= 120
           && request.resource.data.classNumber is int

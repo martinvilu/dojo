@@ -4,6 +4,7 @@ const { dojoError } = require('../../lib/errors');
 const { publicProfile, staffStudentProfile } = require('../../lib/projections');
 const { PURGE_AFTER_DAYS, isDeleted } = require('../../lib/softDelete');
 const { rosterChecksum, shouldSyncRoster, saveRosterChecksum } = require('../../lib/rosterChecksum');
+const { syncRoleClaim } = require('../../lib/claims');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -79,7 +80,8 @@ async function enrollCourse(payload, context) {
             role: 'titular'
         });
         await db.collection('profiles').doc(uid).update({ role: 'teacher', account_status: 'approved' });
-        return { success: true };
+        await syncRoleClaim(admin.auth(), uid, 'teacher').catch(() => {});
+        return { success: true, claimsRefreshRequired: true };
     }
     
     const aSnap = await db.collection('courses').where('assistant_invite_code', '==', code).get();
@@ -91,7 +93,8 @@ async function enrollCourse(payload, context) {
             role: 'ayudante'
         });
         await db.collection('profiles').doc(uid).update({ role: 'teacher', account_status: 'approved' });
-        return { success: true };
+        await syncRoleClaim(admin.auth(), uid, 'teacher').catch(() => {});
+        return { success: true, claimsRefreshRequired: true };
     }
     
     throw dojoError('INVALID_ARGUMENT', "Código de invitación inválido");
