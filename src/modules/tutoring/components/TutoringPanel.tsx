@@ -309,10 +309,11 @@ export default function TutoringPanel({
             </p>
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="tutorTopics" className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                   Temas Fuertes
                 </label>
                 <input
+                  id="tutorTopics"
                   type="text"
                   placeholder="Ej: React, Hooks, TypeScript"
                   value={tutorTopics}
@@ -322,10 +323,11 @@ export default function TutoringPanel({
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="tutorAvailability" className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                   Disponibilidad Horaria
                 </label>
                 <input
+                  id="tutorAvailability"
                   type="text"
                   placeholder="Ej: Lunes y Miércoles después de las 18hs"
                   value={tutorAvailability}
@@ -367,10 +369,11 @@ export default function TutoringPanel({
             </p>
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="bookingTopic" className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                   Tema de la Consulta
                 </label>
                 <input
+                  id="bookingTopic"
                   type="text"
                   placeholder="Ej: Dudas con el laboratorio de React"
                   value={bookingTopic}
@@ -380,10 +383,11 @@ export default function TutoringPanel({
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                <label htmlFor="bookingDateTime" className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                   Fecha y Hora sugerida
                 </label>
                 <input
+                  id="bookingDateTime"
                   type="datetime-local"
                   value={bookingDateTime}
                   onChange={(e) => setBookingDateTime(e.target.value)}
