@@ -60,7 +60,9 @@ const ACTION_POLICIES = {
 
     // asistencia (el handler valida la inscripción / el token QR)
     markAttendance: AUTHENTICATED,
-    submitQrAttendance: AUTHENTICATED,
+    submitQrAttendance: memberOf('course'),
+    startQrAttendance: staffOf('course'),
+    stopQrAttendance: staffOf('course'),
 
     // moodle
     moodleAutoEnroll: AUTHENTICATED,

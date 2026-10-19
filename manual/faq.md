@@ -45,13 +45,17 @@ El servidor calcula la distancia entre tu ubicación y la del docente al generar
 2. Activá el GPS y dale permiso de ubicación al navegador.
 3. Si estás en interiores, acercate a una ventana y reintentá con un QR nuevo.
 
-### «El código de asistencia ha expirado» o «no es válido»
+### «El código de asistencia ha expirado o no es válido»
 
-El QR se renueva cada 30 segundos y cada código vale como máximo 45 segundos. Escaneá el que se está proyectando en ese momento.
+El QR cambia cada 15 segundos y cada código vale como máximo 30 segundos. Escaneá el que se está proyectando en ese momento.
 
 ### «No hay un código de asistencia activo en este momento»
 
 El docente todavía no generó el QR o ya cerró la toma de asistencia.
+
+### «Esta clase requiere tu ubicación para firmar asistencia»
+
+El docente fijó la ubicación del aula. Activá el GPS, dale permiso de ubicación al navegador y volvé a escanear.
 
 ### «Este código corresponde a una clase diferente»
 

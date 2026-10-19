@@ -87,12 +87,12 @@ Filtrá por comisión, marcá a cada estudiante como **Presente**, **Tarde** o *
 ### 4.2. QR dinámico
 
 1. Presioná **🛡️ Generar QR Dinámico**. Si el navegador lo pide, permití la ubicación.
-2. Proyectá el código. Se renueva solo cada **30 segundos** («El código rota en: N s»); **🔄 Renovar** lo cambia en el momento.
+2. Proyectá el código. Cambia solo cada **15 segundos** («El código rota en: N s») y cada código vale como máximo 30 segundos, así que una foto del QR no sirve para firmar después. **🔄 Renovar** inicia una sesión nueva e invalida los códigos anteriores.
 3. Los estudiantes lo escanean o escriben el código de 6 caracteres.
-4. **Cerrar** termina la toma.
+4. **Cerrar** termina la toma: desde ese momento ningún código es válido.
 
 ```{tip}
-Si compartiste tu ubicación al generar el QR, el servidor rechaza a quienes estén a más de 150 m. Sin ubicación, el control de distancia no se aplica: completá la asistencia a mano si hace falta.
+Si compartiste tu ubicación al generar el QR, los estudiantes también tienen que compartir la suya y el servidor rechaza a quienes estén a más de 150 m. Si generaste el QR sin ubicación, la pantalla lo avisa y no se controla la distancia.
 ```
 
 ## 5. Tareas y corrección — *Tareas*

@@ -3,6 +3,7 @@ const adminActions = require('../src/modules/course/admin');
 const announcementActions = require('../src/modules/course/announcements');
 const assignmentActions = require('../src/modules/github/assignments');
 const attendanceActions = require('../src/modules/attendance/attendance');
+const qrToken = require('../src/lib/qrToken');
 const backupActions = require('../src/modules/system/backups');
 const courseActions = require('../src/modules/course/courses');
 const moodleActions = require('../src/modules/integrations/moodle');
@@ -225,56 +226,82 @@ describe('Full Coverage Actions Test Suite', () => {
       expect(res.success).toBe(true);
     });
 
-    test('submitQrAttendance validations and geo distance', async () => {
+    test('startQrAttendance creates a server-side session with TTL and stopQrAttendance ends it', async () => {
+      const ctx = createMockContext({ uid: 'teacher1' });
+      const res = await attendanceActions.startQrAttendance({ courseId: 'c1', classNumber: 3, lat: -41.13, lng: -71.31 }, ctx);
+      expect(res.secret).toMatch(/^[0-9a-f]{64}$/);
+      expect(res.period).toBe(qrToken.QR_PERIOD_SECONDS);
+      expect(res.hasLocation).toBe(true);
+      const session = ctx.docStore['courses/c1/active_qr/current'];
+      expect(session).toMatchObject({ classNumber: 3, secret: res.secret, lat: -41.13, lng: -71.31, started_by: 'teacher1' });
+      expect(session.expires_at.getTime()).toBeGreaterThan(Date.now());
+      expect(session.token).toBeUndefined();
+
+      await expect(attendanceActions.startQrAttendance({ courseId: 'c1', classNumber: 'x' }, ctx)).rejects.toThrow('Número de clase inválido');
+      const noGeo = await attendanceActions.startQrAttendance({ courseId: 'c1', classNumber: 3, lat: 'abc' }, ctx);
+      expect(noGeo.hasLocation).toBe(false);
+
+      await attendanceActions.stopQrAttendance({ courseId: 'c1' }, ctx);
+      expect(ctx.docStore['courses/c1/active_qr/current']).toBeUndefined();
+    });
+
+    test('submitQrAttendance validates rotating codes, class, expiry and geofence', async () => {
       const ctx = createMockContext({ uid: 'student1', myProfile: { role: 'student' } });
       await expect(attendanceActions.submitQrAttendance({}, ctx)).rejects.toThrow('Faltan datos');
 
       ctx.docStore['profiles/student1'] = { role: 'student' };
-
       const teacherCtx = createMockContext({ uid: 'teacher1' });
       teacherCtx.docStore['profiles/teacher1'] = { role: 'teacher' };
-      
-      // Setup active QR first for teacher check
-      teacherCtx.docStore['courses/c1/active_qr/current'] = { token: 'ABCDEF', classNumber: 1 };
       await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: 'ABCDEF' }, teacherCtx))
         .rejects.toThrow('Solo los estudiantes pueden firmar asistencia');
 
-      // No active QR
       await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: 'ABCDEF' }, ctx))
         .rejects.toThrow('No hay un código de asistencia activo');
 
-      // Setup active QR
-      ctx.docStore['courses/c1/active_qr/current'] = {
-        token: 'ABCDEF',
-        classNumber: 1,
-        created_at: { toDate: () => new Date() },
-        lat: -41.133,
-        lng: -71.310
-      };
+      // Sesiones viejas con token fijo (anteriores al cambio) no validan.
+      ctx.docStore['courses/c1/active_qr/current'] = { token: 'ABCDEF', classNumber: 1, created_at: { toDate: () => new Date() } };
+      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: 'ABCDEF' }, ctx))
+        .rejects.toThrow('No hay un código de asistencia activo');
 
-      // Invalid token
-      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: 'WRONG' }, ctx))
-        .rejects.toThrow('código de asistencia ingresado no es válido');
+      const secret = 'ab'.repeat(32);
+      const session = { secret, classNumber: 1, period: 15, lat: -41.133, lng: -71.310, expires_at: new Date(Date.now() + 60000) };
+      ctx.docStore['courses/c1/active_qr/current'] = session;
+      const code = qrToken.qrCodeForStep(secret, qrToken.qrStepAt(Date.now()));
+      const staleCode = qrToken.qrCodeForStep(secret, qrToken.qrStepAt(Date.now()) - 5);
 
-      // Invalid class number
-      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 2, token: 'ABCDEF' }, ctx))
+      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: 'WRONG1' }, ctx))
+        .rejects.toThrow('no es válido');
+      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: staleCode, lat: -41.1331, lng: -71.3101 }, ctx))
+        .rejects.toThrow('ha expirado');
+      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 2, token: code }, ctx))
         .rejects.toThrow('clase diferente');
 
-      // Expired token
-      ctx.docStore['courses/c1/active_qr/current'].created_at = { toDate: () => new Date(Date.now() - 60000) };
-      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: 'ABCDEF' }, ctx))
-        .rejects.toThrow('ha expirado');
-
-      // Reset timestamp to now
-      ctx.docStore['courses/c1/active_qr/current'].created_at = { toDate: () => new Date() };
-
-      // Far distance (>150m)
-      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: 'ABCDEF', lat: -40.000, lng: -70.000 }, ctx))
+      // Con ubicación del aula, la del estudiante es obligatoria.
+      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: code }, ctx))
+        .rejects.toThrow('requiere tu ubicación');
+      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: code, lat: -40.000, lng: -70.000 }, ctx))
         .rejects.toThrow('Estás demasiado lejos');
 
-      // Valid distance (within 150m)
-      const res = await attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: 'ABCDEF', lat: -41.1331, lng: -71.3101 }, ctx);
-      expect(res.success).toBe(true);
+      const res = await attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: code.toLowerCase(), lat: -41.1331, lng: -71.3101 }, ctx);
+      expect(res).toEqual({ success: true });
+      expect(ctx.docStore['courses/c1/attendance/class_1'].records).toEqual({ student1: 'present' });
+      const xpEntries = Object.keys(ctx.docStore).filter((k) => k.startsWith('profiles/student1/xp_logs/'));
+      expect(xpEntries).toHaveLength(1);
+
+      // Escanear dos veces no duplica XP.
+      const again = await attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: code, lat: -41.1331, lng: -71.3101 }, ctx);
+      expect(again).toEqual({ success: true, alreadyRegistered: true });
+      expect(Object.keys(ctx.docStore).filter((k) => k.startsWith('profiles/student1/xp_logs/'))).toHaveLength(1);
+
+      // Sesión vencida.
+      ctx.docStore['courses/c1/active_qr/current'] = { ...session, expires_at: new Date(Date.now() - 1) };
+      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: code }, ctx))
+        .rejects.toThrow('No hay un código de asistencia activo');
+
+      // Sin ubicación del aula no se exige la del estudiante.
+      ctx.docStore['courses/c1/active_qr/current'] = { ...session, lat: null, lng: null };
+      delete ctx.docStore['courses/c1/attendance/class_1'];
+      await expect(attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: code }, ctx)).resolves.toEqual({ success: true });
     });
   });
 

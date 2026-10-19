@@ -146,8 +146,8 @@ describe("attendance subcollection", () => {
 describe("active QR token", () => {
   const qr = (uid) => doc(user(uid), `courses/${COURSE}/active_qr/current`);
 
-  it("can be published by the assigned teacher", async () => {
-    await assertSucceeds(setDoc(qr(TEACHER), { token: "ABC123", classNumber: 1 }));
+  it("cannot be published by clients, not even the assigned teacher", async () => {
+    await assertFails(setDoc(qr(TEACHER), { token: "ABC123", classNumber: 1 }));
   });
 
   it("is unreadable by any client and unwritable by students", async () => {

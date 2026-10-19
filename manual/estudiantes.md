@@ -31,8 +31,9 @@ Durante la clase, el docente proyecta un código QR con un código de 6 caracter
 
 ```{warning}
 La asistencia se rechaza si:
-- el código ya venció: el QR se renueva cada 30 segundos y el sistema acepta un código hasta 45 segundos después de generado;
-- estás a más de **150 metros** del docente (cuando el docente generó el QR con ubicación);
+- el código ya venció: el QR cambia cada 15 segundos y cada código vale como máximo 30 segundos;
+- el docente generó el QR con ubicación y no compartiste la tuya, o estás a más de **150 metros** del aula;
+- no estás inscripto en esa cátedra;
 - el código corresponde a otra clase o no hay un QR activo en ese momento.
 ```
 

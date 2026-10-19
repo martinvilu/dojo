@@ -900,14 +900,14 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `firestore.rules, functions/src/attendance/`
 - **Propuesta técnica:** Habilitar la directiva Time-to-Live (TTL) de Cloud Firestore en el campo `expire_at` para borrado automático sin costo.
 - **Impacto y beneficio:** Base de datos limpia y menor volumen de almacenamiento cobrable.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Las sesiones de `active_qr` llevan `expires_at` (4 h) con política TTL en `firestore.indexes.json`; `stopQrAttendance` las cierra al instante.
 
 ### 3.18. Protección contra ataques de repetición (Replay Attacks) en validación de asistencia
 - **Diagnóstico actual:** Un alumno podría compartir una captura de pantalla del código QR con un compañero que no está en el aula.
 - **Archivos involucrados:** `functions/src/attendance/validate.js`
 - **Propuesta técnica:** Generar tokens QR dinámicos rotativos cada 15 segundos basados en TOTP vinculado a la sesión del proyector del docente.
 - **Impacto y beneficio:** Garantía de presencialidad real en el aula.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `startQrAttendance` crea en el servidor una sesión con secreto aleatorio; el código se deriva por HMAC-SHA256 del intervalo de 15 s (`functions/src/lib/qrToken.js` y `src/lib/qrToken.ts`) y vale como máximo 30 s. Si el aula tiene ubicación, la del estudiante es obligatoria.
 
 ### 3.19. Sincronización bidireccional asíncrona de notas con Moodle Gradebook
 - **Diagnóstico actual:** Al calificar en Dojo, el docente debe recordar presionar sincronizar con Moodle.

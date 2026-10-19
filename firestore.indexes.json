@@ -97,6 +97,12 @@
       "indexes": []
     },
     {
+      "collectionGroup": "active_qr",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "rate_limits",
       "fieldPath": "expires_at",
       "ttl": true,
