@@ -879,7 +879,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `firestore.rules`
 - **Propuesta técnica:** Agregar regla: `allow update, delete: if signedIn() && (resource.data.user_id == request.auth.uid || isAdmin() || isTeacherOf(courseId))`.
 - **Impacto y beneficio:** Gobernanza comunitaria y respeto entre estudiantes en foros.
-- **Estado (24/09/2026):** 🟡 Parcial — Las reglas prohíben editar/borrar mensajes del foro (solo reacciones y mejor respuesta).
+- **Estado (19/10/2026):** ✅ Implementada — Reglas: el autor edita solo `content` (con `edited_at = request.time`) y borra sus mensajes; el equipo docente y los admins moderan cualquiera. UI de **Editar** / **Borrar** con marca «(editado)»; 3 escenarios nuevos en la suite de reglas.
 
 ### 3.15. Verificación de firma HMAC en Webhooks de GitHub
 - **Diagnóstico actual:** Cualquier cliente que conozca la URL del endpoint de webhook de GitHub podría enviar payloads falsos simulando entregas.

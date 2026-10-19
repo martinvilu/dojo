@@ -74,7 +74,7 @@ Presioná **💾 Guardar Cronograma**. Cada guardado crea además una versión a
 ### 3.5. Encuestas y foro de cada clase
 
 - **📊 Feedback Anónimo**: valoración promedio, cantidad de encuestas completadas, nivel de comprensión general y comentarios escritos de los estudiantes.
-- **Foro de Consultas**: respondé las preguntas y marcá la mejor respuesta como **✔️ Solución** (suma XP al autor).
+- **Foro de Consultas**: respondé las preguntas y marcá la mejor respuesta como **✔️ Solución** (suma XP al autor). Como moderador podés **Borrar** cualquier mensaje de tu cátedra; cada autor puede editar o borrar los suyos.
 
 ## 4. Asistencia
 

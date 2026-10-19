@@ -203,6 +203,25 @@ describe("class_comments subcollection", () => {
     }));
   });
 
+  it("authors edit only the text of their own messages, stamped with edited_at", async () => {
+    await seedComment();
+    const mine = doc(user(STUDENT), `courses/${COURSE}/class_comments/c1`);
+    await assertSucceeds(updateDoc(mine, { content: "Consulta corregida", edited_at: serverTimestamp() }));
+    await assertFails(updateDoc(mine, { content: "Sin marca de edición" }));
+    await assertFails(updateDoc(mine, { content: "", edited_at: serverTimestamp() }));
+    await assertFails(updateDoc(mine, { content: "Otra", edited_at: serverTimestamp(), is_best_answer: true }));
+    // Otro miembro del curso no puede editar el mensaje ajeno.
+    await assertFails(updateDoc(doc(user(TEACHER), `courses/${COURSE}/class_comments/c1`), { content: "Pisado", edited_at: serverTimestamp() }));
+  });
+
+  it("authors delete their own messages and the course staff moderates", async () => {
+    await seedComment();
+    await assertFails(deleteDoc(doc(user(STUDENT2), `courses/${COURSE}/class_comments/c1`)));
+    await assertSucceeds(deleteDoc(doc(user(STUDENT), `courses/${COURSE}/class_comments/c1`)));
+    await seedComment();
+    await assertSucceeds(deleteDoc(doc(user(TEACHER), `courses/${COURSE}/class_comments/c1`)));
+  });
+
   it("supports first reaction on legacy comments without reactions map", async () => {
     await withAdminDb((db) => setDoc(doc(db, `courses/${COURSE}/class_comments/legacy`), {
       classNumber: 1,
@@ -225,9 +244,9 @@ describe("class_comments subcollection", () => {
     await assertFails(updateDoc(ref(TEACHER), { is_best_answer: true, content: "x" }));
   });
 
-  it("cannot be deleted from clients", async () => {
+  it("cannot be deleted by non-members", async () => {
     await seedComment();
-    await assertFails(deleteDoc(doc(user(TEACHER), `courses/${COURSE}/class_comments/c1`)));
+    await assertFails(deleteDoc(doc(user(STUDENT2), `courses/${COURSE}/class_comments/c1`)));
   });
 });
 

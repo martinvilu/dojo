@@ -48,7 +48,7 @@ En cada clase podés:
 - Abrir el **Material de Clase ↗** y la **Video Grabación ↗**.
 - Abrir **💬 Preguntar en GitHub Discussions ↗**, si la cátedra lo usa.
 - Responder la encuesta **✍️ Feedback Anónimo**: valoración de 1 a 5, nivel de comprensión y un comentario opcional. Es anónima: el sistema evita duplicados sin guardar tu identidad.
-- Participar en el **Foro de Consultas**: escribí en **Nuevo comentario**, reaccioná a las respuestas de otros y fijate cuál marcó el docente como **✔️ Solución**.
+- Participar en el **Foro de Consultas**: escribí en **Nuevo comentario**, reaccioná a las respuestas de otros y fijate cuál marcó el docente como **✔️ Solución**. Tus propios mensajes los podés **Editar** (quedan marcados como «editado») o **Borrar**.
 
 Con **📅 Suscribirse a Calendario** obtenés una URL para agregar el cronograma a tu calendario (ver §6).
 

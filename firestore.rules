@@ -101,6 +101,17 @@ service cloud.firestore {
           return request.resource.data.diff(resource.data)
                  .affectedKeys().hasOnly(['is_best_answer']);
         }
+        // El autor puede corregir el texto de su propio mensaje (mejora
+        // 3.14); queda marcado con edited_at = hora del servidor.
+        function onlyOwnContentEdited() {
+          return resource.data.user_id == request.auth.uid
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys().hasOnly(['content', 'edited_at'])
+            && request.resource.data.content is string
+            && request.resource.data.content.size() > 0
+            && request.resource.data.content.size() <= 4000
+            && request.resource.data.edited_at == request.time;
+        }
 
         allow read: if isMemberOf(courseId);
         allow create: if isMemberOf(courseId)
@@ -110,8 +121,11 @@ service cloud.firestore {
           && request.resource.data.content.size() > 0
           && request.resource.data.content.size() <= 4000;
         allow update: if ((isAdmin() || isTeacherOf(courseId)) && onlyBestAnswerChanged())
-          || (isMemberOf(courseId) && onlyReactionsChanged());
-        allow delete: if false;
+          || (isMemberOf(courseId) && onlyReactionsChanged())
+          || (isMemberOf(courseId) && onlyOwnContentEdited());
+        // El autor borra sus mensajes; el equipo docente modera cualquiera.
+        allow delete: if (isMemberOf(courseId) && resource.data.user_id == request.auth.uid)
+          || isAdmin() || isTeacherOf(courseId);
       }
 
       // Encuestas anónimas por clase: el id del documento es el hash del
