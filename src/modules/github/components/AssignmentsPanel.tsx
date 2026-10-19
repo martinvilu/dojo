@@ -440,13 +440,19 @@ export default function AssignmentsPanel({
                     </div>
                     
                     <div className="space-y-4">
-                      {(graderSubmissions[a.id] || []).filter((sub: any) => {
-                        const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
-                        if (commissionFilter === "Todas") return true;
-                        if (commissionFilter === "Sin Comisión") return studentComm === "";
-                        return studentComm === commissionFilter;
-                      }).map((sub: any) => {
-                        const studentName = sub.profiles?.full_name || sub.profiles?.email || "Estudiante";
+                      {(() => {
+                        // ⚡ Bolt: Extracted filtering logic to prevent redundant O(N) evaluations in render loop
+                        const filteredSubs = (graderSubmissions[a.id] || []).filter((sub: any) => {
+                          const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
+                          if (commissionFilter === "Todas") return true;
+                          if (commissionFilter === "Sin Comisión") return studentComm === "";
+                          return studentComm === commissionFilter;
+                        });
+
+                        return (
+                          <>
+                            {filteredSubs.map((sub: any) => {
+                              const studentName = sub.profiles?.full_name || sub.profiles?.email || "Estudiante";
                         const isGitHubLoaded = githubActivitySubmissionId === sub.id;
                         return (
                           <div key={sub.id} className="bg-neutral-950/60 border border-neutral-850 p-5 rounded-2xl space-y-4 text-left">
@@ -514,10 +520,13 @@ export default function AssignmentsPanel({
                             </div>
                           </div>
                         );
-                      })}
-                      {(!graderSubmissions[a.id] || graderSubmissions[a.id].filter((sub: any) => { const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || ""; if (commissionFilter === "Todas") return true; if (commissionFilter === "Sin Comisión") return studentComm === ""; return studentComm === commissionFilter; }).length === 0) && (
-                        <p className="text-xs text-gray-500 italic text-center py-4 bg-neutral-950/20 rounded-xl border border-neutral-850 border-dashed">No hay entregas registradas en esta comisión aún.</p>
-                      )}
+                            })}
+                            {filteredSubs.length === 0 && (
+                              <p className="text-xs text-gray-500 italic text-center py-4 bg-neutral-950/20 rounded-xl border border-neutral-850 border-dashed">No hay entregas registradas en esta comisión aún.</p>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
