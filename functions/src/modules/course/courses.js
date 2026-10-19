@@ -1,3 +1,4 @@
+const logger = require('firebase-functions/logger');
 const { randomBytes } = require('node:crypto');
 const { isCourseStaff } = require('../../authz');
 const { dojoError } = require('../../lib/errors');
@@ -5,6 +6,7 @@ const { publicProfile, staffStudentProfile } = require('../../lib/projections');
 const { PURGE_AFTER_DAYS, isDeleted } = require('../../lib/softDelete');
 const { rosterChecksum, shouldSyncRoster, saveRosterChecksum } = require('../../lib/rosterChecksum');
 const { syncRoleClaim } = require('../../lib/claims');
+const { encryptSecret } = require('../../lib/secretBox');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -228,7 +230,8 @@ function sanitizeCourseSettings(data) {
         if (!EDITABLE_SETTINGS[key](value)) {
             throw dojoError('INVALID_ARGUMENT', `Valor inválido para "${key}".`);
         }
-        update[key] = key === 'github_token' ? value.trim() : value;
+        // Los tokens se guardan cifrados (mejora 3.13).
+        update[key] = key === 'github_token' ? encryptSecret(value.trim(), { logger }) : value;
     }
     return update;
 }

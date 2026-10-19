@@ -26,6 +26,7 @@ const ACTION_MODULES = {
     saveGlobalSettings: './modules/course/admin',
     getAdminCourseDetails: './modules/course/admin',
     deleteUser: './modules/course/admin',
+    encryptStoredSecrets: './modules/course/admin',
     
     // attendance
     submitQrAttendance: './modules/attendance/attendance',

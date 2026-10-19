@@ -872,7 +872,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `firestore.rules, functions/src/crypto.js`
 - **Propuesta técnica:** Cifrar los tokens usando AES-256-GCM con una llave maestra en Secret Manager antes de persistirlos.
 - **Impacto y beneficio:** Inmunidad ante filtraciones accidentales de la base de datos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/secretBox.js`: AES-256-GCM con `TOKEN_ENCRYPTION_KEY` (formato `enc:v1:…`); los tokens de GitHub se cifran al guardarse y se descifran al usarse, los guardados en texto plano siguen funcionando y la acción `encryptStoredSecrets` (admin) los migra. Requiere crear la clave (ver 3.06).
 
 ### 3.14. Reglas de Firestore para foros: alumnos solo pueden editar/borrar sus propios mensajes
 - **Diagnóstico actual:** Verificar que en la colección de comentarios solo el autor original pueda actualizar el texto de su duda.

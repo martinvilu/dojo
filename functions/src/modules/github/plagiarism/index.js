@@ -1,5 +1,6 @@
 const logger = require("firebase-functions/logger");
 const { dojoError } = require('../../../lib/errors');
+const { courseGithubToken } = require('../../../lib/secretBox');
 const {
     isCodeFile,
     MAX_FILE_SIZE,
@@ -86,7 +87,8 @@ async function detectAssignmentPlagiarism(payload, context) {
 
     const cSnap = await db.collection('courses').doc(assignment.course_id).get();
     const course = cSnap.exists ? cSnap.data() : {};
-    if (!course.github_token) throw dojoError('GITHUB_NOT_CONFIGURED', "Configurá primero el token de GitHub de la cátedra en Ajustes.");
+    const githubToken = courseGithubToken(course);
+    if (!githubToken) throw dojoError('GITHUB_NOT_CONFIGURED', "Configurá primero el token de GitHub de la cátedra en Ajustes.");
 
     const subsSnap = await db.collection('submissions')
         .where('assignment_id', '==', assignmentId).get();
@@ -103,7 +105,7 @@ async function detectAssignmentPlagiarism(payload, context) {
         }
         const url = sub.repo_url || sub.github_repo;
         try {
-            const res = await fetchRepoFingerprint(url, course.github_token);
+            const res = await fetchRepoFingerprint(url, githubToken);
             if (res.error) skipped.push({ student: label, reason: res.error });
             else analyzed.push({
                 submissionId: doc.id,

@@ -2,6 +2,7 @@ const logger = require("firebase-functions/logger");
 const { projectCourse } = require('./courses');
 const { dojoError } = require('../../lib/errors');
 const { ROLES, syncRoleClaim } = require('../../lib/claims');
+const { encryptSecret, isEncrypted } = require('../../lib/secretBox');
 
 async function approveUser(payload, context) {
     const { db, getMyProfile } = context;
@@ -204,7 +205,29 @@ async function deleteUser(payload, context) {
     return { success: true };
 }
 
+/**
+ * Cifra los tokens de GitHub guardados en texto plano antes de la mejora
+ * 3.13. Idempotente: los ya cifrados se saltean.
+ */
+async function encryptStoredSecrets(payload, context) {
+    const { db } = context;
+    if (!process.env.TOKEN_ENCRYPTION_KEY) {
+        throw dojoError('FAILED_PRECONDITION', "Configurá TOKEN_ENCRYPTION_KEY en Cloud Functions antes de migrar los tokens.");
+    }
+    const snap = await db.collection('courses').get();
+    let encrypted = 0;
+    for (const doc of snap.docs) {
+        const token = doc.data().github_token;
+        if (token && !isEncrypted(token)) {
+            await doc.ref.update({ github_token: encryptSecret(token) });
+            encrypted++;
+        }
+    }
+    return { success: true, encrypted, scanned: snap.size };
+}
+
 module.exports = {
+    encryptStoredSecrets,
     normalizeDomains,
     approveUser,
     updateUserRole,

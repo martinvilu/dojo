@@ -95,7 +95,8 @@ gcloud firestore export gs://<bucket>/backups/$(date +%F) --project jutsu-classr
 | `sync_secret` del curso | `courses/{id}` | Equipo docente | Borrar el campo en la consola de Firestore: se regenera en la siguiente apertura del curso. Invalida las URLs de planillas CSV, la importación de notas y los feeds iCal que lo usen |
 | `calendar_secret` del curso | `courses/{id}` | Docentes y estudiantes | Igual que el anterior; invalida las suscripciones iCal de los estudiantes |
 | `sync_secret` de la tarea | `assignments/{id}` | Equipo docente | Lo usa el workflow de autograding; actualizar el secret del repo tras rotarlo |
-| Token de GitHub (PAT) | `courses/{id}.github_token` | Solo backend (nunca se devuelve al cliente) | Generar un PAT nuevo con `repo`, `admin:org` y guardarlo en **Ajustes Cátedra** |
+| Token de GitHub (PAT) | `courses/{id}.github_token`, cifrado con AES-256-GCM (`enc:v1:…`) si hay `TOKEN_ENCRYPTION_KEY` | Solo backend (nunca se devuelve al cliente) | Generar un PAT nuevo con `repo`, `admin:org` y guardarlo en **Ajustes Cátedra** |
+| `TOKEN_ENCRYPTION_KEY` | Secret Manager (ver §6.1) | Cloud Functions | **No se rota sin re-cifrar**: los tokens guardados dependen de ella |
 | Token de Moodle (`wstoken`) | Curso | Solo backend | Rotarlo en Moodle y actualizarlo en la integración Moodle |
 | OAuth de Gmail | Functions (`GMAIL_CLIENT_ID/SECRET`) + tokens por docente | Backend | Reautorizar desde **Mi Perfil → Autorización de Gmail** |
 

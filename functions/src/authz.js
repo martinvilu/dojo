@@ -59,6 +59,7 @@ const ACTION_POLICIES = {
     saveGlobalSettings: ADMIN,
     getAdminCourseDetails: ADMIN,
     deleteUser: ADMIN,
+    encryptStoredSecrets: ADMIN,
     mergeProfiles: ADMIN,
     getActivityLogs: ADMIN,
     createSystemBackup: ADMIN,

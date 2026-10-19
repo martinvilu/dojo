@@ -50,3 +50,18 @@ describe('updateCourseSettings whitelist', () => {
     expect(sanitizeCourseSettings({ duration_weeks: null, start_date: '2026-03-01', moodle_enabled: true })).toEqual({ duration_weeks: null, start_date: '2026-03-01', moodle_enabled: true });
   });
 });
+
+describe('GitHub token encryption on save (mejora 3.13)', () => {
+  it('stores the token encrypted when a key is configured', async () => {
+    process.env.TOKEN_ENCRYPTION_KEY = Buffer.alloc(32, 3).toString('base64');
+    try {
+      const { decryptSecret } = require('../src/lib/secretBox');
+      const docs = { 'courses/c1': { ...COURSE }, 'profiles/t1': { role: 'teacher' }, 'course_teachers/c1_t1': { role: 'titular' } };
+      await updateCourseSettings({ courseId: 'c1', data: { github_token: 'ghp_nuevo' } }, { db: db(docs), uid: 't1', admin });
+      expect(docs['courses/c1'].github_token).toMatch(/^enc:v1:/);
+      expect(decryptSecret(docs['courses/c1'].github_token)).toBe('ghp_nuevo');
+    } finally {
+      delete process.env.TOKEN_ENCRYPTION_KEY;
+    }
+  });
+});
