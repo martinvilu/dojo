@@ -122,6 +122,17 @@ El script genera `TOKEN_ENCRYPTION_KEY` (32 bytes aleatorios) si no existe, pide
 
 Los secretos viejos de 8 caracteres siguen siendo válidos hasta que se regeneren. El detalle de esa migración está en el [Runbook CSV](RUNBOOK_DESPLIEGUE_CSV.md).
 
+## 6.2. Costos
+
+Configurá una alerta de presupuesto para detectar consumo anómalo (por ejemplo, un loop de lecturas):
+
+```bash
+gcloud billing accounts list                                   # ID de la cuenta de facturación
+scripts/setup-budget-alert.sh 0X0X0X-0X0X0X-0X0X0X 25 jutsu-classroom-mrtin
+```
+
+Avisa por mail a los administradores de facturación al 50 %, 90 % y 100 % del monto mensual, y cuando el pronóstico del mes supera el 100 %. El rate limit de la callable (`rate_limits`) acota el impacto de un cliente que llama en bucle.
+
 ## 7. Gestión de cuentas
 
 - Las cuentas nuevas se crean como **estudiante pendiente**. Un estudiante se aprueba solo al validar una matrícula `UNRN-#####`; en cualquier otro caso lo aprueba un administrador en **Usuarios**.

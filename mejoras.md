@@ -998,7 +998,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `firebase.json`
 - **Propuesta técnica:** Configurar alertas de presupuesto en Google Cloud Billing que notifiquen ante desvíos del consumo habitual.
 - **Impacto y beneficio:** Protección financiera y detección inmediata de bucles de consulta.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — `scripts/setup-budget-alert.sh` crea el presupuesto con umbrales al 50/90/100 % y por pronóstico, documentado en OPERACION §6.2. **Acción externa pendiente**: ejecutarlo con el ID de la cuenta de facturación (requiere permisos de Billing).
 
 ### 3.32. Generación de URLs firmadas (Signed URLs) con tiempo de expiración para entregas
 - **Diagnóstico actual:** Los enlaces de descarga de correcciones pueden quedar públicos si no se controlan los accesos.
