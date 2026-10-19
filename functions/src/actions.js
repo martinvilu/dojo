@@ -114,6 +114,8 @@ const ACTION_MODULES = {
     notifyCourseStudents: './modules/notifications/notifications',
     checkAndAlertStudentsAtRisk: './modules/notifications/notifications',
     getDropoutRiskAnalysis: './modules/course/analytics',
+    requestCourseExport: './modules/course/exportJobs',
+    getExportDownloadUrl: './modules/course/exportJobs',
     enablePeerReview: './modules/github/peerreview',
     getMyReviewAssignments: './modules/github/peerreview',
     submitPeerReview: './modules/github/peerreview',

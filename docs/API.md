@@ -171,6 +171,8 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `getTeacherDashboardStats` | STAFF |
 | `getCourseDashboardStats`, `getDropoutRiskAnalysis`, `notifyCourseStudents`, `checkAndAlertStudentsAtRisk` | staffOf(course) |
 | `getStudentNotifications`, `markNotificationsRead` | AUTHENTICATED |
+| `requestCourseExport` | staffOf(course). Encola el reporte académico completo del curso (`export_jobs`); el trigger `onExportJobCreated` lo genera en segundo plano, lo sube a Cloud Storage y avisa al docente |
+| `getExportDownloadUrl` | AUTHENTICATED (quien la pidió, staff del curso o admin). URL firmada v4 de 15 minutos; `status` mientras se genera |
 
 `getDropoutRiskAnalysis` calcula un puntaje 0–100: inasistencia 45 %, tareas pendientes 35 %, entregas tardías 10 % y sin participación en el foro 10 %.
 
@@ -273,6 +275,7 @@ curl -s https://<dominio>/api/health?deep=1   # además sondea la API de GitHub
 | `onSubmissionGradeChange` | Trigger `onDocumentWritten` de `submissions/{id}` | Registra en `audit_logs` todo cambio de nota o feedback con su origen (`manual`, `spreadsheet`, `csv_import`, `autograding`) y autor (`graded_by`), y sincroniza la nota con Moodle si la entrega llegó por LTI |
 | `onClassCommentUpdated` | Trigger `onDocumentUpdated` de `courses/{id}/class_comments/{id}` | Notifica al autor cuando su mensaje se marca como solución |
 | `retryWebhookDeadLetters` | Cada 10 minutos | Reprocesa la cola `webhook_dead_letters` con backoff exponencial (5 min × 2ⁿ, hasta 6 intentos; luego `status: failed`) |
+| `onExportJobCreated` | Trigger `onDocumentCreated` de `export_jobs/{id}` (5 min, 512 MiB) | Genera el CSV del reporte completo, lo sube a `exports/{courseId}/{jobId}.csv` y notifica. Los archivos se borran a los 7 días |
 | `cleanupAssignmentData` | Trigger `onDocumentDeleted` de `assignments/{id}` | Borra las entregas y revisiones entre pares de la tarea eliminada (la auditoría de notas se conserva) |
 | `sendDailySummaries` | Todos los días 20:00 (America/Argentina/Buenos_Aires) | Agrupa por estudiante las notificaciones marcadas como pendientes de resumen y envía un resumen diario |
 

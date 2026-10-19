@@ -38,6 +38,7 @@ const ACTION_POLICIES = {
     bookTutoringSession: { limit: 10, windowMs: HOUR },
     postStudyGroupMessage: { limit: 30, windowMs: MINUTE },
     exportMyData: { limit: 5, windowMs: HOUR },
+    requestCourseExport: { limit: 10, windowMs: HOUR },
     requestAccountDeletion: { limit: 5, windowMs: HOUR },
 };
 

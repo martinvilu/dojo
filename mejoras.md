@@ -893,7 +893,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/app/api/export/route.ts`
 - **Propuesta técnica:** Delegar la generación pesada a una Cloud Task en segundo plano que envíe el enlace de descarga por email al docente.
 - **Impacto y beneficio:** Cero caídas por timeouts en operaciones de reportería complejas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `requestCourseExport` encola el reporte académico completo en `export_jobs`; el trigger `onExportJobCreated` (5 min, 512 MiB) lo genera con lecturas por lotes, lo sube a Cloud Storage y avisa por la 🔔. Se usa un trigger de Firestore (con reintentos) en lugar de Cloud Tasks. El reporte PDF sigue siendo de impresión en el navegador.
 
 ### 3.17. Limpieza automática de tokens de asistencia QR vencidos mediante TTL en Firestore
 - **Diagnóstico actual:** Los códigos QR de asistencia caducan a los pocos minutos, pero sus documentos quedan en la base de datos para siempre.
@@ -1005,7 +1005,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/storage/signedUrls.js`
 - **Propuesta técnica:** Servir archivos privados mediante URLs firmadas con expiración máxima de 15 minutos.
 - **Impacto y beneficio:** Privacidad rigurosa de los exámenes y retroalimentaciones de los estudiantes.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `getExportDownloadUrl` entrega URLs firmadas v4 de 15 minutos solo a quien pidió la exportación, al staff del curso o a un admin; los archivos se borran a los 7 días. Requiere `roles/iam.serviceAccountTokenCreator` en la cuenta de servicio (OPERACION §6.1.2).
 
 ### 3.33. Estandarización de códigos de error semánticos en el backend
 - **Diagnóstico actual:** Las funciones devuelven mensajes de error planos como 'Error processing request' en lugar de códigos estructurados.

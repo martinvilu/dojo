@@ -339,6 +339,20 @@ export function CourseStudentsPanel({
                       >
                         <span>📄 Descargar Reporte PDF</span>
                       </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await api("requestCourseExport", { courseId: selectedCourse.id || selectedCourse.course?.id });
+                            showToast("Estamos armando el reporte completo. Te avisamos en 🔔 cuando esté listo para descargar.", "success");
+                          } catch (err: any) {
+                            showToast("No se pudo pedir el reporte: " + err.message, "error");
+                          }
+                        }}
+                        className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-emerald-400 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
+                      >
+                        <span>📦 Reporte completo (CSV)</span>
+                      </button>
                     </div>
                   </div>
 

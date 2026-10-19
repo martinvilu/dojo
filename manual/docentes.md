@@ -166,6 +166,7 @@ Acciones:
 
 - **📢 Alertas Automáticas**: notifica a los estudiantes en riesgo.
 - **📄 Descargar Reporte PDF**: reporte académico de la cátedra.
+- **📦 Reporte completo (CSV)**: una fila por estudiante con datos, asistencia y la nota de cada tarea. Se arma en segundo plano (sirve para cátedras grandes); cuando está listo te llega un aviso a la 🔔 con el enlace de descarga, que vale 15 minutos cada vez que lo abrís y durante 7 días.
 - **✉️ Email**: correo directo a un estudiante.
 - **▼ Mostrar URL** → **Copiar URL CSV**: URL para Google Sheets con `=IMPORTDATA("…")`, que mantiene el roster y las alertas sincronizados.
 

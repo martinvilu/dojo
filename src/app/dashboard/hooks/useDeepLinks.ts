@@ -40,6 +40,19 @@ export function useDeepLinks({
 
     const processParams = async () => {
       hasProcessedParams.current = true;
+      // Descarga de una exportación lista (link de la notificación): se
+      // pide una URL firmada de 15 minutos y se abre (mejora 3.32).
+      const exportJob = params.get("export");
+      if (exportJob) {
+        try {
+          const res = await api("getExportDownloadUrl", { jobId: exportJob });
+          if (res?.url) window.location.assign(res.url);
+          else showToast(res?.status === "failed" ? "La exportación falló: pedila de nuevo." : "La exportación todavía se está generando.", res?.status === "failed" ? "error" : "success");
+        } catch (e: any) {
+          showToast("No se pudo descargar la exportación: " + e.message, "error");
+        }
+      }
+
       const ltiParam = params.get("lti_launch");
       const ltiLaunch = Boolean(ltiParam);
 

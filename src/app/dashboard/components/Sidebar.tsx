@@ -47,7 +47,7 @@ export function Sidebar({
           <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-amber-500 bg-clip-text text-transparent truncate">
             {isSidebarCollapsed ? "🥷" : "Ninja Dojo"}
           </h1>
-          {profile?.role === "student" && profile?.account_status === "approved" && (
+          {(profile?.account_status === "approved" || profile?.role === "teacher" || profile?.role === "admin") && (
             <NotificationBell compact={isSidebarCollapsed} />
           )}
         </div>

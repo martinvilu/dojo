@@ -65,7 +65,7 @@ En los logs, `[API Call]` / `[API Error]` incluyen la acción y el `uid`. Los pa
 |---|---|---|
 | `sendDailySummaries` | Diaria, 20:00 ART | Resumen de notificaciones pendientes por estudiante |
 | `dailyFirestoreExport` | Diaria, 04:00 ART | Export completo de Firestore a `BACKUP_BUCKET` (sin bucket configurado, no hace nada) |
-| `purgeDeletedCourses` | Diaria, 03:00 ART | Borra en cascada las cátedras eliminadas hace más de 30 días |
+| `purgeDeletedCourses` | Diaria, 03:00 ART | Borra en cascada las cátedras eliminadas hace más de 30 días y los archivos de `exports/` de más de 7 días |
 | `cleanupAssignmentData` | Al borrar una tarea | Limpia sus entregas y revisiones entre pares |
 | `retryWebhookDeadLetters` | Cada 10 min | Reintenta las notas de autograding que fallaron por errores transitorios. Los eventos agotados quedan en `webhook_dead_letters` con `status: failed` para revisión manual |
 | TTL de `processed_webhooks` | Continua | Firestore borra los marcadores de idempotencia del webhook cuando vence `expires_at` (30 días). La política está en `firestore.indexes.json` |
@@ -132,6 +132,17 @@ Para que la callable solo acepte llamadas de la app oficial (no de scripts con u
 4. Recién entonces, agregar `DOJO_ENFORCE_APP_CHECK=true` a `functions/.env.<proyecto>` y desplegar Functions.
 
 Activar el paso 4 antes del 2 rechazaría a todos los usuarios. Las funciones HTTP (webhook, CSV, calendario) no usan App Check porque las llaman sistemas externos con su propio token.
+
+## 6.1.2. Descargas firmadas
+
+Las exportaciones en segundo plano se descargan con URLs firmadas v4 de 15 minutos. En Cloud Functions la firma usa `signBlob`, así que la cuenta de servicio de Functions necesita `roles/iam.serviceAccountTokenCreator` sobre sí misma:
+
+```bash
+SA=jutsu-classroom-mrtin@appspot.gserviceaccount.com
+gcloud iam service-accounts add-iam-policy-binding "$SA" --member "serviceAccount:$SA" --role roles/iam.serviceAccountTokenCreator --project jutsu-classroom-mrtin
+```
+
+Sin ese permiso, el reporte se genera pero `getExportDownloadUrl` falla.
 
 ## 6.2. Costos
 

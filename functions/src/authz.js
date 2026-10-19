@@ -144,6 +144,9 @@ const ACTION_POLICIES = {
     notifyCourseStudents: staffOf('course'),
     checkAndAlertStudentsAtRisk: staffOf('course'),
     getDropoutRiskAnalysis: staffOf('course'),
+    requestCourseExport: staffOf('course'),
+    // el handler verifica que sea quien la pidió, staff del curso o admin
+    getExportDownloadUrl: AUTHENTICATED,
     getStudentNotifications: AUTHENTICATED,
     markNotificationsRead: AUTHENTICATED,
 

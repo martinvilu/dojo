@@ -1,6 +1,6 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onDocumentDeleted, onDocumentWritten, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentDeleted, onDocumentWritten, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 
 // Secretos desde Google Secret Manager (mejora 3.06). Se activa con
@@ -140,6 +140,7 @@ exports.api = onCall({ secrets, enforceAppCheck }, async (request) => {
             request,
             db,
             admin: handlerAdmin,
+            get bucket() { return admin.storage().bucket(); },
             getMyProfile
         };
         
@@ -195,8 +196,14 @@ exports.sendDailySummaries = onSchedule({ schedule: 'every day 20:00', timeZone:
 
 // Borrado lógico de cátedras: purga en cascada las vencidas (mejora 3.21).
 exports.purgeDeletedCourses = onSchedule({ schedule: 'every day 03:00', timeZone: 'America/Argentina/Buenos_Aires' }, async () => {
-    const { purgeDeletedCourses } = require('./src/modules/system/cleanup');
+    const { purgeDeletedCourses, purgeExpiredExports } = require('./src/modules/system/cleanup');
     await purgeDeletedCourses(db, logger);
+    try {
+        const removed = await purgeExpiredExports(admin.storage().bucket());
+        if (removed) logger.info(`[cleanup] ${removed} exportaciones vencidas borradas`);
+    } catch (e) {
+        logger.warn('[cleanup] no se pudieron limpiar las exportaciones:', e.message);
+    }
 });
 
 // Entregas y revisiones de una tarea eliminada (mejora 3.47).
@@ -244,4 +251,14 @@ exports.dailyFirestoreExport = onSchedule({ schedule: 'every day 04:00', timeZon
     const { v1 } = require('@google-cloud/firestore');
     const projectId = process.env.GCLOUD_PROJECT || JSON.parse(process.env.FIREBASE_CONFIG || '{}').projectId;
     await exportFirestore({ projectId, bucket: process.env.BACKUP_BUCKET, client: new v1.FirestoreAdminClient(), logger });
+});
+
+// Exportaciones pesadas en segundo plano (mejoras 3.16 y 3.32).
+exports.onExportJobCreated = onDocumentCreated({ document: 'export_jobs/{jobId}', timeoutSeconds: 300, memory: '512MiB' }, async (event) => {
+    const { processExportJob } = require('./src/modules/course/exportJobs');
+    await processExportJob(
+        { db, bucket: admin.storage().bucket(), serverTimestamp: () => FieldValue.serverTimestamp() },
+        event.params.jobId,
+        event.data && event.data.data()
+    );
 });

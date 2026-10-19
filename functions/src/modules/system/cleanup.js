@@ -58,4 +58,12 @@ async function purgeDeletedCourses(db, logger, now = new Date()) {
     return purged;
 }
 
-module.exports = { cleanupAssignmentData, purgeCourse, purgeDeletedCourses, deleteQueryInBatches };
+/** Borra los archivos de exportación de más de 7 días (mejora 3.16). */
+async function purgeExpiredExports(bucket, now = Date.now()) {
+    const [files] = await bucket.getFiles({ prefix: 'exports/' });
+    const expired = files.filter((f) => now - new Date(f.metadata.timeCreated).getTime() > 7 * 24 * 60 * 60 * 1000);
+    await Promise.all(expired.map((f) => f.delete({ ignoreNotFound: true })));
+    return expired.length;
+}
+
+module.exports = { cleanupAssignmentData, purgeCourse, purgeDeletedCourses, deleteQueryInBatches, purgeExpiredExports };
