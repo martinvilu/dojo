@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2023-10-28 - O(N) Array filtering during Kanban render
+**Learning:** Found multiple instances where arrays of React components were rendered using `.map().filter()` iteratively over four kanban columns inside `CourseSchedulesPanel.tsx`, calculating the same `O(N)` loop on every re-render. Similarly, `CourseStudentsPanel.tsx` recalculated its filtered roster inline inside the render `{roster.filter().map()}`.
+**Action:** When working on Kanban-style UI or filtered lists, use `useMemo` to pre-compute and categorize items into O(1) properties (e.g. `kanbanColumns.teoricas`) to eliminate redundant mapping during the component render cycle.
