@@ -1103,7 +1103,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/roster/get.js`
 - **Propuesta técnica:** Proyectar únicamente campos requeridos (`id`, `full_name`, `email`, `matricula`).
 - **Impacto y beneficio:** Respuestas API 70% más livianas y menor latencia en conexiones móviles.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/projections.js`: roster, entregas, acuses de avisos, docentes y grupos de estudio devuelven solo los campos que usa la UI (perfil público para pares; académico para el equipo docente, sin correos secundarios ni datos internos).
 
 ### 3.47. Limpieza de entregas huérfanas al desvincular o eliminar una tarea
 - **Diagnóstico actual:** Si una tarea se elimina, los documentos de entrega de los alumnos quedan como datos basura en Firestore.

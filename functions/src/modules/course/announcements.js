@@ -1,3 +1,4 @@
+const { staffStudentProfile } = require('../../lib/projections');
 async function createAnnouncement(payload, context) {
     const { uid, db, admin } = context;
     await db.collection('announcements').add({
@@ -71,7 +72,7 @@ async function getAnnouncementAcknowledgements(payload, context) {
         acknowledgments.push({
             student_id: data.student_id,
             acknowledged_at: data.acknowledged_at,
-            profile: pSnap.data()
+            profile: staffStudentProfile(pSnap.exists ? pSnap.data() : null)
         });
     }
     return acknowledgments;

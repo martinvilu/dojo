@@ -1,4 +1,5 @@
 const { dojoError } = require('../../lib/errors');
+const { publicProfile } = require('../../lib/projections');
 async function createStudyGroup(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, name, description, schedulePrefs } = payload;
@@ -64,7 +65,7 @@ async function getStudyGroups(payload, context) {
         const memberProfiles = [];
         for (let memberId of data.members || []) {
             const pSnap = await db.collection('profiles').doc(memberId).get();
-            if (pSnap.exists) memberProfiles.push({ id: memberId, ...pSnap.data() });
+            if (pSnap.exists) memberProfiles.push({ id: memberId, ...publicProfile(pSnap.data()) });
         }
         groups.push({
             id: doc.id,

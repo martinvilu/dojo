@@ -1,6 +1,7 @@
 const { randomBytes } = require('node:crypto');
 const { isCourseStaff } = require('../../authz');
 const { dojoError } = require('../../lib/errors');
+const { publicProfile, staffStudentProfile } = require('../../lib/projections');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -120,7 +121,7 @@ async function getCourseTeachers(payload, context) {
     for (let doc of tSnap.docs) {
         const t = doc.data();
         const p = await db.collection('profiles').doc(t.teacher_id).get();
-        teachers.push({ ...t, profiles: p.data() });
+        teachers.push({ ...t, profiles: publicProfile(p.exists ? p.data() : null) });
     }
     return teachers;
 }
@@ -156,8 +157,6 @@ const COURSE_PUBLIC_FIELDS = [
 // feed iCal reciben calendar_secret, que solo habilita el calendario.
 const STUDENT_COURSE_FIELDS = COURSE_PUBLIC_FIELDS.filter(field => field !== 'sync_secret');
 
-// Datos de compañeros visibles para estudiantes en el roster del curso.
-const PEER_PROFILE_FIELDS = ['full_name', 'email', 'github_user', 'avatar_url', 'role'];
 
 
 // Tokens de suscripción de 32 hex chars: resistentes a fuerza bruta
@@ -352,7 +351,7 @@ async function getCourseRoster(payload, context) {
             const profile = pSnap.data();
             students.push({
                 id: pSnap.id,
-                ...(canSeeFullProfiles ? profile : pickFields(profile, PEER_PROFILE_FIELDS)),
+                ...(canSeeFullProfiles ? staffStudentProfile(profile) : publicProfile(profile)),
                 roster_status: data.status || 'approved',
                 enrolled_at: data.enrolled_at
             });

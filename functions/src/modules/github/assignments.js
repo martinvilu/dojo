@@ -6,6 +6,7 @@ const { isSafeExternalUrl } = require('../../lib/urls');
 const { isCourseStaff, isCourseMember } = require('../../authz');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { dojoError } = require('../../lib/errors');
+const { staffStudentProfile } = require('../../lib/projections');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -189,7 +190,7 @@ async function getAssignmentSubmissions(payload, context) {
     for (let doc of snap.docs) {
         const s = doc.data();
         const p = await db.collection('profiles').doc(s.student_id).get();
-        subs.push({ id: doc.id, ...s, profiles: p.data() });
+        subs.push({ id: doc.id, ...s, profiles: staffStudentProfile(p.exists ? p.data() : null) });
     }
     return subs;
 }
