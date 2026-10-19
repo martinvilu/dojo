@@ -286,3 +286,11 @@ exports.retryWebhookDeadLetters = onSchedule({ schedule: 'every 10 minutes', tim
     const summary = await retryDeadLetters(db);
     if (summary.done || summary.retried || summary.failed) logger.info('[webhook] cola de reintentos', summary);
 });
+
+// Export diario completo de Firestore a Cloud Storage (mejora 3.22).
+exports.dailyFirestoreExport = onSchedule({ schedule: 'every day 04:00', timeZone: 'America/Argentina/Buenos_Aires' }, async () => {
+    const { exportFirestore } = require('./src/modules/system/firestoreExport');
+    const { v1 } = require('@google-cloud/firestore');
+    const projectId = process.env.GCLOUD_PROJECT || JSON.parse(process.env.FIREBASE_CONFIG || '{}').projectId;
+    await exportFirestore({ projectId, bucket: process.env.BACKUP_BUCKET, client: new v1.FirestoreAdminClient(), logger });
+});

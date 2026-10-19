@@ -64,6 +64,7 @@ En los logs, `[API Call]` / `[API Error]` incluyen la acción y el `uid`. Los pa
 | Tarea | Frecuencia | Notas |
 |---|---|---|
 | `sendDailySummaries` | Diaria, 20:00 ART | Resumen de notificaciones pendientes por estudiante |
+| `dailyFirestoreExport` | Diaria, 04:00 ART | Export completo de Firestore a `BACKUP_BUCKET` (sin bucket configurado, no hace nada) |
 | `purgeDeletedCourses` | Diaria, 03:00 ART | Borra en cascada las cátedras eliminadas hace más de 30 días |
 | `cleanupAssignmentData` | Al borrar una tarea | Limpia sus entregas y revisiones entre pares |
 | `retryWebhookDeadLetters` | Cada 10 min | Reintenta las notas de autograding que fallaron por errores transitorios. Los eventos agotados quedan en `webhook_dead_letters` con `status: failed` para revisión manual |
@@ -82,10 +83,17 @@ Desde **Respaldos** (panel de administrador) o con la acción `createSystemBacku
 
 **Restauración granular**: elegí colección y documento en **Respaldos → Restauración Granular**. Solo pisa ese documento.
 
-**Respaldo completo recomendado** (además del integrado): exportaciones programadas de Firestore a Cloud Storage.
+**Respaldo completo diario** (`dailyFirestoreExport`, 04:00 ART): exporta todas las colecciones a `BACKUP_BUCKET` con el servicio administrado de Firestore, sin el límite de 1 MiB del respaldo integrado. Para activarlo:
 
 ```bash
-gcloud firestore export gs://<bucket>/backups/$(date +%F) --project jutsu-classroom-mrtin
+scripts/setup-backups.sh jutsu-classroom-mrtin   # bucket con retención de 30 días + permisos
+git add functions/.env.jutsu-classroom-mrtin && git commit -m "chore(ops): enable daily Firestore exports"
+```
+
+Restaurar un día completo (pisa los documentos existentes con los del export):
+
+```bash
+gcloud firestore import gs://jutsu-classroom-mrtin-backups/firestore/2026-10-19 --project jutsu-classroom-mrtin
 ```
 
 ## 6. Secretos y credenciales

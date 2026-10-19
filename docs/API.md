@@ -265,6 +265,7 @@ curl -s https://<dominio>/api/health?deep=1   # además sondea la API de GitHub
 | `webhook` | `POST` JSON | Recibe notas de autograding. Cuerpo `{ assignmentId, sync_secret, grades: [{ matricula, grade, feedback }] }` (el `sync_secret` es el **de la tarea**). Idempotente por cabecera `x-dojo-delivery` o `x-github-delivery`. Responde `401` con secreto inválido y `429` tras 10 fallos por IP en 5 min. Si la escritura falla por un error transitorio responde `202 { queued: true, retryId }` y el evento pasa a la cola `webhook_dead_letters` |
 | `importGrades` | `POST` CSV o JSON `?courseId=&token=` | Importa notas corregidas en planilla. `token` = `sync_secret` del curso |
 | `calendar` | `GET ?id=&token=` | Feed iCal equivalente servido desde Functions; la app genera enlaces a `/api/calendar` |
+| `dailyFirestoreExport` | Todos los días 04:00 (ART) | Export completo de Firestore a `BACKUP_BUCKET` (`gs://…/firestore/AAAA-MM-DD`) |
 | `purgeDeletedCourses` | Todos los días 03:00 (ART) | Borra en cascada las cátedras cuyo `purge_after` venció: membresías, tareas, avisos, grupos, versiones, correos y subcolecciones |
 | `onSubmissionGradeChange` | Trigger `onDocumentWritten` de `submissions/{id}` | Registra en `audit_logs` todo cambio de nota o feedback con su origen (`manual`, `spreadsheet`, `csv_import`, `autograding`) y autor (`graded_by`), y sincroniza la nota con Moodle si la entrega llegó por LTI |
 | `onClassCommentUpdated` | Trigger `onDocumentUpdated` de `courses/{id}/class_comments/{id}` | Notifica al autor cuando su mensaje se marca como solución |

@@ -935,7 +935,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/maintenance/backup.js`
 - **Propuesta técnica:** Configurar una Cloud Function con Cloud Scheduler (cron diario) que invoque `gcloud firestore export` a un bucket seguro.
 - **Impacto y beneficio:** Recuperación ante desastres (Disaster Recovery) con RPO de 24 horas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `dailyFirestoreExport` (cron 04:00) exporta todas las colecciones a `BACKUP_BUCKET` con `FirestoreAdminClient.exportDocuments`; `scripts/setup-backups.sh` crea el bucket con retención de 30 días y los permisos. **Acción externa pendiente**: correr el script en el proyecto.
 
 ### 3.23. Migración de consultas 'In-Memory' a Queries indexadas compuestas en Firestore
 - **Diagnóstico actual:** Se descarga el roster completo y luego se filtra en JavaScript en el navegador del cliente.
