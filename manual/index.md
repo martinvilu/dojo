@@ -1,35 +1,58 @@
-# Manual de Usuario - Jutsu Classroom (Gaula)
+# Manual de Usuario — Jutsu Classroom (Ninja Dojo)
 
-Bienvenido a la documentación oficial y manual completo de usuario de **Jutsu Classroom**, la plataforma de gestión académica integral diseñada para la enseñanza de programación, ingeniería de software y materias universitarias.
+Guía de uso de **Jutsu Classroom**, la plataforma de gestión académica para materias de programación de la UNRN: cronogramas, asistencia por QR, tareas con repositorios de GitHub, avisos, foros, grupos de estudio, tutorías e integración con Moodle.
 
 ```{toctree}
 :maxdepth: 2
 :caption: Contenido del Manual
 
-docentes
+primeros-pasos
 estudiantes
+docentes
 administradores
 faq
 ```
 
-```{note}
-Jutsu Classroom está optimizado para entornos con alta densidad de código, integración nativa con GitHub, control de asistencia por geolocalización y sincronización de calendarios iCal.
-```
-
 ---
 
-## 🎯 Descripción General del Sistema
+## Roles
 
-Jutsu Classroom ofrece una experiencia académica fluida dividida en tres perfiles clave:
+La plataforma tiene tres roles. Cada usuario ve en la barra lateral solo las secciones de su rol.
 
-1. **Estudiantes**: Acceso a cronogramas unificados, firma de asistencia mediante QR dinámico y GPS, aceptación y entrega de tareas sincronizadas con repositorios de GitHub, consulta de grabaciones de clase con marcadores temporales y participación en grupos de estudio y tutorías.
-2. **Docentes**: Planificación de clases, generación de códigos QR de asistencia con validación geográfica Haversine, revisión de commits y Pull Requests de GitHub, calificación con retroalimentación, avisos con acuse de recepción y tableros Kanban.
-3. **Administradores**: Gestión integral de usuarios, asignación de roles, auditoría de notas, control de versiones del cronograma, respaldos incrementales del sistema en JSON y configuración LTI 1.3 con Moodle.
+| Rol | Qué hace | Secciones de la barra lateral |
+|---|---|---|
+| **Estudiante** | Se inscribe con un código, firma asistencia, acepta y entrega tareas, participa en foros, grupos y tutorías | Mis Cátedras · Escanear QR · Calendario Global |
+| **Docente** (titular o ayudante) | Planifica clases, toma asistencia, crea y corrige tareas, publica avisos, sigue alertas y envía correos | Mis Cátedras · Calendario Global |
+| **Administrador** | Crea cátedras, aprueba cuentas, asigna roles y docentes, configura el sistema y gestiona respaldos | Cátedras · Usuarios · Configuración · Respaldos · Calendario Global |
 
----
+Todos tienen **Mi Perfil** y **Cerrar Sesión** en el menú de la foto de perfil.
 
-## 🛠️ Tecnologías Principales
+Los **ayudantes** de cátedra tienen las mismas pantallas que el titular, pero no pueden modificar la planificación base del curso. Ser **tutor** no es un rol: cualquier estudiante puede postularse como tutor dentro de una cátedra.
 
-- **Frontend**: Next.js 16 (React 19, TypeScript, Tailwind CSS).
-- **Backend / Serverless**: Firebase Cloud Functions (Node.js 22), Firebase Auth, Cloud Firestore.
-- **Integraciones Externeas**: GitHub REST API, Google Calendar / iCal Feed (.ics), Moodle LTI 1.3.
+## Mapa de una cátedra
+
+Al entrar a una cátedra aparecen estas pestañas:
+
+| Pestaña | Estudiante | Docente | Admin |
+|---|:---:|:---:|:---:|
+| 📊 Resumen | | ✔ | ✔ |
+| Cronograma | ✔ | ✔ | ✔ |
+| Tareas | ✔ | ✔ | ✔ |
+| Avisos | ✔ | ✔ | ✔ |
+| Ajustes Cátedra | | ✔ | |
+| 👥 Alumnos y Alertas | | ✔ | ✔ |
+| 📧 Gestión Correos | | ✔ | ✔ |
+| Docentes | | ✔ | ✔ |
+| 🎓 Tutorías | ✔ | ✔ | ✔ |
+| 👥 Grupos de Estudio | ✔ | ✔ | ✔ |
+
+## Atajos útiles
+
+- **Ctrl + K** (⌘ + K en Mac): paleta de búsqueda para saltar a cualquier cátedra, clase o tarea.
+- Si se corta la conexión aparece un aviso en la parte superior. Los datos ya cargados siguen visibles y se sincronizan al volver la conexión.
+
+## Por dónde empezar
+
+1. [Primeros pasos](primeros-pasos.md): ingreso, aprobación de la cuenta y perfil.
+2. La guía de tu rol: [Estudiantes](estudiantes.md), [Docentes](docentes.md) o [Administradores](administradores.md).
+3. Si algo no funciona: [Preguntas frecuentes](faq.md).
