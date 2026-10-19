@@ -27,3 +27,6 @@
 ## 2024-05-18 - Replacing nested `.filter()` inside `forEach` with Hash Maps
 **Learning:** O(N) array filtering inside loops (e.g. `roster.forEach`) across large dataset combinations (`courseAttendance` and `courseSubmissions`) creates hidden O(N²) scaling bottlenecks. In this project, iterating object entries across arrays to build stats adds significant CPU overhead during renders.
 **Action:** Always pre-compute relationships into Hash Maps or Sets outside iterations for O(1) lookups instead of using `.some` and `.filter` to reduce complexity from `O(R * (A + S))` to `O(A + S + R * M)`.
+## 2023-10-27 - O(N*M) Array Scans in Render Loops
+**Learning:** Found an $O(N \times M)$ anti-pattern in `src/app/dashboard/hooks/useTabDataLoader.ts` where `Array.prototype.find()` was being used inside a `.map()` block across hundreds of courses and assignments. Multiple iterations compounded to cause significant overhead.
+**Action:** Replace nested `find()` calls inside `map` operations by pre-computing a single $O(N)$ `Map` of the target data structure (like `courseNameMap = new Map()`) before the loop, and use $O(1)$ `.get()` lookups inside the loop.
