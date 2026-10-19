@@ -216,16 +216,6 @@ describe('Full Coverage Actions Test Suite', () => {
 
   // 3. ATTENDANCE ACTIONS
   describe('Attendance Actions', () => {
-    test('markAttendance validation & success', async () => {
-      const ctx = createMockContext({ uid: 'student1' });
-      await expect(attendanceActions.markAttendance({}, ctx)).rejects.toThrow('Faltan datos de la clase');
-      await expect(attendanceActions.markAttendance({ courseId: 'c1', classId: 'cls1' }, ctx)).rejects.toThrow('No estás inscripto');
-
-      ctx.docStore['enrollments/student1_c1'] = { active: true };
-      const res = await attendanceActions.markAttendance({ courseId: 'c1', classId: 'cls1' }, ctx);
-      expect(res.success).toBe(true);
-    });
-
     test('startQrAttendance creates a server-side session with TTL and stopQrAttendance ends it', async () => {
       const ctx = createMockContext({ uid: 'teacher1' });
       const res = await attendanceActions.startQrAttendance({ courseId: 'c1', classNumber: 3, lat: -41.13, lng: -71.31 }, ctx);

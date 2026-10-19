@@ -1,27 +1,4 @@
 const logger = require("firebase-functions/logger");
-
-async function markAttendance(payload, context) {
-    const { uid, db, admin } = context;
-    const { courseId, classId } = payload;
-    if (!courseId || !classId) throw new Error("Faltan datos de la clase");
-    
-    // Check enrollment
-    const enrollmentRef = db.collection('enrollments').doc(`${uid}_${courseId}`);
-    const doc = await enrollmentRef.get();
-    if (!doc.exists) throw new Error("No estás inscripto en este curso");
-    
-    // Mark attendance
-    const attendanceRef = db.collection('attendance').doc(`${courseId}_${classId}_${uid}`);
-    await attendanceRef.set({
-        course_id: courseId,
-        class_id: classId,
-        student_id: uid,
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
-    });
-    
-    return { success: true };
-}
-
 const { randomBytes, randomUUID } = require('node:crypto');
 const { QR_PERIOD_SECONDS, isValidQrCode } = require('../../lib/qrToken');
 
@@ -181,7 +158,6 @@ async function submitQrAttendance(payload, context) {
 }
 
 module.exports = {
-    markAttendance,
     startQrAttendance,
     stopQrAttendance,
     submitQrAttendance,

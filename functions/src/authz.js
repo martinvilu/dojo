@@ -59,7 +59,6 @@ const ACTION_POLICIES = {
     deleteBackup: ADMIN,
 
     // asistencia (el handler valida la inscripción / el token QR)
-    markAttendance: AUTHENTICATED,
     submitQrAttendance: memberOf('course'),
     startQrAttendance: staffOf('course'),
     stopQrAttendance: staffOf('course'),

@@ -138,7 +138,6 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `startQrAttendance` | staffOf(course) | Abre la toma de asistencia de `classNumber`: crea en `courses/{id}/active_qr/current` una sesión con un secreto aleatorio, la ubicación opcional del aula y `expires_at` (TTL, 4 h). Devuelve `{ secret, period, serverTime, hasLocation }` para que el docente derive los códigos |
 | `stopQrAttendance` | staffOf(course) | Cierra la sesión: ningún código vuelve a validar |
 | `submitQrAttendance` | memberOf(course) | Valida el código rotativo (HMAC-SHA256 del intervalo de 15 s; se aceptan el vigente y el anterior) y, si la sesión tiene ubicación, exige la del estudiante a ≤ 150 m (Haversine). Suma 10 XP una sola vez por clase |
-| `markAttendance` | AUTHENTICATED | Presente propio en una clase de un curso en el que el llamador está inscripto |
 
 **Analítica y notificaciones** (`modules/course/stats.js`, `analytics.js`, `modules/notifications/`)
 
