@@ -1,7 +1,7 @@
 /**
  * Auditoría inmutable de calificaciones (mejora 3.10).
  *
- * El trigger `auditSubmissionGrades` (onDocumentWritten de `submissions`)
+ * El trigger `onSubmissionGradeChange` (onDocumentWritten de `submissions`)
  * registra en `audit_logs` todo cambio de nota o feedback, venga de la UI,
  * de una planilla, del endpoint CSV o del autograding. Quien escribe la
  * nota deja en la entrega `graded_by`, `graded_by_name` y `grade_source`;
@@ -45,4 +45,17 @@ function gradeChangeAudit(submissionId, before, after) {
     };
 }
 
-module.exports = { GRADE_SOURCES, gradeAttribution, gradeChangeAudit };
+/**
+ * Cuerpo del trigger onSubmissionGradeChange: audita el cambio y, si la
+ * nota cambió en una entrega lanzada desde Moodle (LTI), la sincroniza.
+ */
+async function handleSubmissionGradeChange({ db, serverTimestamp, syncGradeToMoodle }, submissionId, before, after) {
+    const entry = gradeChangeAudit(submissionId, before, after);
+    if (!entry) return { audited: false, synced: false };
+    await db.collection('audit_logs').add({ ...entry, created_at: serverTimestamp() });
+    const shouldSync = entry.previous_grade !== entry.new_grade && Boolean(after.moodle_lis_outcome_service_url);
+    if (shouldSync) await syncGradeToMoodle({ id: submissionId, ...after }, after.grade, after.feedback);
+    return { audited: true, synced: shouldSync };
+}
+
+module.exports = { GRADE_SOURCES, gradeAttribution, gradeChangeAudit, handleSubmissionGradeChange };

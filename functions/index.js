@@ -164,8 +164,7 @@ exports.api = onCall(async (request) => {
             request,
             db,
             admin,
-            getMyProfile,
-            syncGradeToMoodle
+            getMyProfile
         };
         
         const result = await handler(authorizedPayload, context);
@@ -231,12 +230,15 @@ exports.cleanupAssignmentData = onDocumentDeleted('assignments/{assignmentId}', 
     logger.info(`[cleanup] Tarea ${event.params.assignmentId} eliminada`, counts);
 });
 
-// Auditoría inmutable de toda modificación de nota o feedback (mejora 3.10).
-exports.auditSubmissionGrades = onDocumentWritten('submissions/{submissionId}', async (event) => {
-    const { gradeChangeAudit } = require('./src/lib/gradeAudit');
+// Todo cambio de nota o feedback, venga de donde venga: se audita (mejora
+// 3.10) y, si la entrega llegó por LTI, se sincroniza con Moodle (mejora
+// 3.19). Como trigger, Firebase reintenta ante fallas transitorias.
+exports.onSubmissionGradeChange = onDocumentWritten('submissions/{submissionId}', async (event) => {
+    const { handleSubmissionGradeChange } = require('./src/lib/gradeAudit');
     const before = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
     const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
-    const entry = gradeChangeAudit(event.params.submissionId, before, after);
-    if (!entry) return;
-    await db.collection('audit_logs').add({ ...entry, created_at: admin.firestore.FieldValue.serverTimestamp() });
+    await handleSubmissionGradeChange(
+        { db, serverTimestamp: () => admin.firestore.FieldValue.serverTimestamp(), syncGradeToMoodle },
+        event.params.submissionId, before, after
+    );
 });

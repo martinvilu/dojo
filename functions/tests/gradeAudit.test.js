@@ -29,3 +29,33 @@ describe('gradeAudit', () => {
     expect(gradeAttribution('nope').grade_source).toBe('unknown');
   });
 });
+
+describe('handleSubmissionGradeChange (mejoras 3.10 y 3.19)', () => {
+  const { handleSubmissionGradeChange } = require('../src/lib/gradeAudit');
+  const deps = () => {
+    const added = [];
+    return {
+      added,
+      db: { collection: () => ({ add: async (d) => added.push(d) }) },
+      serverTimestamp: () => 'TS',
+      syncGradeToMoodle: jest.fn().mockResolvedValue()
+    };
+  };
+  const lti = { moodle_lis_outcome_service_url: 'https://moodle.example/outcome', moodle_lis_result_sourcedid: 'x' };
+
+  it('audits and syncs LTI submissions when the grade changes, whatever the source', async () => {
+    const d = deps();
+    const r = await handleSubmissionGradeChange(d, 's1', { grade: '5', ...lti }, { grade: '8', ...lti, grade_source: 'csv_import' });
+    expect(r).toEqual({ audited: true, synced: true });
+    expect(d.added[0]).toMatchObject({ source: 'csv_import', new_grade: '8', created_at: 'TS' });
+    expect(d.syncGradeToMoodle).toHaveBeenCalledWith(expect.objectContaining({ id: 's1' }), '8', undefined);
+  });
+
+  it('does not sync feedback-only changes or non-LTI submissions', async () => {
+    const d = deps();
+    expect(await handleSubmissionGradeChange(d, 's1', { grade: '8', feedback: 'a', ...lti }, { grade: '8', feedback: 'b', ...lti })).toEqual({ audited: true, synced: false });
+    expect(await handleSubmissionGradeChange(d, 's2', { grade: '5' }, { grade: '9' })).toEqual({ audited: true, synced: false });
+    expect(await handleSubmissionGradeChange(d, 's3', { grade: '9' }, { grade: '9' })).toEqual({ audited: false, synced: false });
+    expect(d.syncGradeToMoodle).not.toHaveBeenCalled();
+  });
+});

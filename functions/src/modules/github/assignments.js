@@ -213,7 +213,7 @@ async function massToggleAccess(payload, context) {
 }
 
 async function gradeSubmission(payload, context) {
-    const { uid, db, admin, syncGradeToMoodle } = context;
+    const { uid, db, admin } = context;
     const requesterProfile = await db.collection('profiles').doc(uid).get();
     if (!requesterProfile.exists || (requesterProfile.data().role !== 'teacher' && requesterProfile.data().role !== 'admin')) {
         throw dojoError('FORBIDDEN', "No tienes permisos para calificar entregas");
@@ -229,7 +229,7 @@ async function gradeSubmission(payload, context) {
     const submissionDoc = await db.collection('submissions').doc(submissionId).get();
     const previousData = submissionDoc.exists ? submissionDoc.data() : {};
     
-    // La auditoría la escribe el trigger auditSubmissionGrades a partir de
+    // La auditoría la escribe el trigger onSubmissionGradeChange a partir de
     // la atribución que queda en la entrega (mejora 3.10).
     await db.collection('submissions').doc(submissionId).update({
         grade,
@@ -237,13 +237,6 @@ async function gradeSubmission(payload, context) {
         graded_at: admin.firestore.FieldValue.serverTimestamp(),
         ...gradeAttribution('manual', uid, requesterProfile.data().full_name || requesterProfile.data().email)
     });
-    
-    // Trigger background grade sync with Moodle LTI if applicable
-    if (previousData.moodle_lis_outcome_service_url && typeof syncGradeToMoodle === 'function') {
-        syncGradeToMoodle({ id: submissionId, ...previousData }, grade, feedback).catch(e => {
-            logger.error("Error trigger syncGradeToMoodle:", e);
-        });
-    }
     
     return { success: true };
 }

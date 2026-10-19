@@ -261,7 +261,7 @@ curl -s https://<dominio>/api/health?deep=1   # además sondea la API de GitHub
 | `importGrades` | `POST` CSV o JSON `?courseId=&token=` | Importa notas corregidas en planilla. `token` = `sync_secret` del curso |
 | `calendar` | `GET ?id=&token=` | Feed iCal equivalente servido desde Functions; la app genera enlaces a `/api/calendar` |
 | `purgeDeletedCourses` | Todos los días 03:00 (ART) | Borra en cascada las cátedras cuyo `purge_after` venció: membresías, tareas, avisos, grupos, versiones, correos y subcolecciones |
-| `auditSubmissionGrades` | Trigger `onDocumentWritten` de `submissions/{id}` | Registra en `audit_logs` todo cambio de nota o feedback con su origen (`manual`, `spreadsheet`, `csv_import`, `autograding`) y autor (`graded_by`) |
+| `onSubmissionGradeChange` | Trigger `onDocumentWritten` de `submissions/{id}` | Registra en `audit_logs` todo cambio de nota o feedback con su origen (`manual`, `spreadsheet`, `csv_import`, `autograding`) y autor (`graded_by`), y sincroniza la nota con Moodle si la entrega llegó por LTI |
 | `cleanupAssignmentData` | Trigger `onDocumentDeleted` de `assignments/{id}` | Borra las entregas y revisiones entre pares de la tarea eliminada (la auditoría de notas se conserva) |
 | `sendDailySummaries` | Todos los días 20:00 (America/Argentina/Buenos_Aires) | Agrupa por estudiante las notificaciones marcadas como pendientes de resumen y envía un resumen diario |
 

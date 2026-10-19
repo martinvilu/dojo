@@ -851,7 +851,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/grades/audit.js`
 - **Propuesta técnica:** Crear un trigger `onDocumentUpdated` sobre entregas que guarde un log de auditoría en una subcolección protegida de solo lectura.
 - **Impacto y beneficio:** Respaldo legal y transparencia absoluta en reclamos de exámenes.
-- **Estado (19/10/2026):** ✅ Implementada — Trigger `auditSubmissionGrades` (`onDocumentWritten` de `submissions`) audita todo cambio de nota/feedback; cada vía (UI, planilla, CSV, autograding) deja `graded_by` y `grade_source`, y el historial muestra el origen.
+- **Estado (19/10/2026):** ✅ Implementada — Trigger `onSubmissionGradeChange` (`onDocumentWritten` de `submissions`) audita todo cambio de nota/feedback; cada vía (UI, planilla, CSV, autograding) deja `graded_by` y `grade_source`, y el historial muestra el origen.
 
 ### 3.11. Restricción de CORS estricta en endpoints de Next.js API y Cloud Functions
 - **Diagnóstico actual:** Las rutas admiten CORS permisivo o encabezados genéricos `*`.
@@ -914,7 +914,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/moodle/syncGrades.js`
 - **Propuesta técnica:** Crear un trigger que ante la asignación de una nota válida (`grade >= 0`) encole la sincronización automática con el libro de calificaciones de Moodle.
 - **Impacto y beneficio:** Sincronización transparente sin intervención manual.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — El trigger `onSubmissionGradeChange` sincroniza con Moodle toda nota nueva de una entrega lanzada por LTI, venga de la UI, de una planilla, del CSV o del autograding; Firebase reintenta el trigger ante fallas transitorias.
 
 ### 3.20. Validación de dominios de correo institucional en el registro
 - **Diagnóstico actual:** Cualquier usuario con una cuenta personal de Gmail puede intentar registrarse en la plataforma.
