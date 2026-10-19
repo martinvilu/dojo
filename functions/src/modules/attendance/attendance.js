@@ -1,6 +1,7 @@
 const logger = require("firebase-functions/logger");
 const { randomBytes, randomUUID } = require('node:crypto');
 const { QR_PERIOD_SECONDS, isValidQrCode } = require('../../lib/qrToken');
+const { awardXp } = require('../../lib/xp');
 
 const MAX_DISTANCE_METERS = 150;
 // La sesión de QR vive como mucho una jornada de clase; el documento se
@@ -142,13 +143,14 @@ async function submitQrAttendance(payload, context) {
         updated_by: 'system_qr'
     }, { merge: true });
 
-    // +10 XP por presente, una sola vez por clase.
+    // +10 XP por presente, una sola vez por clase aunque lleguen escaneos
+    // simultáneos.
     try {
-        await db.collection('profiles').doc(uid).collection('xp_logs').add({
+        await awardXp(db, admin.firestore.FieldValue, uid, {
+            key: `attendance_${courseId}_${classNumber}`,
             action: 'asistencia',
             description: `Asistencia firmada en Clase ${classNumber}`,
-            points: 10,
-            timestamp: admin.firestore.FieldValue.serverTimestamp()
+            points: 10
         });
     } catch(e) {
         logger.error("Error logging XP:", e);

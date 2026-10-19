@@ -110,7 +110,8 @@ describe('Full Coverage Actions Test Suite', () => {
     const mockAdmin = {
       firestore: {
         FieldValue: {
-          serverTimestamp: () => ({ toDate: () => new Date() })
+          serverTimestamp: () => ({ toDate: () => new Date() }),
+          increment: (n) => ({ __increment: n })
         }
       },
       auth: () => ({
@@ -124,7 +125,13 @@ describe('Full Coverage Actions Test Suite', () => {
       uid: overrides.uid || 'user123',
       db: {
         collection: createCollectionRef,
-        batch: () => batchMock
+        batch: () => batchMock,
+        // Transacción secuencial sobre el docStore en memoria.
+        runTransaction: async (fn) => fn({
+          get: (ref) => ref.get(),
+          set: (ref, data, opts) => ref.set(data, opts),
+          update: (ref, data) => ref.update(data)
+        })
       },
       admin: mockAdmin,
       getMyProfile: jest.fn().mockResolvedValue(myProfile),
@@ -276,7 +283,8 @@ describe('Full Coverage Actions Test Suite', () => {
       expect(res).toEqual({ success: true });
       expect(ctx.docStore['courses/c1/attendance/class_1'].records).toEqual({ student1: 'present' });
       const xpEntries = Object.keys(ctx.docStore).filter((k) => k.startsWith('profiles/student1/xp_logs/'));
-      expect(xpEntries).toHaveLength(1);
+      expect(xpEntries).toEqual(['profiles/student1/xp_logs/attendance_c1_1']);
+      expect(ctx.docStore['profiles/student1'].xp_total).toEqual({ __increment: 10 });
 
       // Escanear dos veces no duplica XP.
       const again = await attendanceActions.submitQrAttendance({ courseId: 'c1', classNumber: 1, token: code, lat: -41.1331, lng: -71.3101 }, ctx);

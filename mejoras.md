@@ -963,7 +963,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/gamification/addXp.js`
 - **Propuesta técnica:** Utilizar `runTransaction` o `FieldValue.increment(points)` nativo de Firestore para actualizaciones atómicas.
 - **Impacto y beneficio:** Conteo de experiencia matemático e incorruptible.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/xp.js` (`awardXp`): log con ID determinístico y `profiles.xp_total` con `FieldValue.increment` en una sola transacción; la asistencia por QR ya no puede otorgar XP doble.
 
 ### 3.27. Bloqueo de cuentas tras N intentos fallidos de contraseña
 - **Diagnóstico actual:** Firebase Auth estándar no bloquea temporalmente usuarios tras múltiples intentos erróneos.
