@@ -71,7 +71,7 @@ export async function GET(request: Request) {
     const courses: any[] = [];
     for (const courseId of courseIds) {
       const snap = await db.collection("courses").doc(courseId).get();
-      if (snap.exists) courses.push(projectCourse(snap.id, snap.data()));
+      if (snap.exists && !snap.data()?.deleted_at) courses.push(projectCourse(snap.id, snap.data()));
     }
 
     return NextResponse.json({ courses });

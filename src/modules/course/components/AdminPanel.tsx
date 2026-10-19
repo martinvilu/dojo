@@ -27,6 +27,8 @@ interface AdminPanelProps {
   newCourseOrg: string;
   setNewCourseOrg: (val: string) => void;
   handleCreateCourse: (e: React.FormEvent) => void;
+  handleDeleteCourse?: (course: any) => Promise<void> | void;
+  handleRestoreCourse?: (course: any) => Promise<void> | void;
   handleUpdateUserRole: (uid: string, newRole: "admin" | "teacher" | "student") => void;
   handleUpdateUserProfile?: (uid: string, data: any) => Promise<void> | void;
   handleApproveUser: (uid: string) => void;
@@ -46,6 +48,8 @@ export default function AdminPanel({
   newCourseOrg,
   setNewCourseOrg,
   handleCreateCourse,
+  handleDeleteCourse,
+  handleRestoreCourse,
   handleUpdateUserRole,
   handleUpdateUserProfile,
   handleApproveUser,
@@ -167,7 +171,7 @@ export default function AdminPanel({
 
           {/* Courses List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {courses.map((c) => (
+            {courses.filter((c) => !c.deleted_at).map((c) => (
               <div key={c.id} className="bg-bg-secondary border border-border-custom p-6 rounded-2xl flex flex-col justify-between hover:border-text-secondary transition shadow-sm">
                 <div>
                   <h3 className="text-lg font-bold text-text-primary">{c.name}</h3>
@@ -181,13 +185,49 @@ export default function AdminPanel({
                   >
                     Ver Detalle
                   </button>
+                  {handleDeleteCourse && (
+                    <button
+                      onClick={() => handleDeleteCourse(c)}
+                      className="px-4 py-2 bg-red-950/40 hover:bg-red-900/50 text-red-300 rounded-xl text-xs font-medium border border-red-900/60 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
-            {courses.length === 0 && (
+            {courses.filter((c) => !c.deleted_at).length === 0 && (
               <p className="text-text-muted text-sm col-span-2">No hay cátedras registradas en la base de datos.</p>
             )}
           </div>
+
+          {courses.some((c) => c.deleted_at) && (
+            <section aria-labelledby="deleted-courses-title" className="space-y-3">
+              <h3 id="deleted-courses-title" className="text-sm font-bold text-text-secondary uppercase tracking-wider">Cátedras eliminadas</h3>
+              <p className="text-xs text-text-secondary">Se borran definitivamente, con sus tareas y entregas, en la fecha indicada.</p>
+              <ul className="space-y-2">
+                {courses.filter((c) => c.deleted_at).map((c) => (
+                  <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 bg-bg-secondary border border-dashed border-border-custom px-4 py-3 rounded-xl">
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary">{c.name}</p>
+                      <p className="text-[11px] text-text-secondary">
+                        Eliminada el {new Date(c.deleted_at).toLocaleDateString("es-AR")}
+                        {c.purge_after ? ` · se purga el ${new Date(c.purge_after).toLocaleDateString("es-AR")}` : ""}
+                      </p>
+                    </div>
+                    {handleRestoreCourse && (
+                      <button
+                        onClick={() => handleRestoreCourse(c)}
+                        className="px-4 py-2 bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 rounded-xl text-xs font-medium border border-emerald-900/60 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                      >
+                        Restaurar
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       )}
 

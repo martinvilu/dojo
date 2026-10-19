@@ -2,6 +2,7 @@ const { randomBytes } = require('node:crypto');
 const { isCourseStaff } = require('../../authz');
 const { dojoError } = require('../../lib/errors');
 const { publicProfile, staffStudentProfile } = require('../../lib/projections');
+const { PURGE_AFTER_DAYS, isDeleted } = require('../../lib/softDelete');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -16,7 +17,7 @@ async function getCourseDetails(payload, context) {
     }
     
     const cSnap = await db.collection('courses').doc(courseId).get();
-    if (!cSnap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
+    if (!cSnap.exists || (isDeleted(cSnap.data()) && myProfile.role !== 'admin')) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
     
     const data = cSnap.data();
     if (!teacherSnap.exists && myProfile.role !== 'admin') {
@@ -39,8 +40,9 @@ async function getCourseDetails(payload, context) {
 async function enrollCourse(payload, context) {
     const { uid, db, admin } = context;
     const code = payload.code.trim();
+    const isActive = (s) => !s.empty && !isDeleted(s.docs[0].data());
     const snap = await db.collection('courses').where('invite_code', '==', code).get();
-    if (!snap.empty) {
+    if (isActive(snap)) {
         const courseId = snap.docs[0].id;
         // Student enrolls with pending approval status (requirement 4)
         await db.collection('course_roster').doc(`${courseId}_${uid}`).set({
@@ -59,7 +61,7 @@ async function enrollCourse(payload, context) {
     }
 
     const tSnap = await db.collection('courses').where('teacher_invite_code', '==', code).get();
-    if (!tSnap.empty) {
+    if (isActive(tSnap)) {
         const courseId = tSnap.docs[0].id;
         await db.collection('course_teachers').doc(`${courseId}_${uid}`).set({
             course_id: courseId,
@@ -71,7 +73,7 @@ async function enrollCourse(payload, context) {
     }
     
     const aSnap = await db.collection('courses').where('assistant_invite_code', '==', code).get();
-    if (!aSnap.empty) {
+    if (isActive(aSnap)) {
         const courseId = aSnap.docs[0].id;
         await db.collection('course_teachers').doc(`${courseId}_${uid}`).set({
             course_id: courseId,
@@ -104,7 +106,29 @@ async function deleteCourse(payload, context) {
     const { db } = context;
     const { courseId } = payload;
     if (!courseId) throw dojoError('INVALID_ARGUMENT', "ID de cátedra requerido");
-    await db.collection('courses').doc(courseId).delete();
+    const ref = db.collection('courses').doc(courseId);
+    const snap = await ref.get();
+    if (!snap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
+    // Borrado lógico (mejora 3.21): se purga en cascada pasado el plazo.
+    const now = Date.now();
+    await ref.update({
+        deleted_at: new Date(now),
+        deleted_by: context.uid,
+        purge_after: new Date(now + PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000)
+    });
+    return { success: true, purgeAfterDays: PURGE_AFTER_DAYS };
+}
+
+async function restoreCourse(payload, context) {
+    const { db, admin } = context;
+    const { courseId } = payload;
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "ID de cátedra requerido");
+    const ref = db.collection('courses').doc(courseId);
+    const snap = await ref.get();
+    if (!snap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
+    if (!isDeleted(snap.data())) return { success: true };
+    const remove = admin.firestore.FieldValue.delete();
+    await ref.update({ deleted_at: remove, deleted_by: remove, purge_after: remove });
     return { success: true };
 }
 
@@ -195,7 +219,7 @@ async function getTeacherCourses(payload, context) {
     const courses = [];
     for (let doc of snap.docs) {
         const cSnap = await db.collection('courses').doc(doc.data().course_id).get();
-        if (cSnap.exists) {
+        if (cSnap.exists && !isDeleted(cSnap.data())) {
             courses.push({ id: cSnap.id, course_role: doc.data().role || 'titular', ...projectCourse(cSnap.data()) });
         }
     }
@@ -327,7 +351,7 @@ async function getStudentCourses(payload, context) {
     const courses = [];
     for (const courseId of courseIds) {
         const cSnap = await db.collection('courses').doc(courseId).get();
-        if (cSnap.exists) {
+        if (cSnap.exists && !isDeleted(cSnap.data())) {
             const data = cSnap.data();
             await ensureCalendarSecret(db, courseId, data);
             courses.push({ id: cSnap.id, ...projectCourseForStudent(data) });
@@ -477,6 +501,7 @@ module.exports = {
     enrollCourse,
     createCourse,
     deleteCourse,
+    restoreCourse,
     updateCourseName,
     getCourseTeachers,
     assignTeacher,

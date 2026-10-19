@@ -121,6 +121,41 @@ export function useAdminPanel({
     }
   };
 
+  const reloadAdminCourses = async () => {
+    const res = await api("getAdminCourses");
+    setCourses(res || []);
+  };
+
+  const handleDeleteCourse = async (course: { id: string; name?: string }) => {
+    if (!(await confirmAction({
+      message: `¿Eliminar la cátedra «${course.name || course.id}»? Docentes y estudiantes dejan de verla. Podés restaurarla durante 30 días; después se borra definitivamente con todas sus tareas y entregas.`,
+      tone: "danger",
+    }))) return;
+    setApiLoading(true);
+    try {
+      await api("deleteCourse", { courseId: course.id });
+      await reloadAdminCourses();
+      showToast("Cátedra eliminada. Podés restaurarla durante 30 días.", "success");
+    } catch (err: any) {
+      setError("Error al eliminar la cátedra: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleRestoreCourse = async (course: { id: string }) => {
+    setApiLoading(true);
+    try {
+      await api("restoreCourse", { courseId: course.id });
+      await reloadAdminCourses();
+      showToast("Cátedra restaurada.", "success");
+    } catch (err: any) {
+      setError("Error al restaurar la cátedra: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseName) return;
@@ -160,6 +195,6 @@ export function useAdminPanel({
     globalCalendarUrl, setGlobalCalendarUrl,
     handleApproveUser, handleDeleteUser, handleUpdateUserRole, handleUpdateUserProfile,
     handleAssignTeacher, handleRemoveTeacher,
-    handleCreateCourse, handleSaveSettings
+    handleCreateCourse, handleDeleteCourse, handleRestoreCourse, handleSaveSettings
   };
 }

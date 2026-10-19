@@ -47,6 +47,12 @@ async function getAdminCourses(payload, context) {
     const courses = [];
     for (let doc of coursesSnap.docs) {
         const c = { id: doc.id, ...projectCourse(doc.data()) };
+        const raw = doc.data();
+        if (raw.deleted_at) {
+            const toIso = (v) => (v && typeof v.toDate === 'function' ? v.toDate() : new Date(v)).toISOString();
+            c.deleted_at = toIso(raw.deleted_at);
+            c.purge_after = raw.purge_after ? toIso(raw.purge_after) : null;
+        }
         const teachersSnap = await db.collection('course_teachers').where('course_id', '==', c.id).get();
         c.course_teachers = [];
         for (let tdoc of teachersSnap.docs) {

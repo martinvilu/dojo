@@ -129,9 +129,10 @@ export async function requireCourseSubscriptionToken(
 
   try {
     const snap = await adminDb().collection("courses").doc(courseId).get();
-    if (!snap.exists) return jsonError(404, "Curso no encontrado");
-
     const course = snap.data();
+    // Cátedras con borrado lógico (deleted_at) dejan de publicar feeds.
+    if (!snap.exists || course?.deleted_at) return jsonError(404, "Curso no encontrado");
+
     const validSecrets = allowCalendarToken
       ? [course?.sync_secret, course?.calendar_secret]
       : [course?.sync_secret];

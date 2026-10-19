@@ -29,6 +29,8 @@ interface TabPanelsSectionProps {
   newCourseOrg: string;
   setNewCourseOrg: (v: string) => void;
   handleCreateCourse: (e: React.FormEvent) => Promise<void> | void;
+  handleDeleteCourse: (course: any) => Promise<void> | void;
+  handleRestoreCourse: (course: any) => Promise<void> | void;
   handleUpdateUserRole: (uid: string, newRole: "admin" | "teacher" | "student") => Promise<void> | void;
   handleUpdateUserProfile: (uid: string, data: any) => Promise<void> | void;
   handleApproveUser: (uid: string) => Promise<void> | void;
@@ -90,6 +92,8 @@ export function TabPanelsSection(props: TabPanelsSectionProps) {
           newCourseOrg={props.newCourseOrg}
           setNewCourseOrg={props.setNewCourseOrg}
           handleCreateCourse={props.handleCreateCourse}
+          handleDeleteCourse={props.handleDeleteCourse}
+          handleRestoreCourse={props.handleRestoreCourse}
           handleUpdateUserRole={props.handleUpdateUserRole}
           handleUpdateUserProfile={props.handleUpdateUserProfile}
           handleApproveUser={props.handleApproveUser}

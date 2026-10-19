@@ -679,7 +679,8 @@ describe('Full Coverage Actions Test Suite', () => {
 
       // deleteCourse
       await courseActions.deleteCourse({ courseId: 'c2' }, ctx);
-      expect(ctx.docStore['courses/c2']).toBeUndefined();
+      // Borrado lógico: el documento se conserva marcado hasta la purga.
+      expect(ctx.docStore['courses/c2'].deleted_at).toBeInstanceOf(Date);
     });
 
     test('assignmentActions: create, update, grade, toggleAccess, massToggleAccess, submitAssignment, archive, activity, commits, spreadsheet', async () => {

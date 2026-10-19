@@ -928,7 +928,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `firestore.rules, functions/src/courses/`
 - **Propuesta técnica:** Marcar cursos con `deleted_at: Timestamp` y filtrar en consultas activas, permitiendo restauración ante accidentes.
 - **Impacto y beneficio:** Seguridad contra pérdidas catastróficas de información de cursadas.
-- **Estado (24/09/2026):** 🟡 Parcial — Campo `archived` en cursos y tareas; `deleteCourse` sigue borrando físicamente.
+- **Estado (19/10/2026):** ✅ Implementada — `deleteCourse` marca `deleted_at`/`purge_after` (30 días), `restoreCourse` revierte; listados, códigos de invitación, feeds y `authz` ignoran las cátedras eliminadas; `purgeDeletedCourses` (cron diario) las borra en cascada. UI de eliminar/restaurar en **Cátedras**.
 
 ### 3.22. Respaldos automáticos programados diarios de Cloud Firestore
 - **Diagnóstico actual:** No se observa configuración explícita de exportación periódica automatizada de toda la base de datos a Cloud Storage.
@@ -1110,7 +1110,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/assignments/cleanup.js`
 - **Propuesta técnica:** Trigger `onDocumentDeleted` que limpie automáticamente las entregas y comentarios asociados.
 - **Impacto y beneficio:** Higiene total de la base de datos sin acumulación de datos obsoletos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Trigger `cleanupAssignmentData` (`onDocumentDeleted` de `assignments`) borra entregas y revisiones entre pares de la tarea eliminada.
 
 ### 3.48. Validación de estado del estudiante en Moodle antes de permitir entregas
 - **Diagnóstico actual:** Un alumno dado de baja en el sistema universitario podría continuar enviando tareas en Dojo.

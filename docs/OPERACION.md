@@ -64,6 +64,8 @@ En los logs, `[API Call]` / `[API Error]` incluyen la acción y el `uid`. Los pa
 | Tarea | Frecuencia | Notas |
 |---|---|---|
 | `sendDailySummaries` | Diaria, 20:00 ART | Resumen de notificaciones pendientes por estudiante |
+| `purgeDeletedCourses` | Diaria, 03:00 ART | Borra en cascada las cátedras eliminadas hace más de 30 días |
+| `cleanupAssignmentData` | Al borrar una tarea | Limpia sus entregas y revisiones entre pares |
 | TTL de `processed_webhooks` | Continua | Firestore borra los marcadores de idempotencia del webhook cuando vence `expires_at` (30 días). La política está en `firestore.indexes.json` |
 | Dependabot | Semanal | Auto-merge de parches (`dependabot-automerge.yml`) |
 | `security.yml` | Cada PR, push y los lunes 09:00 UTC | `npm audit --audit-level=high` (app y functions) + CodeQL |

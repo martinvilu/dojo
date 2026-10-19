@@ -18,6 +18,7 @@
  * referenciado (tarea, entrega, aviso, correo programado, grupo de estudio).
  */
 const { HttpsError } = require('firebase-functions/v2/https');
+const { isCourseDeleted } = require('./lib/softDelete');
 
 const AUTHENTICATED = { kind: 'authenticated' };
 const STAFF = { kind: 'staff' };
@@ -86,6 +87,7 @@ const ACTION_POLICIES = {
     getStudentCourses: AUTHENTICATED,
     getCourseRoster: memberOf('course'),
     deleteCourse: ADMIN,
+    restoreCourse: ADMIN,
     updateRosterStudentStatus: staffOf('course'),
     syncGuaraniRoster: staffOf('course'),
 
@@ -231,7 +233,7 @@ async function scopeCourseIds(courseIds, scope, { db, uid }) {
     const check = scope === 'staff' ? isCourseStaff : isCourseMember;
     const allowed = [];
     for (const courseId of courseIds) {
-        if (typeof courseId === 'string' && courseId && await check(db, courseId, uid)) {
+        if (typeof courseId === 'string' && courseId && await check(db, courseId, uid) && !(await isCourseDeleted(db, courseId))) {
             allowed.push(courseId);
         }
     }
@@ -273,6 +275,10 @@ async function authorizeAction(action, payload, { uid, db, profile }) {
                     throw deny(policy.kind === 'courseStaff'
                         ? 'Solo los docentes del curso pueden realizar esta acción.'
                         : 'No tenés acceso a este curso.');
+                }
+                // Una cátedra eliminada (borrado lógico) solo la ve el admin.
+                if (await isCourseDeleted(db, courseId)) {
+                    throw new HttpsError('not-found', 'La cátedra fue eliminada.', { code: 'COURSE_NOT_FOUND' });
                 }
             }
             break;

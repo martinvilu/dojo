@@ -1,5 +1,6 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onDocumentDeleted } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -214,4 +215,17 @@ exports.importGrades = onRequest(async (req, res) => {
 exports.sendDailySummaries = onSchedule({ schedule: 'every day 20:00', timeZone: 'America/Argentina/Buenos_Aires' }, async (event) => {
     const handler = require('./src/modules/notifications/notifications').sendDailySummaries;
     return handler(event);
+});
+
+// Borrado lógico de cátedras: purga en cascada las vencidas (mejora 3.21).
+exports.purgeDeletedCourses = onSchedule({ schedule: 'every day 03:00', timeZone: 'America/Argentina/Buenos_Aires' }, async () => {
+    const { purgeDeletedCourses } = require('./src/modules/system/cleanup');
+    await purgeDeletedCourses(db, logger);
+});
+
+// Entregas y revisiones de una tarea eliminada (mejora 3.47).
+exports.cleanupAssignmentData = onDocumentDeleted('assignments/{assignmentId}', async (event) => {
+    const { cleanupAssignmentData } = require('./src/modules/system/cleanup');
+    const counts = await cleanupAssignmentData(db, event.params.assignmentId);
+    logger.info(`[cleanup] Tarea ${event.params.assignmentId} eliminada`, counts);
 });

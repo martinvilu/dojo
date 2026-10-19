@@ -1,3 +1,4 @@
+const { isDeleted } = require('../../lib/softDelete');
 const { dojoError } = require('../../lib/errors');
 async function saveScheduleVersion(payload, context) {
     const { uid, db, admin } = context;
@@ -61,7 +62,7 @@ async function restoreScheduleVersion(payload, context) {
 async function getComparisonCourses(payload, context) {
     const { db } = context;
     const snap = await db.collection('courses').get();
-    return snap.docs.map(d => {
+    return snap.docs.filter(d => !isDeleted(d.data())).map(d => {
         const data = d.data();
         return {
             id: d.id,

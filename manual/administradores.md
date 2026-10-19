@@ -16,7 +16,9 @@ En **Cátedras** (barra lateral):
 2. Presioná **Crear Nueva Cátedra**. Se generan automáticamente el código de invitación para estudiantes y los secretos de suscripción.
 3. **Ver Detalle** abre la cátedra con las mismas pestañas que ve el docente.
 
-La baja de cátedras todavía no tiene botón en la interfaz: existe la acción de backend `deleteCourse`, reservada al administrador. Para cerrar una cursada sin borrar datos, archivá sus tareas.
+**Eliminar** saca la cátedra de todos los paneles: docentes y estudiantes dejan de verla, sus feeds de calendario y CSV dejan de responder y nadie puede operar sobre ella. Los datos se conservan **30 días** en **Cátedras eliminadas**, donde **Restaurar** la devuelve tal como estaba. Pasado ese plazo se borra definitivamente con sus inscripciones, tareas, entregas, asistencia y foros.
+
+Para cerrar una cursada sin borrarla, archivá sus tareas.
 
 ## 2. Usuarios
 

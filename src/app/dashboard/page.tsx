@@ -84,7 +84,7 @@ export default function DashboardPage() {
     globalCalendarUrl, setGlobalCalendarUrl,
     handleApproveUser, handleDeleteUser, handleUpdateUserRole, handleUpdateUserProfile,
     handleAssignTeacher, handleRemoveTeacher,
-    handleCreateCourse, handleSaveSettings
+    handleCreateCourse, handleDeleteCourse, handleRestoreCourse, handleSaveSettings
   } = useAdminPanel({
     getSelectedCourseId: () => selectedCourse?.id || selectedCourse?.course?.id,
     setCourses, setCourseTeachers, setApiLoading, setError
@@ -350,7 +350,7 @@ export default function DashboardPage() {
           profile, activeTab, courses, users, assignments, teacherClasses, selectedCourse,
           globalCalendarUrl, setGlobalCalendarUrl,
           newCourseName, setNewCourseName, newCourseOrg, setNewCourseOrg,
-          handleCreateCourse, handleUpdateUserRole, handleUpdateUserProfile,
+          handleCreateCourse, handleDeleteCourse, handleRestoreCourse, handleUpdateUserRole, handleUpdateUserProfile,
           handleApproveUser, handleDeleteUser, handleSaveSettings,
           systemBackups,
           onCreateBackup: handleCreateBackup,

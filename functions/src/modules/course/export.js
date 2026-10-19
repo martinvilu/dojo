@@ -23,7 +23,7 @@ exports.importGrades = async (req, res) => {
         if (!courseId || !token) return res.status(400).send("Falta courseId o token");
 
         const cSnap = await db.collection('courses').doc(courseId).get();
-        if (!cSnap.exists) return res.status(404).send("Materia no encontrada");
+        if (!cSnap.exists || cSnap.data().deleted_at) return res.status(404).send("Materia no encontrada");
         const course = cSnap.data();
 
         if (!matchesSecret(token, course.sync_secret)) return res.status(401).send("Token inválido");

@@ -100,7 +100,8 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 
 | Acción | Política | Descripción |
 |---|---|---|
-| `createCourse`, `deleteCourse` | ADMIN | Alta y baja de cátedras |
+| `createCourse` | ADMIN | Alta de cátedras |
+| `deleteCourse` / `restoreCourse` | ADMIN | Borrado lógico (`deleted_at`, `purge_after` a 30 días) y restauración. Una cátedra eliminada desaparece de los listados, sus códigos de invitación y feeds dejan de funcionar y `authz` rechaza las acciones de sus miembros con `COURSE_NOT_FOUND` |
 | `assignTeacher`, `removeTeacher` | ADMIN | Equipo docente |
 | `getCourseDetails`, `getCourseTeachers`, `getCourseRoster` | memberOf(course) | Los estudiantes reciben una proyección sin `sync_secret`, credenciales ni códigos de invitación docentes |
 | `getStudentCourses` | AUTHENTICATED | Cursos del llamador |
@@ -254,6 +255,8 @@ curl -s https://<dominio>/api/health?deep=1   # además sondea la API de GitHub
 | `webhook` | `POST` JSON | Recibe notas de autograding. Cuerpo `{ assignmentId, sync_secret, grades: [{ matricula, grade, feedback }] }` (el `sync_secret` es el **de la tarea**). Idempotente por cabecera `x-dojo-delivery` o `x-github-delivery`. Responde `401` con secreto inválido y `429` tras 10 fallos por IP en 5 min |
 | `importGrades` | `POST` CSV o JSON `?courseId=&token=` | Importa notas corregidas en planilla. `token` = `sync_secret` del curso |
 | `calendar` | `GET ?id=&token=` | Feed iCal equivalente servido desde Functions; la app genera enlaces a `/api/calendar` |
+| `purgeDeletedCourses` | Todos los días 03:00 (ART) | Borra en cascada las cátedras cuyo `purge_after` venció: membresías, tareas, avisos, grupos, versiones, correos y subcolecciones |
+| `cleanupAssignmentData` | Trigger `onDocumentDeleted` de `assignments/{id}` | Borra las entregas y revisiones entre pares de la tarea eliminada (la auditoría de notas se conserva) |
 | `sendDailySummaries` | Todos los días 20:00 (America/Argentina/Buenos_Aires) | Agrupa por estudiante las notificaciones marcadas como pendientes de resumen y envía un resumen diario |
 
 La plantilla de workflow de GitHub Actions para autograding se descarga desde **Tareas → 🤖 Plantilla Autograding**.
