@@ -1,8 +1,6 @@
 "use client";
 import React from 'react';
 import { api } from '@/lib/api';
-import { db } from '@/lib/firebase/clientApp';
-import { doc, updateDoc } from 'firebase/firestore';
 import { copyToClipboard } from '@/lib/clipboard';
 import { useMemo } from 'react';
 import DropoutRiskPanel from './DropoutRiskPanel';
@@ -31,6 +29,18 @@ export function CourseStudentsPanel({
     const origin = typeof window !== "undefined" ? window.location.origin : "https://dojo--jutsu-classroom-mrtin.us-east4.hosted.app";
     return `${origin}/api/export/csv?id=${cid}&type=roster&token=${token}`;
   };
+
+  // ⚡ Bolt Optimization: Pre-compute filtered roster to avoid O(N) array filtering during render
+  const filteredRoster = useMemo(() => {
+    return roster.filter((student: any) => {
+      if (student.role !== "student") return false;
+      const cid = selectedCourse?.id || selectedCourse?.course?.id;
+      const studentComm = student.commissions?.[cid] || "";
+      if (commissionFilter === "Todas") return true;
+      if (commissionFilter === "Sin Comisión") return studentComm === "";
+      return studentComm === commissionFilter;
+    });
+  }, [roster, selectedCourse, commissionFilter]);
 
   // Pre-compute attendance and submissions statistics for O(1) lookups during render and export
   // This avoids O(N) array filtering/finding inside maps across hundreds of rows
@@ -262,10 +272,7 @@ export function CourseStudentsPanel({
     const cid = selectedCourse.id || selectedCourse.course?.id;
     if (!cid) return;
     try {
-      const studentRef = doc(db, "profiles", studentId);
-      await updateDoc(studentRef, {
-        [`commissions.${cid}`]: commission
-      });
+      await api("setStudentCommission", { courseId: cid, studentId, commission });
       // Update local state instantly
       setRoster((prev: any) => prev.map((s: any) => {
         if (s.id === studentId) {
@@ -331,6 +338,20 @@ export function CourseStudentsPanel({
                         className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-blue-400 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
                       >
                         <span>📄 Descargar Reporte PDF</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await api("requestCourseExport", { courseId: selectedCourse.id || selectedCourse.course?.id });
+                            showToast("Estamos armando el reporte completo. Te avisamos en 🔔 cuando esté listo para descargar.", "success");
+                          } catch (err: any) {
+                            showToast("No se pudo pedir el reporte: " + err.message, "error");
+                          }
+                        }}
+                        className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-emerald-400 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-lg"
+                      >
+                        <span>📦 Reporte completo (CSV)</span>
                       </button>
                     </div>
                   </div>
@@ -399,15 +420,7 @@ export function CourseStudentsPanel({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-850 text-xs text-gray-300">
-                        {roster
-                          .filter((student: any) => {
-                            if (student.role !== "student") return false;
-                            const studentComm = student.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
-                            if (commissionFilter === "Todas") return true;
-                            if (commissionFilter === "Sin Comisión") return studentComm === "";
-                            return studentComm === commissionFilter;
-                          })
-                          .map((student: any) => {
+                        {filteredRoster.map((student: any) => {
                             const attStats = attendanceStats.get(student.id) || { recordedCount: 0, presentOrLate: 0 };
                             const recordedCount = attStats.recordedCount;
                             const presentOrLate = attStats.presentOrLate;

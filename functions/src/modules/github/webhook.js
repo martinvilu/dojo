@@ -2,6 +2,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
 const { normalizeGrade, normalizeFeedback } = require("../../lib/grades");
 const { matchesSecret } = require("../../lib/secrets");
+const { gradeAttribution } = require('../../lib/gradeAudit');
 
 // Idempotencia (mejora 3.08): cada entrega identificada por cabecera se
 // procesa una sola vez; el marcador expira por TTL de Firestore.
@@ -66,6 +67,118 @@ function isThrottled(ip) {
     return entry.count >= MAX_ATTEMPTS;
 }
 
+/**
+ * Aplica las notas del autograding a las entregas de la tarea. Lanza si la
+ * escritura falla; la usa tanto el webhook como el reintento de la cola.
+ */
+async function applyAutogradingGrades(db, assignmentId, grades) {
+    const batch = db.batch();
+    let updatedCount = 0;
+    const rejected = [];
+
+    for (const g of grades) {
+        if (!g || !g.matricula || (!g.grade && !g.feedback)) continue;
+        const normalized = normalizeGrade(g.grade);
+        if (!normalized.ok) {
+            rejected.push({ matricula: String(g.matricula), reason: normalized.error });
+            continue;
+        }
+        const grade = normalized.value;
+        const feedback = normalizeFeedback(g.feedback);
+
+        const pSnap = await db.collection('profiles').where('matricula_unrn', '==', String(g.matricula)).get();
+        if (pSnap.empty) continue;
+
+        const studentId = pSnap.docs[0].id;
+        const sSnap = await db.collection('submissions').where('assignment_id', '==', assignmentId).where('student_id', '==', studentId).get();
+
+        if (!sSnap.empty) {
+            batch.update(sSnap.docs[0].ref, {
+                grade,
+                feedback,
+                graded_at: FieldValue.serverTimestamp(),
+                ...gradeAttribution('autograding')
+            });
+        } else {
+            // ID determinista: un reintento sin cabecera de entrega no
+            // duplica la entrega del estudiante.
+            const subRef = db.collection('submissions').doc(`${assignmentId}_${studentId}`);
+            batch.set(subRef, {
+                assignment_id: assignmentId,
+                student_id: studentId,
+                repo_url: '',
+                grade,
+                feedback,
+                ...gradeAttribution('autograding'),
+                is_locked: false,
+                graded_at: FieldValue.serverTimestamp(),
+                created_at: FieldValue.serverTimestamp()
+            });
+        }
+        updatedCount++;
+    }
+    await batch.commit();
+    return { updatedCount, rejected };
+}
+
+// Cola de reintentos (dead letter queue) con backoff exponencial.
+const DEAD_LETTERS = 'webhook_dead_letters';
+const MAX_ATTEMPTS_DLQ = 6;
+const BASE_DELAY_MS = 5 * 60 * 1000;
+
+function nextAttemptAt(attempts, now = Date.now()) {
+    return new Date(now + BASE_DELAY_MS * Math.pow(2, attempts));
+}
+
+async function enqueueDeadLetter(db, { assignmentId, grades, deliveryId, error }) {
+    const ref = await db.collection(DEAD_LETTERS).add({
+        source: 'autograding',
+        assignment_id: assignmentId,
+        grades,
+        delivery_id: deliveryId || null,
+        status: 'pending',
+        attempts: 0,
+        last_error: String((error && error.message) || error).slice(0, 500),
+        created_at: new Date(),
+        next_attempt_at: nextAttemptAt(0)
+    });
+    return ref.id;
+}
+
+/** Reprocesa los eventos vencidos de la cola. Lo invoca un cron. */
+async function retryDeadLetters(db, now = new Date()) {
+    const snap = await db.collection(DEAD_LETTERS)
+        .where('status', '==', 'pending')
+        .where('next_attempt_at', '<=', now)
+        .limit(50)
+        .get();
+    const summary = { done: 0, retried: 0, failed: 0 };
+    for (const doc of snap.docs) {
+        const letter = doc.data();
+        try {
+            const result = await applyAutogradingGrades(db, letter.assignment_id, letter.grades || []);
+            await doc.ref.update({ status: 'done', processed_at: now, result });
+            summary.done++;
+        } catch (e) {
+            const attempts = (letter.attempts || 0) + 1;
+            const exhausted = attempts >= MAX_ATTEMPTS_DLQ;
+            await doc.ref.update({
+                attempts,
+                status: exhausted ? 'failed' : 'pending',
+                last_error: String(e.message || e).slice(0, 500),
+                next_attempt_at: exhausted ? null : nextAttemptAt(attempts, now.getTime())
+            });
+            if (exhausted) {
+                summary.failed++;
+                logger.error("[webhook] evento descartado tras agotar reintentos:", doc.id, e.message);
+            } else {
+                summary.retried++;
+            }
+        }
+    }
+    return summary;
+}
+
 exports.webhook = async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST');
@@ -112,60 +225,33 @@ exports.webhook = async (req, res) => {
             }
         }
 
-        const batch = db.batch();
-        let updatedCount = 0;
-        const rejected = [];
-        
-        for (const g of grades) {
-            if (!g || !g.matricula || (!g.grade && !g.feedback)) continue;
-            const normalized = normalizeGrade(g.grade);
-            if (!normalized.ok) {
-                rejected.push({ matricula: String(g.matricula), reason: normalized.error });
-                continue;
-            }
-            const grade = normalized.value;
-            const feedback = normalizeFeedback(g.feedback);
-            
-            const pSnap = await db.collection('profiles').where('matricula_unrn', '==', g.matricula).get();
-            if (pSnap.empty) continue;
-            
-            const studentId = pSnap.docs[0].id;
-            const sSnap = await db.collection('submissions').where('assignment_id', '==', assignmentId).where('student_id', '==', studentId).get();
-            
-            if (!sSnap.empty) {
-                batch.update(sSnap.docs[0].ref, {
-                    grade,
-                    feedback,
-                    graded_at: FieldValue.serverTimestamp()
-                });
-                updatedCount++;
-            } else {
-                // ID determinista: un reintento sin cabecera de entrega no
-                // duplica la entrega del estudiante.
-                const subRef = db.collection('submissions').doc(`${assignmentId}_${studentId}`);
-                batch.set(subRef, {
-                    assignment_id: assignmentId,
-                    student_id: studentId,
-                    repo_url: '',
-                    grade,
-                    feedback,
-                    is_locked: false,
-                    graded_at: FieldValue.serverTimestamp(),
-                    created_at: FieldValue.serverTimestamp()
-                });
-                updatedCount++;
-            }
-        }
+        let result;
         try {
-            await batch.commit();
+            result = await applyAutogradingGrades(db, assignmentId, grades);
         } catch (e) {
-            // Liberar el marcador para que el reintento pueda procesarse.
-            if (delivery) await delivery.ref.delete().catch(() => {});
-            throw e;
+            // Falla transitoria (Firestore, red): el evento ya está validado,
+            // así que va a la cola de reintentos en lugar de perderse
+            // (mejora 3.38). El marcador de entrega queda tomado para que un
+            // reintento del cliente no lo procese dos veces.
+            try {
+                const letterId = await enqueueDeadLetter(db, { assignmentId, grades, deliveryId, error: e });
+                logger.warn("[webhook] evento encolado para reintento:", letterId, e.message);
+                return res.status(202).json({ success: false, queued: true, retryId: letterId });
+            } catch (queueError) {
+                if (delivery) await delivery.ref.delete().catch(() => {});
+                throw e;
+            }
         }
+        const { updatedCount, rejected } = result;
         res.json({ success: true, updatedCount, rejected });
     } catch(e) {
         logger.error("Error en webhook github:", e);
         res.status(500).json({ error: e.message });
     }
 };
+
+exports.applyAutogradingGrades = applyAutogradingGrades;
+exports.enqueueDeadLetter = enqueueDeadLetter;
+exports.retryDeadLetters = retryDeadLetters;
+exports.nextAttemptAt = nextAttemptAt;
+exports.MAX_ATTEMPTS_DLQ = MAX_ATTEMPTS_DLQ;

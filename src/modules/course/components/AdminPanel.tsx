@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import GlobalSettingsForm from "./GlobalSettingsForm";
 
 interface UserProfile {
   id: string;
@@ -14,24 +15,25 @@ interface UserProfile {
   commission?: string;
   created_at?: any;
   last_login?: any;
+  deletion_requested_at?: any;
+  deletion_reason?: string | null;
 }
 
 interface AdminPanelProps {
   activeTab: string;
   courses: any[];
   users: UserProfile[];
-  globalCalendarUrl: string;
-  setGlobalCalendarUrl: (val: string) => void;
   newCourseName: string;
   setNewCourseName: (val: string) => void;
   newCourseOrg: string;
   setNewCourseOrg: (val: string) => void;
   handleCreateCourse: (e: React.FormEvent) => void;
+  handleDeleteCourse?: (course: any) => Promise<void> | void;
+  handleRestoreCourse?: (course: any) => Promise<void> | void;
   handleUpdateUserRole: (uid: string, newRole: "admin" | "teacher" | "student") => void;
   handleUpdateUserProfile?: (uid: string, data: any) => Promise<void> | void;
   handleApproveUser: (uid: string) => void;
   handleDeleteUser: (uid: string) => void;
-  handleSaveSettings: (e: React.FormEvent) => void;
   viewCourseDetails: (course: any) => void;
 }
 
@@ -39,18 +41,17 @@ export default function AdminPanel({
   activeTab,
   courses,
   users,
-  globalCalendarUrl,
-  setGlobalCalendarUrl,
   newCourseName,
   setNewCourseName,
   newCourseOrg,
   setNewCourseOrg,
   handleCreateCourse,
+  handleDeleteCourse,
+  handleRestoreCourse,
   handleUpdateUserRole,
   handleUpdateUserProfile,
   handleApproveUser,
   handleDeleteUser,
-  handleSaveSettings,
   viewCourseDetails,
 }: AdminPanelProps) {
   const [sortField, setSortField] = useState<string>("full_name");
@@ -167,7 +168,7 @@ export default function AdminPanel({
 
           {/* Courses List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {courses.map((c) => (
+            {courses.filter((c) => !c.deleted_at).map((c) => (
               <div key={c.id} className="bg-bg-secondary border border-border-custom p-6 rounded-2xl flex flex-col justify-between hover:border-text-secondary transition shadow-sm">
                 <div>
                   <h3 className="text-lg font-bold text-text-primary">{c.name}</h3>
@@ -181,13 +182,49 @@ export default function AdminPanel({
                   >
                     Ver Detalle
                   </button>
+                  {handleDeleteCourse && (
+                    <button
+                      onClick={() => handleDeleteCourse(c)}
+                      className="px-4 py-2 bg-red-950/40 hover:bg-red-900/50 text-red-300 rounded-xl text-xs font-medium border border-red-900/60 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
-            {courses.length === 0 && (
+            {courses.filter((c) => !c.deleted_at).length === 0 && (
               <p className="text-text-muted text-sm col-span-2">No hay cátedras registradas en la base de datos.</p>
             )}
           </div>
+
+          {courses.some((c) => c.deleted_at) && (
+            <section aria-labelledby="deleted-courses-title" className="space-y-3">
+              <h3 id="deleted-courses-title" className="text-sm font-bold text-text-secondary uppercase tracking-wider">Cátedras eliminadas</h3>
+              <p className="text-xs text-text-secondary">Se borran definitivamente, con sus tareas y entregas, en la fecha indicada.</p>
+              <ul className="space-y-2">
+                {courses.filter((c) => c.deleted_at).map((c) => (
+                  <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 bg-bg-secondary border border-dashed border-border-custom px-4 py-3 rounded-xl">
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary">{c.name}</p>
+                      <p className="text-[11px] text-text-secondary">
+                        Eliminada el {new Date(c.deleted_at).toLocaleDateString("es-AR")}
+                        {c.purge_after ? ` · se purga el ${new Date(c.purge_after).toLocaleDateString("es-AR")}` : ""}
+                      </p>
+                    </div>
+                    {handleRestoreCourse && (
+                      <button
+                        onClick={() => handleRestoreCourse(c)}
+                        className="px-4 py-2 bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 rounded-xl text-xs font-medium border border-emerald-900/60 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                      >
+                        Restaurar
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       )}
 
@@ -260,6 +297,11 @@ export default function AdminPanel({
                       }`}>
                         {u.account_status === "approved" ? "Aprobado" : "Pendiente"}
                       </span>
+                      {u.deletion_requested_at && (
+                        <span title={u.deletion_reason ? `Motivo: ${u.deletion_reason}` : "Sin motivo"} className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300">
+                          Pidió la baja
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 flex items-center space-x-2">
                       <button
@@ -296,26 +338,7 @@ export default function AdminPanel({
       {activeTab === "admin-settings" && (
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-text-primary">Configuración Global del Sistema</h2>
-          <form onSubmit={handleSaveSettings} className="bg-bg-secondary p-6 rounded-2xl border border-border-custom space-y-4 max-w-xl">
-            <div>
-              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
-                URL de Calendario Global (.ics)
-              </label>
-              <input
-                type="url"
-                value={globalCalendarUrl}
-                onChange={(e) => setGlobalCalendarUrl(e.target.value)}
-                placeholder="https://example.com/calendar.ics"
-                className="w-full bg-bg-primary border border-border-custom rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 text-text-primary"
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition cursor-pointer"
-            >
-              Guardar Configuración
-            </button>
-          </form>
+          <GlobalSettingsForm />
         </div>
       )}
 

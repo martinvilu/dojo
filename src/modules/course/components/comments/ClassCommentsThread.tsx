@@ -12,12 +12,14 @@ import {
   where,
   getDocs,
   writeBatch,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import { ClassComment } from "../../types";
 import { formatDateSafe, formatDateTime } from "@/lib/dates";
 import { logger } from "@/lib/logger";
+import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 interface ClassCommentsThreadProps {
   classNumber: number;
@@ -39,6 +41,39 @@ export default function ClassCommentsThread({
 }: ClassCommentsThreadProps) {
   const [newCommentText, setNewCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const isStaff = profile?.role === "teacher" || profile?.role === "admin";
+
+  const handleSaveEdit = async (commentId: string) => {
+    const text = editText.trim();
+    if (!text) return;
+    try {
+      await updateDoc(doc(db, "courses", courseId, "class_comments", commentId), {
+        content: text,
+        edited_at: serverTimestamp(),
+      });
+      setEditingId(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast("Error al editar el mensaje: " + msg, "error");
+    }
+  };
+
+  const handleDeleteComment = async (comment: ClassComment) => {
+    const own = comment.user_id === profile?.id;
+    const ok = await confirmAction({
+      message: own ? "¿Borrar tu mensaje? No se puede deshacer." : `¿Borrar el mensaje de ${comment.user_name}? No se puede deshacer.`,
+      tone: "danger",
+    });
+    if (!ok) return;
+    try {
+      await deleteDoc(doc(db, "courses", courseId, "class_comments", comment.id));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast("Error al borrar el mensaje: " + msg, "error");
+    }
+  };
 
   const handleAddComment = async () => {
     const text = newCommentText.trim();
@@ -141,9 +176,28 @@ export default function ClassCommentsThread({
               </div>
               <span className="text-gray-500">
                 {formatDateSafe(comment.created_at, formatDateTime)}
+                {Boolean(comment.edited_at) && <span className="ml-1 italic">(editado)</span>}
               </span>
             </div>
-            <p className="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+            {editingId === comment.id ? (
+              <div className="space-y-2">
+                <label htmlFor={`editComment-${comment.id}`} className="sr-only">Editar mensaje</label>
+                <textarea
+                  id={`editComment-${comment.id}`}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  maxLength={4000}
+                  rows={3}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setEditingId(null)} className="px-2.5 py-1 text-[10px] rounded border border-neutral-800 text-gray-300 hover:text-white cursor-pointer">Cancelar</button>
+                  <button type="button" onClick={() => handleSaveEdit(comment.id)} disabled={!editText.trim()} className="px-2.5 py-1 text-[10px] rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold cursor-pointer disabled:opacity-50">Guardar</button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+            )}
 
             <div className="flex justify-between items-center pt-2 mt-1 border-t border-neutral-900/60 text-[10px]">
               <div className="flex gap-2">
@@ -182,7 +236,27 @@ export default function ClassCommentsThread({
                 </button>
               </div>
 
-              {(profile?.role === "teacher" || profile?.role === "admin") && (
+              <div className="flex gap-1.5 items-center">
+              {comment.user_id === profile?.id && editingId !== comment.id && (
+                <button
+                  type="button"
+                  onClick={() => { setEditingId(comment.id); setEditText(comment.content); }}
+                  className="text-[9px] font-bold px-2 py-0.5 rounded border bg-neutral-900/50 border-neutral-850 text-gray-400 hover:text-white transition cursor-pointer"
+                >
+                  Editar
+                </button>
+              )}
+              {(comment.user_id === profile?.id || isStaff) && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteComment(comment)}
+                  aria-label={comment.user_id === profile?.id ? "Borrar mi mensaje" : `Borrar mensaje de ${comment.user_name}`}
+                  className="text-[9px] font-bold px-2 py-0.5 rounded border bg-neutral-900/50 border-neutral-850 text-red-400 hover:text-red-300 transition cursor-pointer"
+                >
+                  Borrar
+                </button>
+              )}
+              {isStaff && (
                 <button
                   type="button"
                   onClick={() => handleMarkBestAnswer(comment.id, comment.is_best_answer || false)}
@@ -195,6 +269,7 @@ export default function ClassCommentsThread({
                   {comment.is_best_answer ? "Desmarcar Solución" : "Marcar como Solución"}
                 </button>
               )}
+              </div>
             </div>
           </div>
         ))}

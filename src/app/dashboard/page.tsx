@@ -5,6 +5,7 @@ import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
 import { api } from "@/lib/api";
+import { auth } from "@/lib/firebase/clientApp";
 import { useTheme } from "./hooks/useTheme";
 import { useGithubPromptModal } from "./hooks/useGithubPromptModal";
 import { useClassFeedback } from "./hooks/useClassFeedback";
@@ -81,10 +82,9 @@ export default function DashboardPage() {
     selectedNewTeacherId, setSelectedNewTeacherId,
     newCourseName, setNewCourseName,
     newCourseOrg, setNewCourseOrg,
-    globalCalendarUrl, setGlobalCalendarUrl,
     handleApproveUser, handleDeleteUser, handleUpdateUserRole, handleUpdateUserProfile,
     handleAssignTeacher, handleRemoveTeacher,
-    handleCreateCourse, handleSaveSettings
+    handleCreateCourse, handleDeleteCourse, handleRestoreCourse
   } = useAdminPanel({
     getSelectedCourseId: () => selectedCourse?.id || selectedCourse?.course?.id,
     setCourses, setCourseTeachers, setApiLoading, setError
@@ -231,7 +231,6 @@ export default function DashboardPage() {
   useTabDataLoader({
     activeTab, profile,
     setSelectedCourse, setCourses, setUsers,
-    setGlobalCalendarUrl,
     setSystemBackups,
     setAssignments, setTeacherClasses,
     setProfileName, setProfileMatricula, setProfileCohorte, setProfileGithubUser,
@@ -252,7 +251,8 @@ export default function DashboardPage() {
     if (!enrollCode) return;
     setApiLoading(true);
     try {
-      await api("enrollCourse", { code: enrollCode.toUpperCase().trim() });
+      const enrollRes = await api("enrollCourse", { code: enrollCode.toUpperCase().trim() });
+      if (enrollRes?.claimsRefreshRequired) await auth.currentUser?.getIdToken(true).catch(() => {});
       setEnrollCode("");
       const res = await api("getStudentCourses");
       setCourses(res || []);
@@ -293,6 +293,7 @@ export default function DashboardPage() {
         apiLoading={apiLoading}
         onSubmit={handleSubmitMatricula}
         onLogout={handleLogout}
+        domainBlocked={Boolean((profile as any).email_domain_blocked)}
       />
     );
   }
@@ -348,10 +349,9 @@ export default function DashboardPage() {
         {/* TOP-LEVEL TAB PANELS (admin / teacher / student / calendar / profile) */}
         <TabPanelsSection {...{
           profile, activeTab, courses, users, assignments, teacherClasses, selectedCourse,
-          globalCalendarUrl, setGlobalCalendarUrl,
           newCourseName, setNewCourseName, newCourseOrg, setNewCourseOrg,
-          handleCreateCourse, handleUpdateUserRole, handleUpdateUserProfile,
-          handleApproveUser, handleDeleteUser, handleSaveSettings,
+          handleCreateCourse, handleDeleteCourse, handleRestoreCourse, handleUpdateUserRole, handleUpdateUserProfile,
+          handleApproveUser, handleDeleteUser,
           systemBackups,
           onCreateBackup: handleCreateBackup,
           onDownloadBackup: handleDownloadBackup,

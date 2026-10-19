@@ -8,6 +8,13 @@ import PeerReviewSection from "./PeerReviewSection";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
+const GRADE_SOURCE_LABELS: Record<string, string> = {
+  spreadsheet: "planilla de Google Sheets",
+  csv_import: "importación CSV",
+  autograding: "autograding",
+  unknown: "origen desconocido",
+};
+
 export default function AssignmentsPanel({
   selectedCourse,
   profile,
@@ -55,6 +62,24 @@ export default function AssignmentsPanel({
   // Modals
   const [groupPromptModal, setGroupPromptModal] = useState<{ isOpen: boolean; assignmentId: string; resolve: (val: string | null) => void } | null>(null);
   const [commentPromptModal, setCommentPromptModal] = useState<{ isOpen: boolean; submissionId: string; resolve: (val: string | null) => void } | null>(null);
+
+
+  // Precompute filtered grader submissions to avoid redundant O(N) filtering on every render
+  const filteredGraderSubmissions = useMemo(() => {
+    const result: Record<string, any[]> = {};
+    const courseId = selectedCourse.id || selectedCourse.course?.id;
+
+    Object.entries(graderSubmissions).forEach(([assignmentId, subs]) => {
+      if (!subs) return;
+      result[assignmentId] = subs.filter((sub: any) => {
+        const studentComm = sub.profiles?.commissions?.[courseId] || "";
+        if (commissionFilter === "Todas") return true;
+        if (commissionFilter === "Sin Comisión") return studentComm === "";
+        return studentComm === commissionFilter;
+      });
+    });
+    return result;
+  }, [graderSubmissions, commissionFilter, selectedCourse.id, selectedCourse.course?.id]);
 
   // Precompute submissions map for O(1) lookups
   const submissionsByAssignment = useMemo(() => {
@@ -266,7 +291,7 @@ export default function AssignmentsPanel({
     }
     setApiLoading(true);
     try {
-      await api("acceptAssignment", { assignmentId, groupName, moodle_lis_outcome_service_url: moodleLtiParams?.current?.outcomeUrl || "", moodle_lis_result_sourcedid: moodleLtiParams?.current?.resultId || "" });
+      await api("acceptAssignment", { assignmentId, groupName, ltiLaunchId: moodleLtiParams?.current?.launchId });
       showToast("¡Repositorio creado!", "success");
       const cid = selectedCourse.id || selectedCourse.course?.id;
       const aRes = await api("getStudentAssignments", { courseIds: [cid] });
@@ -309,10 +334,13 @@ export default function AssignmentsPanel({
     }
   };
 
+  const isAssistant = (selectedCourse?.course_role || selectedCourse?.course?.course_role) === "ayudante";
+
   return (
     <div className="space-y-6">
       {profile?.role === "teacher" ? (
         <div className="space-y-6">
+          {!isAssistant && (
           <form onSubmit={handleCreateAssignment} className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
             <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider">{editingAssignmentId ? "✏️ Editar Tarea" : "➕ Crear Nueva Tarea"}</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -340,6 +368,7 @@ export default function AssignmentsPanel({
               {editingAssignmentId && <button type="button" onClick={() => { setEditingAssignmentId(null); setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false); }} className="px-5 py-2.5 bg-neutral-950 border border-neutral-800 text-gray-400 rounded-xl text-xs font-semibold transition">Cancelar</button>}
             </div>
           </form>
+          )}
 
           <div className="space-y-4">
             {assignments.map((a: any) => (
@@ -351,8 +380,10 @@ export default function AssignmentsPanel({
                   </div>
                   <div className="flex gap-1.5">
                     <button onClick={() => handleExportGradesToMoodle(a.id)} className="px-3 py-1.5 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 rounded-lg text-[11px] font-semibold text-purple-300 transition flex items-center space-x-1 cursor-pointer" title="Enviar calificaciones corregidas de esta tarea a Moodle Gradebook"><span>📤 Moodle</span></button>
+                    {!isAssistant && <>
                     <button onClick={() => { setEditingAssignmentId(a.id); setAssignTitle(a.title); setAssignTemplate(a.template_repo); setAssignPr(a.create_feedback_pr || false); setAssignGroup(a.is_group || false); }} className="px-3 py-1.5 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/60 rounded-lg text-[11px] font-semibold text-amber-300 transition">Editar</button>
                     <button onClick={() => handleArchiveAssignment(a.id)} className="px-3 py-1.5 bg-red-950/50 hover:bg-red-900/50 border border-red-800/60 rounded-lg text-[11px] font-semibold text-red-300 transition">Archivar (Solo Lectura)</button>
+                    </>}
                   </div>
                 </div>
 
@@ -440,12 +471,7 @@ export default function AssignmentsPanel({
                     </div>
                     
                     <div className="space-y-4">
-                      {(graderSubmissions[a.id] || []).filter((sub: any) => {
-                        const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || "";
-                        if (commissionFilter === "Todas") return true;
-                        if (commissionFilter === "Sin Comisión") return studentComm === "";
-                        return studentComm === commissionFilter;
-                      }).map((sub: any) => {
+                      {(filteredGraderSubmissions[a.id] || []).map((sub: any) => {
                         const studentName = sub.profiles?.full_name || sub.profiles?.email || "Estudiante";
                         const isGitHubLoaded = githubActivitySubmissionId === sub.id;
                         return (
@@ -472,12 +498,12 @@ export default function AssignmentsPanel({
                             )}
                             <div className="border-t border-neutral-900/60 pt-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                               <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nota</label>
-                                <input type="text" value={editingGrades[sub.id] || ""} onChange={(e) => setEditingGrades(prev => ({ ...prev, [sub.id]: e.target.value }))} placeholder="Nota (Ej: 9, Aprobado)" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white" />
+                                <label htmlFor={`grade-${sub.id}`} className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nota</label>
+                                <input id={`grade-${sub.id}`} type="text" value={editingGrades[sub.id] || ""} onChange={(e) => setEditingGrades(prev => ({ ...prev, [sub.id]: e.target.value }))} placeholder="Nota (Ej: 9, Aprobado)" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white" />
                               </div>
                               <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Feedback / Comentario</label>
-                                <input type="text" value={editingFeedbacks[sub.id] || ""} onChange={(e) => setEditingFeedbacks(prev => ({ ...prev, [sub.id]: e.target.value }))} placeholder="Buen trabajo..." className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white" />
+                                <label htmlFor={`feedback-${sub.id}`} className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Feedback / Comentario</label>
+                                <input id={`feedback-${sub.id}`} type="text" value={editingFeedbacks[sub.id] || ""} onChange={(e) => setEditingFeedbacks(prev => ({ ...prev, [sub.id]: e.target.value }))} placeholder="Buen trabajo..." className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white" />
                               </div>
                               <button type="button" onClick={() => handleSaveSingleGrade(sub.id, a.id)} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-xl transition cursor-pointer">Guardar Calificación</button>
                             </div>
@@ -492,7 +518,7 @@ export default function AssignmentsPanel({
                                     {expandedAuditLogs[sub.id].map((log: any) => (
                                       <div key={log.id} className="text-[10.5px] border-b border-neutral-900 pb-2 last:border-b-0 space-y-1">
                                         <div className="flex justify-between text-gray-500">
-                                          <span>Modificado por: <strong className="text-gray-300">{log.actor_name}</strong></span>
+                                          <span>Modificado por: <strong className="text-gray-300">{log.actor_name}</strong>{log.source && log.source !== "manual" && <span className="ml-1 text-gray-400">({GRADE_SOURCE_LABELS[log.source] || log.source})</span>}</span>
                                           <span>{log.created_at?.toDate ? log.created_at.toDate().toLocaleString("es-AR") : "Ahora"}</span>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-1">
@@ -515,7 +541,7 @@ export default function AssignmentsPanel({
                           </div>
                         );
                       })}
-                      {(!graderSubmissions[a.id] || graderSubmissions[a.id].filter((sub: any) => { const studentComm = sub.profiles?.commissions?.[selectedCourse.id || selectedCourse.course?.id] || ""; if (commissionFilter === "Todas") return true; if (commissionFilter === "Sin Comisión") return studentComm === ""; return studentComm === commissionFilter; }).length === 0) && (
+                      {(!filteredGraderSubmissions[a.id] || filteredGraderSubmissions[a.id].length === 0) && (
                         <p className="text-xs text-gray-500 italic text-center py-4 bg-neutral-950/20 rounded-xl border border-neutral-850 border-dashed">No hay entregas registradas en esta comisión aún.</p>
                       )}
                     </div>
@@ -597,8 +623,8 @@ export default function AssignmentsPanel({
             overlayClassName="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
             className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Nombre del Equipo</h3>
-              <p className="text-xs text-gray-400 font-sans">Esta es una tarea grupal. Ingresá el nombre de tu equipo:</p>
-              <input type="text" placeholder="Nombre del grupo" className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans" onChange={(e) => { inputVal = e.target.value; }} onKeyDown={(e) => { if (e.key === "Enter" && inputVal.trim()) { groupPromptModal.resolve(inputVal.trim()); setGroupPromptModal(null); } }} />
+              <label htmlFor="groupName" className="text-xs text-gray-400 font-sans block mb-4">Esta es una tarea grupal. Ingresá el nombre de tu equipo:</label>
+              <input id="groupName" type="text" placeholder="Nombre del grupo" className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans" onChange={(e) => { inputVal = e.target.value; }} onKeyDown={(e) => { if (e.key === "Enter" && inputVal.trim()) { groupPromptModal.resolve(inputVal.trim()); setGroupPromptModal(null); } }} />
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { groupPromptModal.resolve(null); setGroupPromptModal(null); }} className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer font-sans">Cancelar</button>
                 <button type="button" onClick={() => { if (inputVal.trim()) { groupPromptModal.resolve(inputVal.trim()); setGroupPromptModal(null); } else { showToast("Ingresa un nombre.", "success"); } }} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans">Confirmar</button>
@@ -614,8 +640,8 @@ export default function AssignmentsPanel({
             overlayClassName="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
             className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-bold text-white font-sans">Comentarios de la Entrega</h3>
-              <p className="text-xs text-gray-400 font-sans">¿Querés dejarle algún comentario al profesor sobre esta entrega? (Opcional):</p>
-              <textarea placeholder="Escribe tu mensaje aquí..." className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 min-h-20 font-sans" onChange={(e) => { inputVal = e.target.value; }} />
+              <label htmlFor="submissionComment" className="text-xs text-gray-400 font-sans block mb-4">¿Querés dejarle algún comentario al profesor sobre esta entrega? (Opcional):</label>
+              <textarea id="submissionComment" placeholder="Escribe tu mensaje aquí..." className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 min-h-20 font-sans" onChange={(e) => { inputVal = e.target.value; }} />
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { commentPromptModal.resolve(null); setCommentPromptModal(null); }} className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer font-sans">Cancelar</button>
                 <button type="button" onClick={() => { commentPromptModal.resolve(inputVal.trim()); setCommentPromptModal(null); }} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer font-sans">Enviar Entrega</button>

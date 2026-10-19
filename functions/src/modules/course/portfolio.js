@@ -1,4 +1,5 @@
 const { FieldValue } = require("firebase-admin/firestore");
+const { dojoError } = require('../../lib/errors');
 
 /**
  * Public project portfolio. Students choose which of their own submissions
@@ -10,12 +11,12 @@ async function setSubmissionPortfolioVisibility(payload, context) {
     const { uid, db } = context;
     const { submissionId, isPublic } = payload;
     if (!submissionId || typeof isPublic !== 'boolean') {
-        throw new Error("Faltan parámetros requeridos");
+        throw dojoError('INVALID_ARGUMENT', "Faltan parámetros requeridos");
     }
 
     const subSnap = await db.collection('submissions').doc(submissionId).get();
-    if (!subSnap.exists) throw new Error("La entrega no existe");
-    if (subSnap.data().student_id !== uid) throw new Error("Solo podés gestionar la visibilidad de tus propias entregas.");
+    if (!subSnap.exists) throw dojoError('NOT_FOUND', "La entrega no existe");
+    if (subSnap.data().student_id !== uid) throw dojoError('FORBIDDEN', "Solo podés gestionar la visibilidad de tus propias entregas.");
 
     await db.collection('submissions').doc(submissionId).update({
         is_public: isPublic,

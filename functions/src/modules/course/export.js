@@ -1,3 +1,4 @@
+const { gradeAttribution } = require('../../lib/gradeAudit');
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
 const { matchesSecret } = require("../../lib/secrets");
@@ -23,7 +24,7 @@ exports.importGrades = async (req, res) => {
         if (!courseId || !token) return res.status(400).send("Falta courseId o token");
 
         const cSnap = await db.collection('courses').doc(courseId).get();
-        if (!cSnap.exists) return res.status(404).send("Materia no encontrada");
+        if (!cSnap.exists || cSnap.data().deleted_at) return res.status(404).send("Materia no encontrada");
         const course = cSnap.data();
 
         if (!matchesSecret(token, course.sync_secret)) return res.status(401).send("Token inválido");
@@ -99,7 +100,8 @@ exports.importGrades = async (req, res) => {
                 batch.update(subRef, {
                     grade: resultado,
                     feedback: normalizeFeedback(comentario_general),
-                    graded_at: FieldValue.serverTimestamp()
+                    graded_at: FieldValue.serverTimestamp(),
+                    ...gradeAttribution('csv_import', null, 'Importación CSV')
                 });
                 
                 const studentId = subSnap.data().student_id;
@@ -113,7 +115,7 @@ exports.importGrades = async (req, res) => {
                 batch.set(notifRef, {
                     student_id: studentId,
                     message: `Tu entrega ha sido corregida. ${resultado ? 'Nota: ' + resultado : ''}`,
-                    link: '/estudiante/tareas',
+                    link: `/dashboard?courseId=${encodeURIComponent(courseId)}&subTab=assignments`,
                     read: false,
                     is_daily_pending,
                     created_at: FieldValue.serverTimestamp()

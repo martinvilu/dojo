@@ -1,4 +1,5 @@
 const logger = require("firebase-functions/logger");
+const { dojoError } = require('../../lib/errors');
 
 /**
  * Early-dropout analytics. Combines attendance, assignment delivery and
@@ -57,13 +58,13 @@ function riskLevel(score) {
 async function getDropoutRiskAnalysis(payload, context) {
     const { uid, db } = context;
     const { courseId } = payload;
-    if (!courseId) throw new Error("El parámetro courseId es requerido");
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "El parámetro courseId es requerido");
 
     const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+    if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
 
     const courseSnap = await db.collection('courses').doc(courseId).get();
-    if (!courseSnap.exists) throw new Error("Curso no encontrado");
+    if (!courseSnap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
     const course = courseSnap.data();
 
     const totalClasses = (course.class_instances || []).length;

@@ -33,6 +33,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!functions/.env.demo-ninja-dojo
+!functions/.env.jutsu-classroom-mrtin
+!functions/.env.jutsu-classroom-staging
 
 # vercel
 .vercel
@@ -54,3 +57,6 @@ firestore-debug.log
 
 # Jest coverage reports (functions)
 functions/coverage/
+
+# Config de emuladores generada por docker/start-emulators.sh
+firebase.docker.json

@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Cloud Storage de Ninja Dojo (mejoras 3.30 y 3.32).
+//
+// Los clientes no suben ni leen archivos directamente: las entregas son
+// repositorios de GitHub y las exportaciones las genera el backend
+// (Admin SDK, no sujeto a estas reglas) y se descargan con URLs firmadas
+// de corta duración. Cualquier subida futura debe pasar por una función
+// que valide tipo (magic bytes), tamaño y renombre el archivo.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

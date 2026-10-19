@@ -22,16 +22,24 @@ interface PendingApprovalViewProps {
   apiLoading: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onLogout: () => void;
+  /** La cuenta es de un dominio no habilitado: solo la aprueba un admin. */
+  domainBlocked?: boolean;
 }
 
 export function PendingApprovalView({
-  matriculaInput, setMatriculaInput, matriculaError, apiLoading, onSubmit, onLogout
+  matriculaInput, setMatriculaInput, matriculaError, apiLoading, onSubmit, onLogout, domainBlocked = false
 }: PendingApprovalViewProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white px-4">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.05)_0%,transparent_70%)] pointer-events-none"></div>
       <div className="w-full max-w-lg bg-neutral-900/60 backdrop-blur-xl border border-neutral-800 p-8 rounded-2xl shadow-2xl relative z-10 text-center">
         <h2 className="text-2xl font-bold text-amber-500 mb-4">Registro en Proceso de Aprobación</h2>
+        {domainBlocked ? (
+          <p className="text-gray-300 text-sm mb-6" role="status">
+            Tu correo no pertenece a un dominio institucional habilitado. Un administrador tiene que revisar y aprobar tu cuenta; si sos estudiante de la UNRN, ingresá con tu correo institucional.
+          </p>
+        ) : (
+        <>
         <p className="text-gray-300 text-sm mb-6">
           Para acceder como estudiante, es requisito validar tu número de matrícula de la UNRN (formato <strong>UNRN-######</strong>).
         </p>
@@ -64,6 +72,8 @@ export function PendingApprovalView({
             {apiLoading ? "Enviando..." : "Validar Matrícula"}
           </button>
         </form>
+        </>
+        )}
 
         <div className="my-6 border-t border-neutral-800"></div>
 

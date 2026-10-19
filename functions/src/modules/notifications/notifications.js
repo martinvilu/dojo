@@ -1,10 +1,11 @@
+const { dojoError } = require('../../lib/errors');
 async function notifyCourseStudents(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, message, link } = payload;
     
     // Check teacher auth
     const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+    if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
     
     const studentsSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
     
@@ -47,10 +48,10 @@ async function checkAndAlertStudentsAtRisk(payload, context) {
     const { uid, db, admin } = context;
     const { courseId } = payload;
     const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+    if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
     
     const courseSnap = await db.collection('courses').doc(courseId).get();
-    if (!courseSnap.exists) throw new Error("Curso no encontrado");
+    if (!courseSnap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
     const courseName = courseSnap.data().name;
     const classes = courseSnap.data().class_instances || [];
     
@@ -177,7 +178,7 @@ async function sendDailySummaries(event) {
             batch.set(summaryRef, {
                 student_id: studentId,
                 message: `Resumen Diario: Tenés ${notifs.length} nuevas actualizaciones (calificaciones, cambios de clase, etc.)`,
-                link: '/estudiante/notificaciones',
+                link: '/dashboard',
                 read: false,
                 created_at: FieldValue.serverTimestamp()
             });

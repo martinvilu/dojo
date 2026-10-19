@@ -49,6 +49,7 @@ El sistema implementa un modelo de Control de Acceso Basado en Roles (RBAC) con 
     *   Posibilidad de confirmar el acuse de recibo de avisos y realizar entregas de tareas asignadas.
 
 ### Implementación Técnica de Seguridad:
+*   **Rol en el token**: el rol (`student`, `teacher`, `admin`) viaja como custom claim `role` de Firebase Auth. Lo actualizan los cambios de rol y se autocorrige en cada inicio de sesión; las reglas lo usan y recurren al perfil solo si el token no lo trae.
 *   **Reglas de Firestore (`firestore.rules`)**:
     *   Denegación por defecto: todo lo no listado explícitamente queda inaccesible para el cliente.
     *   **Perfiles (`profiles`)**: cada usuario solo puede leer su propio perfil (el aprovisionamiento ocurre en el backend). Docentes y administradores únicamente pueden editar el mapa de comisiones sobre perfiles de estudiantes.
@@ -61,6 +62,8 @@ El sistema implementa un modelo de Control de Acceso Basado en Roles (RBAC) con 
 
 ### Autenticación de las rutas App Router (`src/app/api/`):
 
+Los parámetros y respuestas de cada ruta, y el catálogo completo de acciones de la callable con su política, están en [API.md](API.md).
+
 Cada ruta usa exactamente un esquema, centralizado en `src/app/api/middleware/api.ts`:
 
 | Esquema | Helper | Rutas | Consumidor |
@@ -68,11 +71,12 @@ Cada ruta usa exactamente un esquema, centralizado en `src/app/api/middleware/ap
 | Token de suscripción por curso (`sync_secret`, solo equipo docente) | `requireCourseSubscriptionToken` | `/api/calendar`, `/api/export/csv` | Google Sheets / clientes iCal |
 | Token de calendario por curso (`calendar_secret`, de solo lectura) | `requireCourseSubscriptionToken(..., { allowCalendarToken: true })` | `/api/calendar` | Clientes iCal de estudiantes |
 | Bearer JWT de Firebase Auth | `requireBearerUser` / `requireBearerProfile` | `/api/me`, `/api/cli/*` | Dojo CLI (modo cloud) y futuras rutas con identidad de usuario |
-| `id_token` de la plataforma LTI (decodificado, **sin verificación de firma** todavía) | lectura de claims | `/api/lti/*` | Moodle 4.2+ |
+| `id_token` LTI 1.3 verificado (RS256 contra el JWKS de Moodle, `state` y `nonce` de un solo uso) | `src/lib/lti/` | `/api/lti/*` | Moodle 4.2+ (ver [MOODLE_INTEGRATION.md](MOODLE_INTEGRATION.md)) |
+| Ninguna (respuesta sin datos sensibles) | — | `/api/health` | Monitores de disponibilidad |
 
 Convención: toda nueva ruta que actúe en nombre de un usuario debe usar `requireBearerProfile` (identidad + perfil para decisiones por rol) y jamás exponer `sync_secret`, códigos de invitación ni datos de terceros. Los tokens se comparan en tiempo constante.
 
-Como el `id_token` LTI no se verifica contra el JWKS de la plataforma, los parámetros del launch solo se usan para navegar: ninguna decisión de acceso se basa en ellos (ver `moodleAutoEnroll`).
+El launch LTI se verifica en el servidor y el dashboard solo recibe su ID, que el backend canjea una vez (`consumeLtiLaunch`). Sin LTI 1.3 configurado, el launch solo sirve para navegar.
 
 ---
 

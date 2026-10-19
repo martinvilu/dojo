@@ -44,7 +44,7 @@ describe('Moodle Integration Expanded Actions', () => {
                 collection: jest.fn().mockImplementation((coll) => {
                     if (coll === 'courses') {
                         return {
-                            doc: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue(mockCourseDoc) })
+                            doc: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue(mockCourseDoc), set: jest.fn().mockResolvedValue(true) })
                         };
                     }
                     if (coll === 'assignments') {

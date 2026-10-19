@@ -788,7 +788,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/index.js`
 - **Propuesta técnica:** Configurar TypeScript con `tsconfig.json` en `functions/` y migrar a módulos ESM (`import/export`).
 - **Impacto y beneficio:** Prevención de errores de ejecución en producción y tipado compartido con el frontend.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — `functions/tsconfig.json` con `checkJs`: TypeScript verifica estáticamente todo el backend (0 errores, tipos JSDoc en las librerías) y el CI lo exige (`npm run typecheck`). La conversión de sintaxis a archivos `.ts`/ESM queda pendiente: cambia el pipeline de deploy (paso de build) y, con los tipos actuales, aportaría poco sobre esta verificación.
 
 ### 3.02. Modularización de Cloud Functions por dominio de negocio
 - **Diagnóstico actual:** Todas las funciones (auth, moodle, notas, reportes) residen en un solo archivo masivo de más de 500 líneas.
@@ -802,7 +802,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `firestore.rules`
 - **Propuesta técnica:** Agregar funciones de validación como `request.resource.data.text is string && request.resource.data.text.size() < 2000`.
 - **Impacto y beneficio:** Imposibilidad de que clientes maliciosos inyecten documentos corruptos o sobrecargados.
-- **Estado (24/09/2026):** 🟡 Parcial — Reglas validan tipos/longitudes en foros y encuestas; el resto se opera solo vía backend.
+- **Estado (19/10/2026):** ✅ Implementada — Esquemas en reglas para todo lo que escribe el cliente: asistencia (claves permitidas, `records` mapa acotado), comentarios (claves permitidas, `user_role` igual al del perfil, nombre ≤ 120), encuestas (claves, tipos y longitudes). Los perfiles ya no aceptan escrituras del cliente: las comisiones pasan por `setStudentCommission`.
 
 ### 3.04. Prevención de escalamiento de privilegios en perfiles de usuario
 - **Diagnóstico actual:** Un usuario autenticado podría intentar enviar un `update` cambiando su propio campo `role` a `'admin'` si las reglas no lo impiden expresamente.
@@ -816,14 +816,14 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/middleware/rateLimit.js`
 - **Propuesta técnica:** Integrar un middleware con Redis o Firestore / Token Bucket que limite a un máximo de N peticiones por minuto por IP/UID.
 - **Impacto y beneficio:** Protección contra abusos y control estricto de costos en la facturación de Firebase.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/rateLimit.js`: límite global de 120 llamadas/min por usuario (memoria) y ventanas persistidas en `rate_limits` (TTL) para 16 acciones sensibles; responde `resource-exhausted` con `RATE_LIMITED`.
 
 ### 3.06. Rotación y protección segura de secretos con Google Secret Manager
 - **Diagnóstico actual:** Secretos como el token de bot de GitHub y tokens de Moodle se cargan desde variables de entorno planas en Functions.
 - **Archivos involucrados:** `functions/index.js, .env`
 - **Propuesta técnica:** Utilizar `defineSecret` de Firebase Functions v2 y Google Cloud Secret Manager.
 - **Impacto y beneficio:** Almacenamiento seguro, encriptado y con auditoría de acceso de claves maestras.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — Código listo: con `DOJO_SECRETS_FROM_SECRET_MANAGER=true` las funciones declaran `TOKEN_ENCRYPTION_KEY`, `GMAIL_CLIENT_ID` y `GMAIL_CLIENT_SECRET` con `defineSecret` y `scripts/setup-secrets.sh` los crea. **Acción externa pendiente**: correr el script contra el proyecto (requiere permisos de Secret Manager) y commitear el flag; sin los secretos creados el deploy fallaría, por eso viene apagado.
 
 ### 3.07. Migración de Cloud Functions v1 a Firebase Functions v2
 - **Diagnóstico actual:** El proyecto utiliza `firebase-functions` con APIs de primera generación (Gen 1).
@@ -844,14 +844,14 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/moodle/sync.js`
 - **Propuesta técnica:** Validar y limpiar strings antes de armar queries compuestas.
 - **Impacto y beneficio:** Seguridad defensiva profunda contra inyecciones NoSQL.
-- **Estado (24/09/2026):** 🟡 Parcial — La capa `authz` valida identificadores y membresía antes de cada handler.
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/validate.js`: el dispatcher valida tamaño (512 KB) y profundidad del payload, y que todo campo de ID y `courseIds` sea un ID de documento seguro (sin `/` ni `__…__`); emails normalizados antes de consultar y código de invitación tipado.
 
 ### 3.10. Implementación de auditoría inmutable (Audit Log) de cambios de calificaciones
 - **Diagnóstico actual:** Cuando un docente modifica una nota, solo se sobreescribe el documento sin dejar historial inmutable.
 - **Archivos involucrados:** `functions/src/grades/audit.js`
 - **Propuesta técnica:** Crear un trigger `onDocumentUpdated` sobre entregas que guarde un log de auditoría en una subcolección protegida de solo lectura.
 - **Impacto y beneficio:** Respaldo legal y transparencia absoluta en reclamos de exámenes.
-- **Estado (24/09/2026):** 🟡 Parcial — `gradeSubmission` audita cada nota normalizada; las importaciones masivas aún no generan entradas de auditoría.
+- **Estado (19/10/2026):** ✅ Implementada — Trigger `onSubmissionGradeChange` (`onDocumentWritten` de `submissions`) audita todo cambio de nota/feedback; cada vía (UI, planilla, CSV, autograding) deja `graded_by` y `grade_source`, y el historial muestra el origen.
 
 ### 3.11. Restricción de CORS estricta en endpoints de Next.js API y Cloud Functions
 - **Diagnóstico actual:** Las rutas admiten CORS permisivo o encabezados genéricos `*`.
@@ -865,21 +865,21 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/app/api/lti/route.ts`
 - **Propuesta técnica:** Adoptar el estándar oficial IMS LTI 1.3 con intercambio de claves JWKS y Deep Linking.
 - **Impacto y beneficio:** Compatibilidad estándar con cualquier plataforma de campus virtual moderno.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — LTI 1.3 Advantage real (`src/lib/lti/`): login OIDC con `state`/`nonce` de un solo uso, verificación RS256 del `id_token` contra el JWKS de Moodle (emisor, audiencia, vigencia, deployment), launches verificados canjeados por `consumeLtiLaunch`, Deep Linking firmado, JWKS propio y notas por AGS (OAuth2 con aserción JWT). Reemplaza la decodificación sin firma, el JWKS falso y el POX sin firma. **Acción externa pendiente**: registrar la herramienta en Moodle y cargar las variables `LTI_*`.
 
 ### 3.13. Cifrado de tokens de Moodle y GitHub en reposo en Firestore
 - **Diagnóstico actual:** Los tokens de acceso personales se guardan en texto plano en la colección de configuraciones.
 - **Archivos involucrados:** `firestore.rules, functions/src/crypto.js`
 - **Propuesta técnica:** Cifrar los tokens usando AES-256-GCM con una llave maestra en Secret Manager antes de persistirlos.
 - **Impacto y beneficio:** Inmunidad ante filtraciones accidentales de la base de datos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/secretBox.js`: AES-256-GCM con `TOKEN_ENCRYPTION_KEY` (formato `enc:v1:…`); los tokens de GitHub se cifran al guardarse y se descifran al usarse, los guardados en texto plano siguen funcionando y la acción `encryptStoredSecrets` (admin) los migra. Requiere crear la clave (ver 3.06).
 
 ### 3.14. Reglas de Firestore para foros: alumnos solo pueden editar/borrar sus propios mensajes
 - **Diagnóstico actual:** Verificar que en la colección de comentarios solo el autor original pueda actualizar el texto de su duda.
 - **Archivos involucrados:** `firestore.rules`
 - **Propuesta técnica:** Agregar regla: `allow update, delete: if signedIn() && (resource.data.user_id == request.auth.uid || isAdmin() || isTeacherOf(courseId))`.
 - **Impacto y beneficio:** Gobernanza comunitaria y respeto entre estudiantes en foros.
-- **Estado (24/09/2026):** 🟡 Parcial — Las reglas prohíben editar/borrar mensajes del foro (solo reacciones y mejor respuesta).
+- **Estado (19/10/2026):** ✅ Implementada — Reglas: el autor edita solo `content` (con `edited_at = request.time`) y borra sus mensajes; el equipo docente y los admins moderan cualquiera. UI de **Editar** / **Borrar** con marca «(editado)»; 3 escenarios nuevos en la suite de reglas.
 
 ### 3.15. Verificación de firma HMAC en Webhooks de GitHub
 - **Diagnóstico actual:** Cualquier cliente que conozca la URL del endpoint de webhook de GitHub podría enviar payloads falsos simulando entregas.
@@ -893,56 +893,56 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/app/api/export/route.ts`
 - **Propuesta técnica:** Delegar la generación pesada a una Cloud Task en segundo plano que envíe el enlace de descarga por email al docente.
 - **Impacto y beneficio:** Cero caídas por timeouts en operaciones de reportería complejas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `requestCourseExport` encola el reporte académico completo en `export_jobs`; el trigger `onExportJobCreated` (5 min, 512 MiB) lo genera con lecturas por lotes, lo sube a Cloud Storage y avisa por la 🔔. Se usa un trigger de Firestore (con reintentos) en lugar de Cloud Tasks. El reporte PDF sigue siendo de impresión en el navegador.
 
 ### 3.17. Limpieza automática de tokens de asistencia QR vencidos mediante TTL en Firestore
 - **Diagnóstico actual:** Los códigos QR de asistencia caducan a los pocos minutos, pero sus documentos quedan en la base de datos para siempre.
 - **Archivos involucrados:** `firestore.rules, functions/src/attendance/`
 - **Propuesta técnica:** Habilitar la directiva Time-to-Live (TTL) de Cloud Firestore en el campo `expire_at` para borrado automático sin costo.
 - **Impacto y beneficio:** Base de datos limpia y menor volumen de almacenamiento cobrable.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Las sesiones de `active_qr` llevan `expires_at` (4 h) con política TTL en `firestore.indexes.json`; `stopQrAttendance` las cierra al instante.
 
 ### 3.18. Protección contra ataques de repetición (Replay Attacks) en validación de asistencia
 - **Diagnóstico actual:** Un alumno podría compartir una captura de pantalla del código QR con un compañero que no está en el aula.
 - **Archivos involucrados:** `functions/src/attendance/validate.js`
 - **Propuesta técnica:** Generar tokens QR dinámicos rotativos cada 15 segundos basados en TOTP vinculado a la sesión del proyector del docente.
 - **Impacto y beneficio:** Garantía de presencialidad real en el aula.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `startQrAttendance` crea en el servidor una sesión con secreto aleatorio; el código se deriva por HMAC-SHA256 del intervalo de 15 s (`functions/src/lib/qrToken.js` y `src/lib/qrToken.ts`) y vale como máximo 30 s. Si el aula tiene ubicación, la del estudiante es obligatoria.
 
 ### 3.19. Sincronización bidireccional asíncrona de notas con Moodle Gradebook
 - **Diagnóstico actual:** Al calificar en Dojo, el docente debe recordar presionar sincronizar con Moodle.
 - **Archivos involucrados:** `functions/src/moodle/syncGrades.js`
 - **Propuesta técnica:** Crear un trigger que ante la asignación de una nota válida (`grade >= 0`) encole la sincronización automática con el libro de calificaciones de Moodle.
 - **Impacto y beneficio:** Sincronización transparente sin intervención manual.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — El trigger `onSubmissionGradeChange` sincroniza con Moodle toda nota nueva de una entrega lanzada por LTI, venga de la UI, de una planilla, del CSV o del autograding; Firebase reintenta el trigger ante fallas transitorias.
 
 ### 3.20. Validación de dominios de correo institucional en el registro
 - **Diagnóstico actual:** Cualquier usuario con una cuenta personal de Gmail puede intentar registrarse en la plataforma.
 - **Archivos involucrados:** `src/modules/auth/components/AuthScreen.tsx, functions/src/auth/validateEmail.js`
 - **Propuesta técnica:** Forzar en Firebase Auth Blocking Functions (Before User Created) que el correo termine en `@unrn.edu.ar` o dominio autorizado.
 - **Impacto y beneficio:** Acceso restringido exclusivamente a la comunidad universitaria oficial.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Ajuste global `allowed_email_domains` (formulario en **Configuración**): las cuentas nuevas de otros dominios quedan pendientes con `email_domain_blocked`, no pueden autoaprobarse con la matrícula y las aprueba un admin. Sin Identity Platform no hay blocking function `beforeUserCreated`: la restricción se aplica al crear el perfil.
 
 ### 3.21. Implementación de Soft Deletes (Borrado Lógico) para materias y cursos
 - **Diagnóstico actual:** Eliminar un curso borra documentos en cascada de forma destructiva e irreversible.
 - **Archivos involucrados:** `firestore.rules, functions/src/courses/`
 - **Propuesta técnica:** Marcar cursos con `deleted_at: Timestamp` y filtrar en consultas activas, permitiendo restauración ante accidentes.
 - **Impacto y beneficio:** Seguridad contra pérdidas catastróficas de información de cursadas.
-- **Estado (24/09/2026):** 🟡 Parcial — Campo `archived` en cursos y tareas; `deleteCourse` sigue borrando físicamente.
+- **Estado (19/10/2026):** ✅ Implementada — `deleteCourse` marca `deleted_at`/`purge_after` (30 días), `restoreCourse` revierte; listados, códigos de invitación, feeds y `authz` ignoran las cátedras eliminadas; `purgeDeletedCourses` (cron diario) las borra en cascada. UI de eliminar/restaurar en **Cátedras**.
 
 ### 3.22. Respaldos automáticos programados diarios de Cloud Firestore
 - **Diagnóstico actual:** No se observa configuración explícita de exportación periódica automatizada de toda la base de datos a Cloud Storage.
 - **Archivos involucrados:** `functions/src/maintenance/backup.js`
 - **Propuesta técnica:** Configurar una Cloud Function con Cloud Scheduler (cron diario) que invoque `gcloud firestore export` a un bucket seguro.
 - **Impacto y beneficio:** Recuperación ante desastres (Disaster Recovery) con RPO de 24 horas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `dailyFirestoreExport` (cron 04:00) exporta todas las colecciones a `BACKUP_BUCKET` con `FirestoreAdminClient.exportDocuments`; `scripts/setup-backups.sh` crea el bucket con retención de 30 días y los permisos. **Acción externa pendiente**: correr el script en el proyecto.
 
 ### 3.23. Migración de consultas 'In-Memory' a Queries indexadas compuestas en Firestore
 - **Diagnóstico actual:** Se descarga el roster completo y luego se filtra en JavaScript en el navegador del cliente.
 - **Archivos involucrados:** `src/modules/course/components/CourseOverviewPanel.tsx`
 - **Propuesta técnica:** Diseñar índices compuestos en Firestore para consultar directamente `where('status', '==', 'submitted').where('grade', '==', null)`.
 - **Impacto y beneficio:** Ahorro de miles de lecturas de Firestore por sesión y carga instantánea.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Nueva acción `getCourseSubmissions`: una llamada por curso con consultas `in` por lotes de 30 tareas, perfiles en un único `getAll` y filtro de pendientes en el servidor (índice compuesto `assignment_id + status`). Reemplaza en el dashboard las N llamadas a `getAssignmentSubmissions` (cada una con N lecturas de perfiles).
 
 ### 3.24. Validación estricta de estructura en creación de tareas docentes
 - **Diagnóstico actual:** Un docente podría crear accidentalmente tareas con fechas de entrega anteriores a la fecha de inicio.
@@ -956,70 +956,70 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/notifications/forum.js`
 - **Propuesta técnica:** Enviar notificación Web Push o email automático notificando al estudiante que su duda fue resuelta.
 - **Impacto y beneficio:** Disminución de la ansiedad estudiantil y retroalimentación veloz.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Trigger `onClassCommentUpdated` notifica al autor cuando su mensaje se marca como solución (in-app y, con preferencia de resumen, por mail diario). Nueva campana 🔔 en el dashboard: hasta ahora ninguna pantalla mostraba las notificaciones. Web Push queda pendiente (requiere clave VAPID de FCM).
 
 ### 3.26. Gestión de transacciones de Firestore para conteos concurrentes de XP
 - **Diagnóstico actual:** Si un estudiante recibe múltiples puntos concurrentes, escrituras paralelas pueden sobreescribir el XP acumulado.
 - **Archivos involucrados:** `functions/src/gamification/addXp.js`
 - **Propuesta técnica:** Utilizar `runTransaction` o `FieldValue.increment(points)` nativo de Firestore para actualizaciones atómicas.
 - **Impacto y beneficio:** Conteo de experiencia matemático e incorruptible.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/xp.js` (`awardXp`): log con ID determinístico y `profiles.xp_total` con `FieldValue.increment` en una sola transacción; la asistencia por QR ya no puede otorgar XP doble.
 
 ### 3.27. Bloqueo de cuentas tras N intentos fallidos de contraseña
 - **Diagnóstico actual:** Firebase Auth estándar no bloquea temporalmente usuarios tras múltiples intentos erróneos.
 - **Archivos involucrados:** `functions/src/auth/bruteForceProtection.js`
 - **Propuesta técnica:** Implementar contador en Firestore con bloqueo temporal de 15 minutos tras 5 intentos fallidos consecutivos.
 - **Impacto y beneficio:** Resguardo contra ataques automatizados de diccionario.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — Se apoya en el bloqueo nativo de Firebase Auth ante intentos fallidos (`auth/too-many-requests`), ahora con mensaje claro y recuperación de contraseña. No se agregó un contador propio: el backend no ve los intentos fallidos y un contador alimentado por el cliente permitiría bloquear cuentas ajenas. Un bloqueo configurable requiere Identity Platform.
 
 ### 3.28. Manejo de estados de suscripción con Firebase Emulators en CI y local
 - **Diagnóstico actual:** La configuración del emulador depende de scripts manuales y versiones específicas de Java.
 - **Archivos involucrados:** `tests/firestore.rules.test.js`
 - **Propuesta técnica:** Crear un contenedor Docker estandarizado para los emuladores de Firebase local.
 - **Impacto y beneficio:** Entorno de pruebas idéntico en las computadoras de todos los colaboradores.
-- **Estado (24/09/2026):** 🟡 Parcial — Suite de reglas con el emulador de Firestore en CI (`npm run test:rules`).
+- **Estado (19/10/2026):** ✅ Implementada — `docker/emulators.Dockerfile` (Node 22, Java 21 y Firebase CLI fijos) y `docker compose up emulators` levantan Auth, Firestore y Functions en el proyecto `demo-ninja-dojo`; verificado con un smoke test de la callable contra los emuladores.
 
 ### 3.29. Desconexión y revocación automática de sesiones ante cambio de contraseña
 - **Diagnóstico actual:** Si un usuario cambia su contraseña, las sesiones abiertas en otros navegadores o dispositivos pueden permanecer activas.
 - **Archivos involucrados:** `src/modules/auth/components/AuthScreen.tsx`
 - **Propuesta técnica:** Invocar `admin.auth().revokeRefreshTokens(uid)` en el backend tras el reseteo de clave.
 - **Impacto y beneficio:** Cierre de brechas de seguridad ante cuentas comprometidas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/sessionGuard.js`: el dispatcher rechaza ID tokens anteriores a `tokensValidAfterTime` (`AUTH_SESSION_REVOKED`, el cliente cierra sesión). Nueva acción `signOutEverywhere`, cambio de contraseña con reautenticación en **Mi Perfil** (Firebase revoca los refresh tokens) y «¿Olvidaste tu contraseña?» en el login.
 
 ### 3.30. Sanitización de nombres de archivo y tipos MIME en subida de adjuntos
 - **Diagnóstico actual:** Alumnos podrían subir scripts maliciosos camuflados como PDFs o imágenes en entregas.
 - **Archivos involucrados:** `functions/src/storage/validateUpload.js`
 - **Propuesta técnica:** Validar con `file-type` (magic bytes) en Cloud Storage triggers y renombrar con UUIDs no ejecutables.
 - **Impacto y beneficio:** Prevención absoluta de ejecución remota de código (RCE).
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada (preventiva) — La plataforma no recibe adjuntos de clientes (las entregas son repos de GitHub); `storage.rules` bloquea toda lectura y escritura directa en Cloud Storage y los archivos del backend se sirven solo con URLs firmadas. Una subida futura debe pasar por una función que valide magic bytes y renombre.
 
 ### 3.31. Configuración de alertas de presupuesto y consumo anómalo en Google Cloud
 - **Diagnóstico actual:** Un bucle infinito de lecturas en un useEffect podría generar costos no deseados en Firestore.
 - **Archivos involucrados:** `firebase.json`
 - **Propuesta técnica:** Configurar alertas de presupuesto en Google Cloud Billing que notifiquen ante desvíos del consumo habitual.
 - **Impacto y beneficio:** Protección financiera y detección inmediata de bucles de consulta.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — `scripts/setup-budget-alert.sh` crea el presupuesto con umbrales al 50/90/100 % y por pronóstico, documentado en OPERACION §6.2. **Acción externa pendiente**: ejecutarlo con el ID de la cuenta de facturación (requiere permisos de Billing).
 
 ### 3.32. Generación de URLs firmadas (Signed URLs) con tiempo de expiración para entregas
 - **Diagnóstico actual:** Los enlaces de descarga de correcciones pueden quedar públicos si no se controlan los accesos.
 - **Archivos involucrados:** `functions/src/storage/signedUrls.js`
 - **Propuesta técnica:** Servir archivos privados mediante URLs firmadas con expiración máxima de 15 minutos.
 - **Impacto y beneficio:** Privacidad rigurosa de los exámenes y retroalimentaciones de los estudiantes.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `getExportDownloadUrl` entrega URLs firmadas v4 de 15 minutos solo a quien pidió la exportación, al staff del curso o a un admin; los archivos se borran a los 7 días. Requiere `roles/iam.serviceAccountTokenCreator` en la cuenta de servicio (OPERACION §6.1.2).
 
 ### 3.33. Estandarización de códigos de error semánticos en el backend
 - **Diagnóstico actual:** Las funciones devuelven mensajes de error planos como 'Error processing request' en lugar de códigos estructurados.
 - **Archivos involucrados:** `functions/src/errors/codes.js`
 - **Propuesta técnica:** Crear diccionario de errores: `AUTH_INVALID_TOKEN`, `COURSE_NOT_FOUND`, `ASSIGNMENT_PAST_DUE`.
 - **Impacto y beneficio:** El frontend puede reaccionar y mostrar mensajes localizados amigables.
-- **Estado (24/09/2026):** 🟡 Parcial — El dispatcher propaga `HttpsError` (`permission-denied`, `not-found`, `invalid-argument`) desde authz y validaciones.
+- **Estado (19/10/2026):** ✅ Implementada — Diccionario `functions/src/lib/errors.js` (27 códigos, p. ej. `COURSE_NOT_FOUND`, `NOT_COURSE_MEMBER`, `GITHUB_NOT_CONFIGURED`, `RATE_LIMITED`); los 155 `throw new Error` de los handlers usan `dojoError` y el dispatcher envía el código en `details.code`.
 
 ### 3.34. Gestión de roles con Custom Claims de Firebase Auth en lugar de lecturas de Firestore
 - **Diagnóstico actual:** Actualmente cada verificación de rol en `firestore.rules` hace una lectura `get()` al documento `profiles/{uid}`.
 - **Archivos involucrados:** `functions/src/auth/setClaims.js, firestore.rules`
 - **Propuesta técnica:** Configurar Custom Claims (`role: 'teacher' | 'student' | 'admin'`) en el token JWT del usuario.
 - **Impacto y beneficio:** Ahorro masivo de lecturas en Firestore y reglas de seguridad 10 veces más rápidas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Custom claim `role` (`functions/src/lib/claims.js`) sincronizado en cambios de rol, códigos docentes y autocorrección en cada login (el cliente refresca el token). Las reglas usan `myRole()` (claim con respaldo en el perfil) y si el rol baja se revocan las sesiones. `updateUserProfile` pasa a lista blanca de campos.
 
 ### 3.35. Migración de almacenamiento de sesiones de Selenium a Firestore Mock local
 - **Diagnóstico actual:** Los tests E2E usan credenciales reales contra proyectos en la nube que ensucian datos.
@@ -1033,35 +1033,35 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `.firebaserc`
 - **Propuesta técnica:** Configurar targets en `.firebaserc`: `dojo-dev`, `dojo-staging` y `dojo-prod`.
 - **Impacto y beneficio:** Aislamiento riguroso de datos de cursadas activas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Aliases `dev` (`demo-ninja-dojo`), `staging` y `prod` en `.firebaserc`; el cliente toma el proyecto de `NEXT_PUBLIC_FIREBASE_*` y se conecta a los emuladores con `npm run dev:emulators`; `npm run emulators` / `seed:emulators` y seeds que se niegan a escribir en proyectos reales. Pendiente externo: crear el proyecto `jutsu-classroom-staging`.
 
 ### 3.37. Verificación de integridad de checksums en sincronizaciones masivas de alumnos
 - **Diagnóstico actual:** Sincronizar el padrón de alumnos de Moodle sobreescribe registros sin detectar si hubo cambios reales.
 - **Archivos involucrados:** `functions/src/moodle/syncRoster.js`
 - **Propuesta técnica:** Calcular hash SHA-256 del padrón y sincronizar únicamente si el hash difiere del último registro guardado.
 - **Impacto y beneficio:** Ahorro de procesamiento y lecturas innecesarias en la base de datos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/rosterChecksum.js`: las sincronizaciones de Moodle y SIU Guaraní calculan el SHA-256 del padrón normalizado y no escriben nada si coincide con el último (`courses.roster_sync`); `force: true` fuerza la sincronización y la UI avisa cuando no hubo cambios.
 
 ### 3.38. Implementación de Webhook Dead Letter Queue (DLQ) para eventos fallidos
 - **Diagnóstico actual:** Si una función falla al procesar una entrega de GitHub por caída momentánea de red, el evento se pierde.
 - **Archivos involucrados:** `functions/src/queues/dlq.js`
 - **Propuesta técnica:** Reenviar eventos fallidos a una cola Pub/Sub Dead Letter para reintento automático con backoff exponencial.
 - **Impacto y beneficio:** Cero pérdida de entregas de estudiantes.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — El webhook encola en `webhook_dead_letters` los eventos validados cuya escritura falla (responde 202) y `retryWebhookDeadLetters` (cada 10 min) los reprocesa con backoff exponencial hasta 6 intentos. Se usa Firestore en lugar de Pub/Sub: mismo resultado sin infraestructura extra.
 
 ### 3.39. Manejo granular de permisos para Ayudantes de Cátedra (Teaching Assistants)
 - **Diagnóstico actual:** Los ayudantes de cátedra requieren corregir tareas pero no deberían poder eliminar comisiones ni borrar materias.
 - **Archivos involucrados:** `firestore.rules`
 - **Propuesta técnica:** Crear rol intermedio `assistant` con permisos de lectura/calificación pero sin privilegios destructivos.
 - **Impacto y beneficio:** Gobernanza académica segura y delegación de tareas sin riesgos.
-- **Estado (24/09/2026):** 🟡 Parcial — Los ayudantes no pueden modificar la planificación base (`updateCourseSettings`).
+- **Estado (19/10/2026):** ✅ Implementada — Política `titularOf` en `authz.js` para 14 acciones estructurales o destructivas (ajustes, cronograma, crear/editar/archivar tareas, peer review, sincronización de roster); los ayudantes reciben `ASSISTANT_NOT_ALLOWED`, no ven los códigos de invitación docentes (podían ascenderse a titular) y la UI les oculta esos controles.
 
 ### 3.40. Indexación automática de búsquedas con Algolia o Typesense
 - **Diagnóstico actual:** La búsqueda en Firestore no soporta texto completo (Full-Text Search) ni tolerancia a errores tipográficos.
 - **Archivos involucrados:** `functions/src/search/index.js`
 - **Propuesta técnica:** Sincronizar documentos de tareas y alumnos con un motor de búsqueda indexado mediante triggers.
 - **Impacto y beneficio:** Búsqueda instantánea de alumnos por coincidencia fonética o errores ortográficos comunes.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — Sin servicio externo: `src/lib/fuzzy.ts` da a la paleta ⌘K búsqueda sin acentos, con palabras en cualquier orden, tolerancia a errores de tipeo (Damerau-Levenshtein) y ranking por relevancia. Un índice de texto completo del lado del servidor (Algolia/Typesense) requiere contratar el servicio y sincronizarlo con triggers.
 
 ### 3.41. Validación de integridad de calificaciones numéricas en el servidor
 - **Diagnóstico actual:** Un cliente alterado podría enviar calificaciones con valores ilógicos como `15` o números negativos.
@@ -1082,49 +1082,49 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/integrations/siu.js`
 - **Propuesta técnica:** Exponer un endpoint seguro con autenticación mTLS que emita el acta de regularidades en formato JSON para el SIU.
 - **Impacto y beneficio:** Eliminación de errores humanos en la transcripción de notas finales.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — `GET /api/siu/acta` devuelve el acta de regularidades en JSON (asistencia, tareas aprobadas, promedio y condición REGULAR/LIBRE con umbrales configurables), autenticada con el token docente y firmada con `X-Dojo-Signature` (HMAC-SHA256). **Pendiente**: mTLS, que requiere un balanceador o Cloud Run con certificados de cliente, y la integración del lado de SIU.
 
 ### 3.44. Registro de User-Agent e IP en inicios de sesión para detección de anomalías
 - **Diagnóstico actual:** No hay registro de auditoría de sesiones para detectar inicios de sesión concurrentes desde ubicaciones dispares.
 - **Archivos involucrados:** `functions/src/auth/auditLogin.js`
 - **Propuesta técnica:** Guardar metadata básica de inicio de sesión en un historial de seguridad accesible por el alumno en 'Mi Perfil'.
 - **Impacto y beneficio:** Detección inmediata de cuentas compartidas o comprometidas.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `getProfile` registra cada inicio de sesión nuevo (`auth_time`) con IP, user agent y proveedor en `profiles/{uid}/security_log` (últimos 20); **Mi Perfil** muestra la actividad con IP enmascarada.
 
 ### 3.45. Protección de endpoints contra ataques DDoS mediante Cloudflare o Firebase App Check
 - **Diagnóstico actual:** Cualquier script externo puede consumir endpoints de Next.js sin verificar si el cliente es la app oficial.
 - **Archivos involucrados:** `src/app/layout.tsx, firebase.json`
 - **Propuesta técnica:** Habilitar Firebase App Check con reCAPTCHA Enterprise o Play Integrity.
 - **Impacto y beneficio:** Bloqueo automático de tráfico malicioso y bots no autorizados.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — Código listo: el cliente inicializa App Check con reCAPTCHA Enterprise si existe `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` (token de depuración en emuladores) y la callable lo exige con `DOJO_ENFORCE_APP_CHECK=true`. **Acción externa pendiente**: registrar la app en la consola, cargar la clave y activar la verificación cuando las métricas lo confirmen (OPERACION §6.1.1).
 
 ### 3.46. Optimización del tamaño de payloads en funciones de listado masivo
 - **Diagnóstico actual:** Se devuelven campos innecesarios como configuraciones de perfil internas en listados públicos de clase.
 - **Archivos involucrados:** `functions/src/roster/get.js`
 - **Propuesta técnica:** Proyectar únicamente campos requeridos (`id`, `full_name`, `email`, `matricula`).
 - **Impacto y beneficio:** Respuestas API 70% más livianas y menor latencia en conexiones móviles.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/projections.js`: roster, entregas, acuses de avisos, docentes y grupos de estudio devuelven solo los campos que usa la UI (perfil público para pares; académico para el equipo docente, sin correos secundarios ni datos internos).
 
 ### 3.47. Limpieza de entregas huérfanas al desvincular o eliminar una tarea
 - **Diagnóstico actual:** Si una tarea se elimina, los documentos de entrega de los alumnos quedan como datos basura en Firestore.
 - **Archivos involucrados:** `functions/src/assignments/cleanup.js`
 - **Propuesta técnica:** Trigger `onDocumentDeleted` que limpie automáticamente las entregas y comentarios asociados.
 - **Impacto y beneficio:** Higiene total de la base de datos sin acumulación de datos obsoletos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — Trigger `cleanupAssignmentData` (`onDocumentDeleted` de `assignments`) borra entregas y revisiones entre pares de la tarea eliminada.
 
 ### 3.48. Validación de estado del estudiante en Moodle antes de permitir entregas
 - **Diagnóstico actual:** Un alumno dado de baja en el sistema universitario podría continuar enviando tareas en Dojo.
 - **Archivos involucrados:** `functions/src/students/validateEnrollment.js`
 - **Propuesta técnica:** Verificar estado de matriculación activa con la API de Moodle antes de registrar recepciones de TP.
 - **Impacto y beneficio:** Alineación perfecta con los padrones oficiales de la facultad.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `assertActiveEnrollment` (`functions/src/lib/enrollmentStatus.js`) rechaza `acceptAssignment` y `submitAssignment` con `ENROLLMENT_INACTIVE` cuando el padrón sincronizado (Moodle / SIU Guaraní, o el docente) marcó al estudiante como `observador`. Usa el último estado sincronizado: no consulta Moodle en cada entrega porque el `wstoken` no se guarda.
 
 ### 3.49. Auditoría de cumplimiento GDPR / Ley de Protección de Datos Personales
 - **Diagnóstico actual:** No existe una función que permita al estudiante descargar todos sus datos o solicitar borrado de cuenta.
 - **Archivos involucrados:** `functions/src/privacy/exportData.js`
 - **Propuesta técnica:** Implementar endpoint `exportUserData` que emita un archivo `.zip` con todos sus aportes y calificaciones.
 - **Impacto y beneficio:** Cumplimiento ético y legal de normativas de privacidad de datos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `exportMyData` devuelve en JSON todos los datos personales de la cuenta (sin datos de terceros) y `requestAccountDeletion`/`cancelAccountDeletion` registran el pedido de baja; **Mi Perfil** permite descargar los datos y pedir la baja, y el admin ve la etiqueta «Pidió la baja» en **Usuarios**. Formato JSON en lugar de .zip.
 
 ### 3.50. Healthcheck Endpoint profundo para monitoreo de estado del sistema
 - **Diagnóstico actual:** No existe un endpoint que verifique la conectividad en tiempo real entre Next.js, Firestore y GitHub API.
@@ -1607,7 +1607,7 @@ _Automatización de pruebas con Playwright y Jest, telemetría y monitoreo de er
 - **Archivos involucrados:** `docker-compose.yml`
 - **Propuesta técnica:** Diseñar un `docker-compose.yml` que orqueste la app, emuladores y Moodle de prueba con un solo comando `docker compose up`.
 - **Impacto y beneficio:** Onboarding de nuevos programadores en menos de 10 minutos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `docker-compose.yml`: servicio `emulators` (con healthcheck) y `app` (`next dev` conectado a los emuladores) con volúmenes propios de `node_modules`; `docker compose up` deja el entorno completo en http://localhost:3000.
 
 ### 5.17. Simulador de Moodle local para pruebas de desarrollo (LTI Mock Server)
 - **Diagnóstico actual:** Probar la integración con Moodle requiere acceso a servidores reales de la universidad o túneles ngrok.

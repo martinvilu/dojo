@@ -48,6 +48,11 @@ export async function GET(request: Request) {
       );
     }
 
+    const courseSnap = await db.collection("courses").doc(courseId).get();
+    if (!courseSnap.exists || courseSnap.data()?.deleted_at) {
+      return NextResponse.json({ error: "Curso no encontrado" }, { status: 404 });
+    }
+
     const assignSnap = await db
       .collection("assignments")
       .where("course_id", "==", courseId)

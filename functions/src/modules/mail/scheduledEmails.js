@@ -1,11 +1,12 @@
 const { sendGmailNotification } = require('./gmailAuth');
 
 const logger = require("firebase-functions/logger");
+const { dojoError } = require('../../lib/errors');
 
 async function getScheduledEmails(payload, context) {
     const { db } = context;
     const { courseId } = payload;
-    if (!courseId) throw new Error("Parámetro 'courseId' requerido.");
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "Parámetro 'courseId' requerido.");
 
     const snap = await db.collection("scheduled_emails")
         .where("course_id", "==", courseId)
@@ -23,7 +24,7 @@ async function createScheduledEmail(payload, context) {
     const { courseId, title, recipientType, targetStudentId, subject, bodyHtml, sendAt } = payload;
 
     if (!courseId || !subject || !bodyHtml) {
-        throw new Error("Parámetros 'courseId', 'subject' y 'bodyHtml' requeridos.");
+        throw dojoError('INVALID_ARGUMENT', "Parámetros 'courseId', 'subject' y 'bodyHtml' requeridos.");
     }
 
     const docRef = await db.collection("scheduled_emails").add({
@@ -45,7 +46,7 @@ async function createScheduledEmail(payload, context) {
 async function cancelScheduledEmail(payload, context) {
     const { db } = context;
     const { emailId } = payload;
-    if (!emailId) throw new Error("ID de correo programado requerido.");
+    if (!emailId) throw dojoError('INVALID_ARGUMENT', "ID de correo programado requerido.");
 
     await db.collection("scheduled_emails").doc(emailId).update({
         status: "cancelled"
@@ -57,14 +58,14 @@ async function cancelScheduledEmail(payload, context) {
 async function triggerScheduledEmailNow(payload, context) {
     const { uid, db, admin } = context;
     const { emailId, courseId } = payload;
-    if (!emailId || !courseId) throw new Error("Parámetros 'emailId' y 'courseId' requeridos.");
+    if (!emailId || !courseId) throw dojoError('INVALID_ARGUMENT', "Parámetros 'emailId' y 'courseId' requeridos.");
 
     const docRef = db.collection("scheduled_emails").doc(emailId);
     const docSnap = await docRef.get();
-    if (!docSnap.exists) throw new Error("Correo programado no encontrado.");
+    if (!docSnap.exists) throw dojoError('NOT_FOUND', "Correo programado no encontrado.");
 
     const emailData = docSnap.data();
-    if (emailData.status === "cancelled") throw new Error("Este correo fue cancelado.");
+    if (emailData.status === "cancelled") throw dojoError('FAILED_PRECONDITION', "Este correo fue cancelado.");
 
     // Fetch target recipients
     let recipients = [];
@@ -140,12 +141,12 @@ async function sendDirectStudentEmail(payload, context) {
     const { studentId, courseId, subject, bodyHtml } = payload;
 
     if (!studentId || !subject || !bodyHtml) {
-        throw new Error("Parámetros 'studentId', 'subject' y 'bodyHtml' requeridos.");
+        throw dojoError('INVALID_ARGUMENT', "Parámetros 'studentId', 'subject' y 'bodyHtml' requeridos.");
     }
 
     const pSnap = await db.collection("profiles").doc(studentId).get();
     if (!pSnap.exists || !pSnap.data().email) {
-        throw new Error("El estudiante no posee un correo electrónico registrado.");
+        throw dojoError('FAILED_PRECONDITION', "El estudiante no posee un correo electrónico registrado.");
     }
 
     const studentProfile = pSnap.data();

@@ -1,31 +1,65 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { connectAuthEmulator, getAuth } from "firebase/auth";
 import {
+  connectFirestoreEmulator,
   getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
   type Firestore,
 } from "firebase/firestore";
-import { getFunctions } from "firebase/functions";
+import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
+
+// Proyecto por entorno (mejora 3.36): producción por defecto; staging o
+// desarrollo se eligen con las variables NEXT_PUBLIC_FIREBASE_*.
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "jutsu-classroom-mrtin";
 
 const firebaseConfig = {
-  projectId: "jutsu-classroom-mrtin",
-  appId: "1:913557328690:web:831831bbd35cd384a67d2b",
-  storageBucket: "jutsu-classroom-mrtin.firebasestorage.app",
+  projectId,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:913557328690:web:831831bbd35cd384a67d2b",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${projectId}.firebasestorage.app`,
   // Web API keys are public identifiers (access is gated by authorized
   // domains + key restrictions in GCP), so a valid value is safe to embed
   // as fallback: static prerendering runs without build-time env vars on
   // App Hosting and must never bake an invalid key into the client bundle.
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyALpBmkwjOAH4AaUW0sLS_8suZNns5eu4c",
-  authDomain: "jutsu-classroom-mrtin.firebaseapp.com",
-  messagingSenderId: "913557328690",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "913557328690",
 };
+
+/** `npm run dev:emulators`: Auth, Firestore y Functions locales. */
+export const usingEmulators = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true";
 
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
 export const db = createFirestore();
 export const functions = getFunctions(app);
+
+// App Check (mejora 3.45): con la clave de reCAPTCHA Enterprise configurada,
+// cada llamada a Firebase lleva un token que prueba que viene de la app
+// oficial; el backend lo exige con DOJO_ENFORCE_APP_CHECK=true.
+const appCheckSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
+if (typeof window !== "undefined" && !(globalThis as any).__dojoAppCheck && (appCheckSiteKey || usingEmulators)) {
+  (globalThis as any).__dojoAppCheck = true;
+  if (usingEmulators) {
+    // Token de depuración: el emulador no valida App Check.
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+  if (appCheckSiteKey) {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  }
+}
+
+if (usingEmulators && typeof window !== "undefined" && !(globalThis as any).__dojoEmulatorsConnected) {
+  (globalThis as any).__dojoEmulatorsConnected = true;
+  connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+  connectFirestoreEmulator(db, "127.0.0.1", 8080);
+  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+}
 
 /**
  * Browser: IndexedDB cache shared across tabs (replaces the deprecated

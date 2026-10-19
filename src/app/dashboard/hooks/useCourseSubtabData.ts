@@ -46,14 +46,12 @@ export function useCourseSubtabData({
 
   const loadAllCourseSubmissions = async () => {
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
-    if (!cid || assignments.length === 0) return;
+    if (!cid) return;
 
     try {
-      const results = await Promise.all(assignments.map(async (a) => {
-        const res = await api("getAssignmentSubmissions", { assignmentId: a.id });
-        return res || [];
-      }));
-      setCourseSubmissions(results.flat());
+      // Una sola llamada por curso (mejora 3.23).
+      const res = await api("getCourseSubmissions", { courseId: cid });
+      setCourseSubmissions(res || []);
     } catch (err) {
       console.error("Error loading course submissions for alerts:", err);
     }
@@ -80,23 +78,10 @@ export function useCourseSubtabData({
         setAssignments(courseAssignments);
       }
 
-      const subsPromises = courseAssignments.map(async (a: any) => {
-        const res = await api("getAssignmentSubmissions", { assignmentId: a.id });
-        return { assignmentId: a.id, title: a.title, submissions: res || [] };
-      });
-      const results = await Promise.all(subsPromises);
-
-      const allSubs: any[] = [];
-      results.forEach(r => {
-        r.submissions.forEach((s: any) => {
-          allSubs.push({
-            ...s,
-            assignmentTitle: r.title,
-            assignmentId: r.assignmentId
-          });
-        });
-      });
-      setOverviewSubmissionsList(allSubs);
+      // Entregas de todas las tareas en una sola llamada; ya vienen con
+      // assignmentId y assignmentTitle (mejora 3.23).
+      const allSubs = await api("getCourseSubmissions", { courseId: cid });
+      setOverviewSubmissionsList(allSubs || []);
     } catch (err) {
       console.error("Error loading overview submissions:", err);
     } finally {

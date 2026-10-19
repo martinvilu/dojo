@@ -1,7 +1,9 @@
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import React, { useState, useEffect } from "react";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
+import { api } from "@/lib/api";
+import { qrCodeForStep, qrStepAt, secondsUntilRotation } from "@/lib/qrToken";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
 
 interface Student {
@@ -41,8 +43,12 @@ export default function AttendanceManager({
   const [editingRecords, setEditingRecords] = useState<Record<string, "present" | "absent" | "late">>({});
   const [saving, setSaving] = useState(false);
 
-  // QR States
-  const [activeQr, setActiveQr] = useState<{ code: string; expiresIn: number } | null>(null);
+  // QR session: el backend genera el secreto (startQrAttendance) y este
+  // componente deriva el código vigente cada `period` segundos.
+  const [qrSession, setQrSession] = useState<{ secret: string; period: number; offsetMs: number; hasLocation: boolean } | null>(null);
+  const [qrCode, setQrCode] = useState("");
+  const [qrImage, setQrImage] = useState("");
+  const [qrSecondsLeft, setQrSecondsLeft] = useState(0);
   const [qrLoading, setQrLoading] = useState(false);
 
   // Initialize records from existing attendance if present
@@ -56,32 +62,39 @@ export default function AttendanceManager({
     setEditingRecords(initialRecords);
   }, [classNumber, courseAttendance, roster]);
 
-  // QR Timer Countdown with auto-rotation every 30 seconds
+  // Rotación del código: un tick por segundo actualiza la cuenta regresiva y
+  // solo recalcula el código y la imagen cuando cambia el intervalo.
   useEffect(() => {
-    if (!activeQr) return;
-    const timer = setTimeout(() => {
-      if (activeQr.expiresIn <= 1) {
-        handleGenerateQr();
-      } else {
-        setActiveQr({
-          ...activeQr,
-          expiresIn: activeQr.expiresIn - 1,
-        });
+    if (!qrSession) return;
+    let cancelled = false;
+    let lastStep = -1;
+    const tick = async () => {
+      const now = Date.now() + qrSession.offsetMs;
+      setQrSecondsLeft(secondsUntilRotation(now, qrSession.period));
+      const step = qrStepAt(now, qrSession.period);
+      if (step === lastStep) return;
+      lastStep = step;
+      const code = await qrCodeForStep(qrSession.secret, step);
+      const { toDataURL } = await import("qrcode");
+      const image = await toDataURL(JSON.stringify({ courseId, classNumber, token: code }), { width: 200, margin: 1 });
+      if (!cancelled) {
+        setQrCode(code);
+        setQrImage(image);
       }
-    }, 1000);
-    return () => clearTimeout(timer);
-    // Countdown ticks drive regeneration on expiry; adding the async
-    // generator here would reset the timer on every render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeQr]);
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [qrSession, courseId, classNumber]);
 
-  const handleGenerateQr = async () => {
+  const handleStartQr = async () => {
     setQrLoading(true);
     try {
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       let lat: number | null = null;
       let lng: number | null = null;
-
       if (navigator.geolocation) {
         try {
           const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -94,23 +107,31 @@ export default function AttendanceManager({
         }
       }
 
-      const activeQrRef = doc(db, "courses", courseId, "active_qr", "current");
-      await setDoc(activeQrRef, {
-        token: code,
-        classNumber,
-        lat,
-        lng,
-        created_at: serverTimestamp(),
+      const res = await api("startQrAttendance", { courseId, classNumber, lat, lng });
+      setQrCode("");
+      setQrImage("");
+      setQrSession({
+        secret: res.secret,
+        period: res.period,
+        offsetMs: Number(res.serverTime) - Date.now(),
+        hasLocation: Boolean(res.hasLocation),
       });
-
-      setActiveQr({
-        code,
-        expiresIn: 30,
-      });
+      if (!res.hasLocation) {
+        showToast("QR generado sin tu ubicación: no se controlará la distancia al aula.", "success");
+      }
     } catch (err: any) {
       showToast("Error al generar QR de asistencia: " + err.message, "error");
     } finally {
       setQrLoading(false);
+    }
+  };
+
+  const handleCloseQr = async () => {
+    setQrSession(null);
+    try {
+      await api("stopQrAttendance", { courseId });
+    } catch (err: any) {
+      showToast("No se pudo cerrar la toma de asistencia: " + err.message, "error");
     }
   };
 
@@ -163,7 +184,7 @@ export default function AttendanceManager({
           </select>
           <button
             type="button"
-            onClick={handleGenerateQr}
+            onClick={handleStartQr}
             disabled={qrLoading}
             className="px-2.5 py-1 bg-emerald-955/50 border border-emerald-800 text-emerald-300 hover:bg-emerald-900/50 rounded text-[10px] font-bold transition cursor-pointer disabled:opacity-50"
           >
@@ -248,9 +269,9 @@ export default function AttendanceManager({
         </button>
       </div>
 
-      {/* QR Code Modal Overlay Overlay (nested inside Manager context) */}
-      {activeQr && (
-        <ModalShell onClose={() => setActiveQr(null)} ariaLabel="Presentismo por código QR"
+      {/* QR Code Modal Overlay (nested inside Manager context) */}
+      {qrSession && (
+        <ModalShell onClose={handleCloseQr} ariaLabel="Presentismo por código QR"
           overlayClassName="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 z-[99999] overflow-y-auto"
           className="bg-neutral-900 border border-neutral-800 p-6 sm:p-8 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto text-center space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto z-10">
             <h3 className="text-lg font-bold text-white">Presentismo por Código QR</h3>
@@ -259,44 +280,43 @@ export default function AttendanceManager({
             </p>
 
             <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mx-auto">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&data=${encodeURIComponent(
-                  JSON.stringify({
-                    courseId,
-                    classNumber,
-                    token: activeQr.code,
-                  })
-                )}`}
-                alt="QR Code"
-                className="w-48 h-48"
-              />
+              {qrImage ? (
+                // eslint-disable-next-line @next/next/no-img-element -- data URL generada localmente
+                <img src={qrImage} alt={`Código QR de asistencia de la clase ${classNumber}`} className="w-48 h-48" />
+              ) : (
+                <div className="w-48 h-48 animate-pulse bg-neutral-200 rounded-lg" aria-hidden="true" />
+              )}
             </div>
 
             <div className="space-y-1">
-              <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Código de asistencia</span>
-              <div className="text-3xl font-black text-amber-500 font-mono tracking-widest bg-neutral-955 py-2.5 rounded-xl border border-neutral-850">
-                {activeQr.code}
+              <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Código de asistencia</span>
+              <div className="text-3xl font-black text-amber-500 font-mono tracking-widest bg-neutral-955 py-2.5 rounded-xl border border-neutral-850" aria-live="polite">
+                {qrCode || "······"}
               </div>
             </div>
 
             <div className="flex items-center justify-center space-x-2 text-xs font-bold text-gray-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" aria-hidden="true"></span>
               <span>
-                El código rota en: {activeQr.expiresIn}s
+                El código rota en: {qrSecondsLeft}s
               </span>
             </div>
+            {!qrSession.hasLocation && (
+              <p className="text-[10px] text-amber-400">Sin ubicación del aula: no se controla la distancia de los alumnos.</p>
+            )}
 
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleGenerateQr}
-                className="flex-1 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-750 text-gray-300 border border-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                onClick={handleStartQr}
+                disabled={qrLoading}
+                className="flex-1 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-750 text-gray-300 border border-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50"
               >
                 🔄 Renovar
               </button>
               <button
                 type="button"
-                onClick={() => setActiveQr(null)}
+                onClick={handleCloseQr}
                 className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Cerrar

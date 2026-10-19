@@ -1,62 +1,107 @@
-# 🛡️ Manual del Administrador del Sistema
+# 🛡️ Manual del Administrador
 
-Este manual documenta las funciones avanzadas reservedas para los usuarios con el rol `admin` en Jutsu Classroom.
+Funciones reservadas al rol **Administrador**: alta de cátedras, gestión de cuentas y roles, asignación de docentes, configuración global y respaldos. Para el despliegue y la operación técnica, ver el [Manual de Operación](../docs/OPERACION.md).
 
 ```{important}
-El rol de Administrador posee acceso total al sistema, incluyendo la capacidad de eliminar usuarios en Auth/Firestore, descargar volcados de base de datos y restaurar versiones del sistema.
+El administrador puede borrar usuarios de forma irreversible y descargar respaldos con datos sensibles (incluidos los tokens de GitHub y Moodle de las cátedras). Tratá esos archivos como secretos.
 ```
 
 ---
 
-## 1. Panel de Administración de Usuarios (`AdminPanel`)
+## 1. Cátedras
 
-### 1.1 Aprobación de Cuentas Nuevas
-1. Accede a la pestaña **Panel Admin** en el menú lateral.
-2. En la sección **Usuarios Pendientes de Aprobación**, revisa las solicitudes registradas.
-3. Haz clic en **Aprobar Usuario** para concederle acceso a la plataforma.
+En **Cátedras** (barra lateral):
 
-### 1.2 Cambios de Rol
-- Puedes modificar el rol de cualquier usuario registrado entre `admin`, `teacher` y `student` desde el selector desplegable.
-- El cambio impacta inmediatamente en las reglas de seguridad de Firestore y Auth.
+1. En **Gestión de Cátedras**, completá **Nombre de la Cátedra** (ej. «Programación II») y **Organización GitHub** (ej. `unrn-prog2-2026`).
+2. Presioná **Crear Nueva Cátedra**. Se generan automáticamente el código de invitación para estudiantes y los secretos de suscripción.
+3. **Ver Detalle** abre la cátedra con las mismas pestañas que ve el docente.
 
-### 1.3 Eliminación Física de Usuarios en Cascada
-1. En la tabla de usuarios, ubica al usuario y haz clic en el botón rojo **🗑️ Borrar Usuario**.
-2. Se desplegará un **Modal de Advertencia Crítica** solicitando confirmación explícita.
-3. Al confirmar, el sistema ejecuta la acción remota `deleteUser` que borra:
-   - Su cuenta en **Firebase Auth**.
-   - Su documento de perfil en la colección `/profiles/{uid}`.
-   - Todas sus inscripciones en `/course_roster` y `/enrollments`.
-   - Sus asignaciones docentes en `/course_teachers`.
+**Eliminar** saca la cátedra de todos los paneles: docentes y estudiantes dejan de verla, sus feeds de calendario y CSV dejan de responder y nadie puede operar sobre ella. Los datos se conservan **30 días** en **Cátedras eliminadas**, donde **Restaurar** la devuelve tal como estaba. Pasado ese plazo se borra definitivamente con sus inscripciones, tareas, entregas, asistencia y foros.
 
----
+Para cerrar una cursada sin borrarla, archivá sus tareas.
 
-## 2. Gestión de Respaldos de Sistema (Backups JSON)
+## 2. Usuarios
 
-### 2.1 Crear un Respaldo Completo
-1. Ve a la sección **Respaldos de Sistema**.
-2. Haz clic en **📦 Crear Respaldo Ahora**.
-3. El sistema tomará una captura instantánea de las colecciones `courses`, `assignments` y `profiles`.
+### 2.1. Aprobar cuentas
 
-### 2.2 Descarga y Restauración Granular
-- **Descargar Backup**: Haz clic en **📥 Descargar JSON** para bajar el volcado completo comprimido a tu computadora local.
-- **Restaurar Elemento**: Permite seleccionar una colección y el ID de un documento para restaurar una versión previa de manera individual sin afectar el resto de la base de datos.
+Las cuentas nuevas quedan **pendientes**. Los estudiantes que validan su matrícula UNRN se aprueban solos; al resto (docentes, invitados, estudiantes sin matrícula) los aprobás vos.
 
----
+En **Usuarios**, buscá a la persona y presioná **Aprobar**. También hay una vista con buscador en `/dashboard/users`.
 
-## 3. Control de Versiones de Cronograma (VCS)
+### 2.2. Roles y datos del perfil
 
-Los administradores y docentes titulares pueden inspeccionar el historial de versiones del cronograma:
-- Cada cambio en las instancias de clase guarda automáticamente un snap con la versión, fecha, hora y autor.
-- Permite comparar versiones previas (*Diff View*) y restaurar una versión anterior en caliente.
+- Cambiá el rol con el selector: **Administrador**, **Profesor** o **Estudiante**. El cambio aplica en la siguiente acción del usuario.
+- Asigná la **comisión** desde el selector de la fila.
+- **✏️ Editar** abre el perfil completo: **Nombre Completo**, rol, **Estado de Cuenta** (Aprobado / Pendiente), **Comisión**, **Matrícula** y **Cohorte**. Confirmá con **Guardar Cambios**.
 
----
+### 2.3. Dar de alta a un docente
 
-## 4. Integración LTI 1.3 con Moodle (4.2+)
-
-Jutsu Classroom soporta integración LTI 1.3 Advantage con Moodle:
-- **JWKS Endpoint**: `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/api/lti/jwks`
-- **Launch Endpoint**: `https://us-central1-jutsu-classroom-mrtin.cloudfunctions.net/api/lti/launch`
+1. Pedile que ingrese una vez a la plataforma (queda como estudiante pendiente).
+2. En **Usuarios**, aprobá la cuenta y cambiá su rol a **Profesor**.
+3. En **Cátedras → Ver Detalle → Docentes**, elegí el docente en **Asignar Nuevo Profesor** y confirmá.
+4. Para quitarlo de la cátedra, usá la columna **Acciones** de esa misma tabla.
 
 ```{note}
-Para más detalles sobre la configuración de llaves públicas RSA y JWT con Moodle, consulta la guía [MOODLE_INTEGRATION.md](../docs/MOODLE_INTEGRATION.md).
+Las cátedras también tienen códigos de invitación de docente (`T-…`) y de ayudante (`A-…`) que asignan el rol automáticamente, pero hoy no se muestran en ninguna pantalla y el campo de inscripción solo acepta 6 caracteres. Usá el procedimiento de arriba (ver [ROADMAP H2](../docs/ROADMAP.md)).
 ```
+
+### 2.4. Borrar un usuario
+
+Los usuarios que pidieron la baja desde **Mi Perfil** aparecen en **Usuarios** con la etiqueta **Pidió la baja** (pasá el mouse para ver el motivo). Ejecutá la baja con el procedimiento de abajo; antes conviene recordarle que descargue sus datos.
+
+
+1. En la fila del usuario, presioná **Borrar**.
+2. Leé la **Advertencia: Borrar Usuario** y confirmá con **Sí, borrar permanentemente**.
+
+Se eliminan, sin vuelta atrás:
+
+- la cuenta de inicio de sesión (Firebase Auth);
+- el perfil;
+- sus inscripciones en las cursadas (quedan registros huérfanos en `enrollments`, ver [ROADMAP H7](../docs/ROADMAP.md));
+- sus asignaciones como docente o ayudante.
+
+Las entregas y notas históricas se conservan.
+
+## 3. Configuración global
+
+**Dominios de correo habilitados** restringe el registro autónomo a correos institucionales (por ejemplo `unrn.edu.ar`, que incluye `alumnos.unrn.edu.ar`). Una cuenta nueva de otro dominio queda **pendiente** y no puede aprobarse sola con la matrícula: aparece en **Usuarios** y la aprobás vos si corresponde (por ejemplo, un docente invitado). Dejalo vacío para no restringir.
+
+En **Configuración → Configuración Global del Sistema**, cargá la URL de un calendario ICS institucional (por ejemplo, el de feriados y mesas de examen de la universidad) y presioná **Guardar Configuración**.
+
+```{note}
+Hoy la URL global se guarda pero ningún calendario la usa todavía (ver [ROADMAP H12](../docs/ROADMAP.md)). Para que un calendario externo aparezca en el feed de una cátedra, cargalo en **Ajustes Cátedra → Calendarios Externos ICS**.
+```
+
+## 4. Respaldos
+
+En **Respaldos**:
+
+- **💾 Crear Respaldo Completo Ahora**: guarda una instantánea de **cátedras**, **tareas** y **usuarios/perfiles**.
+- **Descargar JSON**: baja el respaldo a tu computadora.
+- **Restauración Granular**: elegí un elemento (cátedra, tarea o perfil) del respaldo y presioná **Restaurar** para devolverlo a ese estado sin tocar el resto.
+
+```{warning}
+El respaldo integrado **no incluye** entregas, asistencia, avisos, foros ni el historial de notas, y puede fallar con bases grandes (límite de 1 MiB por documento de Firestore). Para un respaldo completo, programá exportaciones de Firestore (ver [Manual de Operación §5](../docs/OPERACION.md)).
+```
+
+## 5. Integración LTI 1.3 con Moodle
+
+La herramienta se registra en Moodle con URLs del **dominio de la app** (App Hosting), no de Cloud Functions:
+
+| Dato | Valor |
+|---|---|
+| URL de la herramienta / launch / redirección | `https://<dominio>/api/lti/launch` |
+| URL de inicio de sesión (OIDC) | `https://<dominio>/api/lti/login` |
+| Keyset (JWKS) | `https://<dominio>/api/lti/jwks` |
+| Deep Linking (URL de selección de contenido) | `https://<dominio>/api/lti/launch` |
+| Servicios | Assignment and Grade Services, Names and Role Provisioning |
+
+Después de registrarla, cargá en Ninja Dojo los datos que muestra Moodle (issuer, ID de cliente, endpoints y deployment) como variables del servidor; sin ellos, los ingresos desde Moodle solo navegan y las notas no vuelven al libro de calificaciones. Cada docente encuentra la guía completa de registro en **Ajustes Cátedra → 🎓 Integración Moodle → 📖 Guía de Registro LTI**. El detalle técnico está en [MOODLE_INTEGRATION.md](../docs/MOODLE_INTEGRATION.md).
+
+```{note}
+Los estudiantes que llegan desde Moodle por primera vez se inscriben solos solo en cátedras con Moodle habilitado, nunca como docentes, y en estado pendiente.
+```
+
+## 6. Calendario
+
+**Calendario Global** muestra los eventos de todas las cátedras, con los mismos filtros y vistas que el resto de los roles.

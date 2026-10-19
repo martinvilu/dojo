@@ -1,4 +1,11 @@
 #!/bin/bash
+# Escribe con la API REST directamente en el Firestore de PRODUCCIÓN
+# (jutsu-classroom-mrtin). Para desarrollo usá "npm run seed:emulators".
+if [ "$SEED_ALLOW_REAL_PROJECT" != "jutsu-classroom-mrtin" ]; then
+  echo "Seed cancelado: este script pisa datos reales de jutsu-classroom-mrtin." >&2
+  echo "Usá 'npm run seed:emulators', o exportá SEED_ALLOW_REAL_PROJECT=jutsu-classroom-mrtin si es intencional." >&2
+  exit 1
+fi
 TOKEN=$(jq -r .tokens.access_token ~/.config/configstore/firebase-tools.json)
 BASE_URL="https://firestore.googleapis.com/v1/projects/jutsu-classroom-mrtin/databases/(default)/documents"
 

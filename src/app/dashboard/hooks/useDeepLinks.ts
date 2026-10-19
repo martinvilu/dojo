@@ -18,33 +18,57 @@ interface UseDeepLinksArgs {
 /**
  * Deep-link / query-param integration: consumes courseId, assignmentId,
  * userId, tab/subTab and LTI launch params once per auth+data readiness.
- * Exposes moodleLtiParams for grade sync on assignment submissions.
+ * Exposes moodleLtiParams (the verified LTI launch id) so accepting an
+ * assignment can link it to the Moodle gradebook through AGS.
  */
 export function useDeepLinks({
   profile, setProfile, courses, setCourses,
   setActiveTab, viewCourseDetails, handleSetCourseSubTab, promptGithubUsername
 }: UseDeepLinksArgs) {
   const hasProcessedParams = useRef(false);
-  const moodleLtiParams = useRef<{ outcomeUrl?: string, resultId?: string }>({});
+  const moodleLtiParams = useRef<{ launchId?: string }>({});
 
   // Load REST URL parameters (integration / direct link support)
   useEffect(() => {
     if (typeof window === "undefined" || !profile || courses.length === 0 || hasProcessedParams.current) return;
     const params = new URLSearchParams(window.location.search);
-    const courseId = params.get("courseId");
-    const assignmentId = params.get("assignmentId");
+    let courseId = params.get("courseId");
+    let assignmentId = params.get("assignmentId");
     const userId = params.get("userId");
     const tab = params.get("tab");
     const subTab = params.get("subTab");
 
     const processParams = async () => {
       hasProcessedParams.current = true;
-      const outcomeUrl = params.get("lis_outcome_service_url");
-      const resultId = params.get("lis_result_sourcedid");
-      const ltiLaunch = params.get("lti_launch") === "true";
+      // Descarga de una exportación lista (link de la notificación): se
+      // pide una URL firmada de 15 minutos y se abre (mejora 3.32).
+      const exportJob = params.get("export");
+      if (exportJob) {
+        try {
+          const res = await api("getExportDownloadUrl", { jobId: exportJob });
+          if (res?.url) window.location.assign(res.url);
+          else showToast(res?.status === "failed" ? "La exportación falló: pedila de nuevo." : "La exportación todavía se está generando.", res?.status === "failed" ? "error" : "success");
+        } catch (e: any) {
+          showToast("No se pudo descargar la exportación: " + e.message, "error");
+        }
+      }
 
-      if (outcomeUrl && resultId) {
-        moodleLtiParams.current = { outcomeUrl, resultId };
+      const ltiParam = params.get("lti_launch");
+      const ltiLaunch = Boolean(ltiParam);
+
+      // Launch LTI 1.3 verificado: el contexto sale del backend, no de la URL.
+      if (ltiParam && ltiParam !== "unverified" && ltiParam !== "true") {
+        try {
+          const launch = await api("consumeLtiLaunch", { launchId: ltiParam });
+          moodleLtiParams.current = { launchId: ltiParam };
+          courseId = launch?.courseId || courseId;
+          assignmentId = launch?.assignmentId || assignmentId;
+          if (launch && launch.emailMatches === false) {
+            showToast("Entraste desde Moodle con un usuario distinto al de esta sesión de Ninja Dojo. Verificá que sea tu cuenta.", "error");
+          }
+        } catch (e: any) {
+          showToast("No se pudo validar el ingreso desde Moodle: " + e.message, "error");
+        }
       }
       if (tab) {
         setActiveTab(tab);

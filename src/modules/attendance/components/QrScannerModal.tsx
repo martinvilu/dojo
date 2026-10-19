@@ -188,8 +188,8 @@ export default function QrScannerModal({
         {/* Camera Selector */}
         {cameras.length > 1 && !scannerError && (
           <div className="space-y-1 text-left">
-            <label className="block text-[9px] text-gray-500 font-bold uppercase tracking-wider">Cámara seleccionada</label>
-            <select
+            <label htmlFor="cameraSelect" className="block text-[9px] text-gray-500 font-bold uppercase tracking-wider">Cámara seleccionada</label>
+            <select id="cameraSelect"
               value={selectedCameraId}
               onChange={(e) => setSelectedCameraId(e.target.value)}
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-gray-300 font-semibold cursor-pointer"

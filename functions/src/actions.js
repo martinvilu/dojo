@@ -8,6 +8,11 @@
 const ACTION_MODULES = {
     // profile
     getProfile: './modules/auth/profile',
+    getSecurityLog: './modules/auth/profile',
+    signOutEverywhere: './modules/auth/profile',
+    exportMyData: './modules/auth/privacy',
+    requestAccountDeletion: './modules/auth/privacy',
+    cancelAccountDeletion: './modules/auth/privacy',
     updateProfile: './modules/auth/profile',
     submitMatricula: './modules/auth/profile',
     
@@ -21,13 +26,16 @@ const ACTION_MODULES = {
     saveGlobalSettings: './modules/course/admin',
     getAdminCourseDetails: './modules/course/admin',
     deleteUser: './modules/course/admin',
+    encryptStoredSecrets: './modules/course/admin',
     
     // attendance
-    markAttendance: './modules/attendance/attendance',
     submitQrAttendance: './modules/attendance/attendance',
+    startQrAttendance: './modules/attendance/attendance',
+    stopQrAttendance: './modules/attendance/attendance',
     
     // moodle
     moodleAutoEnroll: './modules/integrations/moodle',
+    consumeLtiLaunch: './modules/integrations/lti',
     exportCourseToMoodleXml: './modules/integrations/moodle',
     syncMoodleCourseRoster: './modules/integrations/moodle',
     exportGradesToMoodleWebservice: './modules/integrations/moodle',
@@ -49,7 +57,9 @@ const ACTION_MODULES = {
     getStudentCourses: './modules/course/courses',
     getCourseRoster: './modules/course/courses',
     deleteCourse: './modules/course/courses',
+    restoreCourse: './modules/course/courses',
     updateRosterStudentStatus: './modules/course/courses',
+    setStudentCommission: './modules/course/courses',
     syncGuaraniRoster: './modules/course/courses',
     addSecondaryEmail: './modules/auth/profile',
     mergeProfiles: './modules/auth/profile',
@@ -104,6 +114,8 @@ const ACTION_MODULES = {
     notifyCourseStudents: './modules/notifications/notifications',
     checkAndAlertStudentsAtRisk: './modules/notifications/notifications',
     getDropoutRiskAnalysis: './modules/course/analytics',
+    requestCourseExport: './modules/course/exportJobs',
+    getExportDownloadUrl: './modules/course/exportJobs',
     enablePeerReview: './modules/github/peerreview',
     getMyReviewAssignments: './modules/github/peerreview',
     submitPeerReview: './modules/github/peerreview',
@@ -136,6 +148,7 @@ const ACTION_MODULES = {
     getTeacherAssignments: './modules/github/assignments',
     createAssignment: './modules/github/assignments',
     getAssignmentSubmissions: './modules/github/assignments',
+    getCourseSubmissions: './modules/github/courseSubmissions',
     toggleAccess: './modules/github/assignments',
     massToggleAccess: './modules/github/assignments',
     gradeSubmission: './modules/github/assignments',

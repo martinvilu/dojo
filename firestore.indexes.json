@@ -1,97 +1,221 @@
 {
   "indexes": [
     {
-      "collectionGroup": "announcements",
+      "collectionGroup": "submissions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "course_id", "order": "ASCENDING" },
-        { "fieldPath": "created_at", "order": "DESCENDING" }
+        {
+          "fieldPath": "assignment_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "webhook_dead_letters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "next_attempt_at",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "announcements",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "teacher_id", "order": "ASCENDING" },
-        { "fieldPath": "created_at", "order": "DESCENDING" }
+        {
+          "fieldPath": "course_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "announcements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "teacher_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "enrollments",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "course_id", "order": "ASCENDING" },
-        { "fieldPath": "student_id", "order": "ASCENDING" }
+        {
+          "fieldPath": "course_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "student_id",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "submissions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "assignment_id", "order": "ASCENDING" },
-        { "fieldPath": "student_id", "order": "ASCENDING" }
+        {
+          "fieldPath": "assignment_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "student_id",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "submissions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "assignment_id", "order": "ASCENDING" },
-        { "fieldPath": "grade", "order": "ASCENDING" }
+        {
+          "fieldPath": "assignment_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "grade",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "attendance",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "course_id", "order": "ASCENDING" },
-        { "fieldPath": "student_id", "order": "ASCENDING" }
+        {
+          "fieldPath": "course_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "student_id",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "student_alerts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "student_id", "order": "ASCENDING" },
-        { "fieldPath": "created_at", "order": "ASCENDING" }
+        {
+          "fieldPath": "student_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "student_notifications",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "student_id", "order": "ASCENDING" },
-        { "fieldPath": "read", "order": "ASCENDING" }
+        {
+          "fieldPath": "student_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "read",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "schedule_versions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "course_id", "order": "ASCENDING" },
-        { "fieldPath": "created_at", "order": "DESCENDING" }
+        {
+          "fieldPath": "course_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "student_id", "order": "ASCENDING" },
-        { "fieldPath": "created_at", "order": "ASCENDING" }
+        {
+          "fieldPath": "student_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "student_id", "order": "ASCENDING" },
-        { "fieldPath": "created_at", "order": "DESCENDING" }
+        {
+          "fieldPath": "student_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
       ]
     }
   ],
   "fieldOverrides": [
     {
       "collectionGroup": "processed_webhooks",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "active_qr",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "rate_limits",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "lti_states",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "lti_launches",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "export_jobs",
       "fieldPath": "expires_at",
       "ttl": true,
       "indexes": []

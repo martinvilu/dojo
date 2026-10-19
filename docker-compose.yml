@@ -1,0 +1,44 @@
+# Entorno de desarrollo local (mejoras 3.28 y 5.16).
+#   docker compose up           -> emuladores + app en http://localhost:3000
+#   docker compose up emulators -> solo emuladores (UI en http://localhost:4000)
+# Nada sale a la nube: el proyecto es demo-ninja-dojo.
+services:
+  emulators:
+    build:
+      context: .
+      dockerfile: docker/emulators.Dockerfile
+    volumes:
+      - .:/workspace
+      - functions_node_modules:/workspace/functions/node_modules
+    ports:
+      - "4000:4000"   # Emulator UI
+      - "4400:4400"   # Hub
+      - "5001:5001"   # Functions
+      - "8080:8080"   # Firestore
+      - "9099:9099"   # Auth
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4400/emulators').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  app:
+    image: node:22-bookworm-slim
+    working_dir: /workspace
+    command: sh -c "npm ci --no-audit --no-fund && npm run dev:emulators -- -H 0.0.0.0"
+    environment:
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      - .:/workspace
+      - app_node_modules:/workspace/node_modules
+      - app_next:/workspace/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      emulators:
+        condition: service_healthy
+
+volumes:
+  functions_node_modules:
+  app_node_modules:
+  app_next:

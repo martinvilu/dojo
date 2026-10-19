@@ -1,5 +1,12 @@
+const logger = require('firebase-functions/logger');
 const { randomBytes } = require('node:crypto');
 const { isCourseStaff } = require('../../authz');
+const { dojoError } = require('../../lib/errors');
+const { publicProfile, staffStudentProfile } = require('../../lib/projections');
+const { PURGE_AFTER_DAYS, isDeleted } = require('../../lib/softDelete');
+const { rosterChecksum, shouldSyncRoster, saveRosterChecksum } = require('../../lib/rosterChecksum');
+const { syncRoleClaim } = require('../../lib/claims');
+const { encryptSecret } = require('../../lib/secretBox');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -10,11 +17,11 @@ async function getCourseDetails(payload, context) {
     const myProfile = await getMyProfile();
     
     if (!rosterSnap.exists && !teacherSnap.exists && enrollSnap.empty && myProfile.role !== 'admin') {
-        throw new Error("No tienes acceso a este curso");
+        throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
     }
     
     const cSnap = await db.collection('courses').doc(courseId).get();
-    if (!cSnap.exists) throw new Error("Curso no encontrado");
+    if (!cSnap.exists || (isDeleted(cSnap.data()) && myProfile.role !== 'admin')) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
     
     const data = cSnap.data();
     if (!teacherSnap.exists && myProfile.role !== 'admin') {
@@ -31,14 +38,24 @@ async function getCourseDetails(payload, context) {
         });
     }
     
-    return { id: cSnap.id, ...data };
+    const courseRole = myProfile.role === 'admin' && !teacherSnap.exists ? 'admin' : ((teacherSnap.data() || {}).role === 'ayudante' ? 'ayudante' : 'titular');
+    const result = { id: cSnap.id, ...withoutCredentials(data), course_role: courseRole };
+    if (courseRole === 'ayudante') {
+        delete result.teacher_invite_code;
+        delete result.assistant_invite_code;
+    }
+    return result;
 }
 
 async function enrollCourse(payload, context) {
     const { uid, db, admin } = context;
-    const code = payload.code.trim();
+    if (typeof payload.code !== 'string' || !/^[A-Za-z0-9-]{4,20}$/.test(payload.code.trim())) {
+        throw dojoError('INVALID_ARGUMENT', "Código de invitación inválido");
+    }
+    const code = payload.code.trim().toUpperCase();
+    const isActive = (s) => !s.empty && !isDeleted(s.docs[0].data());
     const snap = await db.collection('courses').where('invite_code', '==', code).get();
-    if (!snap.empty) {
+    if (isActive(snap)) {
         const courseId = snap.docs[0].id;
         // Student enrolls with pending approval status (requirement 4)
         await db.collection('course_roster').doc(`${courseId}_${uid}`).set({
@@ -57,7 +74,7 @@ async function enrollCourse(payload, context) {
     }
 
     const tSnap = await db.collection('courses').where('teacher_invite_code', '==', code).get();
-    if (!tSnap.empty) {
+    if (isActive(tSnap)) {
         const courseId = tSnap.docs[0].id;
         await db.collection('course_teachers').doc(`${courseId}_${uid}`).set({
             course_id: courseId,
@@ -65,11 +82,12 @@ async function enrollCourse(payload, context) {
             role: 'titular'
         });
         await db.collection('profiles').doc(uid).update({ role: 'teacher', account_status: 'approved' });
-        return { success: true };
+        await syncRoleClaim(admin.auth(), uid, 'teacher').catch(() => {});
+        return { success: true, claimsRefreshRequired: true };
     }
     
     const aSnap = await db.collection('courses').where('assistant_invite_code', '==', code).get();
-    if (!aSnap.empty) {
+    if (isActive(aSnap)) {
         const courseId = aSnap.docs[0].id;
         await db.collection('course_teachers').doc(`${courseId}_${uid}`).set({
             course_id: courseId,
@@ -77,10 +95,11 @@ async function enrollCourse(payload, context) {
             role: 'ayudante'
         });
         await db.collection('profiles').doc(uid).update({ role: 'teacher', account_status: 'approved' });
-        return { success: true };
+        await syncRoleClaim(admin.auth(), uid, 'teacher').catch(() => {});
+        return { success: true, claimsRefreshRequired: true };
     }
     
-    throw new Error("Código de invitación inválido");
+    throw dojoError('INVALID_ARGUMENT', "Código de invitación inválido");
 }
 
 async function createCourse(payload, context) {
@@ -101,8 +120,30 @@ async function createCourse(payload, context) {
 async function deleteCourse(payload, context) {
     const { db } = context;
     const { courseId } = payload;
-    if (!courseId) throw new Error("ID de cátedra requerido");
-    await db.collection('courses').doc(courseId).delete();
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "ID de cátedra requerido");
+    const ref = db.collection('courses').doc(courseId);
+    const snap = await ref.get();
+    if (!snap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
+    // Borrado lógico (mejora 3.21): se purga en cascada pasado el plazo.
+    const now = Date.now();
+    await ref.update({
+        deleted_at: new Date(now),
+        deleted_by: context.uid,
+        purge_after: new Date(now + PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000)
+    });
+    return { success: true, purgeAfterDays: PURGE_AFTER_DAYS };
+}
+
+async function restoreCourse(payload, context) {
+    const { db, admin } = context;
+    const { courseId } = payload;
+    if (!courseId) throw dojoError('INVALID_ARGUMENT', "ID de cátedra requerido");
+    const ref = db.collection('courses').doc(courseId);
+    const snap = await ref.get();
+    if (!snap.exists) throw dojoError('COURSE_NOT_FOUND', "Curso no encontrado");
+    if (!isDeleted(snap.data())) return { success: true };
+    const remove = admin.firestore.FieldValue.delete();
+    await ref.update({ deleted_at: remove, deleted_by: remove, purge_after: remove });
     return { success: true };
 }
 
@@ -119,7 +160,7 @@ async function getCourseTeachers(payload, context) {
     for (let doc of tSnap.docs) {
         const t = doc.data();
         const p = await db.collection('profiles').doc(t.teacher_id).get();
-        teachers.push({ ...t, profiles: p.data() });
+        teachers.push({ ...t, profiles: publicProfile(p.exists ? p.data() : null) });
     }
     return teachers;
 }
@@ -150,13 +191,56 @@ const COURSE_PUBLIC_FIELDS = [
     'archived', 'invite_code'
 ];
 
+// Credenciales que el backend usa pero nunca devuelve: el docente puede
+// reemplazarlas, no leerlas.
+const CREDENTIAL_FIELDS = ['github_token'];
+
+function withoutCredentials(data) {
+    const out = { ...data };
+    for (const field of CREDENTIAL_FIELDS) delete out[field];
+    out.has_github_token = Boolean(data && data.github_token);
+    return out;
+}
+
+// Campos que el equipo docente puede modificar con updateCourseSettings.
+const EDITABLE_SETTINGS = {
+    cover_text: (v) => typeof v === 'string' && v.length <= 5000,
+    duration_weeks: (v) => v === null || (Number.isInteger(v) && v >= 1 && v <= 52),
+    start_date: (v) => v === '' || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)),
+    external_calendars: (v) => Array.isArray(v) && v.length <= 10 && v.every((u) => typeof u === 'string' && /^https:\/\//.test(u) && u.length <= 2048),
+    github_token: (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= 255,
+    moodle_enabled: (v) => typeof v === 'boolean',
+    schedules: (v) => Array.isArray(v) && v.length <= 50,
+    commissions: (v) => Array.isArray(v) && v.length <= 50 && v.every((c) => typeof c === 'string' && c.length <= 60),
+    commissions_mapping: (v) => v !== null && typeof v === 'object' && !Array.isArray(v),
+    class_instances: (v) => Array.isArray(v) && v.length <= 400,
+};
+
+function sanitizeCourseSettings(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw dojoError('INVALID_ARGUMENT', "Datos de configuración inválidos");
+    }
+    const update = {};
+    for (const [key, value] of Object.entries(data)) {
+        // Un token vacío significa "conservar el actual".
+        if (key === 'github_token' && (value === '' || value === undefined || value === null)) continue;
+        if (!Object.prototype.hasOwnProperty.call(EDITABLE_SETTINGS, key)) {
+            throw dojoError('INVALID_ARGUMENT', `El campo "${key}" no se puede modificar desde los ajustes.`);
+        }
+        if (!EDITABLE_SETTINGS[key](value)) {
+            throw dojoError('INVALID_ARGUMENT', `Valor inválido para "${key}".`);
+        }
+        // Los tokens se guardan cifrados (mejora 3.13).
+        update[key] = key === 'github_token' ? encryptSecret(value.trim(), { logger }) : value;
+    }
+    return update;
+}
+
 // Los estudiantes no reciben sync_secret: ese token también autoriza la
 // exportación CSV de notas/asistencia y la importación de notas. Para el
 // feed iCal reciben calendar_secret, que solo habilita el calendario.
 const STUDENT_COURSE_FIELDS = COURSE_PUBLIC_FIELDS.filter(field => field !== 'sync_secret');
 
-// Datos de compañeros visibles para estudiantes en el roster del curso.
-const PEER_PROFILE_FIELDS = ['full_name', 'email', 'github_user', 'avatar_url', 'role'];
 
 
 // Tokens de suscripción de 32 hex chars: resistentes a fuerza bruta
@@ -195,7 +279,7 @@ async function getTeacherCourses(payload, context) {
     const courses = [];
     for (let doc of snap.docs) {
         const cSnap = await db.collection('courses').doc(doc.data().course_id).get();
-        if (cSnap.exists) {
+        if (cSnap.exists && !isDeleted(cSnap.data())) {
             courses.push({ id: cSnap.id, course_role: doc.data().role || 'titular', ...projectCourse(cSnap.data()) });
         }
     }
@@ -207,9 +291,11 @@ async function getCourseSettings(payload, context) {
     const courseId = payload.courseId;
     const profileSnap = await db.collection('profiles').doc(uid).get();
     const isSysAdmin = profileSnap.exists && profileSnap.data().role === 'admin';
+    let isAssistant = false;
     if (!isSysAdmin) {
         const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-        if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
+        if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
+        isAssistant = accessSnap.data().role === 'ayudante';
     }
     
     const cSnap = await db.collection('courses').doc(courseId).get();
@@ -247,7 +333,14 @@ async function getCourseSettings(payload, context) {
         });
     }
     
-    return { id: cSnap.id, ...data };
+    const result = { id: cSnap.id, ...withoutCredentials(data), course_role: isSysAdmin ? 'admin' : (isAssistant ? 'ayudante' : 'titular') };
+    // Los códigos docentes otorgan el rol de titular o ayudante: un ayudante
+    // que los viera podría ascenderse a titular (mejora 3.39).
+    if (isAssistant) {
+        delete result.teacher_invite_code;
+        delete result.assistant_invite_code;
+    }
+    return result;
 }
 
 async function updateCourseSettings(payload, context) {
@@ -257,20 +350,22 @@ async function updateCourseSettings(payload, context) {
     const isSysAdmin = profileSnap.exists && profileSnap.data().role === 'admin';
     if (!isSysAdmin) {
         const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-        if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
-        if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
+        if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
+        if (accessSnap.data().role === 'ayudante') throw dojoError('ASSISTANT_NOT_ALLOWED', "Los ayudantes de cátedra no pueden modificar la planificación base.");
     }
     
-    await db.collection('courses').doc(courseId).update(payload.data);
+    const update = sanitizeCourseSettings(payload.data);
+    if (Object.keys(update).length === 0) return { success: true };
+    await db.collection('courses').doc(courseId).update(update);
 
-    if (payload.data.class_instances) {
+    if (update.class_instances) {
         // Auto-save a version
         const profileSnap = await db.collection('profiles').doc(uid).get();
         const teacherName = profileSnap.exists ? (profileSnap.data().full_name || profileSnap.data().email) : 'Docente';
         await db.collection('schedule_versions').add({
             course_id: courseId,
             version_name: `Autoguardado - ${new Date().toLocaleString('es-AR')}`,
-            class_instances: payload.data.class_instances,
+            class_instances: update.class_instances,
             created_at: admin.firestore.FieldValue.serverTimestamp(),
             created_by: uid,
             created_by_name: teacherName
@@ -327,7 +422,7 @@ async function getStudentCourses(payload, context) {
     const courses = [];
     for (const courseId of courseIds) {
         const cSnap = await db.collection('courses').doc(courseId).get();
-        if (cSnap.exists) {
+        if (cSnap.exists && !isDeleted(cSnap.data())) {
             const data = cSnap.data();
             await ensureCalendarSecret(db, courseId, data);
             courses.push({ id: cSnap.id, ...projectCourseForStudent(data) });
@@ -351,7 +446,7 @@ async function getCourseRoster(payload, context) {
             const profile = pSnap.data();
             students.push({
                 id: pSnap.id,
-                ...(canSeeFullProfiles ? profile : pickFields(profile, PEER_PROFILE_FIELDS)),
+                ...(canSeeFullProfiles ? staffStudentProfile(profile) : publicProfile(profile)),
                 roster_status: data.status || 'approved',
                 enrolled_at: data.enrolled_at
             });
@@ -360,10 +455,30 @@ async function getCourseRoster(payload, context) {
     return students;
 }
 
+/**
+ * Asigna la comisión de un estudiante en un curso (staffOf(course)). Antes
+ * el navegador escribía el perfil directamente y las reglas no podían
+ * verificar de qué curso era la comisión.
+ */
+async function setStudentCommission(payload, context) {
+    const { db } = context;
+    const { courseId, studentId } = payload;
+    if (!courseId || !studentId) throw dojoError('INVALID_ARGUMENT', "Faltan parámetros requeridos");
+    const commission = typeof payload.commission === 'string' ? payload.commission.trim() : '';
+    if (commission.length > 60) throw dojoError('INVALID_ARGUMENT', "El nombre de la comisión es demasiado largo (máximo 60 caracteres).");
+
+    const enrolled = (await db.collection('course_roster').doc(`${courseId}_${studentId}`).get()).exists
+        || (await db.collection('enrollments').doc(`${studentId}_${courseId}`).get()).exists;
+    if (!enrolled) throw dojoError('NOT_COURSE_MEMBER', "El estudiante no está inscripto en este curso");
+
+    await db.collection('profiles').doc(studentId).update({ [`commissions.${courseId}`]: commission });
+    return { success: true, commission };
+}
+
 async function updateRosterStudentStatus(payload, context) {
     const { db } = context;
     const { courseId, studentId, status } = payload; // status: 'approved' | 'pending' | 'observador' | 'removed'
-    if (!courseId || !studentId) throw new Error("Faltan parámetros");
+    if (!courseId || !studentId) throw dojoError('INVALID_ARGUMENT', "Faltan parámetros");
     
     if (status === 'removed') {
         await db.collection('course_roster').doc(`${courseId}_${studentId}`).delete();
@@ -386,7 +501,12 @@ async function updateRosterStudentStatus(payload, context) {
 async function syncGuaraniRoster(payload, context) {
     const { db, admin } = context;
     const { courseId, rows } = payload; // rows: array of { legajo, alumno, document, status, email }
-    if (!courseId || !Array.isArray(rows)) throw new Error("Datos de sincronización inválidos");
+    if (!courseId || !Array.isArray(rows)) throw dojoError('INVALID_ARGUMENT', "Datos de sincronización inválidos");
+
+    const checksum = rosterChecksum(rows, ['legajo', 'email', 'status']);
+    if (!(await shouldSyncRoster(db, courseId, 'guarani', checksum, payload.force === true))) {
+        return { success: true, unchanged: true, count: rows.length };
+    }
 
     // Fetch existing roster
     const existingSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
@@ -469,6 +589,7 @@ async function syncGuaraniRoster(payload, context) {
         }
     }
 
+    await saveRosterChecksum(db, courseId, 'guarani', checksum, rows.length);
     return { success: true, count: rows.length };
 }
 
@@ -477,6 +598,7 @@ module.exports = {
     enrollCourse,
     createCourse,
     deleteCourse,
+    restoreCourse,
     updateCourseName,
     getCourseTeachers,
     assignTeacher,
@@ -488,6 +610,9 @@ module.exports = {
     getStudentCourses,
     getCourseRoster,
     updateRosterStudentStatus,
+    setStudentCommission,
+    sanitizeCourseSettings,
+    withoutCredentials,
     syncGuaraniRoster,
     projectCourse,
     projectCourseForStudent

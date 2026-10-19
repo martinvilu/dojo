@@ -1,3 +1,4 @@
+const { dojoError } = require('../../lib/errors');
 async function logActivity(payload, context) {
     const { uid, db, admin } = context;
     const { action, details } = payload;
@@ -19,7 +20,7 @@ async function logActivity(payload, context) {
 async function getActivityLogs(payload, context) {
     const { db, getMyProfile } = context;
     const myProfile = await getMyProfile();
-    if (myProfile.role !== 'admin') throw new Error("Solo los administradores pueden ver los registros de actividad.");
+    if (myProfile.role !== 'admin') throw dojoError('ADMIN_ONLY', "Solo los administradores pueden ver los registros de actividad.");
 
     const snap = await db.collection('activity_logs').orderBy('timestamp', 'desc').limit(100).get();
     return snap.docs.map(doc => {

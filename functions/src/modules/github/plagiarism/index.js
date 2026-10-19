@@ -1,4 +1,6 @@
 const logger = require("firebase-functions/logger");
+const { dojoError } = require('../../../lib/errors');
+const { courseGithubToken } = require('../../../lib/secretBox');
 const {
     isCodeFile,
     MAX_FILE_SIZE,
@@ -69,11 +71,11 @@ async function detectAssignmentPlagiarism(payload, context) {
     const assignmentId = payload.assignmentId;
     const threshold = Math.min(100, Math.max(10, parseInt(payload.threshold, 10) || DEFAULT_THRESHOLD));
 
-    if (!assignmentId) throw new Error("Falta el ID de la tarea");
+    if (!assignmentId) throw dojoError('INVALID_ARGUMENT', "Falta el ID de la tarea");
 
     const profile = await getMyProfile();
     const aSnap = await db.collection('assignments').doc(assignmentId).get();
-    if (!aSnap.exists) throw new Error("Tarea no encontrada");
+    if (!aSnap.exists) throw dojoError('ASSIGNMENT_NOT_FOUND', "Tarea no encontrada");
     const assignment = aSnap.data();
 
     let authorized = profile?.role === 'admin';
@@ -81,11 +83,12 @@ async function detectAssignmentPlagiarism(payload, context) {
         const tSnap = await db.collection('course_teachers').doc(`${assignment.course_id}_${uid}`).get();
         authorized = tSnap.exists;
     }
-    if (!authorized) throw new Error("Solo el docente de la cátedra puede detectar plagio");
+    if (!authorized) throw dojoError('FORBIDDEN', "Solo el docente de la cátedra puede detectar plagio");
 
     const cSnap = await db.collection('courses').doc(assignment.course_id).get();
     const course = cSnap.exists ? cSnap.data() : {};
-    if (!course.github_token) throw new Error("Configurá primero el token de GitHub de la cátedra en Ajustes.");
+    const githubToken = courseGithubToken(course);
+    if (!githubToken) throw dojoError('GITHUB_NOT_CONFIGURED', "Configurá primero el token de GitHub de la cátedra en Ajustes.");
 
     const subsSnap = await db.collection('submissions')
         .where('assignment_id', '==', assignmentId).get();
@@ -102,7 +105,7 @@ async function detectAssignmentPlagiarism(payload, context) {
         }
         const url = sub.repo_url || sub.github_repo;
         try {
-            const res = await fetchRepoFingerprint(url, course.github_token);
+            const res = await fetchRepoFingerprint(url, githubToken);
             if (res.error) skipped.push({ student: label, reason: res.error });
             else analyzed.push({
                 submissionId: doc.id,

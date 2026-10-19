@@ -69,6 +69,7 @@ export interface ClassComment {
   is_best_answer?: boolean;
   reactions?: CommentReaction;
   created_at?: unknown;
+  edited_at?: unknown;
 }
 
 export interface CourseOverviewPanelProps {

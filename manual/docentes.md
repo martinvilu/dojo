@@ -1,110 +1,204 @@
-# 👨‍🏫 Manual Detallado del Docente
+# 👨‍🏫 Manual del Docente
 
-Este manual describe minuciosamente cada flujo de trabajo y herramienta disponible para **Docentes** y **Jefes de Trabajos Prácticos (JTP)** en Jutsu Classroom.
+Flujos de trabajo para **docentes titulares** y **ayudantes de cátedra**: configurar la materia, planificar el cronograma, tomar asistencia, gestionar tareas con GitHub, comunicarse con los estudiantes y seguir su desempeño.
 
 ```{note}
-Para acceder a estas funcionalidades, tu usuario debe tener asignado el rol `teacher` o `admin` y poseer el estado de cuenta `approved`.
+Necesitás rol **Profesor** y estar asignado a la cátedra. Las dos cosas las hace un administrador (ver [Administradores](administradores.md)).
+
+Los **ayudantes** corrigen entregas, toman asistencia, publican avisos, envían correos y siguen las alertas. Lo estructural queda para el **titular**: ajustes de la cátedra, cronograma y sus versiones, crear, editar o archivar tareas, revisión entre pares y sincronización de alumnos con Moodle o Guaraní. Esas opciones no se les muestran.
 ```
 
 ---
 
-## 1. Configuración de Cátedras e Integración con GitHub
+## 1. Tus cátedras
 
-### 1.1 Creación y Gestión de Cátedras
-1. En la barra lateral izquierda, selecciona la pestaña **Mis Cátedras (Docente)**.
-2. Para crear una nueva materia, haz clic en **+ Nueva Cátedra**.
-3. Completa el nombre de la materia (ejemplo: *Programación II - 2026*).
-4. El sistema generará automáticamente un **Código de Invitación** alfanumérico.
+**Mis Cátedras** muestra una tarjeta por materia asignada, con la organización de GitHub, el **Código de Invitación Estudiante** y el estado de la cátedra.
 
-```{tip}
-Comparte el Código de Invitación con tus estudiantes para que puedan enrolarse en la materia sin necesidad de cargarlos uno por uno.
+- Compartí el **código de invitación** con tus estudiantes: lo ingresan en su panel para inscribirse.
+- Hacé clic en la tarjeta para entrar. La primera pestaña es **📊 Resumen**.
+
+## 2. Configurar la cátedra — *Ajustes Cátedra*
+
+Completá esta pestaña al comienzo del cuatrimestre y presioná **Guardar Configuración**.
+
+| Sección | Campos |
+|---|---|
+| **Datos Generales** | **Fecha de Inicio de Cursada**, **Duración en Semanas**, **GitHub Personal Access Token (PAT)**, **Calendarios Externos ICS** (URLs separadas por comas) y **Texto de Portada** |
+| **📅 URL del Calendario de la Cátedra** | URL de suscripción para Moodle o Google Calendar (**Copiar** / **📅 Google Calendar**) |
+| **Horarios Semanales recurrentes** | Día, **Hora Inicio** y **Tipo clase** (Teoría, Práctica o Laboratorio). **Añadir Horario** / **Eliminar** |
+| **Co-Docencia & Responsables de Comisión** | **Agregar Comisión** y asignar un docente responsable a cada una |
+| **📊 Sincronización de Planilla de Notas** | URL para conectar las notas con Google Sheets o Excel |
+| **Clonar Ajustes de Otra Cátedra** | Copia la configuración de otra materia tuya (por ejemplo, la cursada anterior) |
+| **🎓 Integración Moodle** | Ver §10 |
+
+### 2.1. Token de GitHub
+
+El PAT permite crear los repositorios de los estudiantes y leer su actividad.
+
+1. Usá el enlace **🔑 Generar PAT en GitHub con permisos necesarios (repo, admin:org) ↗**.
+2. Pegá el token y guardá.
+
+```{important}
+El token nunca vuelve a mostrarse: la plataforma lo usa solo en el servidor. Si vence, generá uno nuevo y guardalo de nuevo. La organización de GitHub de la materia la define el administrador al crear la cátedra.
 ```
 
-### 1.2 Configuración del Token de GitHub
-Para habilitar la creación automática de repositorios y la inspección de entregas:
-1. Dentro de la cátedra, dirígete a **Configuración de Cátedra**.
-2. Completa los siguientes campos:
-   - **Organización de GitHub (`github_org`)**: El nombre exacto de la organización de GitHub de la materia.
-   - **Token de Acceso Personal (`github_token`)**: Un token de GitHub con permisos `repo`, `admin:org` y `read:user`.
-3. Haz clic en **Guardar Configuración**.
+## 3. Cronograma — *Cronograma*
 
----
+### 3.1. Generar las clases
 
-## 2. Planificación del Cronograma y Clases
-
-### 2.1 Carga de Instancias de Clase
-El cronograma de clases permite definir las sesiones del cuatrimestre:
-- **Número de Clase**: Índice correlativo de la sesión.
-- **Fecha**: Día programado (formato `YYYY-MM-DD`).
-- **Tema / Título**: Descripción de los temas a abordar.
-- **Estado Especial**:
-  - `Normal`: Clase presencial habitual.
-  - `Clase Remota`: Sesión por videoconferencia.
-  - `Examen`: Parcial o final (destacado en color violeta).
-  - `Feriado`: Sin actividad (marcado con línea punteada roja).
-- **Enlace de Grabación (`video_url`)**: Enlace directo al video grabado (YouTube, Drive, Vimeo).
-
-### 2.2 Marcadores Temporales en Grabaciones (Bookmarks)
-Para guiar a los estudiantes en la revisión de los videos grabados:
-1. Haz clic en una clase que contenga un `video_url` cargado.
-2. En el panel modal, desplázate a la sección **🔖 Marcadores Temporales**.
-3. Ingresa el minuto/segundo (ej: `14:30`) y la etiqueta (ej: *Demostración del algoritmo de ordenamiento*).
-4. Haz clic en **+ Agregar**. El marcador quedará guardado para todos los estudiantes de la cátedra.
-
----
-
-## 3. Control de Asistencia mediante Código QR Dinámico y Geo-Fence
-
-### 3.1 Generación de Código QR
-1. Desde el cronograma de clases, haz clic en el botón **📷 Asistencia QR** de la clase del día.
-2. La pantalla proyectará un código QR gigante acompañado por un código alfanumérico de 6 caracteres.
+Con la fecha de inicio, la duración y los horarios ya cargados en **Ajustes Cátedra**, presioná **🔄 Regenerar Clases** en **Gestión de Clases**. Se crea una clase por cada horario semanal durante toda la cursada.
 
 ```{warning}
-El código QR se regenera automáticamente cada **45 segundos**. Los alumnos deben escanear el código activo en pantalla.
+Regenerar reemplaza la lista de clases: perdés los temas, enlaces y estados especiales ya cargados (la plataforma pide confirmación). Si ya los cargaste, guardá antes una versión (§3.4).
 ```
 
-### 3.2 Proximidad Geográfica (Geo-Fence / Haversine)
-Si la ubicación GPS está habilitada:
-- El servidor calcula la distancia física mediante la fórmula de Haversine entre las coordenadas GPS del docente y las del estudiante.
-- Si el estudiante se encuentra a más de **150 metros** del aula, el registro será rechazado automáticamente por el servidor.
+### 3.2. Editar cada clase
 
----
+| Campo | Uso |
+|---|---|
+| Estado | **Normal**, **Clase Remota**, **Examen** o **Feriado / Sin Clase** |
+| **Tema Principal** | Título visible en el cronograma y el calendario |
+| **Descripción / Contenido** | Texto con formato Markdown (barra de herramientas incluida) |
+| **Link Presentación / Material** | Diapositivas, apuntes |
+| **Link Grabación Clase** | YouTube, Drive, Vimeo |
 
-## 4. Gestión de Tareas y Calificaciones
+Presioná **💾 Guardar Cronograma**. Cada guardado crea además una versión automática.
 
-### 4.1 Creación de Asignaciones (Trabajos Prácticos)
-1. Ve a la pestaña **Tareas / Entregas** dentro de la cátedra.
-2. Haz clic en **+ Crear Nueva Tarea**.
-3. Define los siguientes parámetros:
-   - **Título**: Nombre del trabajo práctico.
-   - **Descripción / Consigna**: Explicación detallada.
-   - **Fecha Límite (`due_date`)**: Fecha y hora tope para entregar a tiempo.
-   - **Repositorio Template (`template_repo`)**: Opcional. Repositorio base de GitHub que se clonará automáticamente en la cuenta de cada alumno.
+### 3.3. Vista Kanban
 
-### 4.2 Inspección de Commits, Pull Requests y Comentarios
-Al ingresar al detalle de la entrega de un estudiante:
-- **Vista de Commits**: Gráfico interactivo con la lista de commits, autor, mensaje, fecha y rama (`main`, `dev`).
-- **Pull Requests**: Estado de los PRs creados por el estudiante.
-- **Comentarios en Código**: Lectura de los comentarios dejados en el repositorio de GitHub.
+**📊 Tablero Kanban** muestra las clases en cuatro columnas (**📖 Teóricas**, **🛠️ Prácticas**, **🌴 Feriados**, **🏆 Exámenes**). Arrastrá una clase a otra columna para cambiar su tipo o estado y después presioná **💾 Guardar Cronograma**. **📋 Lista** vuelve a la vista normal.
 
-### 4.3 Calificación y Retroalimentación
-1. Ingresa la calificación numérica o cualitativa en el campo **Nota**.
-2. Escribe una devolución detallada en el campo **Feedback**.
-3. Haz clic en **Guardar Calificación**. El estudiante recibirá una notificación en su panel.
+### 3.4. Versiones y comparación
 
----
+- **💾 Guardar Versión**: guarda una instantánea con nombre (ej. «Planificación Inicial 2026»).
+- **📜 Historial/Comparar**: lista las **Versiones Guardadas** con su autor y permite **Restaurar** una. La restauración se confirma recién al presionar **💾 Guardar Cronograma**. En **Comparación Interanual**, **📂 Cargar Otras Cátedras** muestra el diff de clases contra otra cursada.
 
-## 5. Avisos a la Cátedra con Acuse de Recepción
+### 3.5. Encuestas y foro de cada clase
 
-1. En la pestaña **Avisos**, escribe el mensaje a transmitir a los estudiantes.
-2. Haz clic en **Publicar Aviso**.
-3. Podrás inspeccionar la lista de **Acuses de Recepción** en tiempo real para verificar exactamente qué alumnos leyeron la publicación y en qué fecha/hora.
+- **📊 Feedback Anónimo**: valoración promedio, cantidad de encuestas completadas, nivel de comprensión general y comentarios escritos de los estudiantes.
+- **Foro de Consultas**: respondé las preguntas y marcá la mejor respuesta como **✔️ Solución** (suma XP al autor). Como moderador podés **Borrar** cualquier mensaje de tu cátedra; cada autor puede editar o borrar los suyos.
 
----
+## 4. Asistencia
 
-## 6. Sincronización de Calendarios iCal (.ics)
+En cada clase del cronograma, **📋 Control de Asistencia** abre la planilla de esa clase.
 
-1. Dirígete a la pestaña **Calendario**.
-2. Selecciona la materia o el *🌐 Calendario Global*.
-3. Haz clic en el botón **`📥 Exportar .ics`**.
-4. El archivo descargado puede ser importado en Google Calendar, Apple Calendar o Microsoft Outlook para mantener sincronizadas las fechas de parciales y entregas.
+### 4.1. Carga manual
+
+Filtrá por comisión, marcá a cada estudiante como **Presente**, **Tarde** o **Ausente** y presioná **Guardar**.
+
+### 4.2. QR dinámico
+
+1. Presioná **🛡️ Generar QR Dinámico**. Si el navegador lo pide, permití la ubicación.
+2. Proyectá el código. Cambia solo cada **15 segundos** («El código rota en: N s») y cada código vale como máximo 30 segundos, así que una foto del QR no sirve para firmar después. **🔄 Renovar** inicia una sesión nueva e invalida los códigos anteriores.
+3. Los estudiantes lo escanean o escriben el código de 6 caracteres.
+4. **Cerrar** termina la toma: desde ese momento ningún código es válido.
+
+```{tip}
+Si compartiste tu ubicación al generar el QR, los estudiantes también tienen que compartir la suya y el servidor rechaza a quienes estén a más de 150 m. Si generaste el QR sin ubicación, la pantalla lo avisa y no se controla la distancia.
+```
+
+## 5. Tareas y corrección — *Tareas*
+
+### 5.1. Crear una tarea
+
+Presioná **➕ Crear Nueva Tarea** y completá:
+
+- **Título de la Tarea** (ej. «Trabajo Práctico 1»).
+- **Repositorio Plantilla (org/repo)**: repositorio base que se copia para cada estudiante (ej. `unrn-prog2-2026/tp1-plantilla`).
+- **Crear Pull Request de Feedback**: abre un PR en cada repositorio para dejar comentarios de corrección.
+- **Tarea Grupal**: pide un nombre de equipo al aceptar.
+
+Presioná **Crear Tarea**. Para cambiarla, **Editar** → **Guardar Cambios**.
+
+```{warning}
+El formulario todavía no tiene campos de **consigna** ni de **fecha límite**. Sin fecha límite, la tarea no aparece en el calendario y no dispara la alerta de «Tareas Atrasadas». Publicá la consigna y la fecha en un aviso o en la descripción de la clase hasta que se agreguen (ver [ROADMAP H1](../docs/ROADMAP.md)).
+```
+
+### 5.2. Herramientas de cada tarea
+
+| Botón | Qué hace |
+|---|---|
+| **📂 Ver Entregas y Actividad** | Abre la lista de entregas |
+| **🕵️ Detectar Plagio** | Compara todas las entregas con repositorio y marca los pares sospechosos con **⚠ Copia probable** (necesita al menos dos entregas) |
+| **📥 Descargar Plantilla Notas** / **📤 Cargar Notas CSV** | Corregir en planilla y subir las notas en bloque |
+| **🤖 Plantilla Autograding** | Workflow de GitHub Actions que envía las notas automáticas a la plataforma |
+| **📤 Moodle** | Exporta las notas de la tarea al libro de calificaciones de Moodle |
+| **Archivar (Solo Lectura)** | Cierra la tarea |
+
+### 5.3. Corregir una entrega
+
+1. En **Entregas de los Estudiantes**, filtrá por **Comisión** si hace falta.
+2. Revisá **Ver Actividad GitHub (Commits, PRs, Comentarios)**. La pestaña **📈 Métricas** muestra la frecuencia semanal de commits (últimas 6 semanas), los horarios de trabajo y el estado de los PRs.
+3. Cargá la **Nota** y el **Feedback / Comentario** y presioná **Guardar Calificación**.
+
+La nota puede ser numérica de **0 a 10** (con coma o punto: `7,5`) o conceptual, solo con letras (`Aprobado`, `Ausente`). Otros formatos se rechazan. Las notas conceptuales no se sincronizan con Moodle.
+
+Cada cambio queda en el **Historial de Calificaciones (Inmutable)**, visible con **Ver Bitácora de Auditoría**.
+
+### 5.4. Revisión entre pares
+
+En **👥 Revisión entre Pares**, **Activar** habilita que cada estudiante revise 2 entregas de compañeros con una rúbrica, de forma anónima.
+
+```{warning}
+Hoy la activación desde la pantalla falla con «La rúbrica debe tener entre 1 y 8 criterios», porque la pantalla todavía no permite definir la rúbrica (ver [ROADMAP H9](../docs/ROADMAP.md)).
+```
+
+## 6. Avisos — *Avisos*
+
+1. En **Publicar Aviso a Alumnos**, escribí el mensaje (admite Markdown).
+2. Presioná **Enviar Aviso**.
+3. Debajo de cada aviso, **Leído por** lista quién confirmó la recepción y cuándo.
+
+## 7. Seguimiento del curso
+
+### 7.1. Resumen
+
+**📊 Resumen** concentra lo urgente: trabajos entregados sin nota, alumnos en riesgo y entregas totales; la **Cola de Corrección de Trabajos**, las **Consultas Recientes en Clases** y los **Alumnos que requieren Atención**.
+
+### 7.2. Alumnos y Alertas
+
+La tabla muestra, por estudiante, matrícula, asistencia, tareas entregadas, alertas y condición (**REGULAR** / **EN RIESGO**). Las alertas son:
+
+- **Asistencia Crítica (<75%)**, a partir de 3 clases registradas.
+- **Tareas Atrasadas**: tareas vencidas sin entrega.
+
+Acciones:
+
+- **📢 Alertas Automáticas**: notifica a los estudiantes en riesgo.
+- **📄 Descargar Reporte PDF**: reporte académico de la cátedra.
+- **📦 Reporte completo (CSV)**: una fila por estudiante con datos, asistencia y la nota de cada tarea. Se arma en segundo plano (sirve para cátedras grandes); cuando está listo te llega un aviso a la 🔔 con el enlace de descarga, que vale 15 minutos cada vez que lo abrís y durante 7 días.
+- **✉️ Email**: correo directo a un estudiante.
+- **▼ Mostrar URL** → **Copiar URL CSV**: URL para Google Sheets con `=IMPORTDATA("…")`, que mantiene el roster y las alertas sincronizados.
+
+### 7.3. Predicción de abandono
+
+**🔮 Calcular Riesgo de Abandono** asigna a cada estudiante un puntaje de 0 a 100 y un nivel (ALTO, MEDIO o BAJO) con el detalle de cada factor: asistencia (45 %), tareas pendientes (35 %), entregas tardías (10 %) y participación en el foro (10 %). **🔄 Recalcular Riesgo** lo actualiza.
+
+## 8. Correos — *Gestión Correos*
+
+1. Autorizá tu cuenta: **🔑 Autorizar Cuenta Gmail** (o desde **Mi Perfil**). Podés probarla con **✉️ Enviar Correo de Prueba**.
+2. **+ Programar Nuevo Correo**: título interno, destinatarios (**👥 Todos los Estudiantes de la Cátedra** o **⚠️ Estudiantes con Alertas o Inasistencias Críticas**), asunto, contenido HTML y en cuántas horas se envía.
+3. Usá las variables `{{student_name}}` y `{{course_name}}` para personalizar el mensaje, o elegí una plantilla con **Seleccionar Plantilla**.
+4. En **Cola de Correos Programados** podés cancelar o enviar un correo en el momento. **Historial de Correos Enviados** muestra cada envío y su estado.
+
+## 9. Equipo docente — *Docentes*
+
+Lista a los docentes asignados a la cátedra. Asignar o quitar docentes lo hace un administrador.
+
+## 10. Integración con Moodle
+
+En **Ajustes Cátedra → 🎓 Integración Extendida Moodle 4.2+**:
+
+1. Completá **URL del Servidor Moodle**, **Web Service Token (wstoken)** e **ID del Curso en Moodle**.
+2. Usá:
+   - **👥 Sincronizar Alumnos**: importa el roster del curso de Moodle.
+   - **📚 Importar Contenidos**: trae temas y clases.
+   - **📥 Descargar Respaldo XML**: exporta la cátedra en formato de respaldo de Moodle.
+   - **🔗 LTI Deep Linking**: genera enlaces LTI 1.3 a los módulos de la cátedra para insertarlos en Moodle.
+3. **📖 Guía de Registro LTI** explica, paso a paso, cómo registrar la herramienta externa en Moodle. El detalle técnico está en [MOODLE_INTEGRATION.md](../docs/MOODLE_INTEGRATION.md).
+
+Las notas numéricas se envían a Moodle al calificar, si la cátedra tiene Moodle habilitado y la entrega llegó desde un launch LTI.
+
+## 11. Calendario
+
+**Calendario Global** muestra las clases, exámenes, feriados y entregas de todas tus cátedras, con las mismas opciones que ven los estudiantes (ver [Estudiantes §7](estudiantes.md)).

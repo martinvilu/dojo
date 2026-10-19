@@ -10,7 +10,7 @@ exports.calendar = async (req, res) => {
 
     try {
         const cSnap = await db.collection('courses').doc(courseId).get();
-        if (!cSnap.exists) return res.status(404).send('Curso no encontrado');
+        if (!cSnap.exists || cSnap.data().deleted_at) return res.status(404).send('Curso no encontrado');
 
         const course = cSnap.data();
 

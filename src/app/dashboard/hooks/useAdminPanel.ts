@@ -32,8 +32,6 @@ export function useAdminPanel({
   const [newCourseName, setNewCourseName] = useState("");
   const [newCourseOrg, setNewCourseOrg] = useState("");
 
-  // Global settings form
-  const [globalCalendarUrl, setGlobalCalendarUrl] = useState("");
 
   const handleApproveUser = async (uid: string) => {
     if (!(await confirmAction({ message: "¿Aprobar manualmente a este usuario?" }))) return;
@@ -121,6 +119,41 @@ export function useAdminPanel({
     }
   };
 
+  const reloadAdminCourses = async () => {
+    const res = await api("getAdminCourses");
+    setCourses(res || []);
+  };
+
+  const handleDeleteCourse = async (course: { id: string; name?: string }) => {
+    if (!(await confirmAction({
+      message: `¿Eliminar la cátedra «${course.name || course.id}»? Docentes y estudiantes dejan de verla. Podés restaurarla durante 30 días; después se borra definitivamente con todas sus tareas y entregas.`,
+      tone: "danger",
+    }))) return;
+    setApiLoading(true);
+    try {
+      await api("deleteCourse", { courseId: course.id });
+      await reloadAdminCourses();
+      showToast("Cátedra eliminada. Podés restaurarla durante 30 días.", "success");
+    } catch (err: any) {
+      setError("Error al eliminar la cátedra: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  const handleRestoreCourse = async (course: { id: string }) => {
+    setApiLoading(true);
+    try {
+      await api("restoreCourse", { courseId: course.id });
+      await reloadAdminCourses();
+      showToast("Cátedra restaurada.", "success");
+    } catch (err: any) {
+      setError("Error al restaurar la cátedra: " + err.message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseName) return;
@@ -138,18 +171,6 @@ export function useAdminPanel({
     }
   };
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setApiLoading(true);
-    try {
-      await api("saveGlobalSettings", { globalCalendarIcsUrl: globalCalendarUrl });
-      showToast("Configuración guardada.", "success");
-    } catch (err: any) {
-      setError("Error al guardar configuraciones: " + err.message);
-    } finally {
-      setApiLoading(false);
-    }
-  };
 
   return {
     users, setUsers,
@@ -157,9 +178,8 @@ export function useAdminPanel({
     selectedNewTeacherId, setSelectedNewTeacherId,
     newCourseName, setNewCourseName,
     newCourseOrg, setNewCourseOrg,
-    globalCalendarUrl, setGlobalCalendarUrl,
     handleApproveUser, handleDeleteUser, handleUpdateUserRole, handleUpdateUserProfile,
     handleAssignTeacher, handleRemoveTeacher,
-    handleCreateCourse, handleSaveSettings
+    handleCreateCourse, handleDeleteCourse, handleRestoreCourse
   };
 }

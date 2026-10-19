@@ -90,6 +90,24 @@ describe("unauthenticated access", () => {
   });
 });
 
+describe("role custom claims (mejora 3.34)", () => {
+  /** Instancia con claims explícitos en el token. */
+  const withClaims = (uid, claims) => delegateOf(testEnv.authenticatedContext(uid, claims));
+
+  it("uses the role claim when present, without needing the profile", async () => {
+    // Usuario sin documento de perfil pero con claim de admin.
+    await assertSucceeds(getDocs(query(collection(withClaims("nuevoAdmin", { role: "admin" }), "audit_logs"))));
+    await assertFails(getDocs(query(collection(withClaims("alguien", { role: "student" }), "audit_logs"))));
+  });
+
+  it("the claim wins over the profile and the profile is the fallback", async () => {
+    // TEACHER tiene perfil de docente: sin claim lee la bitácora; con un claim
+    // de estudiante (rol bajado y token ya renovado) deja de poder.
+    await assertSucceeds(getDocs(query(collection(user(TEACHER), "audit_logs"))));
+    await assertFails(getDocs(query(collection(withClaims(TEACHER, { role: "student" }), "audit_logs"))));
+  });
+});
+
 describe("profiles", () => {
   it("allows reading only the own profile", async () => {
     await assertSucceeds(getDoc(doc(user(STUDENT), `profiles/${STUDENT}`)));
@@ -97,12 +115,10 @@ describe("profiles", () => {
     await assertFails(getDocs(query(collection(user(TEACHER), "profiles"))));
   });
 
-  it("allows teachers to edit only the commissions map of students", async () => {
-    const t = user(TEACHER);
-    await assertSucceeds(updateDoc(doc(t, `profiles/${STUDENT}`), { "commissions.x1": "A" }));
-    await assertFails(updateDoc(doc(t, `profiles/${STUDENT}`), { full_name: "Hacked" }));
-    await assertFails(updateDoc(doc(t, `profiles/${STUDENT}`), { role: "teacher" }));
-    await assertFails(updateDoc(doc(t, `profiles/${TEACHER}`), { "commissions.x1": "A" }));
+  it("denies every client-side profile update (commissions go through the backend)", async () => {
+    await assertFails(updateDoc(doc(user(TEACHER), `profiles/${STUDENT}`), { [`commissions.${COURSE}`]: "Comisión A" }));
+    await assertFails(updateDoc(doc(user(ADMIN), `profiles/${STUDENT}`), { "commissions.otro_curso": "B" }));
+    await assertFails(updateDoc(doc(user(TEACHER), `profiles/${STUDENT}`), { full_name: "Hacked" }));
   });
 
   it("denies profile creation and deletion to clients", async () => {
@@ -136,7 +152,9 @@ describe("attendance subcollection", () => {
   });
 
   it("can be written only by the assigned teacher", async () => {
-    await assertSucceeds(setDoc(att(TEACHER), { records: {} }, { merge: true }));
+    await assertSucceeds(setDoc(att(TEACHER), { records: { [STUDENT]: "present" }, updated_at: new Date().toISOString() }, { merge: true }));
+    await assertFails(setDoc(att(TEACHER), { records: "todos presentes" }));
+    await assertFails(setDoc(att(TEACHER), { records: {}, extra: true }));
     await assertFails(setDoc(att(STUDENT), { records: { [STUDENT]: true } }));
     await assertFails(setDoc(att(ADMIN), { records: {} })); // admin not assigned to this course
     await assertFails(deleteDoc(att(TEACHER)));
@@ -146,8 +164,8 @@ describe("attendance subcollection", () => {
 describe("active QR token", () => {
   const qr = (uid) => doc(user(uid), `courses/${COURSE}/active_qr/current`);
 
-  it("can be published by the assigned teacher", async () => {
-    await assertSucceeds(setDoc(qr(TEACHER), { token: "ABC123", classNumber: 1 }));
+  it("cannot be published by clients, not even the assigned teacher", async () => {
+    await assertFails(setDoc(qr(TEACHER), { token: "ABC123", classNumber: 1 }));
   });
 
   it("is unreadable by any client and unwritable by students", async () => {
@@ -183,6 +201,15 @@ describe("class_comments subcollection", () => {
       classNumber: 1, user_id: TEACHER, content: "Suplantación", created_at: serverTimestamp(),
     }));
     await assertFails(addDoc(thread(), {
+      classNumber: 1, user_id: STUDENT, user_role: "teacher", content: "Soy el profe", created_at: serverTimestamp(),
+    }));
+    await assertSucceeds(addDoc(thread(), {
+      classNumber: 1, user_id: STUDENT, user_name: "Alice", user_role: "student", content: "Hola", reactions: {}, created_at: serverTimestamp(),
+    }));
+    await assertFails(addDoc(thread(), {
+      classNumber: 1, user_id: STUDENT, content: "Hola", created_at: serverTimestamp(), is_best_answer: true,
+    }));
+    await assertFails(addDoc(thread(), {
       classNumber: 1, user_id: STUDENT, content: "", created_at: serverTimestamp(),
     }));
     await assertFails(addDoc(thread(), {
@@ -201,6 +228,25 @@ describe("class_comments subcollection", () => {
       content: "Editado maliciosamente",
       "reactions.thumbs_up": arrayUnion(STUDENT),
     }));
+  });
+
+  it("authors edit only the text of their own messages, stamped with edited_at", async () => {
+    await seedComment();
+    const mine = doc(user(STUDENT), `courses/${COURSE}/class_comments/c1`);
+    await assertSucceeds(updateDoc(mine, { content: "Consulta corregida", edited_at: serverTimestamp() }));
+    await assertFails(updateDoc(mine, { content: "Sin marca de edición" }));
+    await assertFails(updateDoc(mine, { content: "", edited_at: serverTimestamp() }));
+    await assertFails(updateDoc(mine, { content: "Otra", edited_at: serverTimestamp(), is_best_answer: true }));
+    // Otro miembro del curso no puede editar el mensaje ajeno.
+    await assertFails(updateDoc(doc(user(TEACHER), `courses/${COURSE}/class_comments/c1`), { content: "Pisado", edited_at: serverTimestamp() }));
+  });
+
+  it("authors delete their own messages and the course staff moderates", async () => {
+    await seedComment();
+    await assertFails(deleteDoc(doc(user(STUDENT2), `courses/${COURSE}/class_comments/c1`)));
+    await assertSucceeds(deleteDoc(doc(user(STUDENT), `courses/${COURSE}/class_comments/c1`)));
+    await seedComment();
+    await assertSucceeds(deleteDoc(doc(user(TEACHER), `courses/${COURSE}/class_comments/c1`)));
   });
 
   it("supports first reaction on legacy comments without reactions map", async () => {
@@ -225,9 +271,9 @@ describe("class_comments subcollection", () => {
     await assertFails(updateDoc(ref(TEACHER), { is_best_answer: true, content: "x" }));
   });
 
-  it("cannot be deleted from clients", async () => {
+  it("cannot be deleted by non-members", async () => {
     await seedComment();
-    await assertFails(deleteDoc(doc(user(TEACHER), `courses/${COURSE}/class_comments/c1`)));
+    await assertFails(deleteDoc(doc(user(STUDENT2), `courses/${COURSE}/class_comments/c1`)));
   });
 });
 
@@ -240,6 +286,8 @@ describe("class_feedback subcollection", () => {
     await assertFails(setDoc(fb(STUDENT, "bad0"), { ...valid, rating: 0 }));
     await assertFails(setDoc(fb(STUDENT, "bad6"), { ...valid, rating: 6 }));
     await assertFails(setDoc(fb(STUDENT, "badf"), { ...valid, rating: 4.5 }));
+    await assertFails(setDoc(fb(STUDENT, "long"), { ...valid, comment: "x".repeat(2001) }));
+    await assertFails(setDoc(fb(STUDENT, "xtra"), { ...valid, student_id: STUDENT }));
   });
 
   it("teachers aggregate results; members re-read their submission", async () => {

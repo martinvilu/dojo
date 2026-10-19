@@ -30,7 +30,7 @@ export function CourseDetailSection(props: {
   currentUser: any;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  moodleLtiParams: { current: { outcomeUrl?: string, resultId?: string } };
+  moodleLtiParams: { current: { launchId?: string } };
   selectedCourse: any;
   setSelectedCourse: (c: any) => void;
   courseSubTab: string;
@@ -204,7 +204,7 @@ export function CourseDetailSection(props: {
           >
             Avisos
           </button>
-          {profile?.role === "teacher" && (
+          {profile?.role === "teacher" && selectedCourse?.course_role !== "ayudante" && (
             <button
               onClick={() => handleSetCourseSubTab("settings")}
               className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "settings" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}

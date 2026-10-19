@@ -22,12 +22,21 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data;
     }
 
+    // Rol desde el custom claim del token (mejora 3.34): evita un get() del
+    // perfil por evaluación. Si el token todavía no trae el claim, se usa
+    // el perfil como respaldo.
+    function myRole() {
+      return request.auth.token.get('role', null) != null
+        ? request.auth.token.role
+        : myProfile().role;
+    }
+
     function isAdmin() {
-      return signedIn() && myProfile().role == 'admin';
+      return signedIn() && myRole() == 'admin';
     }
 
     function isTeacherRole() {
-      return signedIn() && myProfile().role == 'teacher';
+      return signedIn() && myRole() == 'teacher';
     }
 
     function isTeacherOf(courseId) {
@@ -53,12 +62,9 @@ service cloud.firestore {
     // ------------------------------------------------------------------
     match /profiles/{userId} {
       allow get: if signedIn() && request.auth.uid == userId;
-      allow update: if (isAdmin() || isTeacherRole())
-        && resource.data.role == 'student'
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.diff(resource.data)
-             .affectedKeys().hasOnly(['commissions']);
-      allow create, list, delete: if false;
+      // Las comisiones se asignan con la acción setStudentCommission, que
+      // verifica que el docente pertenezca al curso.
+      allow create, update, list, delete: if false;
     }
 
     // ------------------------------------------------------------------
@@ -70,16 +76,19 @@ service cloud.firestore {
       // registra o corrige planillas de asistencia.
       match /attendance/{attendanceId} {
         allow read: if isMemberOf(courseId);
-        allow create, update: if isTeacherOf(courseId);
+        allow create, update: if isTeacherOf(courseId)
+          && request.resource.data.keys().hasOnly(['records', 'updated_at', 'classNumber', 'updated_by'])
+          && request.resource.data.records is map
+          && request.resource.data.records.size() <= 2000;
         allow delete: if false;
       }
 
-      // Token QR vigente: publicado por el docente. Ningún cliente lo lee:
-      // los estudiantes validan su token vía submitQrAttendance (backend).
+      // Sesión de QR vigente: la crea el backend (startQrAttendance) con un
+      // secreto por sesión. Ningún cliente la lee ni la escribe: el docente
+      // recibe el secreto como respuesta y los estudiantes validan el código
+      // vía submitQrAttendance.
       match /active_qr/{qrId} {
-        allow read: if false;
-        allow create, update: if isTeacherOf(courseId);
-        allow delete: if false;
+        allow read, write: if false;
       }
 
       // Foro Q&A por clase: miembros leen y publican consultas. En updates,
@@ -101,17 +110,37 @@ service cloud.firestore {
           return request.resource.data.diff(resource.data)
                  .affectedKeys().hasOnly(['is_best_answer']);
         }
+        // El autor puede corregir el texto de su propio mensaje (mejora
+        // 3.14); queda marcado con edited_at = hora del servidor.
+        function onlyOwnContentEdited() {
+          return resource.data.user_id == request.auth.uid
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys().hasOnly(['content', 'edited_at'])
+            && request.resource.data.content is string
+            && request.resource.data.content.size() > 0
+            && request.resource.data.content.size() <= 4000
+            && request.resource.data.edited_at == request.time;
+        }
 
         allow read: if isMemberOf(courseId);
+        // El rol mostrado junto al nombre es el del perfil: un estudiante
+        // no puede firmar como docente.
         allow create: if isMemberOf(courseId)
+          && request.resource.data.keys().hasOnly(['classNumber', 'user_id', 'user_name', 'user_role', 'content', 'reactions', 'created_at'])
           && request.resource.data.user_id == request.auth.uid
+          && request.resource.data.get('user_role', myRole()) == myRole()
+          && request.resource.data.get('user_name', '') is string
+          && request.resource.data.get('user_name', '').size() <= 120
           && request.resource.data.classNumber is int
           && request.resource.data.content is string
           && request.resource.data.content.size() > 0
           && request.resource.data.content.size() <= 4000;
         allow update: if ((isAdmin() || isTeacherOf(courseId)) && onlyBestAnswerChanged())
-          || (isMemberOf(courseId) && onlyReactionsChanged());
-        allow delete: if false;
+          || (isMemberOf(courseId) && onlyReactionsChanged())
+          || (isMemberOf(courseId) && onlyOwnContentEdited());
+        // El autor borra sus mensajes; el equipo docente modera cualquiera.
+        allow delete: if (isMemberOf(courseId) && resource.data.user_id == request.auth.uid)
+          || isAdmin() || isTeacherOf(courseId);
       }
 
       // Encuestas anónimas por clase: el id del documento es el hash del
@@ -120,9 +149,15 @@ service cloud.firestore {
       match /class_feedback/{feedbackId} {
         allow get, list: if isMemberOf(courseId);
         allow create, update: if isEnrolledIn(courseId)
+          && request.resource.data.keys().hasOnly(['classNumber', 'rating', 'understanding', 'comment', 'created_at'])
+          && request.resource.data.classNumber is int
           && request.resource.data.rating is int
           && request.resource.data.rating >= 1
-          && request.resource.data.rating <= 5;
+          && request.resource.data.rating <= 5
+          && request.resource.data.get('understanding', '') is string
+          && request.resource.data.get('understanding', '').size() <= 100
+          && request.resource.data.get('comment', '') is string
+          && request.resource.data.get('comment', '').size() <= 2000;
         allow delete: if false;
       }
     }
