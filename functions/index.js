@@ -3,7 +3,16 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onDocumentDeleted, onDocumentWritten, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const { FieldValue, Timestamp } = require("firebase-admin/firestore");
 admin.initializeApp();
+
+// Los handlers reciben un "admin" con FieldValue/Timestamp de la API
+// modular: el runtime del emulador de Functions envuelve el namespace
+// admin.firestore y ahí admin.firestore.FieldValue queda indefinido.
+const handlerAdmin = {
+    auth: (...args) => admin.auth(...args),
+    firestore: Object.assign((...args) => admin.firestore(...args), { FieldValue, Timestamp })
+};
 
 const db = admin.firestore();
 db.settings({ ignoreUndefinedProperties: true });
@@ -124,7 +133,7 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
             status_code: response.status,
             grade: String(grade),
             normalized_grade: numericGrade,
-            created_at: admin.firestore.FieldValue.serverTimestamp()
+            created_at: FieldValue.serverTimestamp()
         });
     } catch (err) {
         logger.error("Error al sincronizar nota con Moodle:", err);
@@ -168,7 +177,7 @@ exports.api = onCall(async (request) => {
             authUser: request.auth.token || {},
             request,
             db,
-            admin,
+            admin: handlerAdmin,
             getMyProfile
         };
         
@@ -185,7 +194,7 @@ exports.api = onCall(async (request) => {
                     user_role: pData ? pData.role : 'student',
                     action: action,
                     details: payload ? JSON.stringify(redactSecrets(payload)).substring(0, 200) : '',
-                    timestamp: admin.firestore.FieldValue.serverTimestamp()
+                    timestamp: FieldValue.serverTimestamp()
                 });
             } catch (e) {
                 logger.error("Error writing activity log:", e);
@@ -243,7 +252,7 @@ exports.onSubmissionGradeChange = onDocumentWritten('submissions/{submissionId}'
     const before = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
     const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
     await handleSubmissionGradeChange(
-        { db, serverTimestamp: () => admin.firestore.FieldValue.serverTimestamp(), syncGradeToMoodle },
+        { db, serverTimestamp: () => FieldValue.serverTimestamp(), syncGradeToMoodle },
         event.params.submissionId, before, after
     );
 });
@@ -252,7 +261,7 @@ exports.onSubmissionGradeChange = onDocumentWritten('submissions/{submissionId}'
 exports.onClassCommentUpdated = onDocumentUpdated('courses/{courseId}/class_comments/{commentId}', async (event) => {
     const { notifyBestAnswer } = require('./src/modules/notifications/forum');
     await notifyBestAnswer(
-        { db, serverTimestamp: () => admin.firestore.FieldValue.serverTimestamp() },
+        { db, serverTimestamp: () => FieldValue.serverTimestamp() },
         event.params.courseId,
         event.data.before.data(),
         event.data.after.data()

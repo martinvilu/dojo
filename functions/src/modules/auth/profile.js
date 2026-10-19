@@ -1,4 +1,5 @@
 const admin = require("firebase-admin");
+const { FieldValue, Timestamp } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
 const { dojoError } = require('../../lib/errors');
 const { normalizeEmail } = require('../../lib/validate');
@@ -90,14 +91,14 @@ async function getProfile(payload, context) {
             avatar_url: typeof authUser.picture === 'string' && authUser.picture.startsWith('https://') ? authUser.picture : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
             account_status: role === 'student' ? 'pending' : 'approved',
             email_domain_blocked: emailDomainBlocked,
-            created_at: admin.firestore.FieldValue.serverTimestamp(),
-            last_login: admin.firestore.FieldValue.serverTimestamp()
+            created_at: FieldValue.serverTimestamp(),
+            last_login: FieldValue.serverTimestamp()
         };
         await ref.set(profileData, { merge: true });
         pSnap = await ref.get();
         if (!pSnap.exists) return profileData;
     } else {
-        const update = { last_login: admin.firestore.FieldValue.serverTimestamp() };
+        const update = { last_login: FieldValue.serverTimestamp() };
         // Perfiles creados sin email (el backend no recibía el token): se
         // completan con el email verificado del proveedor.
         if (!pSnap.data().email && email) update.email = email;
@@ -120,7 +121,7 @@ async function getProfile(payload, context) {
             logger.warn('[getProfile] No se pudo sincronizar el claim de rol:', e.message);
         }
     }
-    data.last_login = admin.firestore.Timestamp.now();
+    data.last_login = Timestamp.now();
     return data;
 }
 
