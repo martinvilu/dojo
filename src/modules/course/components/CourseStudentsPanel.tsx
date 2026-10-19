@@ -1,8 +1,6 @@
 "use client";
 import React from 'react';
 import { api } from '@/lib/api';
-import { db } from '@/lib/firebase/clientApp';
-import { doc, updateDoc } from 'firebase/firestore';
 import { copyToClipboard } from '@/lib/clipboard';
 import { useMemo } from 'react';
 import DropoutRiskPanel from './DropoutRiskPanel';
@@ -274,10 +272,7 @@ export function CourseStudentsPanel({
     const cid = selectedCourse.id || selectedCourse.course?.id;
     if (!cid) return;
     try {
-      const studentRef = doc(db, "profiles", studentId);
-      await updateDoc(studentRef, {
-        [`commissions.${cid}`]: commission
-      });
+      await api("setStudentCommission", { courseId: cid, studentId, commission });
       // Update local state instantly
       setRoster((prev: any) => prev.map((s: any) => {
         if (s.id === studentId) {

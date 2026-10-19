@@ -110,6 +110,7 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `updateCourseName`, `getCourseSettings`, `updateCourseSettings` | staffOf(course) | Ajustes; los ayudantes no pueden modificar la planificación base. Guardar `class_instances` crea una versión automática del cronograma |
 | `cloneCourseExtraData` | staffOf(course, newCourse) | Copia ajustes de otra cátedra |
 | `updateRosterStudentStatus`, `syncGuaraniRoster` | staffOf(course) | Estado de inscripciones / importación de roster |
+| `setStudentCommission` | staffOf(course) | Asigna la comisión de un estudiante inscripto (`commissions.{courseId}`, máximo 60 caracteres). Reemplaza la escritura directa del perfil desde el navegador |
 
 **Cronograma** (`modules/course/schedule.js`): `saveScheduleVersion`, `getScheduleVersions`, `restoreScheduleVersion` — staffOf(course); `getComparisonCourses` — STAFF.
 

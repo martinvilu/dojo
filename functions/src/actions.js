@@ -52,6 +52,7 @@ const ACTION_MODULES = {
     deleteCourse: './modules/course/courses',
     restoreCourse: './modules/course/courses',
     updateRosterStudentStatus: './modules/course/courses',
+    setStudentCommission: './modules/course/courses',
     syncGuaraniRoster: './modules/course/courses',
     addSecondaryEmail: './modules/auth/profile',
     mergeProfiles: './modules/auth/profile',

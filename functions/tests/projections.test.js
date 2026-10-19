@@ -47,3 +47,31 @@ describe('profile projections', () => {
     expect(asPeer.full_name).toBe('Naruto');
   });
 });
+
+describe('setStudentCommission', () => {
+  const { setStudentCommission } = require('../src/modules/course/courses');
+  const dbFor = (docs) => {
+    const updates = [];
+    return {
+      updates,
+      collection: (name) => ({
+        doc: (id) => ({
+          get: async () => ({ exists: Boolean(docs[`${name}/${id}`]) }),
+          update: async (d) => updates.push([`${name}/${id}`, d])
+        })
+      })
+    };
+  };
+
+  it('sets the commission of an enrolled student for that course only', async () => {
+    const db = dbFor({ 'course_roster/c1_s1': {} });
+    await expect(setStudentCommission({ courseId: 'c1', studentId: 's1', commission: ' Comisión A ' }, { db })).resolves.toEqual({ success: true, commission: 'Comisión A' });
+    expect(db.updates).toEqual([['profiles/s1', { 'commissions.c1': 'Comisión A' }]]);
+  });
+
+  it('rejects students outside the course and oversized names', async () => {
+    const db = dbFor({ 'course_roster/c1_s1': {} });
+    await expect(setStudentCommission({ courseId: 'c1', studentId: 's9', commission: 'A' }, { db })).rejects.toMatchObject({ code: 'NOT_COURSE_MEMBER' });
+    await expect(setStudentCommission({ courseId: 'c1', studentId: 's1', commission: 'x'.repeat(61) }, { db })).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
+  });
+});

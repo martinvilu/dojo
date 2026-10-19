@@ -384,6 +384,26 @@ async function getCourseRoster(payload, context) {
     return students;
 }
 
+/**
+ * Asigna la comisión de un estudiante en un curso (staffOf(course)). Antes
+ * el navegador escribía el perfil directamente y las reglas no podían
+ * verificar de qué curso era la comisión.
+ */
+async function setStudentCommission(payload, context) {
+    const { db } = context;
+    const { courseId, studentId } = payload;
+    if (!courseId || !studentId) throw dojoError('INVALID_ARGUMENT', "Faltan parámetros requeridos");
+    const commission = typeof payload.commission === 'string' ? payload.commission.trim() : '';
+    if (commission.length > 60) throw dojoError('INVALID_ARGUMENT', "El nombre de la comisión es demasiado largo (máximo 60 caracteres).");
+
+    const enrolled = (await db.collection('course_roster').doc(`${courseId}_${studentId}`).get()).exists
+        || (await db.collection('enrollments').doc(`${studentId}_${courseId}`).get()).exists;
+    if (!enrolled) throw dojoError('NOT_COURSE_MEMBER', "El estudiante no está inscripto en este curso");
+
+    await db.collection('profiles').doc(studentId).update({ [`commissions.${courseId}`]: commission });
+    return { success: true, commission };
+}
+
 async function updateRosterStudentStatus(payload, context) {
     const { db } = context;
     const { courseId, studentId, status } = payload; // status: 'approved' | 'pending' | 'observador' | 'removed'
@@ -513,6 +533,7 @@ module.exports = {
     getStudentCourses,
     getCourseRoster,
     updateRosterStudentStatus,
+    setStudentCommission,
     syncGuaraniRoster,
     projectCourse,
     projectCourseForStudent

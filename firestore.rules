@@ -53,12 +53,9 @@ service cloud.firestore {
     // ------------------------------------------------------------------
     match /profiles/{userId} {
       allow get: if signedIn() && request.auth.uid == userId;
-      allow update: if (isAdmin() || isTeacherRole())
-        && resource.data.role == 'student'
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.diff(resource.data)
-             .affectedKeys().hasOnly(['commissions']);
-      allow create, list, delete: if false;
+      // Las comisiones se asignan con la acción setStudentCommission, que
+      // verifica que el docente pertenezca al curso.
+      allow create, update, list, delete: if false;
     }
 
     // ------------------------------------------------------------------
@@ -70,7 +67,10 @@ service cloud.firestore {
       // registra o corrige planillas de asistencia.
       match /attendance/{attendanceId} {
         allow read: if isMemberOf(courseId);
-        allow create, update: if isTeacherOf(courseId);
+        allow create, update: if isTeacherOf(courseId)
+          && request.resource.data.keys().hasOnly(['records', 'updated_at', 'classNumber', 'updated_by'])
+          && request.resource.data.records is map
+          && request.resource.data.records.size() <= 2000;
         allow delete: if false;
       }
 
@@ -114,8 +114,14 @@ service cloud.firestore {
         }
 
         allow read: if isMemberOf(courseId);
+        // El rol mostrado junto al nombre es el del perfil: un estudiante
+        // no puede firmar como docente.
         allow create: if isMemberOf(courseId)
+          && request.resource.data.keys().hasOnly(['classNumber', 'user_id', 'user_name', 'user_role', 'content', 'reactions', 'created_at'])
           && request.resource.data.user_id == request.auth.uid
+          && request.resource.data.get('user_role', myProfile().role) == myProfile().role
+          && request.resource.data.get('user_name', '') is string
+          && request.resource.data.get('user_name', '').size() <= 120
           && request.resource.data.classNumber is int
           && request.resource.data.content is string
           && request.resource.data.content.size() > 0
@@ -134,9 +140,15 @@ service cloud.firestore {
       match /class_feedback/{feedbackId} {
         allow get, list: if isMemberOf(courseId);
         allow create, update: if isEnrolledIn(courseId)
+          && request.resource.data.keys().hasOnly(['classNumber', 'rating', 'understanding', 'comment', 'created_at'])
+          && request.resource.data.classNumber is int
           && request.resource.data.rating is int
           && request.resource.data.rating >= 1
-          && request.resource.data.rating <= 5;
+          && request.resource.data.rating <= 5
+          && request.resource.data.get('understanding', '') is string
+          && request.resource.data.get('understanding', '').size() <= 100
+          && request.resource.data.get('comment', '') is string
+          && request.resource.data.get('comment', '').size() <= 2000;
         allow delete: if false;
       }
     }

@@ -802,7 +802,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `firestore.rules`
 - **Propuesta técnica:** Agregar funciones de validación como `request.resource.data.text is string && request.resource.data.text.size() < 2000`.
 - **Impacto y beneficio:** Imposibilidad de que clientes maliciosos inyecten documentos corruptos o sobrecargados.
-- **Estado (24/09/2026):** 🟡 Parcial — Reglas validan tipos/longitudes en foros y encuestas; el resto se opera solo vía backend.
+- **Estado (19/10/2026):** ✅ Implementada — Esquemas en reglas para todo lo que escribe el cliente: asistencia (claves permitidas, `records` mapa acotado), comentarios (claves permitidas, `user_role` igual al del perfil, nombre ≤ 120), encuestas (claves, tipos y longitudes). Los perfiles ya no aceptan escrituras del cliente: las comisiones pasan por `setStudentCommission`.
 
 ### 3.04. Prevención de escalamiento de privilegios en perfiles de usuario
 - **Diagnóstico actual:** Un usuario autenticado podría intentar enviar un `update` cambiando su propio campo `role` a `'admin'` si las reglas no lo impiden expresamente.

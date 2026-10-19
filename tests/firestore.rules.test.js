@@ -97,12 +97,10 @@ describe("profiles", () => {
     await assertFails(getDocs(query(collection(user(TEACHER), "profiles"))));
   });
 
-  it("allows teachers to edit only the commissions map of students", async () => {
-    const t = user(TEACHER);
-    await assertSucceeds(updateDoc(doc(t, `profiles/${STUDENT}`), { "commissions.x1": "A" }));
-    await assertFails(updateDoc(doc(t, `profiles/${STUDENT}`), { full_name: "Hacked" }));
-    await assertFails(updateDoc(doc(t, `profiles/${STUDENT}`), { role: "teacher" }));
-    await assertFails(updateDoc(doc(t, `profiles/${TEACHER}`), { "commissions.x1": "A" }));
+  it("denies every client-side profile update (commissions go through the backend)", async () => {
+    await assertFails(updateDoc(doc(user(TEACHER), `profiles/${STUDENT}`), { [`commissions.${COURSE}`]: "Comisión A" }));
+    await assertFails(updateDoc(doc(user(ADMIN), `profiles/${STUDENT}`), { "commissions.otro_curso": "B" }));
+    await assertFails(updateDoc(doc(user(TEACHER), `profiles/${STUDENT}`), { full_name: "Hacked" }));
   });
 
   it("denies profile creation and deletion to clients", async () => {
@@ -136,7 +134,9 @@ describe("attendance subcollection", () => {
   });
 
   it("can be written only by the assigned teacher", async () => {
-    await assertSucceeds(setDoc(att(TEACHER), { records: {} }, { merge: true }));
+    await assertSucceeds(setDoc(att(TEACHER), { records: { [STUDENT]: "present" }, updated_at: new Date().toISOString() }, { merge: true }));
+    await assertFails(setDoc(att(TEACHER), { records: "todos presentes" }));
+    await assertFails(setDoc(att(TEACHER), { records: {}, extra: true }));
     await assertFails(setDoc(att(STUDENT), { records: { [STUDENT]: true } }));
     await assertFails(setDoc(att(ADMIN), { records: {} })); // admin not assigned to this course
     await assertFails(deleteDoc(att(TEACHER)));
@@ -181,6 +181,15 @@ describe("class_comments subcollection", () => {
     }));
     await assertFails(addDoc(thread(), {
       classNumber: 1, user_id: TEACHER, content: "Suplantación", created_at: serverTimestamp(),
+    }));
+    await assertFails(addDoc(thread(), {
+      classNumber: 1, user_id: STUDENT, user_role: "teacher", content: "Soy el profe", created_at: serverTimestamp(),
+    }));
+    await assertSucceeds(addDoc(thread(), {
+      classNumber: 1, user_id: STUDENT, user_name: "Alice", user_role: "student", content: "Hola", reactions: {}, created_at: serverTimestamp(),
+    }));
+    await assertFails(addDoc(thread(), {
+      classNumber: 1, user_id: STUDENT, content: "Hola", created_at: serverTimestamp(), is_best_answer: true,
     }));
     await assertFails(addDoc(thread(), {
       classNumber: 1, user_id: STUDENT, content: "", created_at: serverTimestamp(),
@@ -259,6 +268,8 @@ describe("class_feedback subcollection", () => {
     await assertFails(setDoc(fb(STUDENT, "bad0"), { ...valid, rating: 0 }));
     await assertFails(setDoc(fb(STUDENT, "bad6"), { ...valid, rating: 6 }));
     await assertFails(setDoc(fb(STUDENT, "badf"), { ...valid, rating: 4.5 }));
+    await assertFails(setDoc(fb(STUDENT, "long"), { ...valid, comment: "x".repeat(2001) }));
+    await assertFails(setDoc(fb(STUDENT, "xtra"), { ...valid, student_id: STUDENT }));
   });
 
   it("teachers aggregate results; members re-read their submission", async () => {

@@ -89,6 +89,7 @@ const ACTION_POLICIES = {
     deleteCourse: ADMIN,
     restoreCourse: ADMIN,
     updateRosterStudentStatus: staffOf('course'),
+    setStudentCommission: staffOf('course'),
     syncGuaraniRoster: staffOf('course'),
 
     // gmail y correos
