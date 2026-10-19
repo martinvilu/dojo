@@ -54,6 +54,7 @@ Los handlers lanzan `dojoError('COURSE_NOT_FOUND', 'Curso no encontrado')`; un `
 | `STAFF` | Rol `teacher` o `admin` |
 | `ADMIN` | Rol `admin` |
 | `staffOf(objetivo)` | Docente asignado (titular o ayudante) al curso del objetivo, o `admin` |
+| `titularOf(objetivo)` | Docente **titular** del curso del objetivo, o `admin`. Un ayudante recibe `permission-denied` con `ASSISTANT_NOT_ALLOWED` |
 | `memberOf(objetivo)` | Docente o estudiante inscripto en el curso del objetivo, o `admin` |
 | `withScopedCourseIds(...)` | Además de la política base, filtra `payload.courseIds` a los cursos accesibles en lugar de rechazar la llamada |
 
@@ -108,12 +109,13 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `getStudentCourses` | AUTHENTICATED | Cursos del llamador |
 | `getTeacherCourses` | STAFF | Cursos asignados (todos si es admin) |
 | `enrollCourse` | AUTHENTICATED | Canjea un código: el de estudiante crea una inscripción `pending`; `T-…` / `A-…` asignan titular o ayudante y promueven a `teacher` |
-| `updateCourseName`, `getCourseSettings`, `updateCourseSettings` | staffOf(course) | Ajustes; los ayudantes no pueden modificar la planificación base. Guardar `class_instances` crea una versión automática del cronograma |
-| `cloneCourseExtraData` | staffOf(course, newCourse) | Copia ajustes de otra cátedra |
-| `updateRosterStudentStatus`, `syncGuaraniRoster` | staffOf(course) | Estado de inscripciones / importación de roster |
+| `getCourseSettings` | staffOf(course) | Ajustes de la cátedra sin credenciales (`has_github_token` en lugar del token) y con `course_role`. Los ayudantes no reciben los códigos de invitación docentes |
+| `updateCourseName`, `updateCourseSettings` | titularOf(course) | `updateCourseSettings` acepta solo los campos editables (lista blanca con validación de tipos); un `github_token` vacío conserva el actual. Guardar `class_instances` crea una versión automática del cronograma |
+| `cloneCourseExtraData` | titularOf(course, newCourse) | Copia ajustes de otra cátedra |
+| `updateRosterStudentStatus`, `syncGuaraniRoster` | titularOf(course) | Estado de inscripciones / importación de roster |
 | `setStudentCommission` | staffOf(course) | Asigna la comisión de un estudiante inscripto (`commissions.{courseId}`, máximo 60 caracteres). Reemplaza la escritura directa del perfil desde el navegador |
 
-**Cronograma** (`modules/course/schedule.js`): `saveScheduleVersion`, `getScheduleVersions`, `restoreScheduleVersion` — staffOf(course); `getComparisonCourses` — STAFF.
+**Cronograma** (`modules/course/schedule.js`): `getScheduleVersions` — staffOf(course); `saveScheduleVersion`, `restoreScheduleVersion` — titularOf(course); `getComparisonCourses` — STAFF.
 
 **Avisos** (`modules/course/announcements.js`)
 
@@ -129,12 +131,12 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 
 | Acción | Política | Descripción |
 |---|---|---|
-| `createAssignment`, `updateAssignment` | staffOf(course) / staffOf(assignment) | Campos validados: `title`, `description`, `due_date`, `template_repo` (`org/repo`), `is_group`, `create_feedback_pr` |
-| `archiveAssignment` | staffOf(assignment) | Pasa la tarea a solo lectura |
+| `createAssignment`, `updateAssignment` | titularOf(course) / titularOf(assignment) | Campos validados: `title`, `description`, `due_date`, `template_repo` (`org/repo`), `is_group`, `create_feedback_pr` |
+| `archiveAssignment` | titularOf(assignment) | Pasa la tarea a solo lectura |
 | `getTeacherAssignments` | STAFF + courseIds de staff | |
 | `getAssignmentSubmissions` | staffOf(assignment) | |
 | `gradeSubmission` | staffOf(submission) | Nota 0–10 (coma o punto decimal) o conceptual de letras (`Aprobado`); feedback ≤ 5000 caracteres; queda en historial inmutable |
-| `toggleAccess` / `massToggleAccess` | staffOf(submission) / staffOf(assignment) | Marca una entrega (o todas las de la tarea) como bloqueada (`is_locked`) |
+| `toggleAccess` / `massToggleAccess` | staffOf(submission) / titularOf(assignment) | Marca una entrega (o todas las de la tarea) como bloqueada (`is_locked`) |
 | `syncGradesFromSpreadsheet` | staffOf(assignment) | Importa notas desde la URL de una planilla de Google Sheets |
 | `getStudentAssignments` | AUTHENTICATED + courseIds de miembro | |
 | `acceptAssignment` | memberOf(assignment) | Crea el repositorio del estudiante desde la plantilla |
@@ -142,7 +144,7 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | `addGroupCollaborator` | memberOf(submission) | Solo el autor de la entrega o el equipo docente |
 | `getStudentGithubActivity`, `getStudentCommits` | AUTHENTICATED | Commits, PRs y comentarios del repositorio |
 | `detectAssignmentPlagiarism` | staffOf(assignment) | Similitud por fingerprints k-gram entre entregas |
-| `enablePeerReview` | staffOf(assignment) | Activa la revisión entre pares |
+| `enablePeerReview` | titularOf(assignment) | Activa la revisión entre pares |
 | `getMyReviewAssignments` | memberOf(course) | Entregas que me tocan revisar (2 por revisor, rotación determinística) |
 | `submitPeerReview` | memberOf(assignment) | |
 | `getPeerReviewFeedback` | AUTHENTICATED | Feedback agregado y anónimo de mi entrega |
@@ -189,7 +191,8 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 | Acción | Política |
 |---|---|
 | `moodleAutoEnroll` | AUTHENTICATED: solo cursos con Moodle habilitado, nunca como docente, inscripción `pending` |
-| `exportCourseToMoodleXml`, `syncMoodleCourseRoster`, `syncMoodleCourseContents`, `getMoodleLtiDeepLinkContent` | staffOf(course) |
+| `exportCourseToMoodleXml`, `getMoodleLtiDeepLinkContent` | staffOf(course) |
+| `syncMoodleCourseRoster`, `syncMoodleCourseContents` | titularOf(course) |
 | `exportGradesToMoodleWebservice` | staffOf(course, assignment) |
 
 ### 1.4. Agregar una acción

@@ -3,7 +3,9 @@
 Flujos de trabajo para **docentes titulares** y **ayudantes de cátedra**: configurar la materia, planificar el cronograma, tomar asistencia, gestionar tareas con GitHub, comunicarse con los estudiantes y seguir su desempeño.
 
 ```{note}
-Necesitás rol **Profesor** y estar asignado a la cátedra. Las dos cosas las hace un administrador (ver [Administradores](administradores.md)). Los **ayudantes** ven las mismas pantallas, pero no pueden cambiar la planificación base (fechas, horarios y clases).
+Necesitás rol **Profesor** y estar asignado a la cátedra. Las dos cosas las hace un administrador (ver [Administradores](administradores.md)).
+
+Los **ayudantes** corrigen entregas, toman asistencia, publican avisos, envían correos y siguen las alertas. Lo estructural queda para el **titular**: ajustes de la cátedra, cronograma y sus versiones, crear, editar o archivar tareas, revisión entre pares y sincronización de alumnos con Moodle o Guaraní. Esas opciones no se les muestran.
 ```
 
 ---

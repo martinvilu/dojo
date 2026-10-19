@@ -291,6 +291,8 @@ export function CourseSchedulesPanel({
     return map;
   }, [courseAttendance]);
 
+  const isAssistant = (selectedCourse?.course_role || selectedCourse?.course?.course_role) === "ayudante";
+
   return (
     <>
               <div className="space-y-6">
@@ -321,6 +323,9 @@ export function CourseSchedulesPanel({
                           </button>
                         </div>
                       </div>
+                      {isAssistant ? (
+                        <p className="text-[11px] text-amber-300 max-w-sm">Como ayudante podés ver el cronograma y tomar asistencia; los cambios de planificación los hace el docente titular.</p>
+                      ) : (
                       <div className="flex gap-2">
                         <button
                           onClick={handleGenerateClasses}
@@ -350,6 +355,7 @@ export function CourseSchedulesPanel({
                           💾 Guardar Cronograma
                         </button>
                       </div>
+                      )}
                     </div>
 
                     {scheduleViewMode === "list" ? (

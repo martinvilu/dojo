@@ -34,7 +34,13 @@ async function getCourseDetails(payload, context) {
         });
     }
     
-    return { id: cSnap.id, ...withoutCredentials(data) };
+    const courseRole = myProfile.role === 'admin' && !teacherSnap.exists ? 'admin' : ((teacherSnap.data() || {}).role === 'ayudante' ? 'ayudante' : 'titular');
+    const result = { id: cSnap.id, ...withoutCredentials(data), course_role: courseRole };
+    if (courseRole === 'ayudante') {
+        delete result.teacher_invite_code;
+        delete result.assistant_invite_code;
+    }
+    return result;
 }
 
 async function enrollCourse(payload, context) {
@@ -278,9 +284,11 @@ async function getCourseSettings(payload, context) {
     const courseId = payload.courseId;
     const profileSnap = await db.collection('profiles').doc(uid).get();
     const isSysAdmin = profileSnap.exists && profileSnap.data().role === 'admin';
+    let isAssistant = false;
     if (!isSysAdmin) {
         const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
         if (!accessSnap.exists) throw dojoError('NOT_COURSE_MEMBER', "No tienes acceso a este curso");
+        isAssistant = accessSnap.data().role === 'ayudante';
     }
     
     const cSnap = await db.collection('courses').doc(courseId).get();
@@ -318,7 +326,14 @@ async function getCourseSettings(payload, context) {
         });
     }
     
-    return { id: cSnap.id, ...withoutCredentials(data) };
+    const result = { id: cSnap.id, ...withoutCredentials(data), course_role: isSysAdmin ? 'admin' : (isAssistant ? 'ayudante' : 'titular') };
+    // Los códigos docentes otorgan el rol de titular o ayudante: un ayudante
+    // que los viera podría ascenderse a titular (mejora 3.39).
+    if (isAssistant) {
+        delete result.teacher_invite_code;
+        delete result.assistant_invite_code;
+    }
+    return result;
 }
 
 async function updateCourseSettings(payload, context) {

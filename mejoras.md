@@ -1054,7 +1054,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `firestore.rules`
 - **Propuesta técnica:** Crear rol intermedio `assistant` con permisos de lectura/calificación pero sin privilegios destructivos.
 - **Impacto y beneficio:** Gobernanza académica segura y delegación de tareas sin riesgos.
-- **Estado (24/09/2026):** 🟡 Parcial — Los ayudantes no pueden modificar la planificación base (`updateCourseSettings`).
+- **Estado (19/10/2026):** ✅ Implementada — Política `titularOf` en `authz.js` para 14 acciones estructurales o destructivas (ajustes, cronograma, crear/editar/archivar tareas, peer review, sincronización de roster); los ayudantes reciben `ASSISTANT_NOT_ALLOWED`, no ven los códigos de invitación docentes (podían ascenderse a titular) y la UI les oculta esos controles.
 
 ### 3.40. Indexación automática de búsquedas con Algolia o Typesense
 - **Diagnóstico actual:** La búsqueda en Firestore no soporta texto completo (Full-Text Search) ni tolerancia a errores tipográficos.

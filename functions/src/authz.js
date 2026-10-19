@@ -24,6 +24,9 @@ const AUTHENTICATED = { kind: 'authenticated' };
 const STAFF = { kind: 'staff' };
 const ADMIN = { kind: 'admin' };
 const staffOf = (...targets) => ({ kind: 'courseStaff', targets });
+// Docente titular del curso (no ayudante) o admin: cambios estructurales
+// o destructivos de la cátedra (mejora 3.39).
+const titularOf = (...targets) => ({ kind: 'courseTitular', targets });
 const memberOf = (...targets) => ({ kind: 'courseMember', targets });
 
 /**
@@ -67,30 +70,30 @@ const ACTION_POLICIES = {
     // moodle
     moodleAutoEnroll: AUTHENTICATED,
     exportCourseToMoodleXml: staffOf('course'),
-    syncMoodleCourseRoster: staffOf('course'),
+    syncMoodleCourseRoster: titularOf('course'),
     exportGradesToMoodleWebservice: staffOf('course', 'assignment'),
-    syncMoodleCourseContents: staffOf('course'),
+    syncMoodleCourseContents: titularOf('course'),
     getMoodleLtiDeepLinkContent: staffOf('course'),
 
     // cursos
     getCourseDetails: memberOf('course'),
     enrollCourse: AUTHENTICATED,
     createCourse: ADMIN,
-    updateCourseName: staffOf('course'),
+    updateCourseName: titularOf('course'),
     getCourseTeachers: memberOf('course'),
     assignTeacher: ADMIN,
     removeTeacher: ADMIN,
     getTeacherCourses: STAFF,
     getCourseSettings: staffOf('course'),
-    updateCourseSettings: staffOf('course'),
-    cloneCourseExtraData: staffOf('course', 'newCourse'),
+    updateCourseSettings: titularOf('course'),
+    cloneCourseExtraData: titularOf('course', 'newCourse'),
     getStudentCourses: AUTHENTICATED,
     getCourseRoster: memberOf('course'),
     deleteCourse: ADMIN,
     restoreCourse: ADMIN,
-    updateRosterStudentStatus: staffOf('course'),
+    updateRosterStudentStatus: titularOf('course'),
     setStudentCommission: staffOf('course'),
-    syncGuaraniRoster: staffOf('course'),
+    syncGuaraniRoster: titularOf('course'),
 
     // gmail y correos
     getGmailAuthUrl: STAFF,
@@ -108,9 +111,9 @@ const ACTION_POLICIES = {
     getMailLogs: staffOf('course'),
 
     // cronograma
-    saveScheduleVersion: staffOf('course'),
+    saveScheduleVersion: titularOf('course'),
     getScheduleVersions: staffOf('course'),
-    restoreScheduleVersion: staffOf('course'),
+    restoreScheduleVersion: titularOf('course'),
     getComparisonCourses: STAFF,
 
     // grupos de estudio
@@ -138,7 +141,7 @@ const ACTION_POLICIES = {
     markNotificationsRead: AUTHENTICATED,
 
     // revisión entre pares y portfolio
-    enablePeerReview: staffOf('assignment'),
+    enablePeerReview: titularOf('assignment'),
     getMyReviewAssignments: memberOf('course'),
     submitPeerReview: memberOf('assignment'),
     getPeerReviewFeedback: AUTHENTICATED,
@@ -157,19 +160,19 @@ const ACTION_POLICIES = {
     getCourseDashboardStats: staffOf('course'),
 
     // tareas y entregas
-    archiveAssignment: staffOf('assignment'),
+    archiveAssignment: titularOf('assignment'),
     getTeacherAssignments: withScopedCourseIds(STAFF, 'staff'),
-    createAssignment: staffOf('course'),
+    createAssignment: titularOf('course'),
     getAssignmentSubmissions: staffOf('assignment'),
     toggleAccess: staffOf('submission'),
-    massToggleAccess: staffOf('assignment'),
+    massToggleAccess: titularOf('assignment'),
     gradeSubmission: staffOf('submission'),
     getStudentAssignments: withScopedCourseIds(AUTHENTICATED, 'member'),
     acceptAssignment: memberOf('assignment'),
     getStudentGithubActivity: AUTHENTICATED,
     getStudentCommits: AUTHENTICATED,
     submitAssignment: AUTHENTICATED,
-    updateAssignment: staffOf('assignment'),
+    updateAssignment: titularOf('assignment'),
     syncGradesFromSpreadsheet: staffOf('assignment'),
     addGroupCollaborator: memberOf('submission'),
 
@@ -223,6 +226,11 @@ async function isCourseStaff(db, courseId, uid) {
     return docExists(db, 'course_teachers', `${courseId}_${uid}`);
 }
 
+async function isCourseTitular(db, courseId, uid) {
+    const snap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
+    return Boolean(snap && snap.exists && (snap.data() || {}).role !== 'ayudante');
+}
+
 async function isCourseMember(db, courseId, uid) {
     if (await isCourseStaff(db, courseId, uid)) return true;
     if (await docExists(db, 'course_roster', `${courseId}_${uid}`)) return true;
@@ -267,15 +275,21 @@ async function authorizeAction(action, payload, { uid, db, profile }) {
             if (!isAdmin) throw deny('Solo los administradores pueden realizar esta acción.');
             break;
         case 'courseStaff':
+        case 'courseTitular':
         case 'courseMember': {
-            const check = policy.kind === 'courseStaff' ? isCourseStaff : isCourseMember;
+            const check = policy.kind === 'courseStaff' ? isCourseStaff
+                : policy.kind === 'courseTitular' ? isCourseTitular
+                    : isCourseMember;
             for (const target of policy.targets) {
                 const courseId = await TARGET_RESOLVERS[target](payload, db);
                 if (isAdmin) continue;
                 if (!courseId || !(await check(db, courseId, uid))) {
-                    throw deny(policy.kind === 'courseStaff'
-                        ? 'Solo los docentes del curso pueden realizar esta acción.'
-                        : 'No tenés acceso a este curso.');
+                    if (policy.kind === 'courseTitular' && await isCourseStaff(db, courseId, uid)) {
+                        throw new HttpsError('permission-denied', 'Los ayudantes de cátedra no pueden realizar esta acción.', { code: 'ASSISTANT_NOT_ALLOWED' });
+                    }
+                    throw deny(policy.kind === 'courseMember'
+                        ? 'No tenés acceso a este curso.'
+                        : 'Solo los docentes del curso pueden realizar esta acción.');
                 }
                 // Una cátedra eliminada (borrado lógico) solo la ve el admin.
                 if (await isCourseDeleted(db, courseId)) {
@@ -301,5 +315,6 @@ module.exports = {
     ACTION_POLICIES,
     authorizeAction,
     isCourseStaff,
+    isCourseTitular,
     isCourseMember,
 };

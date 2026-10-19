@@ -334,10 +334,13 @@ export default function AssignmentsPanel({
     }
   };
 
+  const isAssistant = (selectedCourse?.course_role || selectedCourse?.course?.course_role) === "ayudante";
+
   return (
     <div className="space-y-6">
       {profile?.role === "teacher" ? (
         <div className="space-y-6">
+          {!isAssistant && (
           <form onSubmit={handleCreateAssignment} className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
             <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider">{editingAssignmentId ? "✏️ Editar Tarea" : "➕ Crear Nueva Tarea"}</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -365,6 +368,7 @@ export default function AssignmentsPanel({
               {editingAssignmentId && <button type="button" onClick={() => { setEditingAssignmentId(null); setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false); }} className="px-5 py-2.5 bg-neutral-950 border border-neutral-800 text-gray-400 rounded-xl text-xs font-semibold transition">Cancelar</button>}
             </div>
           </form>
+          )}
 
           <div className="space-y-4">
             {assignments.map((a: any) => (
@@ -376,8 +380,10 @@ export default function AssignmentsPanel({
                   </div>
                   <div className="flex gap-1.5">
                     <button onClick={() => handleExportGradesToMoodle(a.id)} className="px-3 py-1.5 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 rounded-lg text-[11px] font-semibold text-purple-300 transition flex items-center space-x-1 cursor-pointer" title="Enviar calificaciones corregidas de esta tarea a Moodle Gradebook"><span>📤 Moodle</span></button>
+                    {!isAssistant && <>
                     <button onClick={() => { setEditingAssignmentId(a.id); setAssignTitle(a.title); setAssignTemplate(a.template_repo); setAssignPr(a.create_feedback_pr || false); setAssignGroup(a.is_group || false); }} className="px-3 py-1.5 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/60 rounded-lg text-[11px] font-semibold text-amber-300 transition">Editar</button>
                     <button onClick={() => handleArchiveAssignment(a.id)} className="px-3 py-1.5 bg-red-950/50 hover:bg-red-900/50 border border-red-800/60 rounded-lg text-[11px] font-semibold text-red-300 transition">Archivar (Solo Lectura)</button>
+                    </>}
                   </div>
                 </div>
 
