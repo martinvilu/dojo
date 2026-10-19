@@ -24,11 +24,17 @@ export interface GithubMetrics {
   prBreakdown: { open: number; closed: number; merged: number };
 }
 
+// Weeks are bucketed in local time, like `hours`, so a late-evening commit
+// on Sunday is not pushed into the next week for viewers west of UTC.
 function startOfISOWeek(d: Date): Date {
-  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const day = date.getUTCDay() || 7; // Mon=1..Sun=7
-  date.setUTCDate(date.getUTCDate() - (day - 1));
+  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = date.getDay() || 7; // Mon=1..Sun=7
+  date.setDate(date.getDate() - (day - 1));
   return date;
+}
+
+function weekKeyOf(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
 export function computeGithubMetrics(commits: CommitLike[], pulls: PullLike[] = []): GithubMetrics {
@@ -39,7 +45,7 @@ export function computeGithubMetrics(commits: CommitLike[], pulls: PullLike[] = 
   validCommits.forEach((c) => {
     const d = new Date(c.date);
     hours[d.getHours()] += 1;
-    const weekKey = startOfISOWeek(d).toISOString().slice(0, 10);
+    const weekKey = weekKeyOf(startOfISOWeek(d));
     weekCounts.set(weekKey, (weekCounts.get(weekKey) || 0) + 1);
   });
 
@@ -47,11 +53,10 @@ export function computeGithubMetrics(commits: CommitLike[], pulls: PullLike[] = 
   const weekly: { label: string; count: number }[] = [];
   const thisWeek = startOfISOWeek(new Date());
   for (let i = 5; i >= 0; i--) {
-    const wk = new Date(thisWeek.getTime() - i * 7 * 86400000);
-    const key = wk.toISOString().slice(0, 10);
+    const wk = new Date(thisWeek.getFullYear(), thisWeek.getMonth(), thisWeek.getDate() - i * 7);
     weekly.push({
-      label: `${wk.getUTCDate()}/${wk.getUTCMonth() + 1}`,
-      count: weekCounts.get(key) || 0
+      label: `${wk.getDate()}/${wk.getMonth() + 1}`,
+      count: weekCounts.get(weekKeyOf(wk)) || 0
     });
   }
 
