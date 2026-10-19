@@ -42,6 +42,7 @@ export function CourseSettingsPanel(props: any) {
     gmailStatus, handleStartGmailAuth, handleDisconnectGmail, handleSendTestGmail, courseTeachers,
     handleAddSchedule, handleRemoveSchedule, handleSaveTeacherSettings, handleExportMoodleXml, handleSyncMoodleRoster, handleCloneCourseConfig
   } = props;
+  const hasGithubToken = Boolean(teacherGithubToken || selectedCourse?.has_github_token || selectedCourse?.course?.has_github_token);
 
   return (
     <>
@@ -77,9 +78,9 @@ export function CourseSettingsPanel(props: any) {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="block text-xs font-semibold text-gray-400">GitHub Personal Access Token (PAT)</label>
-                      {teacherGithubToken && (
+                      {hasGithubToken && (
                         <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded font-mono font-bold">
-                          ✓ Token Cargado (••••••••)
+                          ✓ Token configurado
                         </span>
                       )}
                     </div>
@@ -87,7 +88,8 @@ export function CourseSettingsPanel(props: any) {
                       type="password"
                       value={teacherGithubToken}
                       onChange={(e: any) => setTeacherGithubToken(e.target.value)}
-                      placeholder={teacherGithubToken ? "••••••••••••••••" : "ghp_..."}
+                      placeholder={hasGithubToken ? "Dejalo vacío para conservar el token actual" : "ghp_..."}
+                      autoComplete="off"
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono"
                     />
                     <div className="mt-1 flex items-center justify-between text-[11px]">

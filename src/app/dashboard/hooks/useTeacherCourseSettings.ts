@@ -66,7 +66,9 @@ export function useTeacherCourseSettings({
     setTeacherStartDate(data.start_date || selectedCourse?.start_date || "");
     setTeacherDuration(data.duration_weeks ? data.duration_weeks.toString() : (selectedCourse?.duration_weeks ? selectedCourse.duration_weeks.toString() : ""));
     setTeacherCoverText(data.cover_text || selectedCourse?.cover_text || "");
-    setTeacherGithubToken(data.github_token || selectedCourse?.github_token || "");
+    // El backend nunca devuelve el token: el campo queda vacío y se envía
+    // solo si el docente escribe uno nuevo.
+    setTeacherGithubToken("");
     setTeacherMoodleEnabled(data.moodle_enabled || selectedCourse?.moodle_enabled || false);
     setTeacherExternalCalendars(Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || ""));
     setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
@@ -96,17 +98,18 @@ export function useTeacherCourseSettings({
         duration_weeks: isNaN(durationNum) ? null : durationNum,
         start_date: teacherStartDate,
         external_calendars: teacherExternalCalendars.split(",").map(c => c.trim()).filter(Boolean),
-        github_token: teacherGithubToken,
         moodle_enabled: teacherMoodleEnabled,
         schedules: teacherSchedules,
         commissions: teacherCommissions,
         commissions_mapping: teacherCommissionsMapping
       };
 
+      const newToken = teacherGithubToken.trim();
       await api("updateCourseSettings", {
         courseId: cid,
-        data: updatedData
+        data: newToken ? { ...updatedData, github_token: newToken } : updatedData
       });
+      setTeacherGithubToken("");
 
       setSelectedCourse((prev: any) => {
         if (!prev) return null;
@@ -115,13 +118,15 @@ export function useTeacherCourseSettings({
             ...prev,
             course: {
               ...prev.course,
-              ...updatedData
+              ...updatedData,
+              has_github_token: Boolean(prev.course.has_github_token || newToken)
             }
           };
         }
         return {
           ...prev,
-          ...updatedData
+          ...updatedData,
+          has_github_token: Boolean(prev.has_github_token || newToken)
         };
       });
 
@@ -156,7 +161,7 @@ export function useTeacherCourseSettings({
       setTeacherStartDate(data.start_date || "");
       setTeacherDuration(data.duration_weeks?.toString() || "");
       setTeacherCoverText(data.cover_text || "");
-      setTeacherGithubToken(data.github_token || "");
+      setTeacherGithubToken("");
       setTeacherMoodleEnabled(data.moodle_enabled || false);
       setTeacherExternalCalendars((data.external_calendars || []).join(", "));
       setTeacherSchedules(data.schedules || []);

@@ -34,7 +34,7 @@ async function getCourseDetails(payload, context) {
         });
     }
     
-    return { id: cSnap.id, ...data };
+    return { id: cSnap.id, ...withoutCredentials(data) };
 }
 
 async function enrollCourse(payload, context) {
@@ -179,6 +179,50 @@ const COURSE_PUBLIC_FIELDS = [
     'archived', 'invite_code'
 ];
 
+// Credenciales que el backend usa pero nunca devuelve: el docente puede
+// reemplazarlas, no leerlas.
+const CREDENTIAL_FIELDS = ['github_token'];
+
+function withoutCredentials(data) {
+    const out = { ...data };
+    for (const field of CREDENTIAL_FIELDS) delete out[field];
+    out.has_github_token = Boolean(data && data.github_token);
+    return out;
+}
+
+// Campos que el equipo docente puede modificar con updateCourseSettings.
+const EDITABLE_SETTINGS = {
+    cover_text: (v) => typeof v === 'string' && v.length <= 5000,
+    duration_weeks: (v) => v === null || (Number.isInteger(v) && v >= 1 && v <= 52),
+    start_date: (v) => v === '' || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)),
+    external_calendars: (v) => Array.isArray(v) && v.length <= 10 && v.every((u) => typeof u === 'string' && /^https:\/\//.test(u) && u.length <= 2048),
+    github_token: (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= 255,
+    moodle_enabled: (v) => typeof v === 'boolean',
+    schedules: (v) => Array.isArray(v) && v.length <= 50,
+    commissions: (v) => Array.isArray(v) && v.length <= 50 && v.every((c) => typeof c === 'string' && c.length <= 60),
+    commissions_mapping: (v) => v !== null && typeof v === 'object' && !Array.isArray(v),
+    class_instances: (v) => Array.isArray(v) && v.length <= 400,
+};
+
+function sanitizeCourseSettings(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw dojoError('INVALID_ARGUMENT', "Datos de configuración inválidos");
+    }
+    const update = {};
+    for (const [key, value] of Object.entries(data)) {
+        // Un token vacío significa "conservar el actual".
+        if (key === 'github_token' && (value === '' || value === undefined || value === null)) continue;
+        if (!Object.prototype.hasOwnProperty.call(EDITABLE_SETTINGS, key)) {
+            throw dojoError('INVALID_ARGUMENT', `El campo "${key}" no se puede modificar desde los ajustes.`);
+        }
+        if (!EDITABLE_SETTINGS[key](value)) {
+            throw dojoError('INVALID_ARGUMENT', `Valor inválido para "${key}".`);
+        }
+        update[key] = key === 'github_token' ? value.trim() : value;
+    }
+    return update;
+}
+
 // Los estudiantes no reciben sync_secret: ese token también autoriza la
 // exportación CSV de notas/asistencia y la importación de notas. Para el
 // feed iCal reciben calendar_secret, que solo habilita el calendario.
@@ -274,7 +318,7 @@ async function getCourseSettings(payload, context) {
         });
     }
     
-    return { id: cSnap.id, ...data };
+    return { id: cSnap.id, ...withoutCredentials(data) };
 }
 
 async function updateCourseSettings(payload, context) {
@@ -288,16 +332,18 @@ async function updateCourseSettings(payload, context) {
         if (accessSnap.data().role === 'ayudante') throw dojoError('ASSISTANT_NOT_ALLOWED', "Los ayudantes de cátedra no pueden modificar la planificación base.");
     }
     
-    await db.collection('courses').doc(courseId).update(payload.data);
+    const update = sanitizeCourseSettings(payload.data);
+    if (Object.keys(update).length === 0) return { success: true };
+    await db.collection('courses').doc(courseId).update(update);
 
-    if (payload.data.class_instances) {
+    if (update.class_instances) {
         // Auto-save a version
         const profileSnap = await db.collection('profiles').doc(uid).get();
         const teacherName = profileSnap.exists ? (profileSnap.data().full_name || profileSnap.data().email) : 'Docente';
         await db.collection('schedule_versions').add({
             course_id: courseId,
             version_name: `Autoguardado - ${new Date().toLocaleString('es-AR')}`,
-            class_instances: payload.data.class_instances,
+            class_instances: update.class_instances,
             created_at: admin.firestore.FieldValue.serverTimestamp(),
             created_by: uid,
             created_by_name: teacherName
@@ -537,6 +583,8 @@ module.exports = {
     getCourseRoster,
     updateRosterStudentStatus,
     setStudentCommission,
+    sanitizeCourseSettings,
+    withoutCredentials,
     syncGuaraniRoster,
     projectCourse,
     projectCourseForStudent
