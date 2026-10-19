@@ -3,6 +3,7 @@ const logger = require("firebase-functions/logger");
 const { isSafeExternalUrl } = require('../../lib/urls');
 const { gradeToOutcomeScore, MAX_GRADE } = require('../../lib/grades');
 const { dojoError } = require('../../lib/errors');
+const { rosterChecksum, shouldSyncRoster, saveRosterChecksum } = require('../../lib/rosterChecksum');
 
 /**
  * Arma la URL del endpoint REST de Moodle Web Services validando el host
@@ -471,6 +472,11 @@ async function syncMoodleCourseRoster(payload, context) {
         throw dojoError('UPSTREAM_ERROR', "Respuesta inválida de Moodle Web Services");
     }
 
+    const checksum = rosterChecksum(users, ['id', 'email']);
+    if (!(await shouldSyncRoster(db, courseId, 'moodle', checksum, payload.force === true))) {
+        return { success: true, unchanged: true, syncedCount: 0, totalMoodleUsers: users.length };
+    }
+
     let syncedCount = 0;
     for (let u of users) {
         if (!u.email) continue;
@@ -501,6 +507,7 @@ async function syncMoodleCourseRoster(payload, context) {
         }
     }
 
+    await saveRosterChecksum(db, courseId, 'moodle', checksum, users.length);
     return { success: true, syncedCount, totalMoodleUsers: users.length };
 }
 

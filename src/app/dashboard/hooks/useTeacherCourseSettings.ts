@@ -220,7 +220,7 @@ export function useTeacherCourseSettings({
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
     if (!moodleApiUrl || !moodleWsToken || !moodleCourseId) {
-      showToast("Por favor completá la URL de Moodle, el Token de Web Service y el ID del curso de Moodle.", "success");
+      showToast("Por favor completá la URL de Moodle, el Token de Web Service y el ID del curso de Moodle.", "error");
       return;
     }
     setApiLoading(true);
@@ -231,7 +231,11 @@ export function useTeacherCourseSettings({
         moodleToken: moodleWsToken,
         moodleCourseId: moodleCourseId
       });
-      showToast(`¡Sincronización completada! ${res.syncedCount} estudiantes sincronizados desde un total de ${res.totalMoodleUsers} usuarios en Moodle.`, "success");
+      if (res.unchanged) {
+        showToast(`El padrón de Moodle no cambió desde la última sincronización (${res.totalMoodleUsers} usuarios): no hubo nada que actualizar.`, "success");
+      } else {
+        showToast(`¡Sincronización completada! ${res.syncedCount} estudiantes sincronizados desde un total de ${res.totalMoodleUsers} usuarios en Moodle.`, "success");
+      }
     } catch (err: any) {
       showToast("Error al sincronizar roster desde Moodle: " + err.message, "error");
     } finally {

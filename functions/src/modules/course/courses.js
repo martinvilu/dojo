@@ -3,6 +3,7 @@ const { isCourseStaff } = require('../../authz');
 const { dojoError } = require('../../lib/errors');
 const { publicProfile, staffStudentProfile } = require('../../lib/projections');
 const { PURGE_AFTER_DAYS, isDeleted } = require('../../lib/softDelete');
+const { rosterChecksum, shouldSyncRoster, saveRosterChecksum } = require('../../lib/rosterChecksum');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -496,6 +497,11 @@ async function syncGuaraniRoster(payload, context) {
     const { courseId, rows } = payload; // rows: array of { legajo, alumno, document, status, email }
     if (!courseId || !Array.isArray(rows)) throw dojoError('INVALID_ARGUMENT', "Datos de sincronización inválidos");
 
+    const checksum = rosterChecksum(rows, ['legajo', 'email', 'status']);
+    if (!(await shouldSyncRoster(db, courseId, 'guarani', checksum, payload.force === true))) {
+        return { success: true, unchanged: true, count: rows.length };
+    }
+
     // Fetch existing roster
     const existingSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
     const existingMap = new Map(); // studentId -> doc
@@ -577,6 +583,7 @@ async function syncGuaraniRoster(payload, context) {
         }
     }
 
+    await saveRosterChecksum(db, courseId, 'guarani', checksum, rows.length);
     return { success: true, count: rows.length };
 }
 

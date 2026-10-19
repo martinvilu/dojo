@@ -1040,7 +1040,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `functions/src/moodle/syncRoster.js`
 - **Propuesta técnica:** Calcular hash SHA-256 del padrón y sincronizar únicamente si el hash difiere del último registro guardado.
 - **Impacto y beneficio:** Ahorro de procesamiento y lecturas innecesarias en la base de datos.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** ✅ Implementada — `functions/src/lib/rosterChecksum.js`: las sincronizaciones de Moodle y SIU Guaraní calculan el SHA-256 del padrón normalizado y no escriben nada si coincide con el último (`courses.roster_sync`); `force: true` fuerza la sincronización y la UI avisa cuando no hubo cambios.
 
 ### 3.38. Implementación de Webhook Dead Letter Queue (DLQ) para eventos fallidos
 - **Diagnóstico actual:** Si una función falla al procesar una entrega de GitHub por caída momentánea de red, el evento se pierde.

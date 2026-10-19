@@ -195,7 +195,7 @@ La membresía se valida con los IDs predecibles `course_teachers/{courseId}_{uid
 |---|---|
 | `moodleAutoEnroll` | AUTHENTICATED: solo cursos con Moodle habilitado, nunca como docente, inscripción `pending` |
 | `exportCourseToMoodleXml`, `getMoodleLtiDeepLinkContent` | staffOf(course) |
-| `syncMoodleCourseRoster`, `syncMoodleCourseContents` | titularOf(course) |
+| `syncMoodleCourseRoster`, `syncMoodleCourseContents` | titularOf(course). `syncMoodleCourseRoster` (igual que `syncGuaraniRoster`) compara el SHA-256 del padrón con el de la última sincronización (`courses.roster_sync`) y devuelve `unchanged: true` sin escribir si no cambió; `force: true` la fuerza |
 | `exportGradesToMoodleWebservice` | staffOf(course, assignment) |
 
 ### 1.4. Agregar una acción
