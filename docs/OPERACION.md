@@ -122,6 +122,17 @@ El script genera `TOKEN_ENCRYPTION_KEY` (32 bytes aleatorios) si no existe, pide
 
 Los secretos viejos de 8 caracteres siguen siendo válidos hasta que se regeneren. El detalle de esa migración está en el [Runbook CSV](RUNBOOK_DESPLIEGUE_CSV.md).
 
+## 6.1.1. App Check
+
+Para que la callable solo acepte llamadas de la app oficial (no de scripts con un token robado):
+
+1. Consola de Firebase → **App Check** → registrar la app web con **reCAPTCHA Enterprise** y copiar la clave de sitio.
+2. Cargarla en App Hosting como `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` y desplegar la app: desde ahí las llamadas llevan token.
+3. Revisar en **App Check → Métricas** que las solicitudes verificadas sean ~100 %.
+4. Recién entonces, agregar `DOJO_ENFORCE_APP_CHECK=true` a `functions/.env.<proyecto>` y desplegar Functions.
+
+Activar el paso 4 antes del 2 rechazaría a todos los usuarios. Las funciones HTTP (webhook, CSV, calendario) no usan App Check porque las llaman sistemas externos con su propio token.
+
 ## 6.2. Costos
 
 Configurá una alerta de presupuesto para detectar consumo anómalo (por ejemplo, un loop de lecturas):

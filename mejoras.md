@@ -1096,7 +1096,7 @@ _Seguridad de base de datos, validación estricta en Firestore Rules, modernizac
 - **Archivos involucrados:** `src/app/layout.tsx, firebase.json`
 - **Propuesta técnica:** Habilitar Firebase App Check con reCAPTCHA Enterprise o Play Integrity.
 - **Impacto y beneficio:** Bloqueo automático de tráfico malicioso y bots no autorizados.
-- **Estado (24/09/2026):** ⬜ Pendiente
+- **Estado (19/10/2026):** 🟡 Parcial — Código listo: el cliente inicializa App Check con reCAPTCHA Enterprise si existe `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` (token de depuración en emuladores) y la callable lo exige con `DOJO_ENFORCE_APP_CHECK=true`. **Acción externa pendiente**: registrar la app en la consola, cargar la clave y activar la verificación cuando las métricas lo confirmen (OPERACION §6.1.1).
 
 ### 3.46. Optimización del tamaño de payloads en funciones de listado masivo
 - **Diagnóstico actual:** Se devuelven campos innecesarios como configuraciones de perfil internas en listados públicos de clase.

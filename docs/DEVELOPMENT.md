@@ -58,6 +58,8 @@ docker compose up emulators   # solo emuladores (UI en http://localhost:4000)
 |---|---|---|
 | `NEXT_PUBLIC_FIREBASE_API_KEY` | `.env` / `.env.local` | API key web de Firebase (pública por diseño; hay un valor por defecto) |
 | `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | `.env.local` / App Hosting | Proyecto Firebase del entorno (por defecto, producción) |
+| `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` | App Hosting | Activa App Check en el cliente (ver [OPERACION §6.1.1](OPERACION.md)) |
+| `DOJO_ENFORCE_APP_CHECK` | `functions/.env.<proyecto>` | `true` hace que la callable exija App Check |
 | `NEXT_PUBLIC_USE_FIREBASE_EMULATORS` | `npm run dev:emulators` | `true` conecta Auth (9099), Firestore (8080) y Functions (5001) locales |
 | `NEXT_PUBLIC_APP_URL` | App Hosting | URL pública; se usa para armar enlaces LTI y de suscripción |
 | `GITHUB_WEBHOOK_SECRET` | App Hosting | Validado por `src/lib/env.ts` |

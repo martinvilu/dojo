@@ -98,7 +98,12 @@ async function syncGradeToMoodle(submission, grade, feedback) {
     if (error || (status && status >= 500)) throw new Error(error || `Moodle respondió ${status}`);
 }
 
-exports.api = onCall({ secrets }, async (request) => {
+// App Check (mejora 3.45): con DOJO_ENFORCE_APP_CHECK=true la callable
+// rechaza llamadas que no vengan de la app oficial (token de reCAPTCHA
+// Enterprise). Se activa después de registrar la app en la consola.
+const enforceAppCheck = process.env.DOJO_ENFORCE_APP_CHECK === 'true';
+
+exports.api = onCall({ secrets, enforceAppCheck }, async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in.');
     const uid = request.auth.uid;
     const { action, payload } = request.data;

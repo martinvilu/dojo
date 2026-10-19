@@ -9,6 +9,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 // Proyecto por entorno (mejora 3.36): producción por defecto; staging o
 // desarrollo se eligen con las variables NEXT_PUBLIC_FIREBASE_*.
@@ -34,6 +35,24 @@ export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getA
 export const auth = getAuth(app);
 export const db = createFirestore();
 export const functions = getFunctions(app);
+
+// App Check (mejora 3.45): con la clave de reCAPTCHA Enterprise configurada,
+// cada llamada a Firebase lleva un token que prueba que viene de la app
+// oficial; el backend lo exige con DOJO_ENFORCE_APP_CHECK=true.
+const appCheckSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
+if (typeof window !== "undefined" && !(globalThis as any).__dojoAppCheck && (appCheckSiteKey || usingEmulators)) {
+  (globalThis as any).__dojoAppCheck = true;
+  if (usingEmulators) {
+    // Token de depuración: el emulador no valida App Check.
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+  if (appCheckSiteKey) {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  }
+}
 
 if (usingEmulators && typeof window !== "undefined" && !(globalThis as any).__dojoEmulatorsConnected) {
   (globalThis as any).__dojoEmulatorsConnected = true;
