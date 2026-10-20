@@ -23,3 +23,6 @@
 ## 2024-05-24 - Accessibility bindings in configuration forms
 **Learning:** Configuration settings components (like those for external integrations) often have labels and inputs visually close together, but without proper `htmlFor` and `id` bindings. This creates poor accessibility for screen readers and breaks click-to-focus functionality, reducing usability significantly.
 **Action:** Always ensure that every `<label>` and its corresponding `<input>`, `<select>`, or `<textarea>` element are properly bound via `htmlFor` and `id` attributes when building or updating settings panels.
+## 2023-10-20 - Ensure Sidebar Navigation is Keyboard & Screen Reader Accessible
+**Learning:** Custom navigation links implemented as `button`s in Next.js (like in the Dashboard Sidebar) often miss keyboard focus states and screen-reader active states, unlike standard browser anchor links or well-formed Next.js `<Link>` components. This makes it impossible for keyboard users to navigate the app.
+**Action:** Always verify that interactive custom components have `focus-visible` styles matching the app's design system (e.g. `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500`) and set `aria-current="page"` on the currently active navigation item to ensure accessibility.
