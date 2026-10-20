@@ -99,7 +99,7 @@ export function Sidebar({
                   setActiveTab("profile");
                   setIsProfileMenuOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer flex items-center space-x-2"
+                className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer flex items-center space-x-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 <span>👤</span>
                 <span>Mi Perfil</span>
@@ -109,7 +109,7 @@ export function Sidebar({
                   toggleTheme();
                   setIsProfileMenuOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer flex items-center space-x-2"
+                className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition cursor-pointer flex items-center space-x-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 <span>{theme === "light" ? "🌙" : "☀️"}</span>
                 <span>{theme === "light" ? "Modo Oscuro" : "Modo Claro"}</span>
@@ -120,7 +120,7 @@ export function Sidebar({
                   onLogout();
                   setIsProfileMenuOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold bg-red-950/20 hover:bg-red-900/30 text-red-600 dark:text-red-400 transition cursor-pointer flex items-center space-x-2"
+                className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold bg-red-950/20 hover:bg-red-900/30 text-red-600 dark:text-red-400 transition cursor-pointer flex items-center space-x-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
               >
                 <span>🚪</span>
                 <span>Cerrar Sesión</span>
@@ -136,7 +136,8 @@ export function Sidebar({
           <>
             <button
               onClick={() => setActiveTab("admin-courses")}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+              aria-current={activeTab === "admin-courses" ? "page" : undefined}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
                 activeTab === "admin-courses" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
               }`}
             >
@@ -145,7 +146,8 @@ export function Sidebar({
             </button>
             <button
               onClick={() => setActiveTab("admin-users")}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+              aria-current={activeTab === "admin-users" ? "page" : undefined}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
                 activeTab === "admin-users" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
               }`}
             >
@@ -154,7 +156,8 @@ export function Sidebar({
             </button>
             <button
               onClick={() => setActiveTab("admin-settings")}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+              aria-current={activeTab === "admin-settings" ? "page" : undefined}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
                 activeTab === "admin-settings" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
               }`}
             >
@@ -163,7 +166,8 @@ export function Sidebar({
             </button>
             <button
               onClick={() => setActiveTab("admin-backups")}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+              aria-current={activeTab === "admin-backups" ? "page" : undefined}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
                 activeTab === "admin-backups" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
               }`}
             >
@@ -177,7 +181,8 @@ export function Sidebar({
           <>
             <button
               onClick={() => setActiveTab("teacher-courses")}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+              aria-current={activeTab === "teacher-courses" ? "page" : undefined}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
                 activeTab === "teacher-courses" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
               }`}
             >
@@ -191,7 +196,8 @@ export function Sidebar({
           <>
             <button
               onClick={() => setActiveTab("student-courses")}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+              aria-current={activeTab === "student-courses" ? "page" : undefined}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
                 activeTab === "student-courses" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
               }`}
             >
@@ -200,7 +206,7 @@ export function Sidebar({
             </button>
             <button
               onClick={onOpenQrScanner}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center space-x-3 bg-emerald-50 dark:bg-emerald-955/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:text-emerald-700 dark:hover:text-emerald-300 mt-2`}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center space-x-3 bg-emerald-50 dark:bg-emerald-955/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:text-emerald-700 dark:hover:text-emerald-300 mt-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500`}
             >
               <span>📷</span>
               {!isSidebarCollapsed && <span>Escanear QR</span>}
@@ -211,7 +217,8 @@ export function Sidebar({
         {/* Unified Calendar Tab Link */}
         <button
           onClick={() => setActiveTab("calendar")}
-          className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 ${
+          aria-current={activeTab === "calendar" ? "page" : undefined}
+          className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
             activeTab === "calendar" ? "bg-blue-600 text-white" : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
           }`}
         >
