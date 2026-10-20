@@ -19,7 +19,7 @@
     "firebase-admin": "^14.0.0",
     "html5-qrcode": "^2.3.8",
     "marked": "^18.0.5",
-    "next": "16.3.6",
+    "next": "16.4.2",
     "nextjs-toast-notify": "^1.62.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -40,7 +40,9 @@
     "typescript": "^5"
   },
   "overrides": {
-    "uuid": "^11.1.1",
-    "protobufjs": "^7.6.5"
+    "@grpc/grpc-js": "^1.14.5",
+    "@fastify/busboy": ">=3.2.2",
+    "source-map-js": ">=1.2.2",
+    "brace-expansion": ">=2.0.1"
   }
 }
