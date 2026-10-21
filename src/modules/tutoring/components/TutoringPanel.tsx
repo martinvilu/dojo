@@ -104,8 +104,16 @@ export default function TutoringPanel({
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
-      const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+      // Optimization: Use Set for O(N) deduplication instead of O(N^2) findIndex
+      const allSessions = [...(studentSessions || []), ...(tutorSessions || [])];
+      const uniqueSessions: TutoringSession[] = [];
+      const seenIds = new Set();
+      for (const session of allSessions) {
+        if (session && !seenIds.has(session.id)) {
+          seenIds.add(session.id);
+          uniqueSessions.push(session);
+        }
+      }
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al reservar sesión: " + err.message, "error");
@@ -122,8 +130,16 @@ export default function TutoringPanel({
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
-      const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+      // Optimization: Use Set for O(N) deduplication instead of O(N^2) findIndex
+      const allSessions = [...(studentSessions || []), ...(tutorSessions || [])];
+      const uniqueSessions: TutoringSession[] = [];
+      const seenIds = new Set();
+      for (const session of allSessions) {
+        if (session && !seenIds.has(session.id)) {
+          seenIds.add(session.id);
+          uniqueSessions.push(session);
+        }
+      }
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al actualizar estado: " + err.message, "error");
