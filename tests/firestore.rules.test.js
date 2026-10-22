@@ -295,6 +295,7 @@ describe("academic, LTI and rate-limit records (backend-only)", () => {
     "assessments", "assessment_grades", "course_exceptions", "rate_limits",
     "lti_platforms", "lti_states", "lti_users", "lti_contexts", "lti_handoffs", "lti_registrations", "lti_deep_link_sessions",
     "student_alerts", "contact_logs", "review_requests", "moodle_events",
+    "course_slugs", "student_public_ids",
   ];
 
   it("no client can read or write them, not even the course teacher or an admin", async () => {

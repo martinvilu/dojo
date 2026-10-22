@@ -214,6 +214,10 @@ const ACTION_POLICIES = {
     replyReviewRequest: memberOf('reviewRequest'),
     markCommentSolution: staffOf('course'),
     importMoodleLogs: staffOf('course'),
+
+    // URLs semánticas (resolveCourseRoute valida el acceso al curso que resuelve)
+    setCourseRoute: staffOf('course'),
+    resolveCourseRoute: AUTHENTICATED,
 };
 
 function deny(message = 'No tenés permisos para realizar esta acción.') {

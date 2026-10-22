@@ -150,7 +150,7 @@ const COURSE_PUBLIC_FIELDS = [
     'name', 'sync_secret', 'calendar_secret', 'start_date', 'duration_weeks',
     'schedules', 'class_instances', 'commissions', 'commissions_mapping',
     'cover_text', 'moodle_enabled', 'external_calendars', 'created_at',
-    'archived', 'invite_code'
+    'archived', 'invite_code', 'route_slug', 'route_year', 'route_term'
 ];
 
 // Los estudiantes no reciben sync_secret: ese token también autoriza la

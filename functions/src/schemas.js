@@ -345,6 +345,13 @@ const ACTION_SCHEMAS = {
             component: opt(text(200)),
         })).min(1).max(1000),
     }),
+
+    // URLs semánticas
+    setCourseRoute: course({ slug: text(60).min(2), year: z.number().int().min(2000).max(2100), term: z.enum(['1c', '2c', 'anual', 'verano']) }),
+    resolveCourseRoute: obj({
+        asignatura: text(60).min(1), anio: numeric, cuatrimestre: text(10).min(1), comision: text(100).min(1),
+        studentPublicId: opt(text(20)), practica: opt(text(120)),
+    }),
 };
 
 module.exports = { ACTION_SCHEMAS, gradingRules, gradingRulesShape };

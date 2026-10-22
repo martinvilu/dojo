@@ -58,6 +58,7 @@ describe('Full Coverage Actions Test Suite', () => {
     const createRef = (path) => ({
       get: () => getDocMock(path),
       set: (data, opts) => setDocMock(path, data, opts),
+      create: (data) => (docStore[path] ? Promise.reject(Object.assign(new Error('exists'), { code: 6 })) : setDocMock(path, data)),
       update: (data) => updateDocMock(path, data),
       delete: () => deleteDocMock(path),
       collection: (subName) => createCollectionRef(`${path}/${subName}`)

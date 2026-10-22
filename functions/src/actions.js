@@ -191,6 +191,10 @@ const ACTION_MODULES = {
     replyReviewRequest: './modules/course/reviewRequests',
     markCommentSolution: './modules/course/forum',
     importMoodleLogs: './modules/integrations/moodleLogs',
+
+    // URLs semánticas
+    setCourseRoute: './modules/course/routes',
+    resolveCourseRoute: './modules/course/routes',
 };
 
 /** Devuelve el handler de la acción, o null si la acción no existe. */

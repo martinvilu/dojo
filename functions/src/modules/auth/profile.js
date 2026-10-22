@@ -1,4 +1,5 @@
 const admin = require("firebase-admin");
+const { ensureStudentPublicId } = require("../../lib/publicIds");
 
 async function getProfile(payload, context) {
     const { uid, db, authUser } = context;
@@ -38,6 +39,8 @@ async function getProfile(payload, context) {
     
     const data = pSnap.data();
     data.last_login = admin.firestore.Timestamp.now();
+    // Alias para las URLs semánticas; los perfiles anteriores lo reciben acá.
+    if (!data.student_public_id) data.student_public_id = await ensureStudentPublicId(db, uid);
     return data;
 }
 
