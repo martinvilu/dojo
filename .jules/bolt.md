@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2026-10-22 - O(N*M) lookup inside mapping iteration
+**Learning:** Found an $O(N \times M)$ anti-pattern in `src/app/dashboard/hooks/useTabDataLoader.ts` where resolving nested relation objects relied on `Array.find()` iterating repeatedly over a list (e.g. `safeCourses`) during a `.map` operation over another list (e.g. `courseIds` or `rawAssignments`). This caused redundant loop executions and slowdowns.
+**Action:** Replace nested loops by pre-computing counts with a Hash Map block for an $O(N + M)$ solution, then doing $O(1)$ lookups during map execution.
