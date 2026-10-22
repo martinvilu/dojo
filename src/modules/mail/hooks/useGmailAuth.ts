@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
-export function useGmailAuth(api: (action: string, payload?: any) => Promise<any>) {
+/** Estado de la cuenta de Gmail del docente. `enabled` en false (alumnos) no consulta nada. */
+export function useGmailAuth(api: (action: string, payload?: any) => Promise<any>, enabled = true) {
   const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; email: string | null }>({
     connected: false,
     email: null,
@@ -10,6 +11,7 @@ export function useGmailAuth(api: (action: string, payload?: any) => Promise<any
   const [loading, setLoading] = useState(true);
 
   const fetchStatus = useCallback(async () => {
+    if (!enabled) return;
     try {
       setLoading(true);
       const status = await api("getGmailAuthStatus");
@@ -19,7 +21,7 @@ export function useGmailAuth(api: (action: string, payload?: any) => Promise<any
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [api, enabled]);
 
   useEffect(() => {
     fetchStatus();

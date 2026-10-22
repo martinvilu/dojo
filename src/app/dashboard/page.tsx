@@ -173,7 +173,7 @@ export default function DashboardPage() {
     handleStartAuth: handleStartGmailAuth,
     handleDisconnect: handleDisconnectGmail,
     handleSendTest: handleSendTestGmail
-  } = useGmailAuth(api);
+  } = useGmailAuth(api, profile?.role === "teacher" || profile?.role === "admin");
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [selectedDirectEmailStudent, setSelectedDirectEmailStudent] = useState<any | null>(null);
 
