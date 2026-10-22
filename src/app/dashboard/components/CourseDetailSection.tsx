@@ -84,6 +84,8 @@ export function CourseDetailSection(props: {
   setShowCsvGradingEndpoint: (v: boolean) => void;
   teacherGithubToken: string;
   setTeacherGithubToken: (v: string) => void;
+  teacherGithubTokenSet: boolean;
+  handleClearGithubToken: () => void;
   teacherMoodleEnabled: boolean;
   setTeacherMoodleEnabled: (v: boolean) => void;
   teacherExternalCalendars: any;
@@ -382,6 +384,7 @@ export function CourseDetailSection(props: {
       <CourseSettingsPanel {...{
         profile, selectedCourse, setSelectedCourse, setApiLoading: props.setApiLoading, showToast,
         teacherGithubToken: props.teacherGithubToken, setTeacherGithubToken: props.setTeacherGithubToken,
+        teacherGithubTokenSet: props.teacherGithubTokenSet, handleClearGithubToken: props.handleClearGithubToken,
         teacherMoodleEnabled: props.teacherMoodleEnabled, setTeacherMoodleEnabled: props.setTeacherMoodleEnabled,
         teacherExternalCalendars: props.teacherExternalCalendars, setTeacherExternalCalendars: props.setTeacherExternalCalendars,
         teacherSchedules: props.teacherSchedules, setTeacherSchedules: props.setTeacherSchedules,

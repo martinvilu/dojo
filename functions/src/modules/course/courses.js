@@ -1,5 +1,6 @@
 const { randomBytes } = require('node:crypto');
 const { isCourseStaff } = require('../../authz');
+const { encryptSecret, CONTEXTS } = require('../../lib/encryption');
 
 async function getCourseDetails(payload, context) {
     const { uid, db, getMyProfile } = context;
@@ -247,7 +248,10 @@ async function getCourseSettings(payload, context) {
         });
     }
     
-    return { id: cSnap.id, ...data };
+    // El token de GitHub se guarda cifrado y nunca vuelve al cliente: el
+    // formulario solo sabe si está configurado.
+    const { github_token: githubToken, ...settings } = data;
+    return { id: cSnap.id, ...settings, github_token_set: Boolean(githubToken) };
 }
 
 async function updateCourseSettings(payload, context) {
@@ -261,7 +265,17 @@ async function updateCourseSettings(payload, context) {
         if (accessSnap.data().role === 'ayudante') throw new Error("Los ayudantes de cátedra no pueden modificar la planificación base.");
     }
     
-    await db.collection('courses').doc(courseId).update(payload.data);
+    // `payload.data` ya pasó la lista blanca de `schemas.js`.
+    const data = { ...payload.data };
+    if (Object.prototype.hasOwnProperty.call(data, 'github_token')) {
+        if (data.github_token) {
+            data.github_token = encryptSecret(data.github_token.trim(), CONTEXTS.courseGithubToken(courseId));
+        } else {
+            data.github_token = admin.firestore.FieldValue.delete();
+        }
+    }
+    if (Object.keys(data).length === 0) return { success: true };
+    await db.collection('courses').doc(courseId).update(data);
 
     if (payload.data.class_instances) {
         // Auto-save a version

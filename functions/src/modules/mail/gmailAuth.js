@@ -1,5 +1,6 @@
 const fetch = global.fetch || require('node-fetch');
 const logger = require("firebase-functions/logger");
+const { encryptSecret, decryptSecret, CONTEXTS } = require("../../lib/encryption");
 
 // Environment variables or fallback credentials
 const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID || "MOCK_CLIENT_ID.apps.googleusercontent.com";
@@ -70,8 +71,9 @@ async function saveGmailAuthCode(payload, context) {
     await db.collection("gmail_credentials").doc(uid).set({
         teacher_id: uid,
         email: email,
-        refresh_token: tokens.refresh_token || null,
-        access_token: tokens.access_token || null,
+        // Cifrados en reposo (mejora 3.13).
+        refresh_token: encryptSecret(tokens.refresh_token, CONTEXTS.gmailRefreshToken(uid)),
+        access_token: encryptSecret(tokens.access_token, CONTEXTS.gmailAccessToken(uid)),
         expires_at: Date.now() + ((tokens.expires_in || 3600) * 1000),
         updated_at: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
@@ -113,11 +115,12 @@ async function sendGmailNotification(payload, context) {
     }
 
     const creds = doc.data();
-    let accessToken = creds.access_token;
+    let accessToken = decryptSecret(creds.access_token, CONTEXTS.gmailAccessToken(uid));
+    const refreshToken = decryptSecret(creds.refresh_token, CONTEXTS.gmailRefreshToken(uid));
 
     // Refresh access token if expired
     if (!accessToken || Date.now() >= (creds.expires_at - 60000)) {
-        if (!creds.refresh_token) {
+        if (!refreshToken) {
             throw new Error("El permiso de Gmail venció. Por favor vuelve a vincular tu cuenta.");
         }
 
@@ -127,7 +130,7 @@ async function sendGmailNotification(payload, context) {
             body: new URLSearchParams({
                 client_id: GMAIL_CLIENT_ID,
                 client_secret: GMAIL_CLIENT_SECRET,
-                refresh_token: creds.refresh_token,
+                refresh_token: refreshToken,
                 grant_type: "refresh_token"
             })
         });
@@ -139,7 +142,7 @@ async function sendGmailNotification(payload, context) {
 
         accessToken = newTokens.access_token;
         await db.collection("gmail_credentials").doc(uid).update({
-            access_token: accessToken,
+            access_token: encryptSecret(accessToken, CONTEXTS.gmailAccessToken(uid)),
             expires_at: Date.now() + ((newTokens.expires_in || 3600) * 1000)
         });
     }

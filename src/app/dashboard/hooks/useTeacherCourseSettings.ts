@@ -34,7 +34,10 @@ export function useTeacherCourseSettings({
   const [teacherStartDate, setTeacherStartDate] = useState("");
   const [teacherDuration, setTeacherDuration] = useState("");
   const [teacherCoverText, setTeacherCoverText] = useState("");
+  // Campo para cargar un token nuevo: el guardado vive cifrado en el backend
+  // y nunca vuelve al cliente, solo sabemos si está configurado.
   const [teacherGithubToken, setTeacherGithubToken] = useState("");
+  const [teacherGithubTokenSet, setTeacherGithubTokenSet] = useState(false);
   const [teacherMoodleEnabled, setTeacherMoodleEnabled] = useState(false);
   const [teacherExternalCalendars, setTeacherExternalCalendars] = useState("");
   const [teacherSchedules, setTeacherSchedules] = useState<ScheduleItem[]>([]);
@@ -66,7 +69,8 @@ export function useTeacherCourseSettings({
     setTeacherStartDate(data.start_date || selectedCourse?.start_date || "");
     setTeacherDuration(data.duration_weeks ? data.duration_weeks.toString() : (selectedCourse?.duration_weeks ? selectedCourse.duration_weeks.toString() : ""));
     setTeacherCoverText(data.cover_text || selectedCourse?.cover_text || "");
-    setTeacherGithubToken(data.github_token || selectedCourse?.github_token || "");
+    setTeacherGithubToken("");
+    setTeacherGithubTokenSet(Boolean(data.github_token_set));
     setTeacherMoodleEnabled(data.moodle_enabled || selectedCourse?.moodle_enabled || false);
     setTeacherExternalCalendars(Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || ""));
     setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
@@ -96,17 +100,21 @@ export function useTeacherCourseSettings({
         duration_weeks: isNaN(durationNum) ? null : durationNum,
         start_date: teacherStartDate,
         external_calendars: teacherExternalCalendars.split(",").map(c => c.trim()).filter(Boolean),
-        github_token: teacherGithubToken,
         moodle_enabled: teacherMoodleEnabled,
         schedules: teacherSchedules,
         commissions: teacherCommissions,
         commissions_mapping: teacherCommissionsMapping
       };
 
+      const newGithubToken = teacherGithubToken.trim();
       await api("updateCourseSettings", {
         courseId: cid,
-        data: updatedData
+        data: newGithubToken ? { ...updatedData, github_token: newGithubToken } : updatedData
       });
+      if (newGithubToken) {
+        setTeacherGithubToken("");
+        setTeacherGithubTokenSet(true);
+      }
 
       setSelectedCourse((prev: any) => {
         if (!prev) return null;
@@ -143,6 +151,23 @@ export function useTeacherCourseSettings({
     }
   };
 
+  const handleClearGithubToken = async () => {
+    const cid = selectedCourse?.id || selectedCourse?.course?.id;
+    if (!cid) return;
+    if (!(await confirmAction({ message: "¿Quitar el token de GitHub de la cátedra? Las tareas dejarán de crear repositorios hasta que cargues uno nuevo.", tone: "danger" }))) return;
+    setApiLoading(true);
+    try {
+      await api("updateCourseSettings", { courseId: cid, data: { github_token: null } });
+      setTeacherGithubToken("");
+      setTeacherGithubTokenSet(false);
+      showToast("Token de GitHub eliminado.", "success");
+    } catch (err: any) {
+      showToast("Error al quitar el token: " + err.message, "error");
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleCloneCourseConfig = async () => {
     if (!cloneSourceId) return;
     if (!(await confirmAction({ message: "¿Seguro que querés clonar la configuración? Sobrescribirá tus horarios y duración.", tone: "danger" }))) return;
@@ -156,7 +181,8 @@ export function useTeacherCourseSettings({
       setTeacherStartDate(data.start_date || "");
       setTeacherDuration(data.duration_weeks?.toString() || "");
       setTeacherCoverText(data.cover_text || "");
-      setTeacherGithubToken(data.github_token || "");
+      setTeacherGithubToken("");
+      setTeacherGithubTokenSet(Boolean(data.github_token_set));
       setTeacherMoodleEnabled(data.moodle_enabled || false);
       setTeacherExternalCalendars((data.external_calendars || []).join(", "));
       setTeacherSchedules(data.schedules || []);
@@ -239,6 +265,7 @@ export function useTeacherCourseSettings({
     teacherDuration, setTeacherDuration,
     teacherCoverText, setTeacherCoverText,
     teacherGithubToken, setTeacherGithubToken,
+    teacherGithubTokenSet, handleClearGithubToken,
     teacherMoodleEnabled, setTeacherMoodleEnabled,
     teacherExternalCalendars, setTeacherExternalCalendars,
     teacherSchedules, setTeacherSchedules,

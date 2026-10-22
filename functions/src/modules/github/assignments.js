@@ -5,6 +5,7 @@ const { randomBytes } = require('node:crypto');
 const { isSafeExternalUrl } = require('../../lib/urls');
 const { isCourseStaff, isCourseMember } = require('../../authz');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
+const { courseGithubToken } = require('../../lib/encryption');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -26,10 +27,11 @@ async function archiveAssignment(payload, context) {
     
     const courseSnap = await db.collection('courses').doc(assignment.course_id).get();
     const course = courseSnap.data();
-    if (!course.github_token) throw new Error("El profesor aún no ha configurado el token de GitHub.");
+    const githubToken = courseGithubToken(assignment.course_id, course);
+    if (!githubToken) throw new Error("El profesor aún no ha configurado el token de GitHub.");
     
     const githubHeaders = {
-        'Authorization': `token ${course.github_token}`,
+        'Authorization': `token ${githubToken}`,
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
         'User-Agent': 'Jutsu-Classroom'
@@ -285,14 +287,15 @@ async function acceptAssignment(payload, context) {
     const profile = pSnap.data();
     if (!profile.github_user) throw new Error("Debes configurar tu usuario de GitHub en tu perfil académico antes de aceptar la tarea.");
     
-    if (!course.github_token) throw new Error("El profesor aún no ha configurado el token de GitHub para esta materia.");
+    const githubToken = courseGithubToken(assignment.course_id, course);
+    if (!githubToken) throw new Error("El profesor aún no ha configurado el token de GitHub para esta materia.");
     if (!assignment.template_repo) throw new Error("Esta tarea no tiene un repositorio de plantilla configurado.");
     
     const repoName = `${assignment.title.replace(/\s+/g, '-')}-${profile.github_user}`;
     const orgName = course.github_org;
     
     const githubHeaders = {
-        'Authorization': `token ${course.github_token}`,
+        'Authorization': `token ${githubToken}`,
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
         'User-Agent': 'Jutsu-Classroom'
@@ -393,7 +396,7 @@ async function getStudentGithubActivity(payload, context) {
 
     const aSnap = await db.collection('assignments').doc(sub.assignment_id).get();
     const cSnap = await db.collection('courses').doc(aSnap.data().course_id).get();
-    const token = cSnap.data().github_token;
+    const token = courseGithubToken(aSnap.data().course_id, cSnap.data());
     if (!token) throw new Error("El profesor no configuró el token de GitHub.");
 
     const cleanRepoUrl = (sub.repo_url || '').trim().replace(/\/$/, '').replace(/\.git$/, '');
@@ -498,7 +501,7 @@ async function getStudentCommits(payload, context) {
 
     const aSnap = await db.collection('assignments').doc(sub.assignment_id).get();
     const cSnap = await db.collection('courses').doc(aSnap.data().course_id).get();
-    const token = cSnap.data().github_token;
+    const token = courseGithubToken(aSnap.data().course_id, cSnap.data());
     if (!token) throw new Error("El profesor no configuró el token de GitHub.");
 
     const repoParts = sub.repo_url.replace('https://github.com/', '').split('/');
@@ -670,7 +673,8 @@ async function addGroupCollaborator(payload, context) {
     }
     
     const courseSnap = await db.collection('courses').doc(assignment.course_id).get();
-    const course = courseSnap.data();
+    const githubToken = courseGithubToken(assignment.course_id, courseSnap.data());
+    if (!githubToken) throw new Error("El profesor aún no ha configurado el token de GitHub para esta materia.");
     
     const parts = sub.repo_url.split('/');
     const orgName = parts[parts.length - 2];
@@ -679,7 +683,7 @@ async function addGroupCollaborator(payload, context) {
     const addRes = await fetch(`https://api.github.com/repos/${orgName}/${repoName}/collaborators/${newStudent.github_user}`, {
         method: 'PUT',
         headers: {
-            'Authorization': `token ${course.github_token}`,
+            'Authorization': `token ${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json',
             'User-Agent': 'Jutsu-Classroom'

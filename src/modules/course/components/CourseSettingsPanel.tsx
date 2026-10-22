@@ -29,7 +29,7 @@ export function CourseSettingsPanel(props: any) {
   // Destructure everything from props to make it easy for now
   const {
     profile, selectedCourse, showToast,
-    teacherGithubToken, setTeacherGithubToken, teacherMoodleEnabled, setTeacherMoodleEnabled,
+    teacherGithubToken, setTeacherGithubToken, teacherGithubTokenSet, handleClearGithubToken, teacherMoodleEnabled, setTeacherMoodleEnabled,
     teacherExternalCalendars, setTeacherExternalCalendars,
     teacherSchedules,
     teacherCommissions, setTeacherCommissions,
@@ -77,17 +77,28 @@ export function CourseSettingsPanel(props: any) {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="block text-xs font-semibold text-gray-400">GitHub Personal Access Token (PAT)</label>
-                      {teacherGithubToken && (
-                        <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded font-mono font-bold">
-                          ✓ Token Cargado (••••••••)
+                      {teacherGithubTokenSet && (
+                        <span className="flex items-center gap-2">
+                          <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded font-mono font-bold">
+                            ✓ Token configurado (cifrado)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleClearGithubToken}
+                            className="text-[10px] text-red-400 hover:text-red-300 underline cursor-pointer"
+                          >
+                            Quitar
+                          </button>
                         </span>
                       )}
                     </div>
                     <input
                       type="password"
+                      autoComplete="off"
                       value={teacherGithubToken}
                       onChange={(e: any) => setTeacherGithubToken(e.target.value)}
-                      placeholder={teacherGithubToken ? "••••••••••••••••" : "ghp_..."}
+                      placeholder={teacherGithubTokenSet ? "Dejalo vacío para conservar el token actual" : "ghp_..."}
+                      aria-label="GitHub Personal Access Token"
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono"
                     />
                     <div className="mt-1 flex items-center justify-between text-[11px]">

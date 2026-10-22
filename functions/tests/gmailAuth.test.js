@@ -2,6 +2,8 @@
 // On Node 22+ the native global fetch wins, so stub it BEFORE requiring the module.
 global.fetch = jest.fn();
 const fetch = global.fetch;
+process.env.DOJO_ENCRYPTION_KEY = '11'.repeat(32);
+const { decryptSecret, CONTEXTS } = require('../src/lib/encryption');
 
 const {
     getGmailAuthUrl,
@@ -13,6 +15,7 @@ const {
 
 describe('Gmail OAuth Actions', () => {
     let mockContext;
+    let credentialsDoc;
     let mockDocData;
 
     beforeEach(() => {
@@ -34,6 +37,7 @@ describe('Gmail OAuth Actions', () => {
             update: jest.fn().mockResolvedValue(true),
             delete: jest.fn().mockResolvedValue(true)
         };
+        credentialsDoc = mockDoc;
 
         const mockCollection = {
             doc: jest.fn().mockReturnValue(mockDoc)
@@ -95,6 +99,13 @@ describe('Gmail OAuth Actions', () => {
         const res = await saveGmailAuthCode({ code: 'valid_code', redirectUri: 'http://localhost:3000' }, mockContext);
         expect(res.success).toBe(true);
         expect(res.email).toBe('profesor@gmail.com');
+
+        // Tokens are encrypted at rest and bound to the teacher's document.
+        const stored = credentialsDoc.set.mock.calls[0][0];
+        expect(stored.refresh_token).toMatch(/^enc:v1:/);
+        expect(JSON.stringify(stored)).not.toContain('ref_123');
+        expect(decryptSecret(stored.refresh_token, CONTEXTS.gmailRefreshToken('teacher123'))).toBe('ref_123');
+        expect(decryptSecret(stored.access_token, CONTEXTS.gmailAccessToken('teacher123'))).toBe('acc_123');
     });
 
     test('sendGmailNotification sends email via Gmail API', async () => {
@@ -146,6 +157,8 @@ describe('Gmail OAuth Actions', () => {
             htmlBody: '<p>Body</p>'
         }, mockContext);
         expect(res.messageId).toBe('msg_refreshed');
+        const refreshed = credentialsDoc.update.mock.calls[0][0].access_token;
+        expect(decryptSecret(refreshed, CONTEXTS.gmailAccessToken('teacher123'))).toBe('refreshed_token_123');
 
         // Missing parameters
         await expect(sendGmailNotification({}, mockContext)).rejects.toThrow(/requeridos/i);

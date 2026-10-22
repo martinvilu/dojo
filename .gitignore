@@ -43,6 +43,8 @@ next-env.d.ts
 
 # Firebase
 .firebase/
+# Secretos locales del emulador de Functions (DOJO_ENCRYPTION_KEY)
+.secret.local
 firebase-debug.log
 firebase-debug.*.log
 

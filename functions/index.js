@@ -1,5 +1,6 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -12,6 +13,11 @@ const { authorizeAction } = require('./src/authz');
 const { ACTION_SCHEMAS } = require('./src/schemas');
 const { validatePayload } = require('./src/lib/validation');
 const { enforceRateLimit } = require('./src/lib/rateLimit');
+const { KEY_ENV } = require('./src/lib/encryption');
+
+// Clave maestra AES-256-GCM para credenciales en reposo (mejora 3.13).
+// Alta: `firebase functions:secrets:set DOJO_ENCRYPTION_KEY` (32 bytes hex).
+const encryptionKey = defineSecret(KEY_ENV);
 const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 const { gradeToOutcomeScore } = require('./src/lib/grades');
 
@@ -130,7 +136,7 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
 }
 
 
-exports.api = onCall(async (request) => {
+exports.api = onCall({ secrets: [encryptionKey] }, async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in.');
     const uid = request.auth.uid;
     const { action, payload } = request.data;
