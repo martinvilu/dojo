@@ -53,11 +53,13 @@ El sistema implementa un modelo de Control de Acceso Basado en Roles (RBAC) con 
     *   Denegación por defecto: todo lo no listado explícitamente queda inaccesible para el cliente.
     *   **Perfiles (`profiles`)**: cada usuario solo puede leer su propio perfil (el aprovisionamiento ocurre en el backend). Docentes y administradores únicamente pueden editar el mapa de comisiones sobre perfiles de estudiantes.
     *   **Membresía de curso**: se valida mediante IDs predecibles — `course_teachers/{courseId}_{uid}`, `course_roster/{courseId}_{uid}` y `enrollments/{uid}_{courseId}` — usando `exists()`, sin lecturas extra.
-    *   **Subcolecciones de cursada**: asistencia legible por miembros y escribible solo por docentes asignados; token QR activo publicado solo por el docente; foros Q&A con updates restringidos a reacciones (participantes) o marca de mejor respuesta (docente); encuestas anónimas validadas por rating 1-5.
+    *   **Subcolecciones de cursada**: asistencia legible por miembros y escribible solo por docentes asignados; sesión QR (`active_qr`, con su secreto TOTP) solo accesible desde el backend; foros Q&A con updates restringidos a reacciones (participantes) o marca de mejor respuesta (docente); encuestas anónimas validadas por rating 1-5.
     *   **Colecciones privilegiadas**: `submissions`, `audit_logs`, `activity_logs`, `backups`, avisos, notificaciones, tutorías y configuración global no aceptan escrituras directas del cliente; se operan exclusivamente vía Cloud Functions con SDK admin.
 *   **Cloud Functions API**:
-    *   La acción callable única (`api`) decodifica el token de autenticación del llamador, resuelve su perfil y, antes de despachar al módulo (`functions/src/actions.js`), aplica la política de acceso declarada para esa acción en `functions/src/authz.js`: `AUTHENTICATED`, `STAFF`, `ADMIN`, `staffOf(...)` o `memberOf(...)`. Las políticas de curso resuelven el curso desde el payload o desde el documento referenciado (tarea, entrega, aviso, correo programado, grupo) y validan membresía con los mismos IDs predecibles que las reglas. Una acción sin política se rechaza (`permission-denied`) y un test verifica que registro y políticas coincidan.
+    *   La acción callable única (`api`) aplica primero un rate limit por usuario (`functions/src/lib/rateLimit.js`, contadores en `rate_limits` con TTL; grupos más estrictos para QR, correos y tareas pesadas) y valida el payload contra el esquema Zod de la acción (`functions/src/schemas.js`; sin esquema, se rechaza). Las acciones que escriben objetos del cliente (`updateCourseSettings`, `updateUserProfile`) usan listas blancas estrictas.
+    *   Luego decodifica el token de autenticación del llamador, resuelve su perfil y, antes de despachar al módulo (`functions/src/actions.js`), aplica la política de acceso declarada para esa acción en `functions/src/authz.js`: `AUTHENTICATED`, `STAFF`, `ADMIN`, `staffOf(...)` o `memberOf(...)`. Las políticas de curso resuelven el curso desde el payload o desde el documento referenciado (tarea, entrega, aviso, correo programado, grupo) y validan membresía con los mismos IDs predecibles que las reglas. Una acción sin política se rechaza (`permission-denied`) y un test verifica que registro y políticas coincidan.
     *   Los estudiantes reciben una proyección del curso sin `sync_secret`, códigos de invitación docentes ni credenciales, y del roster solo datos básicos de sus compañeros.
+    *   **Credenciales en reposo**: `courses.github_token` y los tokens de `gmail_credentials` se guardan cifrados con AES-256-GCM (`enc:v1:…`, contexto del documento como AAD) con la clave `DOJO_ENCRYPTION_KEY` de Secret Manager. `getCourseSettings` nunca devuelve el token: solo `github_token_set`.
 
 ### Autenticación de las rutas App Router (`src/app/api/`):
 
@@ -199,10 +201,12 @@ Entregas y tareas académicas publicadas.
   "title": "Práctica Git",
   "description": "Consignas...",
   "template_repo": "owner/repo",
-  "deadline": "timestamp",
+  "due_date": "2026-05-01",
+  "is_required": true,
   "created_at": "timestamp"
 }
 ```
+`due_date` vence a las 23:59:59 de Argentina; la tolerancia en horas corridas sale de `grading_rules`. `is_required: false` marca un TP optativo (no cuenta para regularizar).
 
 ### Colección: `submissions`
 Entregas de tareas hechas por los alumnos.
@@ -214,9 +218,12 @@ Entregas de tareas hechas por los alumnos.
   "status": "submitted | graded",
   "grade": 9,
   "feedback": "Buen trabajo...",
-  "submitted_at": "timestamp"
+  "submitted_at": "timestamp",
+  "late": false,
+  "late_by_hours": 0
 }
 ```
+`late` (*Fuera de término*) se calcula al entregar con la tolerancia de la comisión y las prórrogas individuales.
 
 ### Colección: `notifications`
 Avisos, alertas de inactividad, respuestas de tutorías o advertencias de riesgo.
@@ -312,6 +319,16 @@ Logs históricos detallando modificaciones sobre calificaciones (calificaciones 
   "created_at": "timestamp"
 }
 ```
+
+### Cursada: reglas, parciales, excepciones y condición
+
+Solo backend (denegadas a todo cliente en `firestore.rules`); el motor puro está en `functions/src/lib/academic/` y lo comparten la callable `api` y `/api/export/csv`.
+
+*   `courses/{id}.grading_rules` y `grading_rules_by_commission[comision]`: asistencia mínima, nota de aprobación y de promoción, % de TPs en OK, máximo de entregas tardías, TPs exceptuables, tolerancia (horas corridas) y si se promociona por recuperatorio. Solo el titular las edita; cada cambio queda en `audit_logs`.
+*   `assessments/{id}`: `{ course_id, kind: "parcial" | "recuperatorio", label, recovers, date, commission, archived }`.
+*   `assessment_grades/{assessmentId}_{uid}`: `{ course_id, assessment_id, student_id, grade, absent, feedback, graded_by }`.
+*   `course_exceptions/{id}`: `{ course_id, student_id, type: "attendance_waiver" | "tp_exempt" | "deadline_extension", assignment_id, extra_hours, reason, revoked }`. Se revocan, no se borran.
+*   La condición (`Promocionado`, `Regular`, `Condicional`, `EN RIESGO`, `Ausente`, `Baja`) no se persiste: se calcula con `getAcademicConditions` / `getMyAcademicCondition` y es provisional hasta el cierre de cursada.
 
 ---
 

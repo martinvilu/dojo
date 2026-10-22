@@ -14,6 +14,16 @@ npm run dev          # servidor local en http://localhost:3000
 
 Requisitos: Node.js 22+, Firebase CLI (`npm install -g firebase-tools`), Chrome/ChromeDriver para Selenium.
 
+### Clave de cifrado de credenciales
+
+La callable `api` cifra con AES-256-GCM los tokens de GitHub y Gmail (`functions/src/lib/encryption.js`) y necesita el secreto `DOJO_ENCRYPTION_KEY` (32 bytes en hex). Para el emulador, crear `functions/.secret.local` (ignorado por git):
+
+```bash
+echo "DOJO_ENCRYPTION_KEY=$(openssl rand -hex 32)" > functions/.secret.local
+```
+
+Sin la clave, guardar un token falla con un error explícito (nunca se guarda en claro); los tokens legados en claro se siguen leyendo hasta correr la migración.
+
 ## 2. Scripts
 
 | Script | Qué hace |
@@ -21,8 +31,8 @@ Requisitos: Node.js 22+, Firebase CLI (`npm install -g firebase-tools`), Chrome/
 | `npm run dev` / `build` | Desarrollo / build de producción |
 | `npx tsc --noEmit` | Chequeo de tipos |
 | `npm run lint` | ESLint |
-| `cd functions && npm test` | Suite Jest del backend (128 pruebas) |
-| `npm run test:rules` | Reglas de Firestore contra emulador (23 escenarios) |
+| `cd functions && npm test` | Suite Jest del backend (292 pruebas / 29 suites) |
+| `npm run test:rules` | Reglas de Firestore contra emulador (24 escenarios) |
 | `npm run test:selenium` | E2E Selenium sobre mock server (56 escenarios) |
 | `npm run test:local` | Batería local completa (`scripts/test-local.sh`) |
 
@@ -69,5 +79,20 @@ firebase use tu-proyecto-id
 firebase deploy --only functions,firestore     # backend
 # App Hosting: integración git — cada push a main compila y despliega
 ```
+
+### Antes del primer despliegue de las Fases 1–2 del plan
+
+1. **Cargar el secreto** (el deploy de `api` falla si no existe):
+   ```bash
+   openssl rand -hex 32 | firebase functions:secrets:set DOJO_ENCRYPTION_KEY --data-file=-
+   ```
+   Guardar la clave en un gestor de contraseñas: sin ella no se pueden descifrar los tokens.
+2. **Desplegar** `firebase deploy --only functions,firestore` (reglas: `active_qr` pasa a solo backend; índices: TTL de `rate_limits`).
+3. **Migrar** los tokens existentes, primero en seco y después con `--apply`, con la misma clave:
+   ```bash
+   DOJO_ENCRYPTION_KEY=<clave> GOOGLE_CLOUD_PROJECT=<proyecto> node scripts/migrations/001-encrypt-credentials.js
+   DOJO_ENCRYPTION_KEY=<clave> GOOGLE_CLOUD_PROJECT=<proyecto> node scripts/migrations/001-encrypt-credentials.js --apply
+   ```
+4. **Rotación**: cargar la clave nueva como `DOJO_ENCRYPTION_KEY` y la anterior como `DOJO_ENCRYPTION_KEY_PREVIOUS` (declararla en `functions/index.js`), volver a correr la migración y luego quitar la anterior.
 
 Para el caso concreto de migración de endpoints CSV (orden de despliegue, verificación y rotación de tokens), seguir el [Runbook](RUNBOOK_DESPLIEGUE_CSV.md).
