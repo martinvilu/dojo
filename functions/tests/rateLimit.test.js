@@ -41,3 +41,11 @@ describe('api rate limiting', () => {
     await expect(enforceRateLimit(db, 'u1', 'getProfile', now)).resolves.toMatchObject({ allowed: true });
   });
 });
+
+describe('conditions group', () => {
+  test('recomputing conditions has its own, larger budget than heavy jobs', () => {
+    const { limitFor } = require('../src/lib/rateLimit');
+    expect(limitFor('getAcademicConditions')).toMatchObject({ group: 'conditions', max: 60 });
+    expect(limitFor('createSystemBackup')).toMatchObject({ group: 'heavy', max: 10 });
+  });
+});

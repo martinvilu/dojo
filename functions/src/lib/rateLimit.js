@@ -23,13 +23,16 @@ const GROUPS = {
         windowSeconds: 3600,
         actions: ['sendGmailNotification', 'sendDirectStudentEmail', 'triggerScheduledEmailNow', 'notifyCourseStudents'],
     },
+    // La tabla de condiciones y el simulador de cierre la recalculan al cambiar
+    // de pestaña o de reglas: con el cupo de `heavy` un docente quedaba bloqueado.
+    conditions: { max: 60, windowSeconds: 600, actions: ['getAcademicConditions'] },
     heavy: {
         max: 10,
         windowSeconds: 600,
         actions: [
             'createSystemBackup', 'downloadSystemBackup', 'detectAssignmentPlagiarism',
             'syncMoodleCourseRoster', 'syncMoodleCourseContents', 'exportGradesToMoodleWebservice',
-            'syncGradesFromSpreadsheet', 'syncGuaraniRoster', 'importAssessmentGrades', 'getAcademicConditions',
+            'syncGradesFromSpreadsheet', 'syncGuaraniRoster', 'importAssessmentGrades',
             'syncLtiRoster', 'publishLtiGrades', 'refreshStudentAlerts',
         ],
     },
