@@ -190,6 +190,17 @@ const ACTION_POLICIES = {
     getExceptions: memberOf('course'),
     grantException: staffOf('course'),
     revokeException: staffOf('exception'),
+
+    // LTI 1.3 (registrar y desvincular exigen además titular en el handler;
+    // aprobar plataformas es de administración porque habilita vincular cuentas)
+    createLtiRegistrationToken: staffOf('course'),
+    registerLtiPlatform: staffOf('course'),
+    getLtiPlatforms: staffOf('course'),
+    unlinkLtiPlatform: staffOf('course'),
+    getLtiPlatformsForReview: ADMIN,
+    setLtiPlatformStatus: ADMIN,
+    syncLtiRoster: staffOf('course'),
+    publishLtiGrades: staffOf('course'),
 };
 
 function deny(message = 'No tenés permisos para realizar esta acción.') {

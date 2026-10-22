@@ -30,6 +30,7 @@ const GROUPS = {
             'createSystemBackup', 'downloadSystemBackup', 'detectAssignmentPlagiarism',
             'syncMoodleCourseRoster', 'syncMoodleCourseContents', 'exportGradesToMoodleWebservice',
             'syncGradesFromSpreadsheet', 'syncGuaraniRoster', 'importAssessmentGrades', 'getAcademicConditions',
+            'syncLtiRoster', 'publishLtiGrades',
         ],
     },
 };

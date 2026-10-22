@@ -168,6 +168,16 @@ const ACTION_MODULES = {
     getExceptions: './modules/course/exceptions',
     grantException: './modules/course/exceptions',
     revokeException: './modules/course/exceptions',
+
+    // LTI 1.3 Advantage
+    createLtiRegistrationToken: './modules/integrations/lti',
+    registerLtiPlatform: './modules/integrations/lti',
+    getLtiPlatforms: './modules/integrations/lti',
+    unlinkLtiPlatform: './modules/integrations/lti',
+    getLtiPlatformsForReview: './modules/integrations/lti',
+    setLtiPlatformStatus: './modules/integrations/lti',
+    syncLtiRoster: './modules/integrations/lti',
+    publishLtiGrades: './modules/integrations/lti',
 };
 
 /** Devuelve el handler de la acción, o null si la acción no existe. */

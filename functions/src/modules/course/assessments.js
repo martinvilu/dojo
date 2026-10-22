@@ -9,6 +9,7 @@
 const { HttpsError } = require('firebase-functions/v2/https');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { isCourseStaff } = require('../../authz');
+const { publishSingleGrade } = require('../integrations/lti');
 
 const NUMERIC_RE = /^\d+(\.\d+)?$/;
 
@@ -157,11 +158,16 @@ async function gradeAssessment(payload, context) {
     }
     const normalized = normalizeAssessmentGrade(payload.grade);
     if (!normalized.ok) throw new HttpsError('invalid-argument', normalized.error);
+    const feedback = normalizeFeedback(payload.feedback);
     await writeGrade(context, assessment, payload.studentId, {
         grade: normalized.value,
         absent: payload.absent,
-        feedback: normalizeFeedback(payload.feedback),
+        feedback,
     }, await actorName(context));
+    // LTI 1.3 AGS: publica la nota si el curso está vinculado a Moodle.
+    await publishSingleGrade(db, {
+        assessmentId: assessment.id, studentId: payload.studentId, grade: payload.absent ? '' : normalized.value, feedback,
+    });
     return { success: true, grade: payload.absent ? '' : normalized.value };
 }
 

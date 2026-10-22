@@ -14,10 +14,13 @@ const { ACTION_SCHEMAS } = require('./src/schemas');
 const { validatePayload } = require('./src/lib/validation');
 const { enforceRateLimit } = require('./src/lib/rateLimit');
 const { KEY_ENV } = require('./src/lib/encryption');
+const { KEY_ENV: LTI_KEY_ENV } = require('./src/lib/lti/keys');
 
 // Clave maestra AES-256-GCM para credenciales en reposo (mejora 3.13).
 // Alta: `firebase functions:secrets:set DOJO_ENCRYPTION_KEY` (32 bytes hex).
 const encryptionKey = defineSecret(KEY_ENV);
+// Clave RSA de la herramienta LTI 1.3 (firma NRPS/AGS). La misma que usa App Hosting.
+const ltiToolKey = defineSecret(LTI_KEY_ENV);
 const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 const { gradeToOutcomeScore } = require('./src/lib/grades');
 
@@ -136,7 +139,7 @@ async function syncGradeToMoodle(previousData, grade, feedback) {
 }
 
 
-exports.api = onCall({ secrets: [encryptionKey] }, async (request) => {
+exports.api = onCall({ secrets: [encryptionKey, ltiToolKey] }, async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Must be logged in.');
     const uid = request.auth.uid;
     const { action, payload } = request.data;

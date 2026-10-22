@@ -8,6 +8,7 @@ const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { courseGithubToken } = require('../../lib/encryption');
 const { resolveRules } = require('../../lib/academic/rules');
 const { lateness } = require('../../lib/academic/deadlines');
+const { publishSingleGrade } = require('../integrations/lti');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -253,6 +254,11 @@ async function gradeSubmission(payload, context) {
         created_at: admin.firestore.FieldValue.serverTimestamp()
     });
     
+    // LTI 1.3 AGS: publica la nota si el curso está vinculado a Moodle.
+    await publishSingleGrade(db, {
+        assignmentId: previousData.assignment_id, studentId: previousData.student_id, grade, feedback,
+    });
+
     // Trigger background grade sync with Moodle LTI if applicable
     if (previousData.moodle_lis_outcome_service_url && typeof syncGradeToMoodle === 'function') {
         syncGradeToMoodle({ id: submissionId, ...previousData }, grade, feedback).catch(e => {

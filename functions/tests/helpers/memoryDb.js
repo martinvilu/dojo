@@ -4,7 +4,8 @@
  * `docs` es un mapa "ruta/del/doc" -> datos, inspeccionable desde el test.
  */
 const DELETE = Symbol('delete');
-
+const arrayUnion = (...items) => ({ __op: 'union', items });
+const arrayRemove = (...items) => ({ __op: 'remove', items });
 
 function memoryDb(initial = {}) {
   const docs = { ...initial };
@@ -30,6 +31,8 @@ function memoryDb(initial = {}) {
       parts.slice(0, -1).forEach((p) => { node = node[p] = node[p] && typeof node[p] === 'object' ? node[p] : {}; });
       const leaf = parts[parts.length - 1];
       if (value === DELETE) delete node[leaf];
+      else if (value && value.__op === 'union') node[leaf] = [...new Set([...(node[leaf] || []), ...value.items])];
+      else if (value && value.__op === 'remove') node[leaf] = (node[leaf] || []).filter((x) => !value.items.includes(x));
       else node[leaf] = value;
     }
     docs[path] = next;
@@ -58,6 +61,7 @@ function memoryDb(initial = {}) {
     const matches = (data) => filters.every(([field, op, value]) => {
       if (op === '==') return data[field] === value;
       if (op === 'in') return value.includes(data[field]);
+      if (op === 'array-contains') return Array.isArray(data[field]) && data[field].includes(value);
       throw new Error(`Unsupported operator ${op}`);
     });
     return {
@@ -106,7 +110,7 @@ function handlerContext(db, uid) {
   return {
     uid,
     db,
-    admin: { firestore: { FieldValue: { serverTimestamp: () => 'SERVER_TIMESTAMP', delete: () => DELETE } } },
+    admin: { firestore: { FieldValue: { serverTimestamp: () => 'SERVER_TIMESTAMP', delete: () => DELETE, arrayUnion, arrayRemove } } },
     getMyProfile: async () => db.docs[`profiles/${uid}`] || null,
   };
 }

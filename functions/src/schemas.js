@@ -291,6 +291,19 @@ const ACTION_SCHEMAS = {
     revokeException: obj({ exceptionId: id, reason: opt(text(2000)) }),
     getAcademicConditions: course({ rulesOverride: opt(gradingRules) }),
     getMyAcademicCondition: course(),
+
+    // LTI 1.3 Advantage
+    createLtiRegistrationToken: course(),
+    registerLtiPlatform: course({
+        issuer: text(500).min(1), clientId: text(300).min(1), deploymentId: text(300).min(1),
+        authLoginUrl: text(2000), authTokenUrl: text(2000), jwksUrl: text(2000),
+    }),
+    getLtiPlatforms: course(),
+    unlinkLtiPlatform: course({ platformId: id }),
+    getLtiPlatformsForReview: empty,
+    setLtiPlatformStatus: obj({ platformId: id, status: z.enum(['pending', 'approved', 'disabled']) }),
+    syncLtiRoster: course(),
+    publishLtiGrades: course({ assignmentId: opt(id), assessmentId: opt(id) }),
 };
 
 module.exports = { ACTION_SCHEMAS, gradingRules, gradingRulesShape };
