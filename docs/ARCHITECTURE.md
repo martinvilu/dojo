@@ -330,6 +330,27 @@ Solo backend (denegadas a todo cliente en `firestore.rules`); el motor puro est�
 *   `course_exceptions/{id}`: `{ course_id, student_id, type: "attendance_waiver" | "tp_exempt" | "deadline_extension", assignment_id, extra_hours, reason, revoked }`. Se revocan, no se borran.
 *   La condición (`Promocionado`, `Regular`, `Condicional`, `EN RIESGO`, `Ausente`, `Baja`) no se persiste: se calcula con `getAcademicConditions` / `getMyAcademicCondition` y es provisional hasta el cierre de cursada.
 
+### LTI 1.3 Advantage (`functions/src/lib/lti/`, rutas `/api/v1/lti/*`)
+
+Librería sin dependencias, compartida por Next (login OIDC, launch, JWKS, Deep Linking, registro dinámico) y Cloud Functions (NRPS, AGS). Todo backend-only:
+
+*   `lti_platforms/{hash(iss, client_id)}`: emisor, client_id, deployments, URLs, `course_ids`, `status: pending | approved | disabled`. La registra el titular; la aprueba un admin. Sin aprobación no hay launches docentes ni vínculo con cuentas existentes.
+*   `lti_states` (state + nonce de un login, un uso, TTL), `lti_handoffs` (código de 2 minutos que `/lti/continuar` canjea por un custom token), `lti_deep_link_sessions`, `lti_registrations` (URL de registro dinámico de un uso).
+*   `lti_users/{hash(iss, sub)}` → uid; `lti_contexts/{hash}`: curso de Moodle → cátedra, con las URLs de NRPS y AGS y el checksum del último padrón.
+*   El launch verifica RS256 contra el JWKS de la plataforma, `iss`, `aud`/`azp`, `exp`, nonce, state y `deployment_id`; nunca otorga el rol de administrador ni vincula cuentas de administradores.
+
+### Retención (`functions/src/lib/academic/alerts.js`)
+
+*   `student_alerts/{courseId}_{uid}_{tipo}`: `attendance_critical`, `overdue_tps`, `no_repo`, `silent_dropout`, con estado `active | contacted | snoozed | resolved`. Recalculadas a diario (`refreshAlertsDaily`) y a pedido.
+*   `contact_logs`: bitácora inmutable (canal, resumen, docente); los correos directos y las tutorías agendadas se registran solos.
+*   `review_requests`: consultas del estudiante sobre su ficha, con hilo de mensajes.
+*   `moodle_events/{hash}`: logs CSV de Moodle importados sin duplicar; alimentan `profiles.ultima_actividad_moodle`.
+*   `githubEvents` (Cloud Function): webhook de la organización (HMAC `X-Hub-Signature-256`, `processed_webhooks`) que pasa las entregas a `submitted`, `changes_requested` o `approved`.
+
+### URLs semánticas (`functions/src/lib/routes.js`)
+
+`/{asignatura}/{año}/{cuatrimestre}/{comision}/{vista}`, `/estudiantes/st_…[/asistencias|/practicas/{tp}]` y `/admin/configuracion`. `course_slugs/{slug}__{año}__{cuatrimestre}` garantiza unicidad; `student_public_ids/{st_…}` → uid. Las páginas son clientes que resuelven la ruta con `resolveCourseRoute` después de autenticar; los uid nunca aparecen en la URL ni en el HTML.
+
 ---
 
 ## 4. Estructura de Directorios del Código Fuente

@@ -24,6 +24,14 @@ echo "DOJO_ENCRYPTION_KEY=$(openssl rand -hex 32)" > functions/.secret.local
 
 Sin la clave, guardar un token falla con un error explícito (nunca se guarda en claro); los tokens legados en claro se siguen leyendo hasta correr la migración.
 
+Para probar LTI 1.3 y el webhook de GitHub en el emulador, agregar también a `functions/.secret.local`:
+
+```bash
+echo "LTI_TOOL_PRIVATE_KEY=\"$(openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 | awk 'NF {printf "%s\\n", $0}')\"" >> functions/.secret.local
+echo "GITHUB_WEBHOOK_SECRET=$(openssl rand -hex 20)" >> functions/.secret.local
+```
+y exportar el mismo `LTI_TOOL_PRIVATE_KEY` en `.env.local` para `npm run dev` (las rutas `/api/v1/lti/*` lo leen desde Next).
+
 ## 2. Scripts
 
 | Script | Qué hace |
@@ -31,7 +39,7 @@ Sin la clave, guardar un token falla con un error explícito (nunca se guarda en
 | `npm run dev` / `build` | Desarrollo / build de producción |
 | `npx tsc --noEmit` | Chequeo de tipos |
 | `npm run lint` | ESLint |
-| `cd functions && npm test` | Suite Jest del backend (292 pruebas / 29 suites) |
+| `cd functions && npm test` | Suite Jest del backend (342 pruebas / 37 suites) |
 | `npm run test:rules` | Reglas de Firestore contra emulador (24 escenarios) |
 | `npm run test:selenium` | E2E Selenium sobre mock server (56 escenarios) |
 | `npm run test:local` | Batería local completa (`scripts/test-local.sh`) |
@@ -146,5 +154,22 @@ firebase deploy --only functions,firestore     # backend
    DOJO_ENCRYPTION_KEY=<clave> GOOGLE_CLOUD_PROJECT=<proyecto> node scripts/migrations/001-encrypt-credentials.js --apply
    ```
 4. **Rotación**: cargar la clave nueva como `DOJO_ENCRYPTION_KEY` y la anterior como `DOJO_ENCRYPTION_KEY_PREVIOUS` (declararla en `functions/index.js`), volver a correr la migración y luego quitar la anterior.
+
+### Antes del primer despliegue de las Fases 3–5
+
+1. **Clave RSA de la herramienta LTI** (un único secreto para Functions y App Hosting):
+   ```bash
+   openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 | firebase functions:secrets:set LTI_TOOL_PRIVATE_KEY --data-file=-
+   firebase apphosting:secrets:grantaccess LTI_TOOL_PRIVATE_KEY --backend <backend>
+   ```
+   y exponerlo en App Hosting (`apphosting.yaml` → `env: [{ variable: LTI_TOOL_PRIVATE_KEY, secret: LTI_TOOL_PRIVATE_KEY }]` o desde la consola). Para rotar, cargar la anterior como `LTI_TOOL_PRIVATE_KEY_PREVIOUS`: el JWKS publica ambas.
+2. **Custom tokens desde Next**: la cuenta de servicio de App Hosting necesita `roles/iam.serviceAccountTokenCreator` sobre sí misma para que `/api/v1/lti/handoff` firme custom tokens de Firebase.
+3. **Webhook de GitHub**: `openssl rand -hex 20 | firebase functions:secrets:set GITHUB_WEBHOOK_SECRET --data-file=-`; en la organización de GitHub, *Settings → Webhooks*, apuntar a `https://us-central1-<proyecto>.cloudfunctions.net/githubEvents` (content type `application/json`, el mismo secreto) con los eventos *Pull requests*, *Pull request reviews* y *Pushes*.
+4. **Desplegar** `firebase deploy --only functions,firestore` (reglas: el foro deja de aceptar `is_best_answer` desde el cliente; índices: TTL de las colecciones `lti_*`) junto con el frontend.
+5. **Migrar** las URLs semánticas (dry run primero):
+   ```bash
+   GOOGLE_CLOUD_PROJECT=<proyecto> node scripts/migrations/002-semantic-routes.js [--apply]
+   ```
+6. **Aprobar plataformas LTI**: cada titular registra su Moodle desde Ajustes Cátedra; un admin las revisa en *Configuración → Plataformas LTI 1.3*.
 
 Para el caso concreto de migración de endpoints CSV (orden de despliegue, verificación y rotación de tokens), seguir el [Runbook](RUNBOOK_DESPLIEGUE_CSV.md).

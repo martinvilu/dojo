@@ -11,10 +11,13 @@
 |---|---|---|
 | F1 Seguridad | ✅ 1.1–1.5 implementadas | Rate limit por `uid` (no por IP: en el aula todos comparten NAT). QR: además se exige inscripción y ubicación cuando hay geocerca, y el XP de asistencia se suma una sola vez. Zod destapó que `updateCourseSettings` y `updateUserProfile` escribían cualquier campo del cliente: ahora tienen lista blanca. |
 | F2 Motor académico | ✅ 2.1–2.6 · ⏭️ 2.7 | 2.7 movida a F4: no existe un webhook de eventos de GitHub (`pull_request_review`); el `webhook` actual solo recibe notas del autograding. Se agregaron al formulario de tareas la fecha límite (no había forma de cargarla desde la UI) y "Obligatorio para regularizar". |
+| F3 LTI 1.3 Advantage | ✅ 3.1–3.11 | Decisión de seguridad: la plataforma la registra el titular pero la **aprueba un admin**; sin aprobación no entran docentes ni se vinculan cuentas existentes (evita que un Moodle propio suplante cuentas por email). El NRPS/AGS corre en Functions con la misma librería que usan las rutas de Next. |
+| F4 Retención | ✅ 4.1–4.8 | El webhook de GitHub quedó como Cloud Function `githubEvents` (no `/api/github/webhook`) para reutilizar el cálculo de vencimientos del backend. `checkAndAlertStudentsAtRisk` usa el motor nuevo (corrige la lectura de la asistencia vieja, tarea 0.1 para alertas). |
+| F5 URLs semánticas | ✅ 5.1–5.5 | Las páginas resuelven la ruta en el cliente con una acción autenticada (no en el servidor) para no exponer uid en el HTML. `PUT …/admin/configuracion` no se implementó: Next no permite `page.tsx` y `route.ts` en el mismo segmento; las reglas se guardan con `updateGradingRules`. `cierre-cursada` queda para F6. |
 
 Cambio respecto del principio 3: la lógica pura vive en `functions/src/lib/academic/` (CommonJS) y Next la importa por ruta relativa (`/api/export/csv`), porque Firebase solo despliega el directorio `functions/`; un `shared/` hermano no llegaría a producción.
 
-Requisito de despliegue: cargar `DOJO_ENCRYPTION_KEY` en Secret Manager **antes** de mergear (ver `docs/DEVELOPMENT.md` §6) y correr `scripts/migrations/001-encrypt-credentials.js`.
+Requisitos de despliegue: cargar en Secret Manager `DOJO_ENCRYPTION_KEY`, `LTI_TOOL_PRIVATE_KEY` y `GITHUB_WEBHOOK_SECRET` **antes** de mergear, y correr las migraciones `001-encrypt-credentials.js` y `002-semantic-routes.js` (ver `docs/DEVELOPMENT.md` §6).
 
 ---
 
