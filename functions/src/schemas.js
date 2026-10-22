@@ -35,6 +35,25 @@ const obj = (shape = {}) => z.looseObject(shape);
 const empty = obj();
 const course = (shape = {}) => obj({ courseId: id, ...shape });
 
+// --- reglas de cursada (Fase 2) -------------------------------------------
+
+const ratio = z.number().min(0).max(1);
+const passGrade = z.number().min(0).max(10);
+
+const gradingRulesShape = {
+    min_attendance: ratio,
+    required_tps: z.union([z.literal('all'), idList]),
+    max_exempt_tps: z.number().int().min(0).max(50),
+    partial_pass_grade: passGrade,
+    promotion_grade: passGrade,
+    promotion_ok_ratio: ratio,
+    max_late_for_promotion: z.number().int().min(0).max(100),
+    allow_promotion_via_recovery: bool,
+    late_tolerance_hours: z.number().int().min(0).max(24 * 30),
+    min_classes_for_attendance: z.number().int().min(0).max(100),
+};
+const gradingRules = z.strictObject(gradingRulesShape).partial();
+
 // --- lista blanca de ajustes de curso -------------------------------------
 
 const scheduleEntry = obj({ day: opt(shortText), time: opt(shortText), type: opt(shortText) });
@@ -215,6 +234,7 @@ const ACTION_SCHEMAS = {
         title: opt(text(1000)), name: opt(text(1000)), description: opt(text(20000)),
         due_date: opt(isoDate), dueDate: opt(isoDate), template_repo: opt(text(300)), templateRepo: opt(text(300)),
         is_group: opt(bool), isGroup: opt(bool), create_feedback_pr: opt(bool), createFeedbackPr: opt(bool),
+        is_required: opt(bool),
     }),
     getAssignmentSubmissions: obj({ assignmentId: id }),
     toggleAccess: obj({ submissionId: id, lock: bool }),
@@ -232,6 +252,45 @@ const ACTION_SCHEMAS = {
     addGroupCollaborator: obj({ submissionId: id, email: text(320) }),
     detectAssignmentPlagiarism: obj({ assignmentId: id, threshold: opt(numeric) }),
 
+    // cursada: reglas, parciales, excepciones, condición (Fase 2)
+    getGradingRules: course(),
+    updateGradingRules: course({
+        rules: gradingRules,
+        commissionOverrides: opt(z.record(text(100), gradingRules)),
+    }),
+    getAssessments: course(),
+    createAssessment: course({
+        kind: z.enum(['parcial', 'recuperatorio']),
+        label: text(60).min(1),
+        recovers: opt(id),
+        date: opt(isoDate),
+        commission: opt(text(100)),
+    }),
+    updateAssessment: obj({
+        assessmentId: id,
+        data: z.strictObject({
+            label: text(60).min(1), date: isoDate.nullable(), commission: text(100).nullable(), recovers: id.nullable(),
+        }).partial(),
+    }),
+    archiveAssessment: obj({ assessmentId: id }),
+    gradeAssessment: obj({
+        assessmentId: id, studentId: id, grade, absent: opt(bool), feedback: opt(text(5000)),
+    }),
+    importAssessmentGrades: obj({
+        assessmentId: id,
+        rows: z.array(obj({ matricula: opt(text(40)), studentId: opt(id), grade, absent: opt(bool) })).min(1).max(2000),
+    }),
+    getExceptions: course({ studentId: opt(id) }),
+    grantException: course({
+        studentId: id,
+        type: z.enum(['attendance_waiver', 'tp_exempt', 'deadline_extension']),
+        assignmentId: opt(id),
+        extraHours: opt(z.number().int().min(1).max(24 * 60)),
+        reason: text(2000).min(3, 'la justificación es obligatoria'),
+    }),
+    revokeException: obj({ exceptionId: id, reason: opt(text(2000)) }),
+    getAcademicConditions: course({ rulesOverride: opt(gradingRules) }),
+    getMyAcademicCondition: course(),
 };
 
-module.exports = { ACTION_SCHEMAS };
+module.exports = { ACTION_SCHEMAS, gradingRules, gradingRulesShape };

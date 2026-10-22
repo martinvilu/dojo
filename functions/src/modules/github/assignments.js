@@ -6,6 +6,8 @@ const { isSafeExternalUrl } = require('../../lib/urls');
 const { isCourseStaff, isCourseMember } = require('../../authz');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { courseGithubToken } = require('../../lib/encryption');
+const { resolveRules } = require('../../lib/academic/rules');
+const { lateness } = require('../../lib/academic/deadlines');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -81,7 +83,7 @@ async function getTeacherAssignments(payload, context) {
 }
 
 const TEMPLATE_REPO_RE = /^([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]{1,100})$/;
-const EDITABLE_ASSIGNMENT_FIELDS = ['title', 'description', 'due_date', 'template_repo', 'is_group', 'create_feedback_pr'];
+const EDITABLE_ASSIGNMENT_FIELDS = ['title', 'description', 'due_date', 'template_repo', 'is_group', 'create_feedback_pr', 'is_required'];
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 10000;
 
@@ -139,6 +141,8 @@ async function sanitizeAssignmentFields(input, { db, courseId, partial = false }
     }
     if (has('is_group') || !partial) out.is_group = Boolean(input.is_group);
     if (has('create_feedback_pr') || !partial) out.create_feedback_pr = Boolean(input.create_feedback_pr);
+    // Obligatorio para regularizar salvo que se indique lo contrario.
+    if (has('is_required') || !partial) out.is_required = input.is_required !== false;
 
     if (has('due_date') && String(input.due_date).trim() !== '') {
         const due = parseDateOnly(input.due_date, 'de entrega');
@@ -170,7 +174,8 @@ async function createAssignment(payload, context) {
         due_date: payload.due_date ?? payload.dueDate,
         template_repo: payload.template_repo ?? payload.templateRepo,
         is_group: payload.is_group ?? payload.isGroup,
-        create_feedback_pr: payload.create_feedback_pr ?? payload.createFeedbackPr
+        create_feedback_pr: payload.create_feedback_pr ?? payload.createFeedbackPr,
+        is_required: payload.is_required
     }, { db, courseId });
 
     const ref = await db.collection('assignments').add({
@@ -529,18 +534,43 @@ async function getStudentCommits(payload, context) {
     }));
 }
 
+/**
+ * ¿Una entrega hecha en `nowMs` queda fuera de término? Considera la
+ * tolerancia de las reglas de la comisión y las prórrogas individuales.
+ */
+async function submissionLateness(db, assignmentId, studentId, nowMs) {
+    const aSnap = await db.collection('assignments').doc(assignmentId).get();
+    if (!aSnap.exists) return { late: false, lateByHours: 0 };
+    const assignment = aSnap.data();
+    const courseId = assignment.course_id;
+    const [cSnap, pSnap, exSnap] = await Promise.all([
+        db.collection('courses').doc(courseId).get(),
+        db.collection('profiles').doc(studentId).get(),
+        db.collection('course_exceptions').where('course_id', '==', courseId).where('student_id', '==', studentId).get(),
+    ]);
+    const profile = pSnap.exists ? pSnap.data() : {};
+    const rules = resolveRules(cSnap.exists ? cSnap.data() : {}, profile.commissions && profile.commissions[courseId]);
+    const extension = exSnap.docs.map((d) => d.data())
+        .filter((e) => !e.revoked && e.type === 'deadline_extension' && e.assignment_id === assignmentId)
+        .reduce((sum, e) => sum + (Number(e.extra_hours) || 0), 0);
+    return lateness(nowMs, assignment.due_date, rules.late_tolerance_hours, extension);
+}
+
 async function submitAssignment(payload, context) {
     const { uid, db, admin } = context;
     const sSnap = await db.collection('submissions').doc(payload.submissionId).get();
     if (!sSnap.exists || sSnap.data().student_id !== uid) throw new Error("Entrega no encontrada o no autorizada");
-    
+
+    const { late, lateByHours } = await submissionLateness(db, sSnap.data().assignment_id, uid, Date.now());
     await sSnap.ref.update({
         status: 'submitted',
         student_message: payload.message || '',
-        submitted_at: admin.firestore.FieldValue.serverTimestamp()
+        submitted_at: admin.firestore.FieldValue.serverTimestamp(),
+        late,
+        late_by_hours: lateByHours
     });
     
-    return { success: true };
+    return { success: true, late };
 }
 
 async function updateAssignment(payload, context) {

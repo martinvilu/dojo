@@ -153,6 +153,21 @@ const ACTION_MODULES = {
 
     // plagiarism
     detectAssignmentPlagiarism: './modules/github/plagiarism',
+
+    // cursada: reglas, parciales, excepciones y condición
+    getGradingRules: './modules/course/academic',
+    updateGradingRules: './modules/course/academic',
+    getAcademicConditions: './modules/course/academic',
+    getMyAcademicCondition: './modules/course/academic',
+    getAssessments: './modules/course/assessments',
+    createAssessment: './modules/course/assessments',
+    updateAssessment: './modules/course/assessments',
+    archiveAssessment: './modules/course/assessments',
+    gradeAssessment: './modules/course/assessments',
+    importAssessmentGrades: './modules/course/assessments',
+    getExceptions: './modules/course/exceptions',
+    grantException: './modules/course/exceptions',
+    revokeException: './modules/course/exceptions',
 };
 
 /** Devuelve el handler de la acción, o null si la acción no existe. */

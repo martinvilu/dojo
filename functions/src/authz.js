@@ -174,6 +174,22 @@ const ACTION_POLICIES = {
 
     // plagio
     detectAssignmentPlagiarism: staffOf('assignment'),
+
+    // cursada (updateGradingRules además exige titular en el handler;
+    // los get* de miembros filtran a los datos propios del estudiante)
+    getGradingRules: staffOf('course'),
+    updateGradingRules: staffOf('course'),
+    getAcademicConditions: staffOf('course'),
+    getMyAcademicCondition: memberOf('course'),
+    getAssessments: memberOf('course'),
+    createAssessment: staffOf('course'),
+    updateAssessment: staffOf('assessment'),
+    archiveAssessment: staffOf('assessment'),
+    gradeAssessment: staffOf('assessment'),
+    importAssessmentGrades: staffOf('assessment'),
+    getExceptions: memberOf('course'),
+    grantException: staffOf('course'),
+    revokeException: staffOf('exception'),
 };
 
 function deny(message = 'No tenés permisos para realizar esta acción.') {
@@ -211,6 +227,8 @@ const TARGET_RESOLVERS = {
     announcement: async (payload, db) => courseIdOfDoc(db, 'announcements', payload.announcementId, 'el aviso'),
     scheduledEmail: async (payload, db) => courseIdOfDoc(db, 'scheduled_emails', payload.emailId, 'el correo programado'),
     studyGroup: async (payload, db) => courseIdOfDoc(db, 'study_groups', payload.groupId, 'el grupo de estudio'),
+    assessment: async (payload, db) => courseIdOfDoc(db, 'assessments', payload.assessmentId, 'la evaluación'),
+    exception: async (payload, db) => courseIdOfDoc(db, 'course_exceptions', payload.exceptionId, 'la excepción'),
 };
 
 async function docExists(db, collection, docId) {

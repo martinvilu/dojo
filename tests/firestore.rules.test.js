@@ -290,3 +290,17 @@ describe("audit and activity logs", () => {
     await assertFails(addDoc(collection(user(ADMIN), "activity_logs"), { fake: true }));
   });
 });
+
+describe("academic records and rate limits (backend-only)", () => {
+  const BACKEND_ONLY = ["assessments", "assessment_grades", "course_exceptions", "rate_limits"];
+
+  it("no client can read or write them, not even the course teacher or an admin", async () => {
+    for (const name of BACKEND_ONLY) {
+      await withAdminDb((db) => setDoc(doc(db, `${name}/x1`), { course_id: COURSE, student_id: STUDENT }));
+      for (const uid of [STUDENT, TEACHER, ADMIN]) {
+        await assertFails(getDoc(doc(user(uid), `${name}/x1`)));
+        await assertFails(setDoc(doc(user(uid), `${name}/x2`), { course_id: COURSE, student_id: uid }));
+      }
+    }
+  });
+});
