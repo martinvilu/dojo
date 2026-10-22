@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import type { AcademicCondition, ConditionsResponse } from "./types";
@@ -9,6 +10,9 @@ import { ConditionDetail } from "./ConditionDetail";
 import { useDeepLinkContext } from "@/app/dashboard/deepLinkContext";
 
 const CONDITION_ORDER: AcademicCondition[] = ["EN RIESGO", "Ausente", "Condicional", "Regular", "Promocionado", "Baja"];
+/** Con padrones grandes solo se dibujan las filas visibles (mejora 4.01). */
+const VIRTUALIZE_FROM = 80;
+const ROW_ESTIMATE_PX = 52;
 
 /** Condición provisional de todo el padrón, filtrable por comisión y condición. */
 export function ConditionsTable({ courseId, commissions }: { courseId: string; commissions: string[] }) {
@@ -45,6 +49,22 @@ export function ConditionsTable({ courseId, commissions }: { courseId: string; c
       return [r.full_name, r.email, r.matricula_unrn].some((v) => (v || "").toLowerCase().includes(term));
     });
   }, [data, commission, condition, search]);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualized = rows.length >= VIRTUALIZE_FROM;
+  // eslint-disable-next-line react-hooks/incompatible-library -- el proyecto no usa React Compiler
+  const virtualizer = useVirtualizer({
+    count: virtualized ? rows.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_ESTIMATE_PX,
+    overscan: 8,
+  });
+  const items = virtualizer.getVirtualItems();
+  const visible = virtualized
+    ? items.map((item) => ({ row: rows[item.index], index: item.index }))
+    : rows.map((row, index) => ({ row, index }));
+  const padTop = virtualized && items.length ? items[0].start : 0;
+  const padBottom = virtualized && items.length ? virtualizer.getTotalSize() - items[items.length - 1].end : 0;
 
   return (
     <div className="space-y-4">
@@ -88,9 +108,9 @@ export function ConditionsTable({ courseId, commissions }: { courseId: string; c
         Se congela recién en el cierre de cursada.
       </p>
 
-      <div className="overflow-x-auto border border-neutral-800 rounded-2xl">
+      <div ref={scrollRef} className={`overflow-x-auto border border-neutral-800 rounded-2xl ${virtualized ? "max-h-[70vh] overflow-y-auto" : ""}`}>
         <table className="w-full text-left text-xs">
-          <thead className="bg-neutral-950 text-[10px] text-gray-500 uppercase tracking-wider">
+          <thead className="bg-neutral-950 text-[10px] text-gray-500 uppercase tracking-wider sticky top-0 z-10">
             <tr>
               <th className="px-3 py-2 font-bold">Estudiante</th>
               <th className="px-3 py-2 font-bold">Comisión</th>
@@ -99,39 +119,40 @@ export function ConditionsTable({ courseId, commissions }: { courseId: string; c
               <th className="px-3 py-2 font-bold">Condición</th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((r) => (
-              <Fragment key={r.student_id}>
-                <tr className="border-t border-neutral-850 hover:bg-neutral-900/50">
-                  <td className="px-3 py-2">
-                    <button type="button" onClick={() => setExpanded(expanded === r.student_id ? null : r.student_id)}
-                      aria-expanded={expanded === r.student_id} className="text-left cursor-pointer">
-                      <span className="font-semibold text-white hover:underline">{r.full_name || r.email || r.student_id}</span>
-                      <span className="block text-[10px] text-gray-500 font-mono">{r.matricula_unrn || "Sin matrícula"}</span>
-                    </button>
-                  </td>
-                  <td className="px-3 py-2 text-gray-400">{r.commission || "—"}</td>
-                  <td className="px-3 py-2 text-gray-300">{percent(r.attendance.ratio)}</td>
-                  <td className="px-3 py-2 text-gray-300">{r.tps.delivered}/{r.tps.required}{r.tps.late.count > 0 && <span className="text-amber-400"> · {r.tps.late.count} tarde</span>}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <ConditionChip condition={r.condition} />
-                      {r.near_promotion && <span className="text-[10px] text-amber-400 font-semibold">a 1 paso de promocionar</span>}
-                      {r.near_regularity && <span className="text-[10px] text-amber-400 font-semibold">a 1 paso de regularizar</span>}
-                    </div>
-                  </td>
+          {virtualized && padTop > 0 && <tbody aria-hidden="true"><tr style={{ height: padTop }} /></tbody>}
+          {visible.map(({ row: r, index }) => (
+            // Un <tbody> por estudiante: la fila y su detalle se miden juntos.
+            <tbody key={r.student_id} data-index={index} ref={virtualized ? virtualizer.measureElement : undefined}>
+              <tr className="border-t border-neutral-850 hover:bg-neutral-900/50">
+                <td className="px-3 py-2">
+                  <button type="button" onClick={() => setExpanded(expanded === r.student_id ? null : r.student_id)}
+                    aria-expanded={expanded === r.student_id} className="text-left cursor-pointer">
+                    <span className="font-semibold text-white hover:underline">{r.full_name || r.email || r.student_id}</span>
+                    <span className="block text-[10px] text-gray-500 font-mono">{r.matricula_unrn || "Sin matrícula"}</span>
+                  </button>
+                </td>
+                <td className="px-3 py-2 text-gray-400">{r.commission || "—"}</td>
+                <td className="px-3 py-2 text-gray-300">{percent(r.attendance.ratio)}</td>
+                <td className="px-3 py-2 text-gray-300">{r.tps.delivered}/{r.tps.required}{r.tps.late.count > 0 && <span className="text-amber-400"> · {r.tps.late.count} tarde</span>}</td>
+                <td className="px-3 py-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <ConditionChip condition={r.condition} />
+                    {r.near_promotion && <span className="text-[10px] text-amber-400 font-semibold">a 1 paso de promocionar</span>}
+                    {r.near_regularity && <span className="text-[10px] text-amber-400 font-semibold">a 1 paso de regularizar</span>}
+                  </div>
+                </td>
+              </tr>
+              {expanded === r.student_id && (
+                <tr className="bg-neutral-950/70">
+                  <td colSpan={5} className="px-4 py-4"><ConditionDetail result={r} /></td>
                 </tr>
-                {expanded === r.student_id && (
-                  <tr className="bg-neutral-950/70">
-                    <td colSpan={5} className="px-4 py-4"><ConditionDetail result={r} /></td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
-            {!loading && rows.length === 0 && (
-              <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">No hay estudiantes que coincidan con el filtro.</td></tr>
-            )}
-          </tbody>
+              )}
+            </tbody>
+          ))}
+          {virtualized && padBottom > 0 && <tbody aria-hidden="true"><tr style={{ height: padBottom }} /></tbody>}
+          {!loading && rows.length === 0 && (
+            <tbody><tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">No hay estudiantes que coincidan con el filtro.</td></tr></tbody>
+          )}
         </table>
       </div>
     </div>
