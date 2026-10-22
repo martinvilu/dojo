@@ -60,13 +60,14 @@ Para guiar a los estudiantes en la revisión de los videos grabados:
 2. La pantalla proyectará un código QR gigante acompañado por un código alfanumérico de 6 caracteres.
 
 ```{warning}
-El código QR se regenera automáticamente cada **45 segundos**. Los alumnos deben escanear el código activo en pantalla.
+El código cambia cada **15 segundos** y se acepta hasta 30 segundos después de mostrarse. La sesión dura **5 minutos**: con **🔄 Renovar** se abre otra; al **Cerrar** el proyector nadie más puede firmar.
 ```
 
 ### 3.2 Proximidad Geográfica (Geo-Fence / Haversine)
-Si la ubicación GPS está habilitada:
+Si al generar el QR el navegador comparte la ubicación del aula:
 - El servidor calcula la distancia física mediante la fórmula de Haversine entre las coordenadas GPS del docente y las del estudiante.
-- Si el estudiante se encuentra a más de **150 metros** del aula, el registro será rechazado automáticamente por el servidor.
+- El estudiante **tiene que** compartir su ubicación para firmar, y si está a más de **150 metros** del aula el registro se rechaza.
+- Solo pueden firmar los estudiantes inscriptos en la cátedra, y el presente suma XP una sola vez por clase.
 
 ---
 
@@ -108,3 +109,34 @@ Al ingresar al detalle de la entrega de un estudiante:
 2. Selecciona la materia o el *🌐 Calendario Global*.
 3. Haz clic en el botón **`📥 Exportar .ics`**.
 4. El archivo descargado puede ser importado en Google Calendar, Apple Calendar o Microsoft Outlook para mantener sincronizadas las fechas de parciales y entregas.
+
+---
+
+## 7. Moodle con LTI 1.3 {#moodle-lti-13}
+
+Con LTI 1.3 los estudiantes y docentes entran al Dojo desde Moodle sin volver a iniciar sesión, el padrón se importa solo (NRPS) y las notas se publican en el libro de calificaciones de Moodle (AGS).
+
+### 7.1 Registrar el Dojo en Moodle (una vez por campus)
+1. En **Ajustes Cátedra**, activá **🔌 Integración con Moodle** y abrí el panel **🔗 Moodle LTI 1.3 Advantage**.
+2. Hacé clic en **Generar URL de registro dinámico** y copiala. La URL vence en una hora y sirve una sola vez.
+3. En Moodle: *Administración del sitio → Plugins → Actividades → Herramienta externa → Gestionar herramientas*, pegá la URL en **URL de la herramienta** y elegí **Agregar LTI Advantage**. Moodle abre una ventana, se registra y la cierra.
+4. Activá la herramienta en la lista de Moodle.
+
+```{note}
+Agregar herramientas externas en Moodle suele requerir permisos de **administrador del sitio**. Si tu rol no los tiene, pasale al administrador del campus la URL generada en el paso 2; si el campus no ofrece registro dinámico, usá **Registro manual** en el mismo panel con los datos que muestra el Dojo (login, redirección, JWKS y el parámetro `courseId`).
+```
+
+### 7.2 Aprobación
+La plataforma queda **Pendiente de aprobación** hasta que un administrador del Dojo la aprueba. Mientras tanto:
+- los estudiantes pueden entrar, pero con una cuenta nueva y la inscripción pendiente;
+- los docentes no pueden entrar desde Moodle;
+- no se vinculan cuentas existentes por email o matrícula.
+
+Esto evita que alguien registre un Moodle propio y entre con la cuenta de otra persona.
+
+### 7.3 Uso diario
+- **Agregar una actividad**: en el curso de Moodle, *Agregar actividad → Ninja Dojo → Seleccionar contenido* abre el selector del Dojo (cronograma, TPs, Mi cursada, etc.).
+- **Padrón**: en el panel LTI, **👥 Sincronizar padrón (NRPS)** da de alta a los inscriptos de Moodle y marca como *baja* a quienes ya no están (solo si habían entrado por Moodle).
+- **Notas**: cada nota que cargás en el Dojo se publica sola en Moodle; también podés usar **📤 LTI** en una tarea o **📤 Publicar en Moodle** en un parcial. La escala 0–10 se convierte al máximo del ítem en Moodle.
+- El curso de Moodle queda vinculado la primera vez que alguien abre la actividad; hasta entonces el padrón y las notas no tienen a dónde sincronizar.
+
