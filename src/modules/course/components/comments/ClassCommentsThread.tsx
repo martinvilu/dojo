@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import { api } from "@/lib/api";
-import { ClassComment } from "../../types";
+import { ClassComment, isSolutionComment } from "../../types";
 import { formatDateSafe, formatDateTime } from "@/lib/dates";
 import { logger } from "@/lib/logger";
 
@@ -107,7 +107,7 @@ export default function ClassCommentsThread({
           <div
             key={comment.id}
             className={`p-3.5 rounded-xl space-y-2 border transition ${
-              comment.is_best_answer
+              isSolutionComment(comment)
                 ? "border-emerald-500 bg-emerald-950/15"
                 : "bg-neutral-955 border-neutral-850"
             }`}
@@ -117,7 +117,7 @@ export default function ClassCommentsThread({
                 <span className={`font-bold ${comment.user_role === "teacher" ? "text-amber-400" : "text-blue-400"}`}>
                   {comment.user_name} ({comment.user_role === "teacher" ? "Profesor" : "Estudiante"})
                 </span>
-                {comment.is_best_answer && (
+                {isSolutionComment(comment) && (
                   <span className="px-2 py-0.5 rounded bg-emerald-955 border border-emerald-800 text-emerald-400 text-[8px] font-bold uppercase tracking-wider">
                     ✔️ Solución
                   </span>
@@ -169,14 +169,14 @@ export default function ClassCommentsThread({
               {(profile?.role === "teacher" || profile?.role === "admin") && (
                 <button
                   type="button"
-                  onClick={() => handleMarkBestAnswer(comment.id, comment.is_best_answer || false)}
+                  onClick={() => handleMarkBestAnswer(comment.id, isSolutionComment(comment))}
                   className={`text-[9px] font-bold px-2 py-0.5 rounded border transition cursor-pointer ${
-                    comment.is_best_answer
+                    isSolutionComment(comment)
                       ? "bg-emerald-955 border-emerald-800 text-emerald-400"
                       : "bg-neutral-900/50 border-neutral-850 text-gray-400 hover:text-white"
                   }`}
                 >
-                  {comment.is_best_answer ? "Desmarcar Solución" : "Marcar como Solución"}
+                  {isSolutionComment(comment) ? "Desmarcar Solución" : "Marcar como Solución"}
                 </button>
               )}
             </div>

@@ -137,26 +137,10 @@ async function submitMatricula(payload, context) {
     return { success: true };
 }
 
-async function getXpLogs(payload, context) {
-    const { uid, db } = context;
-    const snap = await db.collection('profiles').doc(uid).collection('xp_logs').orderBy('timestamp', 'desc').get();
-    return snap.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            action: data.action,
-            description: data.description,
-            points: data.points,
-            timestamp: data.timestamp ? (data.timestamp.toDate ? data.timestamp.toDate().toISOString() : new Date(data.timestamp).toISOString()) : new Date().toISOString()
-        };
-    });
-}
-
 module.exports = {
     getProfile,
     updateProfile,
     addSecondaryEmail,
     mergeProfiles,
     submitMatricula,
-    getXpLogs
 };

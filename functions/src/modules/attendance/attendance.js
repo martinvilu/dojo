@@ -1,5 +1,3 @@
-const logger = require("firebase-functions/logger");
-
 // --- Asistencia QR con código rotativo (mejora 3.18) ------------------------
 
 const { HttpsError } = require('firebase-functions/v2/https');
@@ -167,20 +165,7 @@ async function submitQrAttendance(payload, context) {
         });
     }
 
-    // +10 XP una sola vez por clase: re-escanear no suma de nuevo.
-    if (!alreadyPresent) {
-        try {
-            await db.collection('profiles').doc(uid).collection('xp_logs').add({
-                action: 'asistencia',
-                description: `Asistencia firmada en Clase ${classNumber}`,
-                points: 10,
-                timestamp: admin.firestore.FieldValue.serverTimestamp()
-            });
-        } catch(e) {
-            logger.error("Error logging XP:", e);
-        }
-    }
-
+    // Los +10 XP salen de `lib/xp.js` a partir de este registro: no se escribe XP aparte.
     return { success: true, alreadyPresent };
 }
 

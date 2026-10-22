@@ -335,7 +335,7 @@ describe('Full Coverage Actions Test Suite', () => {
 
   // 5. PROFILE & NOTIFICATIONS & STATS & OTHER MODULES
   describe('Profile, Notifications, Stats, Tutoring, StudyGroups, Schedule, Moodle Actions', () => {
-    test('profileActions: getProfile creation, seeds, addSecondaryEmail, mergeProfiles, getXpLogs', async () => {
+    test('profileActions: getProfile creation, seeds, addSecondaryEmail, mergeProfiles', async () => {
       const ctx = createMockContext({ uid: 'u1' });
       ctx.admin.firestore.Timestamp = { now: () => 'NOW_TS' };
 
@@ -389,21 +389,6 @@ describe('Full Coverage Actions Test Suite', () => {
       );
       expect(ctx.docStore['course_roster/c1_u1'].student_id).toBe('u1');
 
-      // getXpLogs
-      ctx.docStore['profiles/u1/xp_logs/xp1'] = {
-        action: 'commit',
-        description: 'First commit',
-        points: 10,
-        timestamp: { toDate: () => new Date('2026-04-01T00:00:00Z') }
-      };
-      ctx.docStore['profiles/u1/xp_logs/xp2'] = {
-        action: 'forum',
-        description: 'Best answer',
-        points: 25,
-        timestamp: '2026-04-02T00:00:00Z'
-      };
-      const xpLogs = await profileActions.getXpLogs({}, ctx);
-      expect(xpLogs).toHaveLength(2);
     });
 
     test('notificationActions: notifyCourseStudents, checkAndAlertStudentsAtRisk, sendDailySummaries', async () => {

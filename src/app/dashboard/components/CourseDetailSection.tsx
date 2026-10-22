@@ -262,6 +262,7 @@ export function CourseDetailSection(props: {
 
       {profile?.role === "student" && (
         <StudentNinjaRankCard
+          courseId={selectedCourse.id}
           profile={profile}
           submissions={props.submissions}
           courseComments={courseComments}

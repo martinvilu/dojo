@@ -55,7 +55,8 @@ const ACTION_MODULES = {
     syncGuaraniRoster: './modules/course/courses',
     addSecondaryEmail: './modules/auth/profile',
     mergeProfiles: './modules/auth/profile',
-    getXpLogs: './modules/auth/profile',
+    getXpLogs: './modules/auth/xp',
+    getMyXp: './modules/auth/xp',
 
     logActivity: './modules/system/activity',
     getActivityLogs: './modules/system/activity',

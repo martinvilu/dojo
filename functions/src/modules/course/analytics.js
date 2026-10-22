@@ -1,4 +1,5 @@
 const logger = require("firebase-functions/logger");
+const { isSolution } = require("../../lib/xp");
 
 /**
  * Early-dropout analytics. Combines attendance, assignment delivery and
@@ -91,7 +92,7 @@ async function getDropoutRiskAnalysis(payload, context) {
         if (!sid) return;
         if (!forumByStudent[sid]) forumByStudent[sid] = { comments: 0, bestAnswers: 0 };
         forumByStudent[sid].comments += 1;
-        if (doc.data().is_best_answer) forumByStudent[sid].bestAnswers += 1;
+        if (isSolution(doc.data())) forumByStudent[sid].bestAnswers += 1;
     });
 
     const rosterSnap = await db.collection('course_roster')

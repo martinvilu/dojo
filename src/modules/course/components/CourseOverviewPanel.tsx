@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { CourseOverviewPanelProps, StudentRiskData } from "../types";
+import { CourseOverviewPanelProps, StudentRiskData, isSolutionComment } from "../types";
 import { useStudentRisk, StudentWithCommission } from "../hooks/useStudentRisk";
 import { formatDateSafe, formatShortDate } from "@/lib/dates";
 
@@ -47,7 +47,7 @@ export function CourseOverviewPanel({
   }, [overviewSubmissionsList]);
 
   const activeForumConsultations = useMemo(() => {
-    return courseComments.filter((c) => c.user_role !== "teacher" && !c.is_best_answer);
+    return courseComments.filter((c) => c.user_role !== "teacher" && !isSolutionComment(c));
   }, [courseComments]);
 
   const courseId = selectedCourse?.id || "";

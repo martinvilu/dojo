@@ -38,6 +38,7 @@ const ACTION_POLICIES = {
     submitMatricula: AUTHENTICATED,
     addSecondaryEmail: AUTHENTICATED,
     getXpLogs: AUTHENTICATED,
+    getMyXp: memberOf('course'),
     logActivity: AUTHENTICATED,
 
     // administración

@@ -103,6 +103,7 @@ const ACTION_SCHEMAS = {
     addSecondaryEmail: obj({ email: z.email().max(320) }),
     mergeProfiles: obj({ targetUid: id, sourceUid: id }),
     getXpLogs: empty,
+    getMyXp: course(),
     logActivity: obj({ action: opt(shortText), details: opt(text(5000)) }),
     getActivityLogs: empty,
 

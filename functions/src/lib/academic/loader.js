@@ -123,6 +123,7 @@ async function loadCourseAcademicData(db, courseId, { studentId } = {}) {
         attendance: docsOf(attendanceSnap).map((a) => ({
             classNumber: a.classNumber !== undefined ? a.classNumber : Number(String(a.id).replace('class_', '')),
             records: a.records || {},
+            updated_at: a.updated_at || null,
         })),
         assignments,
         assessments: docsOf(assessmentsSnap),

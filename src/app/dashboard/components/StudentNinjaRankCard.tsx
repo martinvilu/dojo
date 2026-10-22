@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "@/lib/api";
+import { computeXp } from "../../../../functions/src/lib/xp";
 
 interface StudentNinjaRankCardProps {
+  courseId: string;
   profile: any;
   submissions: any[];
   courseComments: any[];
@@ -10,91 +13,35 @@ interface StudentNinjaRankCardProps {
   onOpenProfile: () => void;
 }
 
+type XpSummary = ReturnType<typeof computeXp>;
+
+/**
+ * Rango Ninja del alumno en el curso. La cuenta es la de `lib/xp.js`, la misma
+ * que usa el backend: se muestra al instante con los datos ya cargados en la
+ * pestaña y se reemplaza por la del servidor, que suma además los parciales.
+ */
 export function StudentNinjaRankCard({
-  profile, submissions, courseComments, courseAttendance, onOpenProfile
+  courseId, profile, submissions, courseComments, courseAttendance, onOpenProfile
 }: StudentNinjaRankCardProps) {
-  // ⚡ Bolt: Performance Optimization
-  // Replaced multiple O(N) array `.filter` and `.forEach` sweeps with single-pass `for` loops.
-  // Wrapped all derived state calculations in `useMemo` to prevent expensive recalculations
-  // on every render cycle when dependencies haven't changed.
-  const {
-    currentLevel,
-    currentLevelProgress,
-    totalXp,
-    hasChakraMaster,
-    hasPerfectAttendance,
-    hasActiveNinja,
-    hasSolucionador
-  } = useMemo(() => {
-    const profileId = profile?.id;
-    if (!profileId) {
-      return {
-        currentLevel: 1, currentLevelProgress: 0, totalXp: 0,
-        hasChakraMaster: false, hasPerfectAttendance: false,
-        hasActiveNinja: false, hasSolucionador: false
-      };
-    }
+  const local = useMemo(() => computeXp({
+    studentId: profile?.id || "",
+    attendance: courseAttendance,
+    submissions: submissions.filter((s) => s.student_id === profile?.id),
+    comments: courseComments,
+  }), [profile?.id, submissions, courseComments, courseAttendance]);
 
-    let commentCount = 0;
-    let bestAnswerCount = 0;
-    for (let i = 0; i < courseComments.length; i++) {
-      const c = courseComments[i];
-      if (c.user_id === profileId) {
-        commentCount++;
-        if (c.is_best_answer) bestAnswerCount++;
-      }
-    }
-    const commentPoints = commentCount * 10;
-    const solutionPoints = bestAnswerCount * 100;
+  const [server, setServer] = useState<{ courseId: string; xp: XpSummary } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api("getMyXp", { courseId })
+      .then((xp) => { if (!cancelled && xp) setServer({ courseId, xp }); })
+      .catch(() => { /* queda la cuenta local */ });
+    return () => { cancelled = true; };
+  }, [courseId, submissions, courseComments, courseAttendance]);
 
-    let classCount = 0;
-    let presentCount = 0;
-    for (let i = 0; i < courseAttendance.length; i++) {
-      const c = courseAttendance[i];
-      if (c.records && c.records[profileId]) {
-        classCount++;
-        const status = c.records[profileId];
-        if (status === "present" || status === "late") presentCount++;
-      }
-    }
-    const attendancePoints = presentCount * 10;
-
-    let submissionCount = 0;
-    let gradesSum = 0;
-    let gradesCount = 0;
-    for (let i = 0; i < submissions.length; i++) {
-      const s = submissions[i];
-      if (s.student_id === profileId) {
-        submissionCount++;
-        const num = parseFloat(s.grade);
-        if (!isNaN(num)) {
-          gradesSum += num;
-          gradesCount++;
-        }
-      }
-    }
-    const submissionPoints = (submissionCount * 50) + (gradesSum * 5);
-
-    const totalXp = commentPoints + solutionPoints + attendancePoints + submissionPoints;
-    const currentLevel = Math.floor(totalXp / 100) + 1;
-    const currentLevelProgress = totalXp % 100;
-
-    const avgGrade = gradesCount > 0 ? gradesSum / gradesCount : 0;
-    const hasChakraMaster = avgGrade >= 9;
-    const hasPerfectAttendance = classCount >= 3 && presentCount === classCount;
-    const hasActiveNinja = commentCount >= 3;
-    const hasSolucionador = bestAnswerCount > 0;
-
-    return {
-      currentLevel,
-      currentLevelProgress,
-      totalXp,
-      hasChakraMaster,
-      hasPerfectAttendance,
-      hasActiveNinja,
-      hasSolucionador
-    };
-  }, [profile?.id, submissions, courseComments, courseAttendance]);
+  const xp = server && server.courseId === courseId ? server.xp : local;
+  const { totalXp, level: currentLevel, levelProgress: currentLevelProgress, rank } = xp;
+  const { chakraMaster: hasChakraMaster, perfectAttendance: hasPerfectAttendance, activeNinja: hasActiveNinja, solver: hasSolucionador } = xp.badges;
 
   return (
     <div
@@ -111,7 +58,7 @@ export function StudentNinjaRankCard({
               <span className="text-[10px] text-blue-400 group-hover:underline font-semibold">📜 Ver bitácora XP ↗</span>
             </div>
             <div className="text-lg font-black text-blue-400">
-              Nivel {currentLevel} — {currentLevel >= 5 ? "Jōnin" : currentLevel >= 3 ? "Chūnin" : "Genin"}
+              Nivel {currentLevel} — {rank}
             </div>
           </div>
         </div>

@@ -356,7 +356,7 @@ export default function ProfilePanel({
               <div key={log.id} className="flex items-center justify-between bg-bg-primary p-3 rounded-xl border border-border-custom text-xs">
                 <div>
                   <p className="font-semibold text-text-primary">{log.description || log.action}</p>
-                  <p className="text-[10px] text-text-secondary font-mono">{new Date(log.timestamp).toLocaleString("es-AR")}</p>
+                  {log.timestamp && <p className="text-[10px] text-text-secondary font-mono">{new Date(log.timestamp).toLocaleString("es-AR")}</p>}
                 </div>
                 <span className="bg-amber-500/10 border border-amber-500/30 text-amber-500 font-bold px-2.5 py-1 rounded-lg text-xs">
                   +{log.points} XP

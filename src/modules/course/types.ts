@@ -66,10 +66,16 @@ export interface ClassComment {
   user_name: string;
   user_role: UserRole | string;
   content: string;
+  /** Nombre del SPEC; `is_best_answer` es el campo histórico y se lee igual. */
+  is_solution?: boolean;
   is_best_answer?: boolean;
   reactions?: CommentReaction;
   created_at?: unknown;
 }
+
+/** Una respuesta es solución oficial con cualquiera de los dos campos. */
+export const isSolutionComment = (c: Pick<ClassComment, "is_solution" | "is_best_answer">) =>
+  Boolean(c.is_solution ?? c.is_best_answer);
 
 export interface CourseOverviewPanelProps {
   profile?: UserProfile | any;
