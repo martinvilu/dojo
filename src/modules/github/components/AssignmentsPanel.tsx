@@ -32,6 +32,8 @@ export default function AssignmentsPanel({
   const [assignTemplate, setAssignTemplate] = useState("");
   const [assignPr, setAssignPr] = useState(false);
   const [assignGroup, setAssignGroup] = useState(false);
+  const [assignDueDate, setAssignDueDate] = useState("");
+  const [assignRequired, setAssignRequired] = useState(true);
   const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
   const [gradesCSVStatus, setGradesCSVStatus] = useState<Record<string, string>>({});
   const [visibleCommitsSubId, setVisibleCommitsSubId] = useState<string | null>(null);
@@ -88,17 +90,18 @@ export default function AssignmentsPanel({
       if (editingAssignmentId) {
         await api("updateAssignment", {
           assignmentId: editingAssignmentId,
-          data: { title: assignTitle, template_repo: assignTemplate, create_feedback_pr: assignPr, is_group: assignGroup }
+          data: { title: assignTitle, template_repo: assignTemplate, create_feedback_pr: assignPr, is_group: assignGroup, due_date: assignDueDate, is_required: assignRequired }
         });
         setEditingAssignmentId(null);
         showToast("Tarea modificada.", "success");
       } else {
         await api("createAssignment", {
-          course_id: cid, courseId: cid, title: assignTitle, template_repo: assignTemplate, create_feedback_pr: assignPr, is_group: assignGroup
+          course_id: cid, courseId: cid, title: assignTitle, template_repo: assignTemplate, create_feedback_pr: assignPr, is_group: assignGroup,
+          due_date: assignDueDate, is_required: assignRequired
         });
         showToast("Tarea creada exitosamente.", "success");
       }
-      setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false);
+      setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false); setAssignDueDate(""); setAssignRequired(true);
 
       const res = await api("getTeacherAssignments", { courseIds: [cid] });
       setAssignments((res || []).filter((a: any) => a.course_id === cid));
@@ -293,8 +296,8 @@ export default function AssignmentsPanel({
     if (msg === null) return;
     setApiLoading(true);
     try {
-      await api("submitAssignment", { submissionId, message: msg });
-      showToast("¡Entrega enviada!", "success");
+      const res = await api("submitAssignment", { submissionId, message: msg });
+      showToast(res?.late ? "Entrega enviada fuera de término." : "¡Entrega enviada!", res?.late ? "warning" : "success");
       const cid = selectedCourse.id || selectedCourse.course?.id;
       const aRes = await api("getStudentAssignments", { courseIds: [cid] });
       setAssignments(aRes.assignments || []); setSubmissions(aRes.submissions || []);
@@ -325,7 +328,7 @@ export default function AssignmentsPanel({
         <div className="space-y-6">
           <form onSubmit={handleCreateAssignment} className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
             <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider">{editingAssignmentId ? "✏️ Editar Tarea" : "➕ Crear Nueva Tarea"}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="assignTitle" className="block text-xs font-semibold text-gray-400 mb-1">Título de la Tarea</label>
                 <input id="assignTitle" type="text" value={assignTitle} onChange={(e) => setAssignTitle(e.target.value)} placeholder="Ej: Trabajo Práctico 1" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" required />
@@ -333,6 +336,10 @@ export default function AssignmentsPanel({
               <div>
                 <label htmlFor="assignTemplate" className="block text-xs font-semibold text-gray-400 mb-1">Repositorio Plantilla (org/repo)</label>
                 <input id="assignTemplate" type="text" value={assignTemplate} onChange={(e) => setAssignTemplate(e.target.value)} placeholder="Ej: unrn-prog2-2026/tp1-plantilla" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" required />
+              </div>
+              <div>
+                <label htmlFor="assignDueDate" className="block text-xs font-semibold text-gray-400 mb-1">Fecha límite (vence 23:59)</label>
+                <input id="assignDueDate" type="date" value={assignDueDate} onChange={(e) => setAssignDueDate(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" />
               </div>
             </div>
             <div className="flex space-x-6 items-center">
@@ -344,10 +351,14 @@ export default function AssignmentsPanel({
                 <input id="assignGroup" type="checkbox" checked={assignGroup} onChange={(e) => setAssignGroup(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
                 <span>Tarea Grupal</span>
               </label>
+              <label htmlFor="assignRequired" className="flex items-center space-x-2 text-xs font-semibold text-gray-400 cursor-pointer">
+                <input id="assignRequired" type="checkbox" checked={assignRequired} onChange={(e) => setAssignRequired(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
+                <span>Obligatorio para regularizar</span>
+              </label>
             </div>
             <div className="flex gap-2">
               <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition">{editingAssignmentId ? "Guardar Cambios" : "Crear Tarea"}</button>
-              {editingAssignmentId && <button type="button" onClick={() => { setEditingAssignmentId(null); setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false); }} className="px-5 py-2.5 bg-neutral-950 border border-neutral-800 text-gray-400 rounded-xl text-xs font-semibold transition">Cancelar</button>}
+              {editingAssignmentId && <button type="button" onClick={() => { setEditingAssignmentId(null); setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false); setAssignDueDate(""); setAssignRequired(true); }} className="px-5 py-2.5 bg-neutral-950 border border-neutral-800 text-gray-400 rounded-xl text-xs font-semibold transition">Cancelar</button>}
             </div>
           </form>
 
@@ -357,11 +368,15 @@ export default function AssignmentsPanel({
                 <div className="flex justify-between items-start flex-wrap gap-2">
                   <div>
                     <h5 className="font-bold text-base text-white">{a.title}{a.is_group && <span className="ml-2.5 px-2 py-0.5 rounded bg-blue-950 border border-blue-800/40 text-blue-400 text-[10px] font-bold uppercase tracking-wider">Grupal</span>}</h5>
-                    <p className="text-xs text-gray-500 mt-1">Plantilla: {a.template_repo}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Plantilla: {a.template_repo}
+                      {a.due_date && <> · Vence: {String(a.due_date).slice(0, 10)}</>}
+                      {a.is_required === false && <> · Optativo</>}
+                    </p>
                   </div>
                   <div className="flex gap-1.5">
                     <button onClick={() => handleExportGradesToMoodle(a.id)} className="px-3 py-1.5 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 rounded-lg text-[11px] font-semibold text-purple-300 transition flex items-center space-x-1 cursor-pointer" title="Enviar calificaciones corregidas de esta tarea a Moodle Gradebook"><span>📤 Moodle</span></button>
-                    <button onClick={() => { setEditingAssignmentId(a.id); setAssignTitle(a.title); setAssignTemplate(a.template_repo); setAssignPr(a.create_feedback_pr || false); setAssignGroup(a.is_group || false); }} className="px-3 py-1.5 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/60 rounded-lg text-[11px] font-semibold text-amber-300 transition">Editar</button>
+                    <button onClick={() => { setEditingAssignmentId(a.id); setAssignTitle(a.title); setAssignTemplate(a.template_repo); setAssignPr(a.create_feedback_pr || false); setAssignGroup(a.is_group || false); setAssignDueDate(String(a.due_date || "").slice(0, 10)); setAssignRequired(a.is_required !== false); }} className="px-3 py-1.5 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/60 rounded-lg text-[11px] font-semibold text-amber-300 transition">Editar</button>
                     <button onClick={() => handleArchiveAssignment(a.id)} className="px-3 py-1.5 bg-red-950/50 hover:bg-red-900/50 border border-red-800/60 rounded-lg text-[11px] font-semibold text-red-300 transition">Archivar (Solo Lectura)</button>
                   </div>
                 </div>
@@ -468,6 +483,7 @@ export default function AssignmentsPanel({
                               </div>
                               <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-neutral-800 text-[10px] font-bold">
                                 <span className={`px-2.5 py-1 rounded ${sub.status === "submitted" ? "bg-blue-950 text-blue-400" : "bg-neutral-800 text-gray-400"}`}>{sub.status === "submitted" ? "Entregado" : "Borrador"}</span>
+                                {sub.late && <span className="px-2.5 py-1 rounded bg-amber-950 text-amber-400" title={sub.late_by_hours ? `${sub.late_by_hours} h después del margen de tolerancia` : undefined}>Fuera de término</span>}
                               </div>
                             </div>
                             <div>
@@ -550,7 +566,11 @@ export default function AssignmentsPanel({
               <div key={a.id} className={`p-6 rounded-2xl border ${sub ? "bg-green-950/10 border-green-900/40" : "bg-neutral-900/30 border-neutral-800"} space-y-4`}>
                 <div className="flex justify-between items-center flex-wrap gap-2">
                   <h5 className="font-bold text-base text-white">{sub ? "✅ " : "⏳ "} {a.title}{a.is_group && <span className="ml-2.5 px-2 py-0.5 rounded bg-blue-950 border border-blue-800/40 text-blue-400 text-[10px] font-bold uppercase tracking-wider">Grupal</span>}</h5>
-                  {sub && <span className="text-xs bg-neutral-950 border border-neutral-850 px-3 py-1 rounded-lg"><strong>Nota:</strong> {sub.grade || <span className="text-gray-500">Sin calificar</span>}</span>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {a.due_date && <span className="text-[11px] text-gray-400">Vence {String(a.due_date).slice(0, 10)}</span>}
+                    {sub?.late && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 border border-amber-800/50 text-amber-300">Fuera de término</span>}
+                    {sub && <span className="text-xs bg-neutral-950 border border-neutral-850 px-3 py-1 rounded-lg"><strong>Nota:</strong> {sub.grade || <span className="text-gray-500">Sin calificar</span>}</span>}
+                  </div>
                 </div>
                 {sub ? (
                   <div className="space-y-4">

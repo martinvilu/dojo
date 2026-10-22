@@ -19,6 +19,7 @@ const PanelFallback = () => (
   <div className="p-6 text-center text-sm text-gray-400" role="status">Cargando módulo…</div>
 );
 const EmailManagementPanel = dynamic(() => import("@/modules/mail/components/EmailManagementPanel"), { loading: () => <PanelFallback /> });
+const AcademicPanel = dynamic(() => import("@/modules/course/components/academic/AcademicPanel"), { loading: () => <PanelFallback /> });
 
 /**
  * Full course detail view: breadcrumb header, sub-tab navigation and the
@@ -201,6 +202,12 @@ export function CourseDetailSection(props: {
             Tareas
           </button>
           <button
+            onClick={() => handleSetCourseSubTab("academic")}
+            className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "academic" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
+          >
+            📘 Cursada
+          </button>
+          <button
             onClick={() => handleSetCourseSubTab("announcements")}
             className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer ${courseSubTab === "announcements" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
           >
@@ -337,6 +344,17 @@ export function CourseDetailSection(props: {
             moodleApiUrl={props.moodleApiUrl}
             moodleWsToken={props.moodleWsToken}
             moodleCourseId={props.moodleCourseId}
+          />
+        </ModuleErrorBoundary>
+      )}
+
+      {/* SUBTAB CURSADA: condición académica, parciales, excepciones y reglas */}
+      {courseSubTab === "academic" && (
+        <ModuleErrorBoundary moduleName="Cursada">
+          <AcademicPanel
+            courseId={selectedCourse.id || selectedCourse.course?.id}
+            profile={profile}
+            commissions={courseCommissions}
           />
         </ModuleErrorBoundary>
       )}
