@@ -215,6 +215,13 @@ exports.webhook = onRequest(async (req, res) => {
     return webhookHandler(req, res);
 });
 
+// Alertas tempranas: recálculo diario de todas las cátedras activas.
+exports.refreshAlertsDaily = onSchedule({ schedule: 'every day 06:00', timeZone: 'America/Argentina/Buenos_Aires' }, async () => {
+    const { refreshAlertsDaily } = require('./src/modules/notifications/alerts');
+    const result = await refreshAlertsDaily(db, admin, logger);
+    logger.info('[alerts] recálculo diario', result);
+});
+
 exports.importGrades = onRequest(async (req, res) => {
     const handler = require('./src/modules/course/export').importGrades;
     return handler(req, res);

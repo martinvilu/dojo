@@ -1,5 +1,5 @@
 const { sendGmailNotification } = require('./gmailAuth');
-
+const { appendContactLog } = require('../notifications/alerts');
 const logger = require("firebase-functions/logger");
 
 async function getScheduledEmails(payload, context) {
@@ -184,6 +184,12 @@ async function sendDirectStudentEmail(payload, context) {
         message_id: sendRes.messageId || null
     });
 
+    // Bitácora de contacto (SPEC §1.3): cada correo directo queda registrado.
+    if (courseId) {
+        await appendContactLog(context, {
+            courseId, studentId, channel: 'email', summary: `Correo: ${String(subject).slice(0, 200)}`,
+        });
+    }
     return { success: true, emailSentTo: studentProfile.email };
 }
 

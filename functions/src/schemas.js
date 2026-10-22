@@ -51,6 +51,9 @@ const gradingRulesShape = {
     allow_promotion_via_recovery: bool,
     late_tolerance_hours: z.number().int().min(0).max(24 * 30),
     min_classes_for_attendance: z.number().int().min(0).max(100),
+    consecutive_absences_alert: z.number().int().min(1).max(20),
+    no_repo_alert_days: z.number().int().min(1).max(60),
+    silent_dropout_days: z.number().int().min(1).max(60),
 };
 const gradingRules = z.strictObject(gradingRulesShape).partial();
 
@@ -304,6 +307,35 @@ const ACTION_SCHEMAS = {
     setLtiPlatformStatus: obj({ platformId: id, status: z.enum(['pending', 'approved', 'disabled']) }),
     syncLtiRoster: course(),
     publishLtiGrades: course({ assignmentId: opt(id), assessmentId: opt(id) }),
+
+    // retención
+    refreshStudentAlerts: course(),
+    getStudentAlerts: course({ includeResolved: opt(bool) }),
+    updateStudentAlert: obj({
+        alertId: id,
+        action: z.enum(['contacted', 'snooze', 'resolve', 'reopen']),
+        days: opt(z.number().int().min(1).max(60)),
+        channel: opt(z.enum(['email', 'discord', 'moodle', 'presencial', 'tutoria', 'otro'])),
+        summary: opt(text(2000)),
+    }),
+    addContactLog: course({
+        studentId: id,
+        channel: z.enum(['email', 'discord', 'moodle', 'presencial', 'tutoria', 'otro']),
+        summary: text(2000).min(3, 'contá brevemente qué se habló'),
+        alertId: opt(id),
+    }),
+    getContactLogs: course({ studentId: opt(id) }),
+    scheduleStudentTutoring: course({ studentId: id, dateTime: isoDate, note: opt(text(1000)), alertId: opt(id) }),
+    importMoodleLogs: course({
+        events: z.array(z.strictObject({
+            userId: z.string().regex(/^\d{1,12}$/),
+            time: text(60).min(1),
+            timeMs: z.number().int().nullable(),
+            eventName: text(300),
+            context: text(500),
+            component: opt(text(200)),
+        })).min(1).max(1000),
+    }),
 };
 
 module.exports = { ACTION_SCHEMAS, gradingRules, gradingRulesShape };

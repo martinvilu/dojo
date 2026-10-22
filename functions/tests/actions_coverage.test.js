@@ -449,13 +449,19 @@ describe('Full Coverage Actions Test Suite', () => {
         name: 'Algoritmos',
         class_instances: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }]
       };
-      ctx.docStore['assignments/a1'] = { course_id: 'c1' };
-      ctx.docStore['assignments/a2'] = { course_id: 'c1' };
+      // Un TP vencido sin entregar y asistencia baja: el motor de alertas lo detecta.
+      ctx.docStore['assignments/a1'] = { course_id: 'c1', title: 'TP1', due_date: '2026-03-01' };
+      ctx.docStore['assignments/a2'] = { course_id: 'c1', title: 'TP2' };
+      for (const n of [1, 2, 3]) {
+        ctx.docStore[`courses/c1/attendance/class_${n}`] = { classNumber: n, records: { s1: 'absent', s2: 'present' } };
+      }
       ctx.docStore['notifications/existing'] = { student_id: 's1', message: 'Bienvenido' };
 
       const riskRes = await notificationActions.checkAndAlertStudentsAtRisk({ courseId: 'c1' }, ctx);
       expect(riskRes.success).toBe(true);
       expect(riskRes.alertsTriggeredCount).toBe(1);
+      expect(ctx.docStore['student_alerts/c1_s1_overdue_tps']).toMatchObject({ status: 'active', type: 'overdue_tps' });
+      expect(ctx.docStore['student_alerts/c1_s1_attendance_critical'].message).toContain('0%');
     });
 
     test('statsActions with submissions and on-time calculation', async () => {

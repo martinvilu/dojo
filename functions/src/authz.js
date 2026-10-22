@@ -201,6 +201,15 @@ const ACTION_POLICIES = {
     setLtiPlatformStatus: ADMIN,
     syncLtiRoster: staffOf('course'),
     publishLtiGrades: staffOf('course'),
+
+    // retención (las consultas filtran a las propias del estudiante en el handler)
+    refreshStudentAlerts: staffOf('course'),
+    getStudentAlerts: staffOf('course'),
+    updateStudentAlert: staffOf('alert'),
+    addContactLog: staffOf('course'),
+    getContactLogs: staffOf('course'),
+    scheduleStudentTutoring: staffOf('course'),
+    importMoodleLogs: staffOf('course'),
 };
 
 function deny(message = 'No tenés permisos para realizar esta acción.') {
@@ -240,6 +249,7 @@ const TARGET_RESOLVERS = {
     studyGroup: async (payload, db) => courseIdOfDoc(db, 'study_groups', payload.groupId, 'el grupo de estudio'),
     assessment: async (payload, db) => courseIdOfDoc(db, 'assessments', payload.assessmentId, 'la evaluación'),
     exception: async (payload, db) => courseIdOfDoc(db, 'course_exceptions', payload.exceptionId, 'la excepción'),
+    alert: async (payload, db) => courseIdOfDoc(db, 'student_alerts', payload.alertId, 'la alerta'),
 };
 
 async function docExists(db, collection, docId) {

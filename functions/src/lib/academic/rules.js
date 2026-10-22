@@ -27,6 +27,12 @@ const DEFAULT_RULES = Object.freeze({
     allow_promotion_via_recovery: false,
     /** Margen después del vencimiento, en horas corridas. */
     late_tolerance_hours: 48,
+    /** Alerta por inasistencias seguidas (SPEC §1.3). */
+    consecutive_absences_alert: 2,
+    /** Días desde la publicación de una práctica sin repositorio para alertar. */
+    no_repo_alert_days: 7,
+    /** Ventana de actividad en Moodle para detectar deserción silenciosa. */
+    silent_dropout_days: 7,
 });
 
 const RULE_KEYS = Object.keys(DEFAULT_RULES);

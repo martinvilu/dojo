@@ -1,3 +1,5 @@
+const { refreshCourseAlerts } = require('./alerts');
+
 async function notifyCourseStudents(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, message, link } = payload;
@@ -43,76 +45,45 @@ async function notifyCourseStudents(payload, context) {
     return { success: true };
 }
 
+/**
+ * Recalcula las alertas tempranas del curso (motor de `alerts.js`) y avisa a
+ * cada estudiante con alertas activas, como mucho una vez por semana.
+ */
 async function checkAndAlertStudentsAtRisk(payload, context) {
-    const { uid, db, admin } = context;
+    const { db, admin } = context;
     const { courseId } = payload;
-    const accessSnap = await db.collection('course_teachers').doc(`${courseId}_${uid}`).get();
-    if (!accessSnap.exists) throw new Error("No tienes acceso a este curso");
-    
     const courseSnap = await db.collection('courses').doc(courseId).get();
     if (!courseSnap.exists) throw new Error("Curso no encontrado");
     const courseName = courseSnap.data().name;
-    const classes = courseSnap.data().class_instances || [];
-    
-    const rosterSnap = await db.collection('course_roster').where('course_id', '==', courseId).get();
-    const assignmentsSnap = await db.collection('assignments').where('course_id', '==', courseId).get();
-    const totalAssignments = assignmentsSnap.size;
-    
-    const alertsTriggered = [];
-    
-    for (let studentDoc of rosterSnap.docs) {
-        const sData = studentDoc.data();
-        const studentId = sData.student_id;
-        
-        const attSnap = await db.collection('attendance').where('course_id', '==', courseId).where('student_id', '==', studentId).get();
-        const presentCount = attSnap.docs.filter(d => ['present', 'late'].includes(d.data().status)).length;
-        
-        const subSnap = await db.collection('submissions').where('student_id', '==', studentId).get();
-        const courseAssigIds = assignmentsSnap.docs.map(d => d.id);
-        const courseSubmissions = subSnap.docs.filter(d => courseAssigIds.includes(d.data().assignment_id));
-        const submittedCount = courseSubmissions.length;
-        
-        const attendanceRatio = classes.length >= 3 ? (presentCount / classes.length) : 1.0;
-        const pendingAssignments = totalAssignments - submittedCount;
-        
-        let isAtRisk = false;
-        let riskReason = "";
-        
-        if (classes.length >= 3 && attendanceRatio < 0.75) {
-            isAtRisk = true;
-            riskReason += `asistencia baja (${Math.round(attendanceRatio * 100)}%) `;
-        }
-        
-        if (pendingAssignments >= 2) {
-            isAtRisk = true;
-            riskReason += (riskReason ? "y " : "") + `tareas pendientes (${pendingAssignments} sin entregar) `;
-        }
-        
-        if (isAtRisk) {
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-            
-            const recentNotifSnap = await db.collection('notifications')
-                .where('student_id', '==', studentId)
-                .where('created_at', '>=', oneWeekAgo)
-                .get();
-                
-            const alreadyNotified = recentNotifSnap.docs.some(d => String(d.data().message || "").includes("Alerta de Desempeño"));
-            
-            if (!alreadyNotified) {
-                await db.collection('notifications').add({
-                    student_id: studentId,
-                    message: `⚠️ Alerta de Desempeño: Tu estado en la materia "${courseName}" requiere atención debido a: ${riskReason.trim()}.`,
-                    link: `/dashboard/courses/${courseId}`,
-                    read: false,
-                    is_daily_pending: false,
-                    created_at: admin.firestore.FieldValue.serverTimestamp()
-                });
-                alertsTriggered.push(studentId);
-            }
-        }
+
+    await refreshCourseAlerts(db, courseId, admin);
+    const alertsSnap = await db.collection('student_alerts').where('course_id', '==', courseId).get();
+    const byStudent = {};
+    for (const doc of alertsSnap.docs) {
+        const a = doc.data();
+        if (a.status === 'active') (byStudent[a.student_id] ||= []).push(a.message);
     }
-    return { success: true, alertsTriggeredCount: alertsTriggered.length };
+
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const alertsTriggered = [];
+    for (const [studentId, messages] of Object.entries(byStudent)) {
+        const recentNotifSnap = await db.collection('notifications')
+            .where('student_id', '==', studentId)
+            .where('created_at', '>=', oneWeekAgo)
+            .get();
+        const alreadyNotified = recentNotifSnap.docs.some(d => String(d.data().message || "").includes("Alerta de Desempeño"));
+        if (alreadyNotified) continue;
+        await db.collection('notifications').add({
+            student_id: studentId,
+            message: `⚠️ Alerta de Desempeño: Tu estado en la materia "${courseName}" requiere atención: ${messages.join(' ')}`,
+            link: `/dashboard?courseId=${courseId}&subTab=academic`,
+            read: false,
+            is_daily_pending: false,
+            created_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+        alertsTriggered.push(studentId);
+    }
+    return { success: true, alertsTriggeredCount: alertsTriggered.length, studentsWithAlerts: Object.keys(byStudent).length };
 }
 
 async function getStudentNotifications(payload, context) {

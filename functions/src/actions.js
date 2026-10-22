@@ -178,6 +178,15 @@ const ACTION_MODULES = {
     setLtiPlatformStatus: './modules/integrations/lti',
     syncLtiRoster: './modules/integrations/lti',
     publishLtiGrades: './modules/integrations/lti',
+
+    // retención: alertas, bitácora, consultas, foro y logs de Moodle
+    refreshStudentAlerts: './modules/notifications/alerts',
+    getStudentAlerts: './modules/notifications/alerts',
+    updateStudentAlert: './modules/notifications/alerts',
+    addContactLog: './modules/notifications/alerts',
+    getContactLogs: './modules/notifications/alerts',
+    scheduleStudentTutoring: './modules/notifications/alerts',
+    importMoodleLogs: './modules/integrations/moodleLogs',
 };
 
 /** Devuelve el handler de la acción, o null si la acción no existe. */
