@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo } from 'react';
+import { useBeforeUnload } from '@/hooks/useBeforeUnload';
 import { api } from '@/lib/api';
 import { renderMarkdown } from '@/lib/markdown';
 import ClassCommentsThread from '@/modules/course/components/comments/ClassCommentsThread';
@@ -76,6 +77,13 @@ export function CourseSchedulesPanel({
     return counts;
   }, [courseComments]);
 
+  // Aviso al cerrar la pestaña con el cronograma editado y sin guardar (mejora 1.49).
+  // Se guarda el curso donde se editó: cambiar de curso descarta la marca.
+  const currentCourseId = selectedCourse?.id || selectedCourse?.course?.id;
+  const [editedCourseId, setEditedCourseId] = useState<string | null>(null);
+  const markEdited = () => setEditedCourseId(currentCourseId || null);
+  useBeforeUnload(editedCourseId !== null && editedCourseId === currentCourseId);
+
   const handleGenerateClasses = async () => {
     if (!teacherStartDate || !teacherDuration || teacherSchedules.length === 0) {
       showToast("Primero configurá la fecha de inicio, duración en semanas y al menos un horario.", "success");
@@ -123,12 +131,14 @@ export function CourseSchedulesPanel({
     });
 
     setTeacherClasses(generated);
+    markEdited();
   };
 
   const handleUpdateClassInstance = (idx: number, field: keyof ClassInstance, value: any) => {
     const updated = [...teacherClasses];
     updated[idx] = { ...updated[idx], [field]: value };
     setTeacherClasses(updated);
+    markEdited();
   };
 
   const handleMoveClassKanban = (classIdx: number, targetColumn: string) => {
@@ -143,6 +153,7 @@ export function CourseSchedulesPanel({
       updated[classIdx] = { ...updated[classIdx], special_status: "Examen" };
     }
     setTeacherClasses(updated);
+    markEdited();
   };
 
   const handleSaveTeacherSchedule = async () => {
@@ -153,6 +164,7 @@ export function CourseSchedulesPanel({
         courseId: cid,
         data: { class_instances: teacherClasses }
       });
+      setEditedCourseId(null);
       showToast("Cronograma de clases guardado correctamente.", "success");
     } catch (err: any) {
       showToast("Error al guardar cronograma: " + err.message, "error");
