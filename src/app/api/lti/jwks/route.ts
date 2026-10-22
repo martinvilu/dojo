@@ -1,18 +1,4 @@
-import { NextResponse } from "next/server";
+// Alias heredado: el JWKS real de la herramienta vive en /api/v1/lti/jwks.
+export { GET } from "@/app/api/v1/lti/jwks/route";
 
 export const dynamic = "force-dynamic";
-
-export async function GET() {
-  return NextResponse.json({
-    keys: [
-      {
-        kty: "RSA",
-        n: "fake-public-modulus-for-lti-key-verification",
-        e: "AQAB",
-        kid: "ninja-dojo-key-1",
-        use: "sig",
-        alg: "RS256"
-      }
-    ]
-  });
-}

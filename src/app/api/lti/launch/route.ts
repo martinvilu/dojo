@@ -1,18 +1,31 @@
 import { NextResponse } from "next/server";
 
 import { logger } from "@/lib/logger";
+import { POST as verifiedLaunch } from "@/app/api/v1/lti/launch/route";
+import { POST as loginInitiation } from "@/app/api/v1/lti/login_initiations/route";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Ruta heredada. Los mensajes LTI 1.3 (iniciación OIDC o id_token con state)
+ * se derivan a /api/v1/lti/*, que verifica la firma; acá solo queda la
+ * navegación de LTI 1.1 (lis_outcome_service_url) para herramientas viejas.
+ */
 export async function POST(request: Request) {
+  const contentType = request.headers.get("content-type") || "";
+  const query = new URL(request.url).searchParams;
+  const probe = contentType.includes("form") ? await request.clone().formData() : null;
+  const has = (key: string) => Boolean(probe?.get(key) || query.get(key));
+  if (has("iss") && has("login_hint")) return loginInitiation(request);
+  if (probe?.get("id_token")) return verifiedLaunch(request);
+
   try {
-    const contentType = request.headers.get("content-type") || "";
     let assignmentId = "";
     let courseId = "";
     let targetModule = "";
     let email = "";
     let name = "";
-    let roles: string[] = [];
+    const roles: string[] = [];
     let outcomeUrl = "";
     let resultId = "";
 
@@ -29,7 +42,6 @@ export async function POST(request: Request) {
 
     if (contentType.includes("form") || contentType.includes("multipart")) {
       const formData = await request.formData();
-      const idToken = formData.get("id_token") as string;
 
       targetModule = (formData.get("targetModule") || formData.get("custom_targetmodule") || formData.get("custom_target_module") || targetModule) as string;
       courseId = (formData.get("courseId") || formData.get("custom_courseid") || formData.get("custom_course_id") || courseId) as string;
@@ -38,36 +50,6 @@ export async function POST(request: Request) {
       name = (formData.get("lis_person_name_full") || name) as string;
       outcomeUrl = (formData.get("lis_outcome_service_url") || outcomeUrl) as string;
       resultId = (formData.get("lis_result_sourcedid") || resultId) as string;
-
-      if (idToken) {
-        const tokenParts = idToken.split(".");
-        if (tokenParts.length >= 2) {
-          try {
-            const payload = JSON.parse(Buffer.from(tokenParts[1], "base64").toString("utf-8"));
-            email = payload.email || payload["https://purl.imsglobal.org/spec/lti/claim/lis"]?.person_sourcedid || email;
-            name = payload.name || name || "Moodle User";
-            roles = payload["https://purl.imsglobal.org/spec/lti/claim/roles"] || roles;
-            const customParams = payload["https://purl.imsglobal.org/spec/lti/claim/custom"] || {};
-            
-            assignmentId = customParams.assignmentId || customParams.activityId || assignmentId;
-            courseId = customParams.courseId || customParams.course_id || courseId;
-            targetModule = customParams.targetModule || customParams.target_module || customParams.target || customParams.tab || targetModule;
-
-            // Parse LTI grade outcome params (LTI 1.1 / 1.2 POX, or LTI 1.3 AGS claim)
-            const lisClaim = payload["https://purl.imsglobal.org/spec/lti/claim/lis"] || {};
-            outcomeUrl = lisClaim.outcome_service_url || outcomeUrl;
-            resultId = lisClaim.result_sourcedid || resultId;
-            
-            if (!outcomeUrl) {
-              const agsClaim = payload["https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"] || {};
-              outcomeUrl = agsClaim.lineitem || agsClaim.lineitems || outcomeUrl;
-              resultId = agsClaim.lineitem ? "ags-lineitem" : resultId;
-            }
-          } catch (e) {
-            logger.error("Error decoding LTI token parts", e);
-          }
-        }
-      }
     }
 
     // Default fallbacks in case of empty LTI payload

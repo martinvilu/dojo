@@ -41,7 +41,9 @@ export function useDeepLinks({
       hasProcessedParams.current = true;
       const outcomeUrl = params.get("lis_outcome_service_url");
       const resultId = params.get("lis_result_sourcedid");
-      const ltiLaunch = params.get("lti_launch") === "true";
+      // "verified": launch LTI 1.3 ya validado e inscripto en el servidor.
+      const ltiVerified = params.get("lti_launch") === "verified";
+      const ltiLaunch = params.get("lti_launch") === "true" || ltiVerified;
 
       if (outcomeUrl && resultId) {
         moodleLtiParams.current = { outcomeUrl, resultId };
@@ -56,7 +58,7 @@ export function useDeepLinks({
       let updatedCourses = courses;
       if (ltiLaunch && courseId) {
         try {
-          const enrollment = await api("moodleAutoEnroll", { courseId });
+          const enrollment = ltiVerified ? null : await api("moodleAutoEnroll", { courseId });
           if (enrollment?.status === "pending") {
             showToast("Tu inscripción desde Moodle quedó pendiente de aprobación por el docente.", "success");
           }

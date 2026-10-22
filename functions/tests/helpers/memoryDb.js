@@ -5,22 +5,32 @@
  */
 const DELETE = Symbol('delete');
 
+
 function memoryDb(initial = {}) {
   const docs = { ...initial };
   let autoId = 0;
 
-  const snapshot = (path) => ({
-    id: path.split('/').pop(),
-    exists: docs[path] !== undefined,
-    data: () => (docs[path] === undefined ? undefined : { ...docs[path] }),
-    ref: docRef(path),
-  });
+  // Como en Firestore, el snapshot congela los datos al momento de leer.
+  const snapshot = (path) => {
+    const frozen = docs[path] === undefined ? undefined : structuredClone(docs[path]);
+    return {
+      id: path.split('/').pop(),
+      exists: frozen !== undefined,
+      data: () => (frozen === undefined ? undefined : structuredClone(frozen)),
+      ref: docRef(path),
+    };
+  };
 
-  const applyUpdate = (path, data, merge) => {
-    const next = merge ? { ...(docs[path] || {}) } : {};
+  const applyUpdate = (path, data, merge, dotted = false) => {
+    const next = merge ? structuredClone(docs[path] || {}) : {};
     for (const [key, value] of Object.entries(data)) {
-      if (value === DELETE) delete next[key];
-      else next[key] = value;
+      // update() interpreta "a.b" como campo anidado, igual que Firestore.
+      const parts = dotted ? key.split('.') : [key];
+      let node = next;
+      parts.slice(0, -1).forEach((p) => { node = node[p] = node[p] && typeof node[p] === 'object' ? node[p] : {}; });
+      const leaf = parts[parts.length - 1];
+      if (value === DELETE) delete node[leaf];
+      else node[leaf] = value;
     }
     docs[path] = next;
   };
@@ -33,7 +43,7 @@ function memoryDb(initial = {}) {
       set: async (data, opts) => applyUpdate(path, data, opts && opts.merge),
       update: async (data) => {
         if (docs[path] === undefined) throw Object.assign(new Error(`No document: ${path}`), { code: 5 });
-        applyUpdate(path, data, true);
+        applyUpdate(path, data, true, true);
       },
       create: async (data) => {
         if (docs[path] !== undefined) throw Object.assign(new Error('exists'), { code: 6 });
@@ -75,9 +85,18 @@ function memoryDb(initial = {}) {
     };
   }
 
+  // Transacciones serializadas: alcanza para tests de un solo proceso.
+  const runTransaction = async (fn) => fn({
+    get: async (ref) => (typeof ref.get === 'function' && ref.path ? snapshot(ref.path) : ref.get()),
+    set: (ref, data, opts) => applyUpdate(ref.path, data, opts && opts.merge),
+    update: (ref, data) => applyUpdate(ref.path, data, true, true),
+    delete: (ref) => { delete docs[ref.path]; },
+  });
+
   return {
     docs,
     collection: collectionRef,
+    runTransaction,
     getAll: async (...refs) => refs.map((r) => snapshot(r.path)),
   };
 }
