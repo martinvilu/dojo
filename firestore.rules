@@ -74,12 +74,11 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // Token QR vigente: publicado por el docente. Ningún cliente lo lee:
-      // los estudiantes validan su token vía submitQrAttendance (backend).
+      // Sesión QR vigente con su secreto TOTP (mejora 3.18). Solo backend:
+      // el docente la abre con startQrSession y obtiene el código rotativo
+      // con getQrSessionCode; los estudiantes firman vía submitQrAttendance.
       match /active_qr/{qrId} {
-        allow read: if false;
-        allow create, update: if isTeacherOf(courseId);
-        allow delete: if false;
+        allow read, write: if false;
       }
 
       // Foro Q&A por clase: miembros leen y publican consultas. En updates,

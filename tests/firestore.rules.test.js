@@ -146,15 +146,15 @@ describe("attendance subcollection", () => {
 describe("active QR token", () => {
   const qr = (uid) => doc(user(uid), `courses/${COURSE}/active_qr/current`);
 
-  it("can be published by the assigned teacher", async () => {
-    await assertSucceeds(setDoc(qr(TEACHER), { token: "ABC123", classNumber: 1 }));
+  it("cannot be published from a client, not even by the assigned teacher", async () => {
+    await assertFails(setDoc(qr(TEACHER), { token: "ABC123", classNumber: 1 }));
+    await assertFails(setDoc(qr(STUDENT), { token: "FAKE1" }));
   });
 
-  it("is unreadable by any client and unwritable by students", async () => {
-    await withAdminDb((db) => setDoc(doc(db, `courses/${COURSE}/active_qr/current`), { token: "ABC123" }));
+  it("is unreadable by any client", async () => {
+    await withAdminDb((db) => setDoc(doc(db, `courses/${COURSE}/active_qr/current`), { secret: "abc", classNumber: 1 }));
     await assertFails(getDoc(qr(STUDENT)));
     await assertFails(getDoc(qr(TEACHER)));
-    await assertFails(setDoc(qr(STUDENT), { token: "FAKE1" }));
   });
 });
 

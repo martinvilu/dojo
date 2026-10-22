@@ -25,6 +25,9 @@ const ACTION_MODULES = {
     // attendance
     markAttendance: './modules/attendance/attendance',
     submitQrAttendance: './modules/attendance/attendance',
+    startQrSession: './modules/attendance/attendance',
+    getQrSessionCode: './modules/attendance/attendance',
+    stopQrSession: './modules/attendance/attendance',
     
     // moodle
     moodleAutoEnroll: './modules/integrations/moodle',

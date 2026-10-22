@@ -103,6 +103,9 @@ const ACTION_SCHEMAS = {
     // asistencia
     markAttendance: course({ classId: extId }),
     submitQrAttendance: course({ classNumber: numeric, token: text(32), lat: latLng, lng: latLng }),
+    startQrSession: course({ classNumber: numeric, lat: latLng, lng: latLng }),
+    getQrSessionCode: course(),
+    stopQrSession: course(),
 
     // moodle
     moodleAutoEnroll: course(),
