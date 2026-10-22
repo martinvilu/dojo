@@ -9,6 +9,13 @@ import PeerReviewSection from "./PeerReviewSection";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
+/** Estados de entrega, incluidos los que llegan desde los PR de GitHub. */
+const SUBMISSION_STATUS: Record<string, { label: string; className: string }> = {
+  submitted: { label: "Entregado", className: "bg-blue-950 text-blue-400" },
+  changes_requested: { label: "Cambios solicitados", className: "bg-amber-950 text-amber-400" },
+  approved: { label: "OK ✓", className: "bg-emerald-950 text-emerald-400" },
+};
+
 export default function AssignmentsPanel({
   selectedCourse,
   profile,
@@ -496,7 +503,7 @@ export default function AssignmentsPanel({
                                 {sub.repo_url && <a href={sub.repo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline mt-1 inline-block">GitHub: {sub.repo_url.replace("https://github.com/", "")} ↗</a>}
                               </div>
                               <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-neutral-800 text-[10px] font-bold">
-                                <span className={`px-2.5 py-1 rounded ${sub.status === "submitted" ? "bg-blue-950 text-blue-400" : "bg-neutral-800 text-gray-400"}`}>{sub.status === "submitted" ? "Entregado" : "Borrador"}</span>
+                                <span className={`px-2.5 py-1 rounded ${SUBMISSION_STATUS[sub.status]?.className || "bg-neutral-800 text-gray-400"}`}>{SUBMISSION_STATUS[sub.status]?.label || "Borrador"}</span>
                                 {sub.late && <span className="px-2.5 py-1 rounded bg-amber-950 text-amber-400" title={sub.late_by_hours ? `${sub.late_by_hours} h después del margen de tolerancia` : undefined}>Fuera de término</span>}
                               </div>
                             </div>
@@ -582,6 +589,7 @@ export default function AssignmentsPanel({
                   <h5 className="font-bold text-base text-white">{sub ? "✅ " : "⏳ "} {a.title}{a.is_group && <span className="ml-2.5 px-2 py-0.5 rounded bg-blue-950 border border-blue-800/40 text-blue-400 text-[10px] font-bold uppercase tracking-wider">Grupal</span>}</h5>
                   <div className="flex items-center gap-2 flex-wrap">
                     {a.due_date && <span className="text-[11px] text-gray-400">Vence {String(a.due_date).slice(0, 10)}</span>}
+                    {sub?.status && SUBMISSION_STATUS[sub.status] && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${SUBMISSION_STATUS[sub.status].className}`}>{SUBMISSION_STATUS[sub.status].label}</span>}
                     {sub?.late && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 border border-amber-800/50 text-amber-300">Fuera de término</span>}
                     {sub && <span className="text-xs bg-neutral-950 border border-neutral-850 px-3 py-1 rounded-lg"><strong>Nota:</strong> {sub.grade || <span className="text-gray-500">Sin calificar</span>}</span>}
                   </div>
@@ -591,6 +599,7 @@ export default function AssignmentsPanel({
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                       <a href={sub.repo_url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-green-400 hover:underline">Ver mi repositorio en GitHub ↗</a>
                       {sub.feedback && <p className="text-xs text-gray-300"><strong>Feedback:</strong> {sub.feedback}</p>}
+                      {sub.status === "changes_requested" && sub.last_review?.body && <p className="text-xs text-amber-300"><strong>Cambios pedidos en el PR:</strong> {sub.last_review.body}</p>}
                     </div>
                     <div className="border-t border-neutral-850 pt-4 flex gap-2">
                       <button

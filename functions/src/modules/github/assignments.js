@@ -759,5 +759,6 @@ module.exports = {
     submitAssignment,
     updateAssignment,
     syncGradesFromSpreadsheet,
-    addGroupCollaborator
+    addGroupCollaborator,
+    submissionLateness
 };

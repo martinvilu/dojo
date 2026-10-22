@@ -21,6 +21,8 @@ const { KEY_ENV: LTI_KEY_ENV } = require('./src/lib/lti/keys');
 const encryptionKey = defineSecret(KEY_ENV);
 // Clave RSA de la herramienta LTI 1.3 (firma NRPS/AGS). La misma que usa App Hosting.
 const ltiToolKey = defineSecret(LTI_KEY_ENV);
+// Secreto del webhook de la organización de GitHub (eventos de PR y reviews).
+const githubWebhookSecret = defineSecret('GITHUB_WEBHOOK_SECRET');
 const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 const { gradeToOutcomeScore } = require('./src/lib/grades');
 
@@ -213,6 +215,12 @@ exports.calendar = onRequest(async (req, res) => {
 exports.webhook = onRequest(async (req, res) => {
     const webhookHandler = require('./src/modules/github/webhook').webhook;
     return webhookHandler(req, res);
+});
+
+// Eventos de GitHub (pull_request, pull_request_review, push) de la organización.
+exports.githubEvents = onRequest({ secrets: [githubWebhookSecret] }, async (req, res) => {
+    const { handleGithubEvent } = require('./src/modules/github/events');
+    return handleGithubEvent(req, res, { secret: githubWebhookSecret.value() });
 });
 
 // Alertas tempranas: recálculo diario de todas las cátedras activas.
