@@ -40,11 +40,63 @@ Los flujos por rol están automatizados en `tests/selenium/` (14 módulos); las 
 
 ## 3. Commits semánticos
 
-Usamos [Conventional Commits](https://www.conventionalcommits.org/): `<tipo>(<ámbito>): <descripción>`
+Usamos [Conventional Commits 1.0](https://www.conventionalcommits.org/es/v1.0.0/). El historial se lee como un changelog: cada commit es **un cambio coherente que compila y pasa los tests por sí solo**.
 
-*   **feat**: nueva funcionalidad · **fix**: corrección · **docs**: documentación · **style**: formato · **refactor**: sin feat/fix · **test**: pruebas · **chore**: mantenimiento.
+### 3.1 Formato
 
-Un commit por solicitud/cambio completado, con push inmediato si aplica.
+```
+<tipo>(<ámbito>): <resumen en imperativo, en inglés, sin punto final>
+
+<cuerpo opcional: qué cambia y POR QUÉ, en párrafos de ~72 columnas>
+
+<pies opcionales: BREAKING CHANGE, referencias, co-autores>
+```
+
+*   **Resumen**: ≤ 72 caracteres, minúscula inicial, imperativo (`add`, `fix`, `encrypt`; no `added` ni `adds`). Si implementa una propuesta de `mejoras.md`, terminar con su número: `(mejora 3.18)` o `(mejoras 1.01, 1.02)`.
+*   **Cuerpo**: explica el motivo y el efecto observable, no repite el diff. Obligatorio en `fix` (qué fallaba y en qué caso) y en cambios de seguridad o de datos.
+*   **Idioma**: resumen y cuerpo en inglés, como el resto del historial; la documentación del repo sigue en castellano.
+
+### 3.2 Tipos
+
+| Tipo | Cuándo | Ejemplo |
+|---|---|---|
+| `feat` | Funcionalidad nueva visible para usuarios o integraciones | `feat(attendance): rotate QR codes server-side with TOTP sessions (mejora 3.18)` |
+| `fix` | Corrige un comportamiento incorrecto | `fix(github): bucket weekly commit metrics in local time` |
+| `perf` | Mejora de rendimiento sin cambio funcional | `perf(attendance): lazy-load the QR scanner and html5-qrcode (mejora 4.27)` |
+| `refactor` | Reestructura sin cambiar comportamiento | `refactor(dashboard): extract useCourseRealtime hook` |
+| `test` | Solo tests | `test(rules): cover backend-only academic collections` |
+| `docs` | Solo documentación | `docs(plan): record phase 1 and 2 progress` |
+| `style` | Formato, sin cambios de lógica | `style(skills): drop unused catch binding` |
+| `ci` | Workflows de GitHub Actions | `ci(security): add weekly npm audit and CodeQL analysis` |
+| `chore` | Mantenimiento: dependencias, configuración, scripts | `chore(deps): remove unused sonner` |
+
+Un `feat` o `fix` incluye sus propios tests: no se separan en un commit `test` aparte.
+
+### 3.3 Ámbitos
+
+Usar el dominio afectado, alineado con `functions/src/modules/` y `src/modules/`: `api`, `security`, `auth`, `attendance`, `academic`, `assignments`, `github`, `moodle`, `lti`, `calendar`, `mail`, `courses`, `dashboard`, `ui`, `a11y`, `export`, `rules`, `deps`, `ci`. Si un cambio toca dos dominios en serio, probablemente son dos commits.
+
+### 3.4 Cambios incompatibles
+
+Agregar `!` después del ámbito y un pie `BREAKING CHANGE:` que diga qué se rompe y cómo migrar:
+
+```
+feat(security)!: encrypt GitHub and Gmail tokens at rest (mejora 3.13)
+
+BREAKING CHANGE: the api function now requires the DOJO_ENCRYPTION_KEY
+secret. Set it before deploying and run
+scripts/migrations/001-encrypt-credentials.js.
+```
+
+Aplica a cambios de contrato de la callable `api`, de reglas de Firestore que quiten acceso, de formato de exports CSV o de requisitos de despliegue.
+
+### 3.5 Cómo partir el trabajo
+
+1.  Un commit por mejora o por tarea del plan; nunca "varios fixes" juntos.
+2.  Orden de dependencias: primero la librería o el backend, después la UI que lo usa, al final la documentación.
+3.  Cada commit debe pasar `npx tsc --noEmit`, `npm run lint` y `cd functions && npm test`. Para revisar un commit intermedio sin tocar el árbol de trabajo: `git worktree add /tmp/check <sha>`.
+4.  Si un archivo mezcla dos cambios, separarlos con `git add -p` antes de commitear.
+5.  Commits generados con asistentes de IA llevan el pie `Co-Authored-By:` correspondiente.
 
 ## 4. Mantenimiento de la documentación
 
