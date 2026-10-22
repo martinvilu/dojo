@@ -14,6 +14,9 @@ export interface GradingRules {
   max_late_for_promotion: number;
   allow_promotion_via_recovery: boolean;
   late_tolerance_hours: number;
+  consecutive_absences_alert: number;
+  no_repo_alert_days: number;
+  silent_dropout_days: number;
 }
 
 export interface PartialResult {

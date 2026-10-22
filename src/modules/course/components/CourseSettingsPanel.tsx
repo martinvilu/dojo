@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard";
 import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegrationPanel";
 import LtiAdvantagePanel from "@/modules/moodle/components/LtiAdvantagePanel";
+import MoodleLogImportCard from "@/modules/moodle/components/MoodleLogImportCard";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export function CourseSettingsPanel(props: any) {
@@ -379,6 +380,8 @@ export function CourseSettingsPanel(props: any) {
                     canEdit={profile?.role === "admin" || (courseTeachers || []).some((ct: any) => ct.teacher_id === profile?.id && ct.role !== "ayudante")}
                   />
                 )}
+
+                {teacherMoodleEnabled && <MoodleLogImportCard courseId={selectedCourse.id || selectedCourse.course?.id} />}
 
                 {/* CSV grading synchronization (NORMALLY COLLAPSED/HIDDEN) */}
                 <div className="bg-neutral-900/60 p-5 rounded-2xl border border-neutral-800 space-y-3">

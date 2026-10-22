@@ -25,6 +25,9 @@ const FIELDS: Field[] = [
   { key: "max_late_for_promotion", label: "Máx. entregas fuera de término para promocionar", kind: "int" },
   { key: "max_exempt_tps", label: "TPs exceptuables por estudiante", kind: "int" },
   { key: "late_tolerance_hours", label: "Tolerancia después del vencimiento", hint: "horas corridas", kind: "int" },
+  { key: "consecutive_absences_alert", label: "Alertar tras inasistencias seguidas", kind: "int" },
+  { key: "no_repo_alert_days", label: "Alertar sin repositorio a los", hint: "días de publicada la práctica", kind: "int" },
+  { key: "silent_dropout_days", label: "Actividad reciente en Moodle (deserción silenciosa)", hint: "días", kind: "int" },
   { key: "allow_promotion_via_recovery", label: "Permite promocionar rindiendo recuperatorio", kind: "bool" },
 ];
 

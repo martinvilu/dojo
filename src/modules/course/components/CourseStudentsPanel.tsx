@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import { api } from '@/lib/api';
+import { StudentAlertsPanel } from './StudentAlertsPanel';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, updateDoc } from 'firebase/firestore';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -287,6 +288,13 @@ export function CourseStudentsPanel({
   return (
     <>
               <div className="space-y-6">
+                {(profile?.role === "teacher" || profile?.role === "admin") && (
+                  <StudentAlertsPanel
+                    courseId={selectedCourse.id || selectedCourse.course?.id}
+                    commissionFilter={commissionFilter}
+                    onEmail={setSelectedDirectEmailStudent}
+                  />
+                )}
                 <div className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
