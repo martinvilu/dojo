@@ -2,6 +2,7 @@ import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import React, { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
+import { QrImage } from "@/components/dashboard/ui/QrImage";
 import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 
 interface Student {
@@ -295,16 +296,9 @@ export default function AttendanceManager({
             </p>
 
             <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mx-auto">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&data=${encodeURIComponent(
-                  JSON.stringify({
-                    courseId,
-                    classNumber,
-                    token: activeQr.code,
-                  })
-                )}`}
-                alt="QR Code"
-                className="w-48 h-48"
+              <QrImage
+                value={JSON.stringify({ courseId, classNumber, token: activeQr.code })}
+                alt={`Código QR de asistencia de la clase ${classNumber}`}
               />
             </div>
 
