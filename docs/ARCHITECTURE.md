@@ -111,9 +111,11 @@ Relación N-a-N que asigna profesores y ayudantes auxiliares a una cátedra.
 {
   "course_id": "course123",
   "teacher_id": "teacher123",
-  "role": "titular | ayudante"
+  "role": "titular | ayudante",
+  "commissions": ["Comisión 1"]
 }
 ```
+Un ayudante con `commissions` solo califica, toma asistencia, carga parciales y excepciones y ve condiciones de alumnos de esas comisiones (`functions/src/lib/courseGuards.js`). La comisión del alumno (`profiles.commissions[courseId]`) la cambia el titular con `setStudentCommission`.
 
 ### Colección: `enrollments` y `course_roster`
 Doble validación de inscripción de un estudiante a una cátedra para evitar desvanecimientos en consultas reactivas.
@@ -181,15 +183,14 @@ Subcolección dentro de cada clase para almacenar comentarios del foro Q&A con s
 }
 ```
 
-### Colección: `attendance`
-Registros de presentismo de los estudiantes.
+### Subcolección: `courses/{id}/attendance/class_{n}`
+Única fuente de presentismo (la colección raíz `attendance/` es legada; ver migración 003). Los miembros la leen en tiempo real; la escriben solo el QR y `saveClassAttendance`.
 ```json
 {
-  "course_id": "course123",
-  "student_id": "student123",
-  "class_number": 1,
-  "status": "present | absent | late",
-  "recorded_at": "timestamp"
+  "classNumber": 1,
+  "records": { "student123": "present | late | absent | justified" },
+  "updated_at": "timestamp",
+  "updated_by": "uid | system_qr"
 }
 ```
 
@@ -350,6 +351,18 @@ Librería sin dependencias, compartida por Next (login OIDC, launch, JWKS, Deep 
 ### URLs semánticas (`functions/src/lib/routes.js`)
 
 `/{asignatura}/{año}/{cuatrimestre}/{comision}/{vista}`, `/estudiantes/st_…[/asistencias|/practicas/{tp}]` y `/admin/configuracion`. `course_slugs/{slug}__{año}__{cuatrimestre}` garantiza unicidad; `student_public_ids/{st_…}` → uid. Las páginas son clientes que resuelven la ruta con `resolveCourseRoute` después de autenticar; los uid nunca aparecen en la URL ni en el HTML.
+
+### Cierre de cursada y actas (`functions/src/modules/course/closure.js`)
+
+`course_closures/{curso}` guarda el estado (`closed` / `reopened`), la versión vigente y el historial; `actas/{v}` las reglas efectivas, el resumen y el hash SHA-256 del contenido canónico, y `actas/{v}/parts/{n}` las filas (200 por documento). Mientras está cerrada, `lib/courseGuards.js` rechaza escrituras de notas, asistencia, QR, excepciones, parciales y reglas. Reabrir exige motivo y no modifica las actas anteriores. `getActa` y `exportActaCsv` recalculan el hash antes de mostrar o exportar. Todo es solo backend.
+
+### Rango Ninja (`functions/src/lib/xp.js`)
+
+XP, nivel, rango y medallas se calculan desde asistencia, entregas, notas de TPs y parciales y foro; no hay escrituras de XP. La tarjeta del alumno, `getMyXp` y la bitácora `getXpLogs` usan la misma función.
+
+### Observabilidad
+
+Sentry es opcional: `src/instrumentation.ts`, `src/instrumentation-client.ts` y `functions/src/lib/observability.js` solo se activan con DSN y no recolectan datos personales. El backend reporta errores inesperados de la callable `api`, no las respuestas de validación, permisos o rate limit.
 
 ---
 

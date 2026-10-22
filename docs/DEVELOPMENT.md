@@ -39,10 +39,15 @@ y exportar el mismo `LTI_TOOL_PRIVATE_KEY` en `.env.local` para `npm run dev` (l
 | `npm run dev` / `build` | Desarrollo / build de producción |
 | `npx tsc --noEmit` | Chequeo de tipos |
 | `npm run lint` | ESLint |
-| `cd functions && npm test` | Suite Jest del backend (342 pruebas / 37 suites) |
+| `cd functions && npm test` | Suite Jest del backend (362 pruebas / 42 suites) |
+| `cd functions && npm run typecheck` | `tsc --checkJs` estricto sobre el backend (JSDoc) |
+| `npm run test:unit` | Pruebas unitarias del frontend (`tests/unit`) |
 | `npm run test:rules` | Reglas de Firestore contra emulador (24 escenarios) |
+| `npm run test:e2e` | Playwright + axe contra emuladores de Auth, Firestore y Functions (10 escenarios) |
 | `npm run test:selenium` | E2E Selenium sobre mock server (56 escenarios) |
 | `npm run test:local` | Batería local completa (`scripts/test-local.sh`) |
+
+`npm run test:e2e` necesita Java (emulador de Firestore) y Google Chrome. Crea `functions/.secret.local` con secretos descartables si no existe, siembra un proyecto `demo-ninja-dojo` (`scripts/e2e/seed-emulator.js`: titular, ayudante de Comisión 1 y dos alumnos, contraseña `Dojo-e2e-1234`) y levanta Next en `.next-e2e` con `NEXT_PUBLIC_USE_FIREBASE_EMULATORS=1`. Con esa misma variable, `npm run dev` también usa los emuladores. Los fallos dejan trazas en `test-results/` (`npx playwright show-trace …`).
 
 Los flujos por rol están automatizados en `tests/selenium/` (14 módulos); las guías paso a paso de usuario viven en [`manual/`](../manual/index.md). Antes de cambios masivos en la base de datos, correr siempre la suite de reglas.
 
@@ -171,5 +176,15 @@ firebase deploy --only functions,firestore     # backend
    GOOGLE_CLOUD_PROJECT=<proyecto> node scripts/migrations/002-semantic-routes.js [--apply]
    ```
 6. **Aprobar plataformas LTI**: cada titular registra su Moodle desde Ajustes Cátedra; un admin las revisa en *Configuración → Plataformas LTI 1.3*.
+
+### Antes del despliegue de las Fases 0 y 6–8
+
+1. **Reglas y frontend juntos**: la asistencia (`courses/{id}/attendance`) y la comisión de cada alumno (`profiles.commissions`) dejan de escribirse desde el cliente. Un frontend viejo con reglas nuevas no puede guardar planillas; desplegar ambos a la vez.
+2. **Migrar la asistencia legada** (dry run primero; `--delete-legacy` borra los documentos ya copiados):
+   ```bash
+   GOOGLE_CLOUD_PROJECT=<proyecto> node scripts/migrations/003-legacy-attendance.js [--apply]
+   ```
+3. **Ayudantes**: el admin elige *titular* o *ayudante* al asignar un docente; el titular marca las comisiones de cada ayudante en *Docentes*. Un ayudante sin comisiones sigue viendo toda la cursada.
+4. **Sentry (opcional)**: `SENTRY_DSN` en Functions y en App Hosting, `NEXT_PUBLIC_SENTRY_DSN` para el navegador y, para subir source maps, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` y `SENTRY_PROJECT` en el build. Sin DSN no se carga nada.
 
 Para el caso concreto de migración de endpoints CSV (orden de despliegue, verificación y rotación de tokens), seguir el [Runbook](RUNBOOK_DESPLIEGUE_CSV.md).

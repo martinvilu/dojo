@@ -140,3 +140,25 @@ Esto evita que alguien registre un Moodle propio y entre con la cuenta de otra p
 - **Notas**: cada nota que cargás en el Dojo se publica sola en Moodle; también podés usar **📤 LTI** en una tarea o **📤 Publicar en Moodle** en un parcial. La escala 0–10 se convierte al máximo del ítem en Moodle.
 - El curso de Moodle queda vinculado la primera vez que alguien abre la actividad; hasta entonces el padrón y las notas no tienen a dónde sincronizar.
 
+
+## 8. Ayudantes por comisión {#ayudantes}
+
+Al asignar un docente, el administrador elige si es **titular** o **ayudante**. En la pestaña **Docentes**, el titular marca las comisiones de cada ayudante:
+
+- Con comisiones marcadas, el ayudante solo califica, toma asistencia, carga notas de parciales y otorga excepciones a estudiantes de esas comisiones, y en **Cursada** solo ve esos estudiantes.
+- Sin ninguna marcada, ve toda la cursada (como hasta ahora).
+- Cambiar a un estudiante de comisión (pestaña **Alumnos**) es tarea del titular.
+
+En **Control de Asistencia** el ayudante guarda solo lo que se ve con el filtro de su comisión. Además de Presente, Tarde y Ausente existe **Justificada**: no cuenta para el porcentaje de asistencia.
+
+## 9. Cierre de cursada y actas {#cierre}
+
+En **Cursada → Cierre**:
+
+1. **Casos borde**: estudiantes a un paso de promocionar o regularizar, para revisarlos antes de cerrar.
+2. **Simulador**: probá otra asistencia mínima, notas de aprobación o promoción, o la regla de recuperatorios, y mirá cuántos estudiantes cambian de condición. No guarda nada; para cambiar las reglas de verdad usá **Reglas**.
+3. **Cerrar cursada y congelar acta** (solo el titular): guarda la condición final de cada estudiante con las reglas vigentes y un código de verificación (hash). Desde ese momento no se pueden cargar notas, asistencia, QR ni excepciones. Los estudiantes ven su condición final en lugar de la provisional; quien no regularizó figura como **Libre**.
+4. **CSV para SIU Guaraní**: descargá el acta y cargala en SIU. El archivo trae legajo, nombre, comisión, condición, nota (promedio de parciales, solo para promocionados) y fecha. Revisá que las columnas coincidan con la plantilla de importación de tu unidad académica; las filas sin matrícula vienen marcadas.
+5. **Reabrir**: si hay que corregir algo, el titular reabre con un motivo. El acta anterior queda guardada, y al volver a cerrar se genera la versión siguiente. Cada cierre y reapertura queda en el registro de auditoría.
+
+Si una versión del acta aparece como **"no coincide con su hash"**, alguien la modificó fuera del Dojo: no se exporta y hay que avisar a un administrador.
