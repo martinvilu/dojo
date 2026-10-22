@@ -112,6 +112,19 @@ export default function AssignmentsPanel({
     }
   };
 
+  const handlePublishLti = async (assignmentId: string) => {
+    const cid = selectedCourse.id || selectedCourse.course?.id;
+    setApiLoading(true);
+    try {
+      const r = await api("publishLtiGrades", { courseId: cid, assignmentId });
+      showToast(`Notas publicadas en Moodle: ${r.published}${r.skipped ? ` (${r.skipped} sin nota numérica o sin ingreso desde Moodle)` : ""}${r.failed.length ? `; ${r.failed.length} con error` : ""}.`, r.failed.length ? "warning" : "success");
+    } catch (err: any) {
+      showToast("No se pudieron publicar las notas: " + err.message, "error");
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleArchiveAssignment = async (id: string) => {
     if (!(await confirmAction({ message: "¿Seguro que deseas archivar esta tarea? Los permisos en GitHub cambiarán a SOLO LECTURA.", tone: "danger" }))) return;
     setApiLoading(true);
@@ -376,6 +389,7 @@ export default function AssignmentsPanel({
                   </div>
                   <div className="flex gap-1.5">
                     <button onClick={() => handleExportGradesToMoodle(a.id)} className="px-3 py-1.5 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 rounded-lg text-[11px] font-semibold text-purple-300 transition flex items-center space-x-1 cursor-pointer" title="Enviar calificaciones corregidas de esta tarea a Moodle Gradebook"><span>📤 Moodle</span></button>
+                    <button onClick={() => handlePublishLti(a.id)} className="px-3 py-1.5 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 rounded-lg text-[11px] font-semibold text-purple-300 transition cursor-pointer" title="Publicar las notas en el libro de calificaciones de Moodle (LTI 1.3 AGS)">📤 LTI</button>
                     <button onClick={() => { setEditingAssignmentId(a.id); setAssignTitle(a.title); setAssignTemplate(a.template_repo); setAssignPr(a.create_feedback_pr || false); setAssignGroup(a.is_group || false); setAssignDueDate(String(a.due_date || "").slice(0, 10)); setAssignRequired(a.is_required !== false); }} className="px-3 py-1.5 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/60 rounded-lg text-[11px] font-semibold text-amber-300 transition">Editar</button>
                     <button onClick={() => handleArchiveAssignment(a.id)} className="px-3 py-1.5 bg-red-950/50 hover:bg-red-900/50 border border-red-800/60 rounded-lg text-[11px] font-semibold text-red-300 transition">Archivar (Solo Lectura)</button>
                   </div>

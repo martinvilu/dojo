@@ -5,6 +5,7 @@ import StudentPanel from "@/modules/course/components/StudentPanel";
 import ProfilePanel from "@/modules/auth/components/ProfilePanel";
 import TeacherPanel from "@/modules/course/components/TeacherPanel";
 import { AdminBackupsSection } from "./AdminBackupsSection";
+import AdminLtiPlatforms from "@/modules/moodle/components/AdminLtiPlatforms";
 
 const PanelFallback = () => (
   <div className="p-6 text-center text-sm text-gray-400" role="status">Cargando módulo…</div>
@@ -98,6 +99,9 @@ export function TabPanelsSection(props: TabPanelsSectionProps) {
           viewCourseDetails={props.viewCourseDetails}
         />
       )}
+
+      {/* ADMIN: plataformas LTI 1.3 a aprobar */}
+      {profile?.role === "admin" && activeTab === "admin-settings" && <AdminLtiPlatforms />}
 
       {/* ADMIN BACKUPS PANEL */}
       {profile?.role === "admin" && activeTab === "admin-backups" && (

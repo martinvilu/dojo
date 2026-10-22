@@ -6,6 +6,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { api } from "@/lib/api";
 import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard";
 import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegrationPanel";
+import LtiAdvantagePanel from "@/modules/moodle/components/LtiAdvantagePanel";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export function CourseSettingsPanel(props: any) {
@@ -371,6 +372,13 @@ export function CourseSettingsPanel(props: any) {
                     Guardar Configuración
                   </button>
                 </form>
+
+                {teacherMoodleEnabled && (
+                  <LtiAdvantagePanel
+                    courseId={selectedCourse.id || selectedCourse.course?.id}
+                    canEdit={profile?.role === "admin" || (courseTeachers || []).some((ct: any) => ct.teacher_id === profile?.id && ct.role !== "ayudante")}
+                  />
+                )}
 
                 {/* CSV grading synchronization (NORMALLY COLLAPSED/HIDDEN) */}
                 <div className="bg-neutral-900/60 p-5 rounded-2xl border border-neutral-800 space-y-3">

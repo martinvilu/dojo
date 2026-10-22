@@ -110,6 +110,15 @@ export function AssessmentsManager({ courseId, roster, commissions }: {
     }
   };
 
+  const handlePublishLti = async () => {
+    try {
+      const r = await api("publishLtiGrades", { courseId, assessmentId: selectedId });
+      showToast(`Publicadas en Moodle: ${r.published}${r.skipped ? ` (${r.skipped} sin nota o sin ingreso desde Moodle)` : ""}.`, r.failed.length ? "warning" : "success");
+    } catch (err: any) {
+      showToast("No se pudieron publicar: " + err.message, "error");
+    }
+  };
+
   /** Pegado desde planilla: una fila por estudiante, "UNRN-1234;7,5" o "UNRN-1234;ausente". */
   const handleImport = async () => {
     const rows = importText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
@@ -212,7 +221,12 @@ export function AssessmentsManager({ courseId, roster, commissions }: {
               </tbody>
             </table>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={handlePublishLti} disabled={dirtyIds.length > 0}
+              title="Publicar estas notas en el libro de calificaciones de Moodle (LTI 1.3 AGS)"
+              className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-gray-200 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-40">
+              📤 Publicar en Moodle
+            </button>
             <button type="button" onClick={handleSaveAll} disabled={saving || dirtyIds.length === 0}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold cursor-pointer disabled:opacity-40">
               {saving ? "Guardando…" : dirtyIds.length ? `Guardar ${dirtyIds.length} notas` : "Sin cambios"}
