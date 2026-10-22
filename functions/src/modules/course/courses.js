@@ -32,7 +32,9 @@ async function getCourseDetails(payload, context) {
         });
     }
     
-    return { id: cSnap.id, ...data };
+    // El token de GitHub (cifrado) no sale del backend, tampoco hacia docentes.
+    const { github_token: githubToken, ...courseData } = data;
+    return { id: cSnap.id, ...courseData, github_token_set: Boolean(githubToken) };
 }
 
 async function enrollCourse(payload, context) {
