@@ -8,6 +8,7 @@ import GmailIntegrationCard from "@/modules/mail/components/GmailIntegrationCard
 import MoodleIntegrationPanel from "@/modules/moodle/components/MoodleIntegrationPanel";
 import LtiAdvantagePanel from "@/modules/moodle/components/LtiAdvantagePanel";
 import MoodleLogImportCard from "@/modules/moodle/components/MoodleLogImportCard";
+import { CourseRouteCard } from "./CourseRouteCard";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export function CourseSettingsPanel(props: any) {
@@ -373,6 +374,11 @@ export function CourseSettingsPanel(props: any) {
                     Guardar Configuración
                   </button>
                 </form>
+
+                <CourseRouteCard
+                  course={selectedCourse}
+                  canEdit={profile?.role === "admin" || (courseTeachers || []).some((ct: any) => ct.teacher_id === profile?.id && ct.role !== "ayudante")}
+                />
 
                 {teacherMoodleEnabled && (
                   <LtiAdvantagePanel

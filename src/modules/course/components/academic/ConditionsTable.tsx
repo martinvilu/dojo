@@ -6,6 +6,7 @@ import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import type { AcademicCondition, ConditionsResponse } from "./types";
 import { ConditionChip, percent } from "./ConditionChip";
 import { ConditionDetail } from "./ConditionDetail";
+import { useDeepLinkContext } from "@/app/dashboard/deepLinkContext";
 
 const CONDITION_ORDER: AcademicCondition[] = ["EN RIESGO", "Ausente", "Condicional", "Regular", "Promocionado", "Baja"];
 
@@ -16,7 +17,10 @@ export function ConditionsTable({ courseId, commissions }: { courseId: string; c
   const [commission, setCommission] = useState("Todas");
   const [condition, setCondition] = useState<"Todas" | AcademicCondition | "edge">("Todas");
   const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // Llegando por /estudiantes/{st_…}, la ficha de ese estudiante arranca abierta.
+  const { focusStudentId } = useDeepLinkContext();
+  const [expandedState, setExpanded] = useState<string | null | undefined>(undefined);
+  const expanded = expandedState === undefined ? focusStudentId : expandedState;
 
   const load = useCallback(async () => {
     setLoading(true);

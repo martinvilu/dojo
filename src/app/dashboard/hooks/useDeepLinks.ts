@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
+import { useDeepLinkContext } from "../deepLinkContext";
 
 interface UseDeepLinksArgs {
   profile: any;
@@ -13,6 +14,7 @@ interface UseDeepLinksArgs {
   viewCourseDetails: (course: any) => Promise<void>;
   handleSetCourseSubTab: (tab: string) => void;
   promptGithubUsername: () => Promise<string | null>;
+  setCommissionFilter?: (commission: string) => void;
 }
 
 /**
@@ -22,8 +24,9 @@ interface UseDeepLinksArgs {
  */
 export function useDeepLinks({
   profile, setProfile, courses, setCourses,
-  setActiveTab, viewCourseDetails, handleSetCourseSubTab, promptGithubUsername
+  setActiveTab, viewCourseDetails, handleSetCourseSubTab, promptGithubUsername, setCommissionFilter
 }: UseDeepLinksArgs) {
+  const { route, setFocusStudentId } = useDeepLinkContext();
   const hasProcessedParams = useRef(false);
   const moodleLtiParams = useRef<{ outcomeUrl?: string, resultId?: string }>({});
 
@@ -36,6 +39,30 @@ export function useDeepLinks({
     const userId = params.get("userId");
     const tab = params.get("tab");
     const subTab = params.get("subTab");
+
+    /** URL semántica: el backend traduce los segmentos si el usuario tiene acceso. */
+    const processRoute = async () => {
+      hasProcessedParams.current = true;
+      if (!route) return;
+      try {
+        const resolved = await api("resolveCourseRoute", {
+          asignatura: route.asignatura,
+          anio: route.anio,
+          cuatrimestre: route.cuatrimestre,
+          comision: route.comision,
+          studentPublicId: route.studentPublicId || null,
+          practica: route.practica || null,
+        });
+        const found = courses.find((c: any) => (c.id || c.course?.id) === resolved.courseId);
+        if (!found) throw new Error("No tenés acceso a esta cátedra.");
+        await viewCourseDetails(found.course || found);
+        handleSetCourseSubTab(route.subTab);
+        if (resolved.commission && setCommissionFilter) setCommissionFilter(resolved.commission);
+        if (resolved.studentId && resolved.isStaff) setFocusStudentId(resolved.studentId);
+      } catch (e: any) {
+        showToast(e?.message || "No encontramos esa página de cátedra.", "error");
+      }
+    };
 
     const processParams = async () => {
       hasProcessedParams.current = true;
@@ -113,7 +140,8 @@ export function useDeepLinks({
       }
     };
 
-    processParams();
+    if (route) processRoute();
+    else processParams();
     // Query params must be consumed once per auth/data readiness;
     // the handlers are unstable closures that would re-trigger this flow
     // eslint-disable-next-line react-hooks/exhaustive-deps

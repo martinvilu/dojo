@@ -16,6 +16,10 @@ export interface UserProfile {
   account_status: "pending" | "approved";
   matricula_unrn?: string;
   cohorte?: string;
+  /** Comisión por cátedra: { [courseId]: nombre de comisión }. */
+  commissions?: Record<string, string>;
+  /** Alias público para las URLs semánticas (`st_…`). */
+  student_public_id?: string;
   github_user?: string;
 }
 

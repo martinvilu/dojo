@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { buildCoursePath } from "@/lib/courseRoutes";
+import { useDeepLinkContext } from "./deepLinkContext";
 import { useGmailAuth } from "@/modules/mail/hooks/useGmailAuth";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 
@@ -277,8 +279,34 @@ export default function DashboardPage() {
     setActiveTab,
     viewCourseDetails,
     handleSetCourseSubTab,
-    promptGithubUsername
+    promptGithubUsername,
+    setCommissionFilter
   });
+
+  // URLs semánticas (SPEC §2.3): la barra de direcciones refleja cátedra,
+  // comisión y pestaña sin IDs internos ni datos personales.
+  const { route: semanticRoute } = useDeepLinkContext();
+  const wasInCourse = useRef(false);
+  useEffect(() => {
+    if (!selectedCourse) {
+      if (wasInCourse.current && !window.location.pathname.startsWith("/dashboard")) {
+        window.history.replaceState(null, "", "/dashboard");
+      }
+      wasInCourse.current = false;
+      return;
+    }
+    wasInCourse.current = true;
+    // La ficha de un estudiante conserva su URL mientras siga abierta.
+    if (semanticRoute?.studentPublicId && courseSubTab === semanticRoute.subTab) return;
+    const cid = selectedCourse.id || selectedCourse.course?.id;
+    const listed = courses.find((c: any) => (c.id || c.course?.id) === cid);
+    const source = { ...(listed?.course || listed || {}), ...(selectedCourse.course || {}), ...selectedCourse };
+    const commission = profile?.role === "student"
+      ? profile?.commissions?.[cid]
+      : (commissionFilter !== "Todas" && commissionFilter !== "Sin Comisión" ? commissionFilter : null);
+    const path = buildCoursePath(source, { subTab: courseSubTab, commission });
+    if (path && window.location.pathname !== path) window.history.replaceState(null, "", path);
+  }, [selectedCourse, courseSubTab, commissionFilter, courses, profile, semanticRoute]);
 
   if (loading) {
     return <LoadingScreen />;
