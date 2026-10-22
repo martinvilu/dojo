@@ -4,6 +4,10 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
+import { useBeforeUnload } from "@/hooks/useBeforeUnload";
+
+/** Huella de los campos del formulario de ajustes, para detectar cambios sin guardar. */
+const settingsFingerprint = (fields: unknown[]) => JSON.stringify(fields);
 
 export interface ScheduleItem {
   day: string;
@@ -63,19 +67,35 @@ export function useTeacherCourseSettings({
   const [showCsvEndpoint, setShowCsvEndpoint] = useState(false);
   const [showCsvGradingEndpoint, setShowCsvGradingEndpoint] = useState(false);
 
+  // Aviso al cerrar la pestaña con ajustes sin guardar (mejora 1.49).
+  const [savedSettingsFingerprint, setSavedSettingsFingerprint] = useState<string | null>(null);
+  const currentSettingsFingerprint = settingsFingerprint([
+    teacherStartDate, teacherDuration, teacherCoverText, teacherMoodleEnabled,
+    teacherExternalCalendars, teacherSchedules, teacherCommissions,
+  ]);
+  useBeforeUnload(savedSettingsFingerprint !== null
+    && (savedSettingsFingerprint !== currentSettingsFingerprint || teacherGithubToken.trim() !== ""));
+
   /** Hydrate the form from a getCourseSettings payload, falling back to the
    *  currently selected course snapshot. */
   const applyCourseSettings = (data: any) => {
-    setTeacherStartDate(data.start_date || selectedCourse?.start_date || "");
-    setTeacherDuration(data.duration_weeks ? data.duration_weeks.toString() : (selectedCourse?.duration_weeks ? selectedCourse.duration_weeks.toString() : ""));
-    setTeacherCoverText(data.cover_text || selectedCourse?.cover_text || "");
+    const startDate = data.start_date || selectedCourse?.start_date || "";
+    const duration = data.duration_weeks ? data.duration_weeks.toString() : (selectedCourse?.duration_weeks ? selectedCourse.duration_weeks.toString() : "");
+    const coverText = data.cover_text || selectedCourse?.cover_text || "";
+    const moodleEnabled = data.moodle_enabled || selectedCourse?.moodle_enabled || false;
+    const externalCalendars = Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || "");
+    const schedules = data.schedules || selectedCourse?.schedules || [];
+    const comms = Array.isArray(data.commissions) ? data.commissions : (Array.isArray(selectedCourse?.commissions) ? selectedCourse.commissions : ["Comisión A", "Comisión B"]);
+    setTeacherStartDate(startDate);
+    setTeacherDuration(duration);
+    setTeacherCoverText(coverText);
     setTeacherGithubToken("");
     setTeacherGithubTokenSet(Boolean(data.github_token_set));
-    setTeacherMoodleEnabled(data.moodle_enabled || selectedCourse?.moodle_enabled || false);
-    setTeacherExternalCalendars(Array.isArray(data.external_calendars) ? data.external_calendars.join(", ") : (data.external_calendars || ""));
-    setTeacherSchedules(data.schedules || selectedCourse?.schedules || []);
-    const comms = Array.isArray(data.commissions) ? data.commissions : (Array.isArray(selectedCourse?.commissions) ? selectedCourse.commissions : ["Comisión A", "Comisión B"]);
+    setTeacherMoodleEnabled(moodleEnabled);
+    setTeacherExternalCalendars(externalCalendars);
+    setTeacherSchedules(schedules);
     setTeacherCommissions(comms);
+    setSavedSettingsFingerprint(settingsFingerprint([startDate, duration, coverText, moodleEnabled, externalCalendars, schedules, comms]));
   };
 
   const handleAddSchedule = () => {
@@ -115,6 +135,7 @@ export function useTeacherCourseSettings({
         setTeacherGithubToken("");
         setTeacherGithubTokenSet(true);
       }
+      setSavedSettingsFingerprint(currentSettingsFingerprint);
 
       setSelectedCourse((prev: any) => {
         if (!prev) return null;
@@ -178,16 +199,8 @@ export function useTeacherCourseSettings({
       await api("cloneCourseExtraData", { courseId: cloneSourceId, newCourseId: cid });
       // Reload settings tab (api() already unwraps the callable response)
       const data = await api("getCourseSettings", { courseId: cid });
-      setTeacherStartDate(data.start_date || "");
-      setTeacherDuration(data.duration_weeks?.toString() || "");
-      setTeacherCoverText(data.cover_text || "");
-      setTeacherGithubToken("");
-      setTeacherGithubTokenSet(Boolean(data.github_token_set));
-      setTeacherMoodleEnabled(data.moodle_enabled || false);
-      setTeacherExternalCalendars((data.external_calendars || []).join(", "));
-      setTeacherSchedules(data.schedules || []);
+      applyCourseSettings(data);
       setTeacherCommissionsMapping(data.commissions_mapping || {});
-      setTeacherCommissions(data.commissions || ["Comisión A", "Comisión B", "Comisión C", "Comisión D"]);
       showToast("Configuración clonada exitosamente.", "success");
     } catch (err: any) {
       showToast("Error al clonar configuración: " + err.message, "error");

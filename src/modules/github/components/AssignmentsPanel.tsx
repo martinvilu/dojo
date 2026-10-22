@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 import { query, collection, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import GithubActivityPanel from "./GithubActivityPanel";
@@ -48,6 +49,15 @@ export default function AssignmentsPanel({
   const [editingGrades, setEditingGrades] = useState<Record<string, string>>({});
   const [editingFeedbacks, setEditingFeedbacks] = useState<Record<string, string>>({});
   const [expandedAuditLogs, setExpandedAuditLogs] = useState<Record<string, any[]>>({});
+
+  // Notas o devoluciones tipeadas que todavía no se guardaron (mejora 1.49).
+  const hasUnsavedGrades = useMemo(() => Object.values(graderSubmissions).flat().some((sub: any) => {
+    const savedGrade = sub.grade === undefined || sub.grade === null ? "" : String(sub.grade);
+    const savedFeedback = sub.feedback || "";
+    return (editingGrades[sub.id] ?? savedGrade) !== savedGrade
+      || (editingFeedbacks[sub.id] ?? savedFeedback) !== savedFeedback;
+  }), [graderSubmissions, editingGrades, editingFeedbacks]);
+  useBeforeUnload(hasUnsavedGrades);
   
   const [studentGithubActivity, setStudentGithubActivity] = useState<{ commits: any[], pullRequests: any[], comments: any[] } | null>(null);
   const [studentGithubActivityTab, setStudentGithubActivityTab] = useState<"commits" | "pulls" | "comments" | "metrics" | "visualizer">("commits");

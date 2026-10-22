@@ -4,6 +4,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import { api } from "@/lib/api";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
+import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 
 interface Student {
   id: string;
@@ -40,6 +41,7 @@ export default function AttendanceManager({
   // Local states
   const [commissionFilter, setCommissionFilter] = useState("Todas");
   const [editingRecords, setEditingRecords] = useState<Record<string, "present" | "absent" | "late">>({});
+  const [loadedRecords, setLoadedRecords] = useState<Record<string, "present" | "absent" | "late">>({});
   const [saving, setSaving] = useState(false);
 
   // QR: el secreto vive en el backend; acá solo mostramos el código vigente
@@ -61,7 +63,10 @@ export default function AttendanceManager({
       initialRecords[student.id] = existing?.records?.[student.id] || "present";
     });
     setEditingRecords(initialRecords);
+    setLoadedRecords(initialRecords);
   }, [classNumber, courseAttendance, roster]);
+
+  useBeforeUnload(Object.keys(editingRecords).some((uid) => editingRecords[uid] !== loadedRecords[uid]));
 
   const applyQrSession = (session: any) => {
     setActiveQr({
