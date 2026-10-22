@@ -82,8 +82,8 @@ service cloud.firestore {
       }
 
       // Foro Q&A por clase: miembros leen y publican consultas. En updates,
-      // un participante solo puede mutar reacciones; el docente del curso o
-      // un admin solo pueden alternar la marca de mejor respuesta.
+      // un participante solo puede mutar reacciones. La solución oficial la
+      // marca el backend (markCommentSolution), que además otorga el XP.
       match /class_comments/{commentId} {
         function onlyReactionsChanged() {
           // Base fields must never change, and beyond that only the
@@ -96,11 +96,6 @@ service cloud.firestore {
               || request.resource.data.diff(resource.data)
                    .affectedKeys().hasOnly(['reactions']));
         }
-        function onlyBestAnswerChanged() {
-          return request.resource.data.diff(resource.data)
-                 .affectedKeys().hasOnly(['is_best_answer']);
-        }
-
         allow read: if isMemberOf(courseId);
         allow create: if isMemberOf(courseId)
           && request.resource.data.user_id == request.auth.uid
@@ -108,8 +103,7 @@ service cloud.firestore {
           && request.resource.data.content is string
           && request.resource.data.content.size() > 0
           && request.resource.data.content.size() <= 4000;
-        allow update: if ((isAdmin() || isTeacherOf(courseId)) && onlyBestAnswerChanged())
-          || (isMemberOf(courseId) && onlyReactionsChanged());
+        allow update: if isMemberOf(courseId) && onlyReactionsChanged();
         allow delete: if false;
       }
 

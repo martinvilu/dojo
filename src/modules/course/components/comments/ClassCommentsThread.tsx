@@ -8,13 +8,10 @@ import {
   updateDoc,
   arrayRemove,
   arrayUnion,
-  query,
-  where,
-  getDocs,
-  writeBatch,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
+import { api } from "@/lib/api";
 import { ClassComment } from "../../types";
 import { formatDateSafe, formatDateTime } from "@/lib/dates";
 import { logger } from "@/lib/logger";
@@ -90,21 +87,8 @@ export default function ClassCommentsThread({
     if (profile.role !== "teacher" && profile.role !== "admin") return;
 
     try {
-      const q = query(
-        collection(db, "courses", courseId, "class_comments"),
-        where("classNumber", "==", classNumber),
-        where("is_best_answer", "==", true)
-      );
-      const snap = await getDocs(q);
-      const batch = writeBatch(db);
-      snap.docs.forEach((d) => {
-        batch.update(d.ref, { is_best_answer: false });
-      });
-
-      const targetRef = doc(db, "courses", courseId, "class_comments", commentId);
-      batch.update(targetRef, { is_best_answer: !currentStatus });
-
-      await batch.commit();
+      // El backend deja una sola solución por clase y le suma +100 XP al autor.
+      await api("markCommentSolution", { courseId, commentId, isSolution: !currentStatus });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       showToast("Error al marcar mejor respuesta: " + msg, "error");

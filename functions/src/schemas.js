@@ -326,6 +326,7 @@ const ACTION_SCHEMAS = {
     }),
     getContactLogs: course({ studentId: opt(id) }),
     scheduleStudentTutoring: course({ studentId: id, dateTime: isoDate, note: opt(text(1000)), alertId: opt(id) }),
+    markCommentSolution: course({ commentId: id, isSolution: bool }),
     importMoodleLogs: course({
         events: z.array(z.strictObject({
             userId: z.string().regex(/^\d{1,12}$/),

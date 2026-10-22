@@ -209,6 +209,7 @@ const ACTION_POLICIES = {
     addContactLog: staffOf('course'),
     getContactLogs: staffOf('course'),
     scheduleStudentTutoring: staffOf('course'),
+    markCommentSolution: staffOf('course'),
     importMoodleLogs: staffOf('course'),
 };
 

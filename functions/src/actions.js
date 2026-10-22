@@ -186,6 +186,7 @@ const ACTION_MODULES = {
     addContactLog: './modules/notifications/alerts',
     getContactLogs: './modules/notifications/alerts',
     scheduleStudentTutoring: './modules/notifications/alerts',
+    markCommentSolution: './modules/course/forum',
     importMoodleLogs: './modules/integrations/moodleLogs',
 };
 

@@ -216,13 +216,12 @@ describe("class_comments subcollection", () => {
     ));
   });
 
-  it("only teachers/admins flag best answers, and nothing else alongside", async () => {
+  it("official solutions are only set by the backend (markCommentSolution)", async () => {
     await seedComment();
     const ref = (uid) => doc(user(uid), `courses/${COURSE}/class_comments/c1`);
     await assertFails(updateDoc(ref(STUDENT), { is_best_answer: true }));
-    await assertSucceeds(updateDoc(ref(TEACHER), { is_best_answer: true }));
-    await assertSucceeds(updateDoc(ref(ADMIN), { is_best_answer: false }));
-    await assertFails(updateDoc(ref(TEACHER), { is_best_answer: true, content: "x" }));
+    await assertFails(updateDoc(ref(TEACHER), { is_best_answer: true }));
+    await assertFails(updateDoc(ref(ADMIN), { is_best_answer: false }));
   });
 
   it("cannot be deleted from clients", async () => {
