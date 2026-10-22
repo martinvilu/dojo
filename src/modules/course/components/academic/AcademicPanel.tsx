@@ -10,9 +10,10 @@ import { AssessmentsManager } from "./AssessmentsManager";
 import { ExceptionsManager } from "./ExceptionsManager";
 import { GradingRulesForm } from "./GradingRulesForm";
 import { ReviewRequests } from "./ReviewRequests";
+import { ClosurePanel } from "./ClosurePanel";
 import { EXCEPTION_LABELS, type ConditionResult, type CourseAssignment, type CourseException, type RosterStudent } from "./types";
 
-type StaffTab = "conditions" | "assessments" | "exceptions" | "reviews" | "rules";
+type StaffTab = "conditions" | "assessments" | "exceptions" | "reviews" | "rules" | "closure";
 
 const STAFF_TABS: { id: StaffTab; label: string }[] = [
   { id: "conditions", label: "Condición" },
@@ -20,6 +21,7 @@ const STAFF_TABS: { id: StaffTab; label: string }[] = [
   { id: "exceptions", label: "Excepciones" },
   { id: "reviews", label: "Consultas" },
   { id: "rules", label: "Reglas" },
+  { id: "closure", label: "Cierre" },
 ];
 
 /** Vista de la cátedra: condición del padrón, parciales, excepciones y reglas. */
@@ -64,6 +66,7 @@ function StaffAcademicView({ courseId, commissions }: { courseId: string; commis
         {tab === "exceptions" && <ExceptionsManager courseId={courseId} roster={roster} assignments={assignments} />}
         {tab === "reviews" && <ReviewRequests courseId={courseId} mode="staff" />}
         {tab === "rules" && <GradingRulesForm courseId={courseId} />}
+        {tab === "closure" && <ClosurePanel courseId={courseId} />}
       </div>
     </div>
   );
@@ -98,10 +101,20 @@ function StudentAcademicView({ courseId }: { courseId: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h4 className="font-bold text-sm text-white">Tu condición en la cursada</h4>
-          <p className="text-[11px] text-gray-500">Provisional: se calcula con tus asistencias, entregas y notas cargadas hasta hoy.</p>
+          <p className="text-[11px] text-gray-500">
+            {result.final
+              ? `Final: la cátedra cerró el acta (v${result.final.version}).`
+              : "Provisional: se calcula con tus asistencias, entregas y notas cargadas hasta hoy."}
+          </p>
         </div>
-        <ConditionChip condition={result.condition} />
+        <ConditionChip condition={result.final ? result.final.condition : result.condition} />
       </div>
+      {result.final && (
+        <p className="text-xs text-gray-300">
+          En el acta figurás como <strong>{result.final.siu_condition}</strong>
+          {result.final.final_grade !== null ? ` con nota ${String(result.final.final_grade).replace(".", ",")}` : ""}.
+        </p>
+      )}
       {result.near_promotion && <p className="text-xs text-amber-300">Estás a un paso de promocionar. Revisá los motivos de abajo.</p>}
       <ConditionDetail result={result} />
       <section className="border-t border-neutral-800 pt-4 space-y-2">

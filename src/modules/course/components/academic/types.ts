@@ -56,6 +56,8 @@ export interface ConditionResult {
   near_promotion: boolean;
   near_regularity: boolean;
   rules?: GradingRules;
+  /** Condición congelada en el acta, cuando la cursada está cerrada. */
+  final?: { version: number; condition: AcademicCondition; siu_condition: string; final_grade: number | null };
 }
 
 export interface ConditionsResponse {
