@@ -11,7 +11,8 @@
     "test:unit": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/unit/*.test.ts",
     "test:selenium": "node tests/selenium/run-all-tests.js",
     "test:rules": "npx -y firebase-tools@latest emulators:exec --only firestore --project demo-ninja-dojo-rules -- \"npx jest tests/firestore.rules.test.js --runInBand\"",
-    "test:local": "./scripts/test-local.sh"
+    "test:local": "./scripts/test-local.sh",
+    "test:e2e": "node scripts/e2e/ensure-emulator-secrets.js && npx -y firebase-tools@15.32.1 emulators:exec --only auth,firestore,functions --project demo-ninja-dojo -- \"npx playwright test\""
   },
   "dependencies": {
     "@tanstack/react-virtual": "3.14.13",
@@ -28,7 +29,9 @@
     "zod": "^4.6.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@firebase/rules-unit-testing": "^5.0.2",
+    "@playwright/test": "1.64.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/qrcode": "1.5.5",
@@ -57,6 +60,9 @@
     },
     "minimatch@10": {
       "brace-expansion": "^5.0.12"
+    },
+    "@axe-core/playwright": {
+      "playwright-core": "1.64.0"
     }
   }
 }
