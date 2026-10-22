@@ -43,7 +43,7 @@ export default function TeacherPanel({
                   <p className="text-xs text-text-secondary">Organización: <span className="font-semibold text-text-primary">{orgName}</span></p>
                   <div className="mt-3 flex items-center space-x-2">
                     <span className="text-xs text-text-secondary">Código de Invitación Estudiante:</span>
-                    <span className="text-sm text-blue-500 font-mono font-bold tracking-wider">{inviteCode}</span>
+                    <span className="text-sm text-blue-400 font-mono font-bold tracking-wider">{inviteCode}</span>
                   </div>
                 </div>
 

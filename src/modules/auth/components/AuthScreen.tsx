@@ -94,7 +94,7 @@ function AuthScreenContent() {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-white">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-t-blue-500 border-blue-900 rounded-full animate-spin"></div>
           <p className="text-gray-400 font-medium animate-pulse">Cargando Ninja Dojo...</p>
@@ -104,7 +104,7 @@ function AuthScreenContent() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#0a0a0a] text-white flex flex-col justify-between relative overflow-x-hidden">
+    <div className="min-h-screen w-full bg-neutral-950 text-white flex flex-col justify-between relative overflow-x-hidden">
       {/* Background Radial Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] bg-[radial-gradient(ellipse_at_top,rgba(37,99,235,0.15)_0%,transparent_70%)] pointer-events-none"></div>
 
@@ -362,7 +362,7 @@ function AuthScreenContent() {
       </main>
 
       {/* FOOTER */}
-      <footer className="w-full text-center py-6 border-t border-neutral-900 text-xs text-neutral-600 relative z-10">
+      <footer className="w-full text-center py-6 border-t border-neutral-900 text-xs text-neutral-400 relative z-10">
         <p>© 2026 Ninja Dojo (Jutsu Classroom). Todos los derechos reservados.</p>
       </footer>
     </div>
@@ -372,7 +372,7 @@ function AuthScreenContent() {
 
 export default function AuthScreen() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center"><div className="w-12 h-12 border-4 border-t-blue-500 border-blue-900 rounded-full animate-spin"></div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center"><div className="w-12 h-12 border-4 border-t-blue-500 border-blue-900 rounded-full animate-spin"></div></div>}>
       <AuthScreenContent />
     </Suspense>
   );
