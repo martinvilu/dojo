@@ -409,6 +409,28 @@ export function CourseSettingsPanel(props: any) {
                           Copiar
                         </button>
                       </div>
+                      <p className="text-xs text-gray-400 leading-relaxed pt-2">
+                        Planilla de cursada (matrícula, notas de TPs y parciales, promedio, asistencia, alertas y condición). En Google Sheets: <code className="text-amber-400">=IMPORTDATA(&quot;URL&quot;)</code>.
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          readOnly
+                          aria-label="URL de la planilla de cursada"
+                          value={`${exportGradesCsvUrlFor(selectedCourse)}&type=cursada`}
+                          className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-amber-400 font-mono select-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const ok = await copyToClipboard(`${exportGradesCsvUrlFor(selectedCourse)}&type=cursada`);
+                            showToast(ok ? "URL de la planilla de cursada copiada." : "No se pudo copiar la URL.", ok ? "success" : "error");
+                          }}
+                          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap"
+                        >
+                          Copiar
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

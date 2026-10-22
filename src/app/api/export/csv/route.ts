@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminDb, requireCourseSubscriptionToken } from "../../middleware/api";
+// Mismo motor que la callable `api`: una sola definición de la condición académica.
+import { loadCourseAcademicData, computeConditions } from "../../../../../functions/src/lib/academic/loader";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +10,11 @@ export const dynamic = "force-dynamic";
  * Excel). Replaces the former `exportGradesCsv` / `exportAttendanceCsv`
  * cloud functions behind the same per-course sync_secret token scheme.
  *
- *   GET /api/export/csv?courseId=X&token=Y&type=grades|attendance|roster
+ *   GET /api/export/csv?courseId=X&token=Y&type=grades|attendance|roster|cursada
+ *
+ * `cursada` es la planilla institucional (SPEC §3.3): matrícula, nombre,
+ * email, comisión, nota de cada TP y parcial, promedio, asistencia, alertas
+ * y condición.
  *
  * `id` is accepted as an alias of `courseId`, and legacy `type` values
  * (`asistencia`, `alertas`, `alumnos`) keep working.
@@ -100,47 +106,76 @@ async function buildAttendanceCsv(db: any, courseId: string, course: any): Promi
 }
 
 async function buildRosterCsv(db: any, courseId: string, course: any): Promise<CsvResult> {
-  const rosterSnap = await db.collection("course_roster").where("course_id", "==", courseId).get();
-  const classes = course.class_instances || [];
-  const totalClasses = classes.length || 1;
-
-  const assignSnap = await db.collection("assignments").where("course_id", "==", courseId).get();
-  const totalAssignments = assignSnap.docs.length || 1;
+  const data = await loadCourseAcademicData(db, courseId);
+  const results = computeConditions(data);
 
   let csv = "matricula;estudiante_nombre;estudiante_email;usuario_github;estado_roster;asistencia_porcentaje;entregas_completadas;estado_riesgo\n";
 
-  for (const doc of rosterSnap.docs) {
-    const rData = doc.data();
-    const sid = rData.student_id;
-    const pSnap = await db.collection("profiles").doc(sid).get();
-    const profile = pSnap.exists ? pSnap.data() : {};
-
-    const attSnap = await db
-      .collection("attendance")
-      .where("course_id", "==", courseId)
-      .where("student_id", "==", sid)
-      .get();
-    const presentCount = attSnap.docs.length;
-    const attRatio = Math.round((presentCount / Math.max(totalClasses, 1)) * 100);
-
-    const subSnap = await db.collection("submissions").where("student_id", "==", sid).get();
-    const subCount = subSnap.docs.length;
-
-    const isRisk = (attRatio < 75 && totalClasses >= 3) || subCount < Math.ceil(totalAssignments * 0.5);
-
+  for (const r of results) {
+    const student = data.students.find((s: any) => s.id === r.student_id);
+    const profile = student?.profile || {};
     csv += [
       escapeCsv(profile.matricula_unrn || ""),
       escapeCsv(profile.full_name || ""),
       escapeCsv(profile.email || ""),
       escapeCsv(profile.github_username || profile.github_user || ""),
-      escapeCsv(rData.status || "approved"),
-      `${attRatio}%`,
-      `${subCount}/${totalAssignments}`,
-      isRisk ? "EN RIESGO" : "REGULAR",
+      escapeCsv(student?.rosterStatus || "approved"),
+      r.attendance.ratio === null ? "" : `${Math.round(r.attendance.ratio * 100)}%`,
+      `${r.tps.delivered}/${r.tps.required}`,
+      escapeCsv(r.condition),
     ].join(";") + "\n";
   }
 
   return { body: csv, filename: `alumnos_alertas_${String(course.name || "").replace(/\s+/g, "_")}.csv` };
+}
+
+const csvNumber = (n: number | null) => (n === null ? "" : String(Math.round(n * 100) / 100).replace(".", ","));
+
+async function buildCursadaCsv(db: any, courseId: string, course: any): Promise<CsvResult> {
+  const data = await loadCourseAcademicData(db, courseId);
+  const results = computeConditions(data);
+  const assignments = data.assignments.filter((a: any) => !a.is_archived);
+  const assessments = data.assessments.filter((a: any) => !a.archived);
+
+  const header = [
+    "matricula", "nombre", "email", "comision",
+    ...assignments.map((a: any) => `TP ${a.title || a.id}`),
+    ...assessments.map((a: any) => a.label || a.id),
+    "promedio", "asistencia", "alertas", "condicion",
+  ];
+  let csv = header.map((h) => escapeCsv(String(h))).join(";") + "\n";
+
+  for (const r of results) {
+    const subs: Record<string, any> = (data.submissionsByStudent as Record<string, any>)[r.student_id] || {};
+    const grades: Record<string, any> = (data.gradesByStudent as Record<string, any>)[r.student_id] || {};
+    const tpCells = assignments.map((a: any) => String(subs[a.id]?.grade ?? ""));
+    const assessmentCells = assessments.map((a: any) => (grades[a.id]?.absent ? "Ausente" : String(grades[a.id]?.grade ?? "")));
+    // Promedio de notas numéricas: TPs y la mejor nota de cada parcial (con su recuperatorio).
+    const numeric = [
+      ...tpCells.map((g: string) => Number(g.replace(",", "."))),
+      ...r.partials.map((p: any) => (p.best === null ? NaN : p.best)),
+    ].filter((n) => isGrade(n));
+    const average = numeric.length ? numeric.reduce((a, b) => a + b, 0) / numeric.length : null;
+
+    csv += [
+      escapeCsv(r.matricula_unrn || ""),
+      escapeCsv(r.full_name || ""),
+      escapeCsv(r.email || ""),
+      escapeCsv(r.commission || ""),
+      ...tpCells.map(escapeCsv),
+      ...assessmentCells.map(escapeCsv),
+      csvNumber(average),
+      r.attendance.ratio === null ? "" : `${Math.round(r.attendance.ratio * 100)}%`,
+      escapeCsv(r.reasons.join(" | ")),
+      escapeCsv(r.condition),
+    ].join(";") + "\n";
+  }
+
+  return { body: csv, filename: `cursada_${String(course.name || courseId).replace(/\s+/g, "_")}.csv` };
+}
+
+function isGrade(n: number): boolean {
+  return Number.isFinite(n) && n >= 0 && n <= 10;
 }
 
 async function buildGradesCsv(db: any, courseId: string, course: any): Promise<CsvResult> {
@@ -190,6 +225,8 @@ export async function GET(request: Request) {
     let result: CsvResult;
     if (type === "attendance" || type === "asistencia") {
       result = await buildAttendanceCsv(db, courseId, course);
+    } else if (type === "cursada" || type === "planilla") {
+      result = await buildCursadaCsv(db, courseId, course);
     } else if (type === "roster" || type === "alertas" || type === "alumnos") {
       result = await buildRosterCsv(db, courseId, course);
     } else {
