@@ -45,3 +45,17 @@ describe('credential encryption at rest', () => {
     expect(() => encryptSecret('x', ctx, { DOJO_ENCRYPTION_KEY: 'short' })).toThrow(/32 bytes/);
   });
 });
+
+describe('lib/admin (emulator compatibility)', () => {
+  const { withFirestoreStatics } = require('../src/lib/admin');
+  test('restores firestore statics lost by a bound proxy', () => {
+    const real = require('firebase-admin');
+    // Lo que hace el emulador: admin.firestore enlazado, sin estáticos.
+    const emulated = new Proxy(real, { get: (t, k) => (k === 'firestore' ? t.firestore.bind(t) : t[k]) });
+    expect(emulated.firestore.FieldValue).toBeUndefined();
+    const fixed = withFirestoreStatics(emulated);
+    expect(typeof fixed.firestore.FieldValue.serverTimestamp).toBe('function');
+    expect(typeof fixed.firestore.Timestamp.now).toBe('function');
+    expect(withFirestoreStatics(real)).toBe(real);
+  });
+});

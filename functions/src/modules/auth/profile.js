@@ -1,4 +1,4 @@
-const admin = require("firebase-admin");
+const admin = require("../../lib/admin");
 const { ensureStudentPublicId } = require("../../lib/publicIds");
 const { MATRICULA_RE, normalizeMatricula, assertMatriculaAvailable } = require("../../lib/identity");
 
