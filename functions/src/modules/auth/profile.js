@@ -1,5 +1,6 @@
 const admin = require("firebase-admin");
 const { ensureStudentPublicId } = require("../../lib/publicIds");
+const { MATRICULA_RE, normalizeMatricula, assertMatriculaAvailable } = require("../../lib/identity");
 
 async function getProfile(payload, context) {
     const { uid, db, authUser } = context;
@@ -50,7 +51,12 @@ async function updateProfile(payload, context) {
     if (payload.full_name !== undefined) allowed.full_name = payload.full_name;
     if (payload.github_username !== undefined) allowed.github_username = payload.github_username;
     if (payload.github_user !== undefined) allowed.github_user = payload.github_user;
-    if (payload.matricula_unrn !== undefined) allowed.matricula_unrn = payload.matricula_unrn;
+    // Vacío no borra: el formulario de perfil siempre manda el campo.
+    if (payload.matricula_unrn) {
+        const matricula = normalizeMatricula(payload.matricula_unrn);
+        await assertMatriculaAvailable(db, uid, matricula);
+        allowed.matricula_unrn = matricula;
+    }
     if (payload.cohort !== undefined) allowed.cohort = payload.cohort;
 
     await db.collection('profiles').doc(uid).update(allowed);
@@ -127,11 +133,13 @@ async function mergeProfiles(payload, context) {
 async function submitMatricula(payload, context) {
     const { uid, db } = context;
     const { matricula } = payload;
-    if (!matricula || !/^UNRN-\d{5,}$/.test(matricula)) {
-        throw new Error("Formato de matrícula inválido. Debe ser UNRN- seguido de al menos 5 dígitos.");
+    const normalized = normalizeMatricula(matricula);
+    if (!MATRICULA_RE.test(normalized)) {
+        throw new Error("Formato de matrícula inválido. Debe ser UNRN- seguido de números (ej. UNRN-15772).");
     }
+    await assertMatriculaAvailable(db, uid, normalized);
     await db.collection('profiles').doc(uid).update({
-        matricula_unrn: matricula,
+        matricula_unrn: normalized,
         account_status: 'approved'
     });
     return { success: true };

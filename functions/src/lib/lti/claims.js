@@ -34,7 +34,7 @@ const SCOPES = Object.freeze({
 });
 
 const ROLE = Object.freeze({ INSTRUCTOR: 'instructor', TA: 'ta', LEARNER: 'learner', NONE: 'none' });
-const UNRN_MATRICULA_RE = /^UNRN-\d+$/;
+const { MATRICULA_RE: UNRN_MATRICULA_RE } = require('../identity');
 
 /**
  * Rol del usuario dentro del curso según el claim `roles` (SPEC §2.2).

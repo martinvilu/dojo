@@ -98,14 +98,14 @@ export function useAuthProfile({ setActiveTab, setApiLoading, setError }: UseAut
   // Submit matricula validation (for pending students)
   const handleSubmitMatricula = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!/^UNRN-\d{5,}$/.test(matriculaInput)) {
-      setMatriculaError("Formato inválido. Debe ser UNRN- seguido de al menos 5 números.");
+    if (!/^UNRN-\d+$/.test(matriculaInput.trim().toUpperCase())) {
+      setMatriculaError("Formato inválido. Debe ser UNRN- seguido de números (ej. UNRN-15772).");
       return;
     }
     setMatriculaError("");
     setApiLoading(true);
     try {
-      await api("submitMatricula", { matricula: matriculaInput });
+      await api("submitMatricula", { matricula: matriculaInput.trim().toUpperCase() });
       const profileRes = await api("getProfile");
       setProfile(profileRes);
       if (profileRes?.role === "student") {

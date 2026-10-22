@@ -11,6 +11,7 @@
  * en cambio una lista blanca estricta de claves.
  */
 const { z } = require('zod');
+const { MATRICULA_RE } = require('./lib/identity');
 
 // --- primitivas -----------------------------------------------------------
 
@@ -25,6 +26,9 @@ const bool = z.boolean();
 /** Número o string numérico (los formularios envían strings). */
 const numeric = z.union([z.number().finite(), z.string().trim().regex(/^-?\d+(\.\d+)?$/, 'debe ser numérico')]);
 const latLng = z.number().finite().nullish();
+/** Matrícula `UNRN-<números>` (SPEC §1.1); vacío = sin cambios. */
+const matricula = z.string().trim().toUpperCase().regex(MATRICULA_RE, 'debe tener el formato UNRN-<números>');
+const matriculaOrEmpty = z.union([z.literal(''), matricula]);
 /** Nota 0–10 o conceptual; el rango lo valida `lib/grades.js`. */
 const grade = z.union([z.number().finite(), text(40)]).nullish();
 const isoDate = text(40);
@@ -81,7 +85,7 @@ const adminProfileData = z.strictObject({
     email: text(320),
     role: z.enum(['student', 'teacher', 'admin']),
     account_status: z.enum(['pending', 'approved', 'rejected']),
-    matricula_unrn: text(40),
+    matricula_unrn: matriculaOrEmpty,
     github_user: text(100),
     github_username: text(100),
     cohort: text(100),
@@ -97,9 +101,9 @@ const ACTION_SCHEMAS = {
     getProfile: empty,
     updateProfile: obj({
         full_name: opt(text(200)), github_username: opt(text(100)), github_user: opt(text(100)),
-        matricula_unrn: opt(text(40)), cohort: opt(text(100)),
+        matricula_unrn: opt(matriculaOrEmpty), cohort: opt(text(100)),
     }),
-    submitMatricula: obj({ matricula: text(40) }),
+    submitMatricula: obj({ matricula }),
     addSecondaryEmail: obj({ email: z.email().max(320) }),
     mergeProfiles: obj({ targetUid: id, sourceUid: id }),
     getXpLogs: empty,

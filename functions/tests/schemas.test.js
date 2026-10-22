@@ -49,3 +49,31 @@ describe('payload schemas', () => {
     expect(() => validate('submitQrAttendance', { courseId: 'c1', classNumber: 'tres', token: 'ABC234' })).toThrow();
   });
 });
+
+describe('matrícula UNRN (plan F0.3)', () => {
+  const { validatePayload } = require('../src/lib/validation');
+  const { ACTION_SCHEMAS } = require('../src/schemas');
+  test('accepts UNRN-<digits>, rejects anything else', () => {
+    expect(() => validatePayload(ACTION_SCHEMAS, 'submitMatricula', { matricula: 'UNRN-15772' })).not.toThrow();
+    expect(() => validatePayload(ACTION_SCHEMAS, 'submitMatricula', { matricula: 'unrn-1' })).not.toThrow();
+    for (const bad of ['UNRN-', '15772', 'UNRN-12a', 'DNI-30111222']) {
+      expect(() => validatePayload(ACTION_SCHEMAS, 'submitMatricula', { matricula: bad })).toThrow();
+    }
+    expect(() => validatePayload(ACTION_SCHEMAS, 'updateProfile', { matricula_unrn: '' })).not.toThrow();
+    expect(() => validatePayload(ACTION_SCHEMAS, 'updateProfile', { matricula_unrn: 'legajo 9' })).toThrow();
+  });
+
+  test('a matrícula cannot be claimed by two profiles', async () => {
+    const { memoryDb, handlerContext } = require('./helpers/memoryDb');
+    const profile = require('../src/modules/auth/profile');
+    const db = memoryDb({
+      'profiles/ana': { role: 'student', matricula_unrn: 'UNRN-100' },
+      'profiles/beto': { role: 'student', account_status: 'pending' },
+    });
+    await expect(profile.submitMatricula({ matricula: 'UNRN-100' }, handlerContext(db, 'beto'))).rejects.toMatchObject({ code: 'already-exists' });
+    await profile.submitMatricula({ matricula: ' unrn-200 ' }, handlerContext(db, 'beto'));
+    expect(db.docs['profiles/beto']).toMatchObject({ matricula_unrn: 'UNRN-200', account_status: 'approved' });
+    await profile.updateProfile({ matricula_unrn: '' , full_name: 'Ana' }, handlerContext(db, 'ana'));
+    expect(db.docs['profiles/ana'].matricula_unrn).toBe('UNRN-100');
+  });
+});
