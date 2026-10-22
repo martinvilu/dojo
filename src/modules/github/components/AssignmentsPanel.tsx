@@ -6,6 +6,8 @@ import { query, collection, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import GithubActivityPanel from "./GithubActivityPanel";
 import PeerReviewSection from "./PeerReviewSection";
+import { AssignmentForm, toFormValues, type AssignmentFormValues } from "./AssignmentForm";
+import { PlagiarismReport } from "./PlagiarismReport";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
@@ -35,13 +37,7 @@ export default function AssignmentsPanel({
   moodleCourseId
 }: any) {
   // Assignments states
-  const [assignTitle, setAssignTitle] = useState("");
-  const [assignTemplate, setAssignTemplate] = useState("");
-  const [assignPr, setAssignPr] = useState(false);
-  const [assignGroup, setAssignGroup] = useState(false);
-  const [assignDueDate, setAssignDueDate] = useState("");
-  const [assignRequired, setAssignRequired] = useState(true);
-  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<any | null>(null);
   const [gradesCSVStatus, setGradesCSVStatus] = useState<Record<string, string>>({});
   const [visibleCommitsSubId, setVisibleCommitsSubId] = useState<string | null>(null);
 
@@ -87,33 +83,32 @@ export default function AssignmentsPanel({
   }, [submissions]);
 
   // --- Handlers ---
-  const handleCreateAssignment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!assignTitle || !assignTemplate) return showToast("Título y Repositorio Plantilla son obligatorios.", "success");
+  const handleSaveAssignment = async (values: AssignmentFormValues): Promise<boolean> => {
+    if (!values.title || !values.template_repo) {
+      showToast("Título y Repositorio Plantilla son obligatorios.", "success");
+      return false;
+    }
     const cid = typeof selectedCourse === "string" ? selectedCourse : (selectedCourse?.id || selectedCourse?.course_id || selectedCourse?.course?.id || "");
-    if (!cid) return showToast("Debe seleccionar una materia para crear la tarea.", "success");
+    if (!cid) {
+      showToast("Debe seleccionar una materia para crear la tarea.", "success");
+      return false;
+    }
     setApiLoading(true);
     try {
-      if (editingAssignmentId) {
-        await api("updateAssignment", {
-          assignmentId: editingAssignmentId,
-          data: { title: assignTitle, template_repo: assignTemplate, create_feedback_pr: assignPr, is_group: assignGroup, due_date: assignDueDate, is_required: assignRequired }
-        });
-        setEditingAssignmentId(null);
+      if (editingAssignment) {
+        await api("updateAssignment", { assignmentId: editingAssignment.id, data: values });
+        setEditingAssignment(null);
         showToast("Tarea modificada.", "success");
       } else {
-        await api("createAssignment", {
-          course_id: cid, courseId: cid, title: assignTitle, template_repo: assignTemplate, create_feedback_pr: assignPr, is_group: assignGroup,
-          due_date: assignDueDate, is_required: assignRequired
-        });
+        await api("createAssignment", { course_id: cid, courseId: cid, ...values });
         showToast("Tarea creada exitosamente.", "success");
       }
-      setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false); setAssignDueDate(""); setAssignRequired(true);
-
       const res = await api("getTeacherAssignments", { courseIds: [cid] });
       setAssignments((res || []).filter((a: any) => a.course_id === cid));
+      return true;
     } catch (err: any) {
       showToast("Error al gestionar tarea: " + err.message, "error");
+      return false;
     } finally {
       setApiLoading(false);
     }
@@ -346,41 +341,12 @@ export default function AssignmentsPanel({
     <div className="space-y-6">
       {profile?.role === "teacher" ? (
         <div className="space-y-6">
-          <form onSubmit={handleCreateAssignment} className="bg-neutral-900/60 p-6 rounded-2xl border border-neutral-800 space-y-4">
-            <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider">{editingAssignmentId ? "✏️ Editar Tarea" : "➕ Crear Nueva Tarea"}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="assignTitle" className="block text-xs font-semibold text-gray-400 mb-1">Título de la Tarea</label>
-                <input id="assignTitle" type="text" value={assignTitle} onChange={(e) => setAssignTitle(e.target.value)} placeholder="Ej: Trabajo Práctico 1" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" required />
-              </div>
-              <div>
-                <label htmlFor="assignTemplate" className="block text-xs font-semibold text-gray-400 mb-1">Repositorio Plantilla (org/repo)</label>
-                <input id="assignTemplate" type="text" value={assignTemplate} onChange={(e) => setAssignTemplate(e.target.value)} placeholder="Ej: unrn-prog2-2026/tp1-plantilla" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" required />
-              </div>
-              <div>
-                <label htmlFor="assignDueDate" className="block text-xs font-semibold text-gray-400 mb-1">Fecha límite (vence 23:59)</label>
-                <input id="assignDueDate" type="date" value={assignDueDate} onChange={(e) => setAssignDueDate(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white" />
-              </div>
-            </div>
-            <div className="flex space-x-6 items-center">
-              <label htmlFor="assignPr" className="flex items-center space-x-2 text-xs font-semibold text-gray-400 cursor-pointer">
-                <input id="assignPr" type="checkbox" checked={assignPr} onChange={(e) => setAssignPr(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
-                <span>Crear Pull Request de Feedback</span>
-              </label>
-              <label htmlFor="assignGroup" className="flex items-center space-x-2 text-xs font-semibold text-gray-400 cursor-pointer">
-                <input id="assignGroup" type="checkbox" checked={assignGroup} onChange={(e) => setAssignGroup(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
-                <span>Tarea Grupal</span>
-              </label>
-              <label htmlFor="assignRequired" className="flex items-center space-x-2 text-xs font-semibold text-gray-400 cursor-pointer">
-                <input id="assignRequired" type="checkbox" checked={assignRequired} onChange={(e) => setAssignRequired(e.target.checked)} className="rounded bg-neutral-950 border-neutral-800 text-blue-600 focus:ring-0" />
-                <span>Obligatorio para regularizar</span>
-              </label>
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition">{editingAssignmentId ? "Guardar Cambios" : "Crear Tarea"}</button>
-              {editingAssignmentId && <button type="button" onClick={() => { setEditingAssignmentId(null); setAssignTitle(""); setAssignTemplate(""); setAssignPr(false); setAssignGroup(false); setAssignDueDate(""); setAssignRequired(true); }} className="px-5 py-2.5 bg-neutral-950 border border-neutral-800 text-gray-400 rounded-xl text-xs font-semibold transition">Cancelar</button>}
-            </div>
-          </form>
+          <AssignmentForm
+            key={editingAssignment ? editingAssignment.id : "new"}
+            editing={editingAssignment ? toFormValues(editingAssignment) : null}
+            onSubmit={handleSaveAssignment}
+            onCancel={() => setEditingAssignment(null)}
+          />
 
           <div className="space-y-4">
             {assignments.map((a: any) => (
@@ -397,7 +363,7 @@ export default function AssignmentsPanel({
                   <div className="flex gap-1.5">
                     <button onClick={() => handleExportGradesToMoodle(a.id)} className="px-3 py-1.5 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 rounded-lg text-[11px] font-semibold text-purple-300 transition flex items-center space-x-1 cursor-pointer" title="Enviar calificaciones corregidas de esta tarea a Moodle Gradebook"><span>📤 Moodle</span></button>
                     <button onClick={() => handlePublishLti(a.id)} className="px-3 py-1.5 bg-purple-950/50 hover:bg-purple-900/50 border border-purple-800/60 rounded-lg text-[11px] font-semibold text-purple-300 transition cursor-pointer" title="Publicar las notas en el libro de calificaciones de Moodle (LTI 1.3 AGS)">📤 LTI</button>
-                    <button onClick={() => { setEditingAssignmentId(a.id); setAssignTitle(a.title); setAssignTemplate(a.template_repo); setAssignPr(a.create_feedback_pr || false); setAssignGroup(a.is_group || false); setAssignDueDate(String(a.due_date || "").slice(0, 10)); setAssignRequired(a.is_required !== false); }} className="px-3 py-1.5 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/60 rounded-lg text-[11px] font-semibold text-amber-300 transition">Editar</button>
+                    <button onClick={() => setEditingAssignment(a)} className="px-3 py-1.5 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/60 rounded-lg text-[11px] font-semibold text-amber-300 transition">Editar</button>
                     <button onClick={() => handleArchiveAssignment(a.id)} className="px-3 py-1.5 bg-red-950/50 hover:bg-red-900/50 border border-red-800/60 rounded-lg text-[11px] font-semibold text-red-300 transition">Archivar (Solo Lectura)</button>
                   </div>
                 </div>
@@ -426,47 +392,7 @@ export default function AssignmentsPanel({
                     <div className="md:col-span-2">
                       <PeerReviewSection mode="teacher" courseId={selectedCourse.id || selectedCourse.course?.id} assignment={a} showToast={showToast} setApiLoading={setApiLoading} />
                     </div>
-                    {plagiarismOpenId === a.id && plagiarismResults[a.id] && (
-                      <div className="md:col-span-2 bg-neutral-950/60 border border-neutral-850 rounded-xl p-4 space-y-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h5 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-                            Análisis de similitud — {plagiarismResults[a.id].analyzedCount} entregas analizadas
-                          </h5>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${plagiarismResults[a.id].flaggedCount > 0 ? "bg-red-500/20 text-red-300" : "bg-green-500/20 text-green-300"}`}>
-                            {plagiarismResults[a.id].flaggedCount} par(es) sospechosos (umbral {plagiarismResults[a.id].threshold}%)
-                          </span>
-                        </div>
-                        <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                          {plagiarismResults[a.id].pairs.map((pair: any, idx: number) => (
-                            <div key={idx} className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border text-[11px] ${pair.flagged ? "bg-red-950/30 border-red-900/50" : "bg-neutral-900 border-neutral-850"}`}>
-                              <span className="text-gray-300">
-                                <strong>{pair.a.name}</strong> ↔ <strong>{pair.b.name}</strong>
-                              </span>
-                              <span className="flex items-center gap-2 font-mono">
-                                <span className={pair.flagged ? "text-red-300 font-bold" : "text-gray-400"}>{pair.score}%</span>
-                                <span className="text-[9px] text-gray-600">jac {pair.jaccard}% · cont {pair.containment}%</span>
-                                {pair.flagged && <span className="text-[9px] font-bold uppercase text-red-400">⚠ Copia probable</span>}
-                                <a href={pair.a.repo} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">A ↗</a>
-                                <a href={pair.b.repo} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">B ↗</a>
-                              </span>
-                            </div>
-                          ))}
-                          {plagiarismResults[a.id].pairs.length === 0 && (
-                            <p className="text-[11px] text-gray-500 italic">No hay pares comparables (se necesitan al menos dos entregas con repositorio).</p>
-                          )}
-                          {plagiarismResults[a.id].skipped?.length > 0 && (
-                            <details className="pt-1">
-                              <summary className="text-[10px] text-gray-500 cursor-pointer">Entregas omitidas ({plagiarismResults[a.id].skipped.length})</summary>
-                              <ul className="mt-1 space-y-0.5">
-                                {plagiarismResults[a.id].skipped.map((sk: any, i: number) => (
-                                  <li key={i} className="text-[10px] text-gray-600">• {sk.student}: {sk.reason}</li>
-                                ))}
-                              </ul>
-                            </details>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                    {plagiarismOpenId === a.id && plagiarismResults[a.id] && <PlagiarismReport report={plagiarismResults[a.id]} />}
                   </div>
                   {gradesCSVStatus[a.id] && <p className="text-xs font-semibold">{gradesCSVStatus[a.id]}</p>}
                 </div>
