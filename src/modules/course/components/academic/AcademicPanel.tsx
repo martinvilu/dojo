@@ -9,14 +9,16 @@ import { ConditionsTable } from "./ConditionsTable";
 import { AssessmentsManager } from "./AssessmentsManager";
 import { ExceptionsManager } from "./ExceptionsManager";
 import { GradingRulesForm } from "./GradingRulesForm";
+import { ReviewRequests } from "./ReviewRequests";
 import { EXCEPTION_LABELS, type ConditionResult, type CourseAssignment, type CourseException, type RosterStudent } from "./types";
 
-type StaffTab = "conditions" | "assessments" | "exceptions" | "rules";
+type StaffTab = "conditions" | "assessments" | "exceptions" | "reviews" | "rules";
 
 const STAFF_TABS: { id: StaffTab; label: string }[] = [
   { id: "conditions", label: "Condición" },
   { id: "assessments", label: "Parciales" },
   { id: "exceptions", label: "Excepciones" },
+  { id: "reviews", label: "Consultas" },
   { id: "rules", label: "Reglas" },
 ];
 
@@ -60,6 +62,7 @@ function StaffAcademicView({ courseId, commissions }: { courseId: string; commis
         {tab === "conditions" && <ConditionsTable key={revision} courseId={courseId} commissions={commissions} />}
         {tab === "assessments" && <AssessmentsManager courseId={courseId} roster={roster} commissions={commissions} />}
         {tab === "exceptions" && <ExceptionsManager courseId={courseId} roster={roster} assignments={assignments} />}
+        {tab === "reviews" && <ReviewRequests courseId={courseId} mode="staff" />}
         {tab === "rules" && <GradingRulesForm courseId={courseId} />}
       </div>
     </div>
@@ -101,6 +104,10 @@ function StudentAcademicView({ courseId }: { courseId: string }) {
       </div>
       {result.near_promotion && <p className="text-xs text-amber-300">Estás a un paso de promocionar. Revisá los motivos de abajo.</p>}
       <ConditionDetail result={result} />
+      <section className="border-t border-neutral-800 pt-4 space-y-2">
+        <h5 className="text-xs font-bold text-gray-300">¿Algo de tu ficha no cuadra? Consultá a la cátedra</h5>
+        <ReviewRequests courseId={courseId} mode="student" condition={result} />
+      </section>
       {exceptions.length > 0 && (
         <div className="text-xs">
           <h6 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Excepciones otorgadas por la cátedra</h6>

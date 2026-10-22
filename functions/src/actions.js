@@ -186,6 +186,9 @@ const ACTION_MODULES = {
     addContactLog: './modules/notifications/alerts',
     getContactLogs: './modules/notifications/alerts',
     scheduleStudentTutoring: './modules/notifications/alerts',
+    createReviewRequest: './modules/course/reviewRequests',
+    getReviewRequests: './modules/course/reviewRequests',
+    replyReviewRequest: './modules/course/reviewRequests',
     markCommentSolution: './modules/course/forum',
     importMoodleLogs: './modules/integrations/moodleLogs',
 };

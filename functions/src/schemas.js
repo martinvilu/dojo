@@ -326,6 +326,14 @@ const ACTION_SCHEMAS = {
     }),
     getContactLogs: course({ studentId: opt(id) }),
     scheduleStudentTutoring: course({ studentId: id, dateTime: isoDate, note: opt(text(1000)), alertId: opt(id) }),
+    createReviewRequest: course({
+        kind: z.enum(['attendance', 'submission', 'grade', 'assessment', 'other']),
+        refId: opt(id),
+        refLabel: text(200).min(1),
+        message: text(3000).min(3, 'escribí tu consulta'),
+    }),
+    getReviewRequests: course({ status: opt(z.enum(['open', 'answered', 'closed'])) }),
+    replyReviewRequest: obj({ requestId: id, message: opt(text(3000)), close: opt(bool) }),
     markCommentSolution: course({ commentId: id, isSolution: bool }),
     importMoodleLogs: course({
         events: z.array(z.strictObject({

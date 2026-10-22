@@ -209,6 +209,9 @@ const ACTION_POLICIES = {
     addContactLog: staffOf('course'),
     getContactLogs: staffOf('course'),
     scheduleStudentTutoring: staffOf('course'),
+    createReviewRequest: memberOf('course'),
+    getReviewRequests: memberOf('course'),
+    replyReviewRequest: memberOf('reviewRequest'),
     markCommentSolution: staffOf('course'),
     importMoodleLogs: staffOf('course'),
 };
@@ -251,6 +254,7 @@ const TARGET_RESOLVERS = {
     assessment: async (payload, db) => courseIdOfDoc(db, 'assessments', payload.assessmentId, 'la evaluación'),
     exception: async (payload, db) => courseIdOfDoc(db, 'course_exceptions', payload.exceptionId, 'la excepción'),
     alert: async (payload, db) => courseIdOfDoc(db, 'student_alerts', payload.alertId, 'la alerta'),
+    reviewRequest: async (payload, db) => courseIdOfDoc(db, 'review_requests', payload.requestId, 'la consulta'),
 };
 
 async function docExists(db, collection, docId) {
