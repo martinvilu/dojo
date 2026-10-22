@@ -10,7 +10,7 @@ const { HttpsError } = require('firebase-functions/v2/https');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { isCourseStaff } = require('../../authz');
 const { publishSingleGrade } = require('../integrations/lti');
-const { assertCanEditStudents, staffCommissionScope, outOfScope } = require('../../lib/courseGuards');
+const { assertCanEditStudents, assertCourseOpen, staffCommissionScope, outOfScope } = require('../../lib/courseGuards');
 
 const NUMERIC_RE = /^\d+(\.\d+)?$/;
 
@@ -74,6 +74,7 @@ async function getAssessments(payload, context) {
 async function createAssessment(payload, context) {
     const { uid, db, admin } = context;
     const { courseId, kind, label, recovers, date, commission } = payload;
+    await assertCourseOpen(db, courseId);
     if (kind === 'recuperatorio') {
         if (!recovers) throw new HttpsError('invalid-argument', 'Indicá qué parcial recupera.');
         await assertRecoversParcial(db, courseId, recovers);
@@ -95,6 +96,7 @@ async function createAssessment(payload, context) {
 async function updateAssessment(payload, context) {
     const { db } = context;
     const assessment = await getAssessmentOrThrow(db, payload.assessmentId);
+    await assertCourseOpen(db, assessment.course_id);
     const data = { ...payload.data };
     if (data.label !== undefined) data.label = data.label.trim();
     if (data.recovers !== undefined) {
@@ -110,6 +112,7 @@ async function updateAssessment(payload, context) {
 async function archiveAssessment(payload, context) {
     const { db } = context;
     const assessment = await getAssessmentOrThrow(db, payload.assessmentId);
+    await assertCourseOpen(db, assessment.course_id);
     await db.collection('assessments').doc(assessment.id).update({ archived: true });
     return { success: true };
 }

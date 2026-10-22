@@ -6,7 +6,16 @@ const { DEFAULT_RULES, pickRules, resolveRules } = require('../../lib/academic/r
 const { loadCourseAcademicData, computeConditions } = require('../../lib/academic/loader');
 const { CONDITIONS } = require('../../lib/academic/condition');
 const { isCourseStaff } = require('../../authz');
-const { staffCommissionScope, assertCourseOpen, NO_COMMISSION } = require('../../lib/courseGuards');
+const { staffCommissionScope, assertCourseOpen, getClosure, NO_COMMISSION } = require('../../lib/courseGuards');
+
+async function findActaRow(db, courseId, version, studentId) {
+    const parts = await db.collection('course_closures').doc(courseId).collection('actas').doc(String(version)).collection('parts').get();
+    for (const part of parts.docs) {
+        const row = (part.data().rows || []).find((r) => r.student_id === studentId);
+        if (row) return row;
+    }
+    return null;
+}
 
 /** Titular del curso o admin: los ayudantes no cambian reglas globales. */
 async function assertCanEditRules(db, courseId, uid, profile) {
@@ -131,7 +140,17 @@ async function getMyAcademicCondition(payload, context) {
     const data = await loadCourseAcademicData(db, courseId, { studentId: uid });
     const [result] = computeConditions(data);
     const student = data.students[0];
-    return { ...result, rules: resolveRules(data.course, student.commission) };
+    const response = { ...result, rules: resolveRules(data.course, student.commission) };
+    // Con el acta cerrada, la condición que vale es la congelada.
+    const closure = await getClosure(db, courseId);
+    if (closure && closure.status === 'closed') {
+        const row = await findActaRow(db, courseId, closure.version, uid);
+        if (row) {
+            response.provisional = false;
+            response.final = { version: closure.version, condition: row.condition, siu_condition: row.siu_condition, final_grade: row.final_grade };
+        }
+    }
+    return response;
 }
 
 module.exports = {

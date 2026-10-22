@@ -60,6 +60,11 @@ const ACTION_MODULES = {
     saveClassAttendance: './modules/attendance/attendance',
     setStudentCommission: './modules/course/commissions',
     setTeacherCommissions: './modules/course/commissions',
+    closeCourse: './modules/course/closure',
+    reopenCourse: './modules/course/closure',
+    getCourseClosure: './modules/course/closure',
+    getActa: './modules/course/closure',
+    exportActaCsv: './modules/course/closure',
 
     logActivity: './modules/system/activity',
     getActivityLogs: './modules/system/activity',

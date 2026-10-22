@@ -114,6 +114,11 @@ const ACTION_SCHEMAS = {
     }),
     setStudentCommission: course({ studentId: id, commission: z.string().max(100) }),
     setTeacherCommissions: course({ teacherId: id, commissions: z.array(z.string().max(100)).max(50) }),
+    closeCourse: course({ note: opt(text(1000)) }),
+    reopenCourse: course({ reason: z.string().trim().min(10, 'contá por qué se reabre (mínimo 10 caracteres)').max(1000) }),
+    getCourseClosure: course(),
+    getActa: course({ version: opt(z.number().int().positive()) }),
+    exportActaCsv: course({ version: opt(z.number().int().positive()) }),
     logActivity: obj({ action: opt(shortText), details: opt(text(5000)) }),
     getActivityLogs: empty,
 

@@ -65,6 +65,12 @@ const ACTION_POLICIES = {
     saveClassAttendance: staffOf('course'),
     setStudentCommission: staffOf('course'),
     setTeacherCommissions: staffOf('course'),
+    // cierre de cursada (F6): cerrar/reabrir valida además que sea el titular
+    closeCourse: staffOf('course'),
+    reopenCourse: staffOf('course'),
+    getCourseClosure: staffOf('course'),
+    getActa: staffOf('course'),
+    exportActaCsv: staffOf('course'),
     getQrSessionCode: staffOf('course'),
     stopQrSession: staffOf('course'),
 
