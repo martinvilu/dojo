@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCachedApi } from "@/hooks/useCachedApi";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import { ConditionChip } from "./ConditionChip";
@@ -27,23 +28,20 @@ const STAFF_TABS: { id: StaffTab; label: string }[] = [
 /** Vista de la cátedra: condición del padrón, parciales, excepciones y reglas. */
 function StaffAcademicView({ courseId, commissions }: { courseId: string; commissions: string[] }) {
   const [tab, setTab] = useState<StaffTab>("conditions");
-  const [roster, setRoster] = useState<RosterStudent[]>([]);
-  const [assignments, setAssignments] = useState<CourseAssignment[]>([]);
+  // Padrón y TPs con caché SWR: cambiar de pestaña no los vuelve a esperar.
+  const rosterQuery = useCachedApi<RosterStudent[]>("getCourseRoster", { courseId });
+  const assignmentsQuery = useCachedApi<CourseAssignment[]>("getTeacherAssignments", { courseIds: [courseId] });
+  const roster = rosterQuery.data || [];
+  const assignments = useMemo(
+    () => (assignmentsQuery.data || []).filter((x: any) => x.course_id === courseId && !x.is_archived),
+    [assignmentsQuery.data, courseId],
+  );
+  const loadError = rosterQuery.error || assignmentsQuery.error;
+  useEffect(() => {
+    if (loadError) showToast("Error al cargar el padrón: " + loadError.message, "error");
+  }, [loadError]);
   // Cambiar reglas, notas o excepciones invalida la tabla de condiciones.
   const [revision, setRevision] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      api("getCourseRoster", { courseId }),
-      api("getTeacherAssignments", { courseIds: [courseId] }),
-    ]).then(([r, a]) => {
-      if (cancelled) return;
-      setRoster(r || []);
-      setAssignments((a || []).filter((x: any) => x.course_id === courseId && !x.is_archived));
-    }).catch((err) => showToast("Error al cargar el padrón: " + err.message, "error"));
-    return () => { cancelled = true; };
-  }, [courseId]);
 
   const switchTab = (next: StaffTab) => {
     if (next === "conditions") setRevision((n) => n + 1);
