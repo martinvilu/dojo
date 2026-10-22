@@ -216,16 +216,6 @@ describe('Full Coverage Actions Test Suite', () => {
 
   // 3. ATTENDANCE ACTIONS
   describe('Attendance Actions', () => {
-    test('markAttendance validation & success', async () => {
-      const ctx = createMockContext({ uid: 'student1' });
-      await expect(attendanceActions.markAttendance({}, ctx)).rejects.toThrow('Faltan datos de la clase');
-      await expect(attendanceActions.markAttendance({ courseId: 'c1', classId: 'cls1' }, ctx)).rejects.toThrow('No estás inscripto');
-
-      ctx.docStore['enrollments/student1_c1'] = { active: true };
-      const res = await attendanceActions.markAttendance({ courseId: 'c1', classId: 'cls1' }, ctx);
-      expect(res.success).toBe(true);
-    });
-
     test('submitQrAttendance validates enrollment, rotating code and geofence', async () => {
       const { codeForCounter, counterAt } = require('../src/lib/totp');
       const SECRET = 'ab'.repeat(20);

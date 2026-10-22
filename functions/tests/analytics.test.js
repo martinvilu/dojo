@@ -144,18 +144,6 @@ describe('getDropoutRiskAnalysis', () => {
             })
           };
         }
-        if (name === 'attendance') {
-          return {
-            where: () => ({
-              get: async () => ({
-                docs: [
-                  { data: () => ({ student_id: 's_good', status: 'late' }) },
-                  { data: () => ({ student_id: null }) }
-                ]
-              })
-            })
-          };
-        }
         if (name === 'course_roster') {
           return {
             where: () => ({

@@ -59,7 +59,6 @@ async function buildAttendanceCsv(db: any, courseId: string, course: any): Promi
   }
 
   const attCollSnap = await db.collection("courses").doc(courseId).collection("attendance").get();
-  const globalAttSnap = await db.collection("attendance").where("course_id", "==", courseId).get();
 
   let csv = "timestamp;materia;clase;estudiante_email;estudiante_nombre;estudiante_matricula;usuario_github;estado\n";
 
@@ -82,24 +81,6 @@ async function buildAttendanceCsv(db: any, courseId: string, course: any): Promi
         escapeCsv(String(status)),
       ].join(";") + "\n";
     }
-  });
-
-  globalAttSnap.docs.forEach((doc: any) => {
-    const data = doc.data();
-    const classId = data.class_id || data.classNumber || "1";
-    const timestamp = toIso(data.timestamp) || new Date().toISOString();
-    const profile = profilesMap[data.student_id] || {};
-
-    csv += [
-      escapeCsv(timestamp),
-      escapeCsv(course.name),
-      escapeCsv(String(classId)),
-      escapeCsv(profile.email || profile.contact_email || ""),
-      escapeCsv(profile.full_name || ""),
-      escapeCsv(profile.matricula_unrn || ""),
-      escapeCsv(profile.github_username || profile.github_user || ""),
-      "presente",
-    ].join(";") + "\n";
   });
 
   return { body: csv, filename: `asistencia_${String(course.name || "").replace(/\s+/g, "_")}.csv` };

@@ -72,7 +72,7 @@ async function getDropoutRiskAnalysis(payload, context) {
     assignmentsSnap.docs.forEach(d => { assignmentById[d.id] = d.data(); });
     const totalAssignments = assignmentsSnap.size;
 
-    // Sub-collection attendance (per-class records map) ...
+    // Única fuente de asistencia: courses/{id}/attendance/class_{n}.records.
     const attCollSnap = await db.collection('courses').doc(courseId).collection('attendance').get();
     const attendanceByStudent = {};
     attCollSnap.docs.forEach(doc => {
@@ -81,14 +81,6 @@ async function getDropoutRiskAnalysis(payload, context) {
             if (!attendanceByStudent[sid]) attendanceByStudent[sid] = [];
             attendanceByStudent[sid].push(status);
         });
-    });
-    // ... merged with legacy per-document global attendance.
-    const globalAttSnap = await db.collection('attendance').where('course_id', '==', courseId).get();
-    globalAttSnap.docs.forEach(doc => {
-        const sid = doc.data().student_id;
-        if (!sid) return;
-        if (!attendanceByStudent[sid]) attendanceByStudent[sid] = [];
-        attendanceByStudent[sid].push(doc.data().status || 'present');
     });
 
     // Forum participation per student.

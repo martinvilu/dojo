@@ -23,7 +23,6 @@ const ACTION_MODULES = {
     deleteUser: './modules/course/admin',
     
     // attendance
-    markAttendance: './modules/attendance/attendance',
     submitQrAttendance: './modules/attendance/attendance',
     startQrSession: './modules/attendance/attendance',
     getQrSessionCode: './modules/attendance/attendance',
