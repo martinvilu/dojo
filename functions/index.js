@@ -9,6 +9,9 @@ db.settings({ ignoreUndefinedProperties: true });
 
 const { ACTION_MODULES, loadActionHandler } = require('./src/actions');
 const { authorizeAction } = require('./src/authz');
+const { ACTION_SCHEMAS } = require('./src/schemas');
+const { validatePayload } = require('./src/lib/validation');
+const { enforceRateLimit } = require('./src/lib/rateLimit');
 const { isSafeExternalUrl, escapeXml } = require('./src/lib/urls');
 const { gradeToOutcomeScore } = require('./src/lib/grades');
 
@@ -148,8 +151,10 @@ exports.api = onCall(async (request) => {
             throw new HttpsError('internal', `El manejador para ${action} no está implementado en ${ACTION_MODULES[action]}`);
         }
 
+        await enforceRateLimit(db, uid, action);
+        const validPayload = validatePayload(ACTION_SCHEMAS, action, payload);
         const callerProfile = await getMyProfile();
-        const authorizedPayload = await authorizeAction(action, payload || {}, { uid, db, profile: callerProfile });
+        const authorizedPayload = await authorizeAction(action, validPayload, { uid, db, profile: callerProfile });
 
         logger.info(`[API Call] Iniciando acción: ${action}`, { uid, payload_keys: Object.keys(payload || {}) });
 
