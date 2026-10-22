@@ -122,7 +122,15 @@ async function getCourseTeachers(payload, context) {
     for (let doc of tSnap.docs) {
         const t = doc.data();
         const p = await db.collection('profiles').doc(t.teacher_id).get();
-        teachers.push({ ...t, profiles: p.data() });
+        const prof = p.exists ? p.data() : {};
+        // Lo leen también los estudiantes: solo datos de contacto, nunca el perfil entero.
+        teachers.push({
+            course_id: t.course_id,
+            teacher_id: t.teacher_id,
+            role: t.role || 'titular',
+            commissions: t.commissions || [],
+            profiles: { full_name: prof.full_name || '', email: prof.email || '', avatar_url: prof.avatar_url || '' },
+        });
     }
     return teachers;
 }
@@ -131,8 +139,9 @@ async function assignTeacher(payload, context) {
     const { db } = context;
     await db.collection('course_teachers').doc(`${payload.courseId}_${payload.teacherId}`).set({
         course_id: payload.courseId,
-        teacher_id: payload.teacherId
-    });
+        teacher_id: payload.teacherId,
+        role: payload.role === 'ayudante' ? 'ayudante' : 'titular',
+    }, { merge: true });
     return { success: true };
 }
 

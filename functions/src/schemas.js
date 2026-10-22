@@ -108,6 +108,12 @@ const ACTION_SCHEMAS = {
     mergeProfiles: obj({ targetUid: id, sourceUid: id }),
     getXpLogs: empty,
     getMyXp: course(),
+    saveClassAttendance: course({
+        classNumber: z.number().int().nonnegative(),
+        records: z.record(id, z.enum(['present', 'late', 'absent', 'justified'])).refine((r) => Object.keys(r).length <= 2000, 'demasiados registros'),
+    }),
+    setStudentCommission: course({ studentId: id, commission: z.string().max(100) }),
+    setTeacherCommissions: course({ teacherId: id, commissions: z.array(z.string().max(100)).max(50) }),
     logActivity: obj({ action: opt(shortText), details: opt(text(5000)) }),
     getActivityLogs: empty,
 
@@ -149,7 +155,7 @@ const ACTION_SCHEMAS = {
     createCourse: obj({ name: text(200), github_org: opt(text(100)) }),
     updateCourseName: course({ name: text(200) }),
     getCourseTeachers: course(),
-    assignTeacher: course({ teacherId: id }),
+    assignTeacher: course({ teacherId: id, role: opt(z.enum(['titular', 'ayudante'])) }),
     removeTeacher: course({ teacherId: id }),
     getTeacherCourses: empty,
     getCourseSettings: course(),

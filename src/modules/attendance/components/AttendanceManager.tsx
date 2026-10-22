@@ -1,7 +1,5 @@
 import { showToast } from "@/components/dashboard/ui/ToastNotification";
 import React, { useState, useEffect } from "react";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/clientApp";
 import { api } from "@/lib/api";
 import ModalShell from "@/components/dashboard/ui/ModalShell";
 import { useBeforeUnload } from "@/hooks/useBeforeUnload";
@@ -15,9 +13,11 @@ interface Student {
   role?: string;
 }
 
+type AttendanceStatus = "present" | "absent" | "late" | "justified";
+
 interface AttendanceRecord {
   id: string;
-  records: Record<string, "present" | "absent" | "late">;
+  records: Record<string, AttendanceStatus>;
   updated_at?: string;
 }
 
@@ -40,8 +40,8 @@ export default function AttendanceManager({
 }: AttendanceManagerProps) {
   // Local states
   const [commissionFilter, setCommissionFilter] = useState("Todas");
-  const [editingRecords, setEditingRecords] = useState<Record<string, "present" | "absent" | "late">>({});
-  const [loadedRecords, setLoadedRecords] = useState<Record<string, "present" | "absent" | "late">>({});
+  const [editingRecords, setEditingRecords] = useState<Record<string, AttendanceStatus>>({});
+  const [loadedRecords, setLoadedRecords] = useState<Record<string, AttendanceStatus>>({});
   const [saving, setSaving] = useState(false);
 
   // QR: el secreto vive en el backend; acá solo mostramos el código vigente
@@ -58,7 +58,7 @@ export default function AttendanceManager({
   useEffect(() => {
     const docId = `class_${classNumber}`;
     const existing = courseAttendance.find((a) => a.id === docId);
-    const initialRecords: Record<string, "present" | "absent" | "late"> = {};
+    const initialRecords: Record<string, AttendanceStatus> = {};
     roster.forEach((student) => {
       initialRecords[student.id] = existing?.records?.[student.id] || "present";
     });
@@ -144,15 +144,14 @@ export default function AttendanceManager({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const docRef = doc(db, "courses", courseId, "attendance", `class_${classNumber}`);
-      await setDoc(
-        docRef,
-        {
-          records: editingRecords,
-          updated_at: new Date().toISOString(),
-        },
-        { merge: true }
-      );
+      // Solo lo visible que cambió o todavía no tenía registro: un ayudante
+      // guarda únicamente su comisión (el backend rechaza el resto).
+      const existing = courseAttendance.find((a) => a.id === `class_${classNumber}`)?.records || {};
+      const records = Object.fromEntries(filteredRoster
+        .filter((s) => editingRecords[s.id] && (editingRecords[s.id] !== existing[s.id]))
+        .map((s) => [s.id, editingRecords[s.id]]));
+      await api("saveClassAttendance", { courseId, classNumber, records });
+      setLoadedRecords(editingRecords);
       showToast("Asistencia guardada con éxito.", "success");
       onClose();
     } catch (err: any) {
@@ -247,6 +246,16 @@ export default function AttendanceManager({
                   }`}
                 >
                   Ausente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingRecords((prev) => ({ ...prev, [student.id]: "justified" }))}
+                  title="Inasistencia justificada: no cuenta para el porcentaje"
+                  className={`px-2 py-1 rounded text-[10px] font-bold transition ${
+                    currentVal === "justified" ? "bg-sky-700 text-white" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Justificada
                 </button>
               </div>
             </div>

@@ -10,6 +10,7 @@ const { HttpsError } = require('firebase-functions/v2/https');
 const { normalizeGrade, normalizeFeedback } = require('../../lib/grades');
 const { isCourseStaff } = require('../../authz');
 const { publishSingleGrade } = require('../integrations/lti');
+const { assertCanEditStudents, staffCommissionScope, outOfScope } = require('../../lib/courseGuards');
 
 const NUMERIC_RE = /^\d+(\.\d+)?$/;
 
@@ -156,6 +157,7 @@ async function gradeAssessment(payload, context) {
     if (!(await isRosterStudent(db, assessment.course_id, payload.studentId))) {
         throw new HttpsError('invalid-argument', 'El estudiante no pertenece a esta cursada.');
     }
+    await assertCanEditStudents(db, assessment.course_id, context.uid, [payload.studentId]);
     const normalized = normalizeAssessmentGrade(payload.grade);
     if (!normalized.ok) throw new HttpsError('invalid-argument', normalized.error);
     const feedback = normalizeFeedback(payload.feedback);
@@ -176,6 +178,8 @@ async function importAssessmentGrades(payload, context) {
     const { db } = context;
     const assessment = await getAssessmentOrThrow(db, payload.assessmentId);
     if (assessment.archived) throw new HttpsError('failed-precondition', 'La evaluación está archivada.');
+    await assertCanEditStudents(db, assessment.course_id, context.uid, []);
+    const scope = await staffCommissionScope(db, assessment.course_id, context.uid);
 
     const rosterSnap = await db.collection('course_roster').where('course_id', '==', assessment.course_id).get();
     const enrolled = new Set(rosterSnap.docs.map((d) => d.data()).filter((r) => r.status !== 'removed').map((r) => r.student_id));
@@ -194,6 +198,10 @@ async function importAssessmentGrades(payload, context) {
         const label = row.matricula || row.studentId || `fila ${index + 1}`;
         if (!studentId || !enrolled.has(studentId)) {
             rejected.push({ row: label, reason: 'No está en el padrón de la cursada.' });
+            continue;
+        }
+        if ((await outOfScope(db, assessment.course_id, scope, [studentId])).length > 0) {
+            rejected.push({ row: label, reason: 'Pertenece a una comisión que no tenés asignada.' });
             continue;
         }
         const normalized = normalizeAssessmentGrade(row.grade);

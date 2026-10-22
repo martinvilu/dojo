@@ -12,6 +12,7 @@
 const { HttpsError } = require('firebase-functions/v2/https');
 const { resolveRules } = require('../../lib/academic/rules');
 const { isCourseStaff } = require('../../authz');
+const { assertCanEditStudents } = require('../../lib/courseGuards');
 
 async function actorName(context) {
     const profile = context.getMyProfile ? await context.getMyProfile() : null;
@@ -56,6 +57,7 @@ async function grantException(payload, context) {
     if (!roster.exists || roster.data().status === 'removed') {
         throw new HttpsError('invalid-argument', 'El estudiante no pertenece a esta cursada.');
     }
+    await assertCanEditStudents(db, courseId, uid, [studentId]);
 
     if (type === 'tp_exempt' || type === 'deadline_extension') {
         if (!assignmentId) throw new HttpsError('invalid-argument', 'Indicá el trabajo práctico.');
@@ -123,6 +125,7 @@ async function revokeException(payload, context) {
     if (!snap.exists) throw new HttpsError('not-found', 'No se encontró la excepción.');
     const exception = snap.data();
     if (exception.revoked) return { success: true };
+    await assertCanEditStudents(db, exception.course_id, uid, [exception.student_id]);
 
     const name = await actorName(context);
     await ref.update({

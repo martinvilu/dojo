@@ -2,6 +2,7 @@
 
 const { HttpsError } = require('firebase-functions/v2/https');
 const { generateSecret, currentCode, verifyCode } = require('../../lib/totp');
+const { assertCourseOpen, assertCanEditStudents } = require('../../lib/courseGuards');
 
 const QR_SESSION_TTL_MS = 5 * 60 * 1000;
 const MAX_DISTANCE_METERS = 150;
@@ -51,6 +52,7 @@ async function startQrSession(payload, context) {
     if (!Number.isInteger(classNumber) || classNumber < 0) {
         throw new HttpsError('invalid-argument', 'Número de clase inválido.');
     }
+    await assertCourseOpen(db, courseId);
     const hasLocation = isValidCoordinate(lat, lng);
     const nowMs = Date.now();
     const expiresAt = new Date(nowMs + QR_SESSION_TTL_MS);
@@ -118,6 +120,7 @@ async function submitQrAttendance(payload, context) {
     if (!profileSnap.exists || profileSnap.data().role !== 'student') {
         throw new HttpsError('permission-denied', 'Solo los estudiantes pueden firmar asistencia.');
     }
+    await assertCourseOpen(db, courseId);
     if (!(await isEnrolledStudent(db, courseId, uid))) {
         throw new HttpsError('permission-denied', 'No estás inscripto en este curso.');
     }
@@ -169,7 +172,46 @@ async function submitQrAttendance(payload, context) {
     return { success: true, alreadyPresent };
 }
 
+// --- Carga manual de asistencia por el docente -----------------------------
+
+const ATTENDANCE_STATUSES = ['present', 'late', 'absent', 'justified'];
+
+/**
+ * Planilla de una clase: solo cambia los registros enviados (merge). Antes el
+ * cliente escribía el documento directo en Firestore; pasa por el backend
+ * para validar estados, comisión del ayudante (F0.4) y cierre de acta (F6).
+ */
+async function saveClassAttendance(payload, context) {
+    const { uid, db, admin } = context;
+    const { courseId, records } = payload;
+    const classNumber = Number(payload.classNumber);
+    if (!Number.isInteger(classNumber) || classNumber < 0) {
+        throw new HttpsError('invalid-argument', 'Número de clase inválido.');
+    }
+    const entries = Object.entries(records || {});
+    const invalid = entries.find(([, status]) => !ATTENDANCE_STATUSES.includes(status));
+    if (invalid) throw new HttpsError('invalid-argument', `Estado de asistencia inválido: ${invalid[1]}.`);
+    await assertCanEditStudents(db, courseId, uid, entries.map(([studentId]) => studentId));
+
+    const ref = db.collection('courses').doc(courseId).collection('attendance').doc(`class_${classNumber}`);
+    const update = {
+        classNumber,
+        updated_at: admin.firestore.FieldValue.serverTimestamp(),
+        updated_by: uid,
+    };
+    const snap = await ref.get();
+    if (!snap.exists) {
+        await ref.set({ ...update, records: Object.fromEntries(entries) });
+    } else {
+        for (const [studentId, status] of entries) update[`records.${studentId}`] = status;
+        await ref.update(update);
+    }
+    return { success: true, updated: entries.length };
+}
+
 module.exports = {
+    saveClassAttendance,
+    ATTENDANCE_STATUSES,
     submitQrAttendance,
     startQrSession,
     getQrSessionCode,

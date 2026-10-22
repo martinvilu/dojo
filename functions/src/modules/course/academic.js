@@ -6,6 +6,7 @@ const { DEFAULT_RULES, pickRules, resolveRules } = require('../../lib/academic/r
 const { loadCourseAcademicData, computeConditions } = require('../../lib/academic/loader');
 const { CONDITIONS } = require('../../lib/academic/condition');
 const { isCourseStaff } = require('../../authz');
+const { staffCommissionScope, assertCourseOpen, NO_COMMISSION } = require('../../lib/courseGuards');
 
 /** Titular del curso o admin: los ayudantes no cambian reglas globales. */
 async function assertCanEditRules(db, courseId, uid, profile) {
@@ -51,6 +52,7 @@ async function updateGradingRules(payload, context) {
     const { courseId, rules, commissionOverrides } = payload;
     const profile = getMyProfile ? await getMyProfile() : null;
     await assertCanEditRules(db, courseId, uid, profile);
+    await assertCourseOpen(db, courseId);
 
     const ref = db.collection('courses').doc(courseId);
     const snap = await ref.get();
@@ -103,10 +105,12 @@ function summarize(results) {
  * guardarlas (base del simulador de cierre, UC-D17).
  */
 async function getAcademicConditions(payload, context) {
-    const { db } = context;
+    const { db, uid } = context;
     const { courseId, rulesOverride } = payload;
     const data = await loadCourseAcademicData(db, courseId);
+    const scope = await staffCommissionScope(db, courseId, uid);
     const results = computeConditions(data, { rulesOverride: rulesOverride ? pickRules(rulesOverride) : undefined })
+        .filter((r) => !scope || scope.includes(r.commission || NO_COMMISSION))
         .sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email, 'es'));
     return {
         generatedAt: new Date().toISOString(),

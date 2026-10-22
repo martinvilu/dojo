@@ -89,12 +89,12 @@ export function useAdminPanel({
     }
   };
 
-  const handleAssignTeacher = async () => {
+  const handleAssignTeacher = async (role: "titular" | "ayudante" = "titular") => {
     const cid = getSelectedCourseId?.();
     if (!cid || !selectedNewTeacherId) return;
     setApiLoading(true);
     try {
-      await api("assignTeacher", { courseId: cid, teacherId: selectedNewTeacherId });
+      await api("assignTeacher", { courseId: cid, teacherId: selectedNewTeacherId, role });
       setSelectedNewTeacherId("");
       const tRes = await api("getCourseTeachers", { courseId: cid });
       setCourseTeachers(tRes || []);

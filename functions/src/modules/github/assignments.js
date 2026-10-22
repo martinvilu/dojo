@@ -9,6 +9,7 @@ const { courseGithubToken } = require('../../lib/encryption');
 const { resolveRules } = require('../../lib/academic/rules');
 const { lateness } = require('../../lib/academic/deadlines');
 const { publishSingleGrade } = require('../integrations/lti');
+const { assertCanEditStudents, staffCommissionScope, outOfScope } = require('../../lib/courseGuards');
 
 // Tokens de autograding de 32 hex chars: resistentes a fuerza bruta
 // (los viejos de 8 chars siguen válidos hasta que se regeneren).
@@ -232,6 +233,10 @@ async function gradeSubmission(payload, context) {
     // Get previous grade state for audit log diff
     const submissionDoc = await db.collection('submissions').doc(submissionId).get();
     const previousData = submissionDoc.exists ? submissionDoc.data() : {};
+    const assignmentSnap = previousData.assignment_id ? await db.collection('assignments').doc(previousData.assignment_id).get() : null;
+    if (assignmentSnap && assignmentSnap.exists) {
+        await assertCanEditStudents(db, assignmentSnap.data().course_id, uid, [previousData.student_id]);
+    }
     
     await db.collection('submissions').doc(submissionId).update({
         grade,
@@ -597,9 +602,14 @@ async function updateAssignment(payload, context) {
 }
 
 async function syncGradesFromSpreadsheet(payload, context) {
-    const { db, admin } = context;
+    const { db, admin, uid } = context;
     const assignmentId = payload.assignmentId;
     const sheetUrl = payload.sheetUrl;
+    const assignmentSnap = await db.collection('assignments').doc(assignmentId).get();
+    if (!assignmentSnap.exists) throw new HttpsError('not-found', 'No se encontró el trabajo práctico.');
+    const courseId = assignmentSnap.data().course_id;
+    await assertCanEditStudents(db, courseId, uid, []);
+    const scope = await staffCommissionScope(db, courseId, uid);
     
     const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) throw new Error("URL de Google Sheets inválida. Asegurate de copiar el enlace completo.");
@@ -650,6 +660,16 @@ async function syncGradesFromSpreadsheet(payload, context) {
         if (pSnap.empty) continue;
         
         const studentId = pSnap.docs[0].id;
+        // Solo alumnos del padrón de esta cursada y, para un ayudante, de sus comisiones.
+        const rosterSnap = await db.collection('course_roster').doc(`${courseId}_${studentId}`).get();
+        if (!rosterSnap.exists || rosterSnap.data().status === 'removed') {
+            rejectedRows.push({ row: i + 1, matricula, reason: 'No está en el padrón de la cursada.' });
+            continue;
+        }
+        if ((await outOfScope(db, courseId, scope, [studentId])).length > 0) {
+            rejectedRows.push({ row: i + 1, matricula, reason: 'Pertenece a una comisión que no tenés asignada.' });
+            continue;
+        }
         
         const sSnap = await db.collection('submissions')
             .where('assignment_id', '==', assignmentId)

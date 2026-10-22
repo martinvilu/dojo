@@ -57,6 +57,9 @@ const ACTION_MODULES = {
     mergeProfiles: './modules/auth/profile',
     getXpLogs: './modules/auth/xp',
     getMyXp: './modules/auth/xp',
+    saveClassAttendance: './modules/attendance/attendance',
+    setStudentCommission: './modules/course/commissions',
+    setTeacherCommissions: './modules/course/commissions',
 
     logActivity: './modules/system/activity',
     getActivityLogs: './modules/system/activity',

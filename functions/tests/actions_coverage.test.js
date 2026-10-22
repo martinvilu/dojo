@@ -707,6 +707,7 @@ describe('Full Coverage Actions Test Suite', () => {
         github_user: 'user1',
         matricula_unrn: 'UNRN-12345'
       };
+      ctx.docStore['course_roster/c1_u1'] = { course_id: 'c1', student_id: 'u1', status: 'approved' };
 
       const createA = await assignmentActions.createAssignment({ courseId: 'c1', title: 'New Task' }, ctx);
       expect(createA).toBeDefined();

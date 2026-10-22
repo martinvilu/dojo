@@ -46,19 +46,13 @@ service cloud.firestore {
     }
 
     // ------------------------------------------------------------------
-    // Perfiles: cada usuario solo lee su propio perfil. Los perfiles se
-    // aprovisionan desde el backend (acción getProfile). Los docentes y
-    // admins únicamente pueden editar el mapa 'commissions' y solo sobre
-    // perfiles de estudiantes.
+    // Perfiles: cada usuario solo lee su propio perfil. Se aprovisionan y
+    // editan desde el backend (getProfile, updateProfile); la comisión de
+    // un alumno la asigna el titular con setStudentCommission.
     // ------------------------------------------------------------------
     match /profiles/{userId} {
       allow get: if signedIn() && request.auth.uid == userId;
-      allow update: if (isAdmin() || isTeacherRole())
-        && resource.data.role == 'student'
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.diff(resource.data)
-             .affectedKeys().hasOnly(['commissions']);
-      allow create, list, delete: if false;
+      allow create, update, list, delete: if false;
     }
 
     // ------------------------------------------------------------------
@@ -66,12 +60,12 @@ service cloud.firestore {
     match /courses/{courseId} {
       allow read, write: if false;
 
-      // Presentismo: los miembros consultan; solo el docente del curso
-      // registra o corrige planillas de asistencia.
+      // Presentismo: los miembros consultan en tiempo real. Las planillas
+      // se escriben solo por backend (saveClassAttendance, QR) para aplicar
+      // la comisión del ayudante y el cierre de acta.
       match /attendance/{attendanceId} {
         allow read: if isMemberOf(courseId);
-        allow create, update: if isTeacherOf(courseId);
-        allow delete: if false;
+        allow write: if false;
       }
 
       // Sesión QR vigente con su secreto TOTP (mejora 3.18). Solo backend:

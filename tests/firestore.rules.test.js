@@ -97,12 +97,11 @@ describe("profiles", () => {
     await assertFails(getDocs(query(collection(user(TEACHER), "profiles"))));
   });
 
-  it("allows teachers to edit only the commissions map of students", async () => {
+  it("denies commission edits from clients (setStudentCommission, plan F0.4)", async () => {
     const t = user(TEACHER);
-    await assertSucceeds(updateDoc(doc(t, `profiles/${STUDENT}`), { "commissions.x1": "A" }));
+    await assertFails(updateDoc(doc(t, `profiles/${STUDENT}`), { "commissions.x1": "A" }));
+    await assertFails(updateDoc(doc(user(ADMIN), `profiles/${STUDENT}`), { "commissions.x1": "A" }));
     await assertFails(updateDoc(doc(t, `profiles/${STUDENT}`), { full_name: "Hacked" }));
-    await assertFails(updateDoc(doc(t, `profiles/${STUDENT}`), { role: "teacher" }));
-    await assertFails(updateDoc(doc(t, `profiles/${TEACHER}`), { "commissions.x1": "A" }));
   });
 
   it("denies profile creation and deletion to clients", async () => {
@@ -135,8 +134,8 @@ describe("attendance subcollection", () => {
     await assertFails(getDoc(att(STUDENT2)));
   });
 
-  it("can be written only by the assigned teacher", async () => {
-    await assertSucceeds(setDoc(att(TEACHER), { records: {} }, { merge: true }));
+  it("is written only by the backend (saveClassAttendance, QR)", async () => {
+    await assertFails(setDoc(att(TEACHER), { records: {} }, { merge: true }));
     await assertFails(setDoc(att(STUDENT), { records: { [STUDENT]: true } }));
     await assertFails(setDoc(att(ADMIN), { records: {} })); // admin not assigned to this course
     await assertFails(deleteDoc(att(TEACHER)));

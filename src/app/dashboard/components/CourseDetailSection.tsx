@@ -136,7 +136,7 @@ export function CourseDetailSection(props: {
   allTeachersList: any[];
   selectedNewTeacherId: string;
   setSelectedNewTeacherId: (v: string) => void;
-  handleAssignTeacher: () => Promise<void> | void;
+  handleAssignTeacher: (role?: "titular" | "ayudante") => Promise<void> | void;
   handleRemoveTeacher: (teacherId: string) => Promise<void> | void;
   // study groups & tutoring
   studyGroups: any[];
@@ -453,6 +453,8 @@ export function CourseDetailSection(props: {
         handleRemoveTeacher={props.handleRemoveTeacher}
         profile={profile}
         courseSubTab={courseSubTab}
+        courseId={selectedCourse.id || selectedCourse.course?.id}
+        commissions={courseCommissions}
       />
 
       {courseSubTab === "study_groups" && (

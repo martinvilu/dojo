@@ -62,6 +62,9 @@ const ACTION_POLICIES = {
     // asistencia (el handler valida la inscripción / el token QR)
     submitQrAttendance: AUTHENTICATED,
     startQrSession: staffOf('course'),
+    saveClassAttendance: staffOf('course'),
+    setStudentCommission: staffOf('course'),
+    setTeacherCommissions: staffOf('course'),
     getQrSessionCode: staffOf('course'),
     stopQrSession: staffOf('course'),
 
