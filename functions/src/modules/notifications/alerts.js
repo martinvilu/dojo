@@ -99,6 +99,10 @@ async function getStudentAlerts(payload, context) {
     }));
 }
 
+/**
+ * @param {any} context
+ * @param {{ courseId: string, studentId: string, channel: string, summary: string, alertId?: string | null, scheduledFor?: string | null }} entry
+ */
 async function appendContactLog(context, { courseId, studentId, channel, summary, alertId, scheduledFor }) {
     const { uid, db, admin } = context;
     const ref = await db.collection('contact_logs').add({

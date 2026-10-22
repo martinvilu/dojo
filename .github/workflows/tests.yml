@@ -54,6 +54,9 @@ jobs:
       - name: Install Functions Dependencies
         run: npm ci
 
+      - name: Typecheck (JSDoc)
+        run: npm run typecheck
+
       - name: Run Unit Tests
         run: npm test
 

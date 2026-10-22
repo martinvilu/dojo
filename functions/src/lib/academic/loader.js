@@ -133,7 +133,11 @@ async function loadCourseAcademicData(db, courseId, { studentId } = {}) {
     };
 }
 
-/** Corre el motor para cada alumno cargado. */
+/**
+ * Corre el motor para cada alumno cargado.
+ * @param {any} data  resultado de `loadCourseAcademicData`
+ * @param {{ rulesOverride?: object, nowMs?: number }} [opts]
+ */
 function computeConditions(data, { rulesOverride, nowMs } = {}) {
     return data.students.map((student) => ({
         ...computeAcademicCondition({

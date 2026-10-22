@@ -33,7 +33,12 @@ function decodeJwt(token) {
     }
 }
 
-/** Firma `payload` con la clave privada de la herramienta. */
+/**
+ * Firma `payload` con la clave privada de la herramienta.
+ * @param {object} payload
+ * @param {{ privateKey: any, kid: string }} key
+ * @param {{ expiresInSeconds?: number, nowSeconds?: number }} [opts]
+ */
 function signJwt(payload, { privateKey, kid }, { expiresInSeconds = 300, nowSeconds } = {}) {
     const now = nowSeconds || Math.floor(Date.now() / 1000);
     const header = { alg: 'RS256', typ: 'JWT', kid };
@@ -46,6 +51,10 @@ function signJwt(payload, { privateKey, kid }, { expiresInSeconds = 300, nowSeco
 /**
  * Verifica firma y vigencia. `resolveKey(header)` devuelve la clave pública
  * (KeyObject, PEM o JWK) para el `kid` del encabezado.
+ *
+ * @param {string} token
+ * @param {(header: any) => any} resolveKey
+ * @param {{ nowSeconds?: number }} [opts]
  */
 async function verifyJwt(token, resolveKey, { nowSeconds } = {}) {
     const decoded = decodeJwt(token);

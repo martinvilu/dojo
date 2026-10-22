@@ -275,7 +275,9 @@ function landingFor({ role, custom, courseId }) {
  * Valida el launch y provisiona usuario e inscripción. Devuelve el código de
  * handoff que la página `/lti/continuar` canjea por un custom token.
  *
- * @param deps.resolvePlatformKey (jwksUrl, kid) => JWK
+ * @param {any} db
+ * @param {{ idToken?: string | null, state?: string | null, cookieState?: string | null }} request
+ * @param {{ admin: any, resolvePlatformKey: (jwksUrl: string, kid: string) => any, now?: number }} deps
  */
 async function completeLaunch(db, { idToken, state, cookieState }, { admin, resolvePlatformKey, now = Date.now() }) {
     if (!idToken) throw new LtiError('invalid_request', 'Falta el id_token.');

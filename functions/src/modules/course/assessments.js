@@ -32,7 +32,10 @@ async function actorName(context) {
     return profile ? profile.full_name || profile.email || '' : '';
 }
 
-/** Notas para parciales: numéricas 0–10 o vacío; "ausente" va como bandera. */
+/**
+ * Notas para parciales: numéricas 0–10 o vacío; "ausente" va como bandera.
+ * @returns {{ ok: true, value: string } | { ok: false, error: string }}
+ */
 function normalizeAssessmentGrade(raw) {
     const normalized = normalizeGrade(raw);
     if (!normalized.ok) return normalized;

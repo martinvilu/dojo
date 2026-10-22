@@ -340,7 +340,7 @@ function computeAcademicCondition(input) {
         || partials.items.some((p) => p.original !== null || p.recoveries.some((r) => r.value !== null));
 
     let condition;
-    if (BAJA_STATUSES.has(input.rosterStatus)) condition = CONDITIONS.BAJA;
+    if (BAJA_STATUSES.has(input.rosterStatus || '')) condition = CONDITIONS.BAJA;
     else if (!anyActivity && attendance.held >= rules.min_classes_for_attendance) condition = CONDITIONS.AUSENTE;
     else if (Object.values(regularity).includes('failed')) condition = CONDITIONS.EN_RIESGO;
     else if (Object.values(regularity).every(isOk) && Object.values(promotion).every(isOk)) condition = CONDITIONS.PROMOCIONADO;

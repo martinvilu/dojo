@@ -1,4 +1,4 @@
-const fetch = global.fetch || require('node-fetch');
+const fetch = /** @type {typeof globalThis.fetch} */ (global.fetch || require('node-fetch'));
 const logger = require("firebase-functions/logger");
 const { HttpsError } = require('firebase-functions/v2/https');
 const { randomBytes } = require('node:crypto');

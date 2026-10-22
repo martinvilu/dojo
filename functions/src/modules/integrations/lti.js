@@ -251,7 +251,7 @@ async function publishRows(db, { courseId, resourceId, label, rows }) {
     if (contexts.length === 0) return { contexts: 0, published: 0, skipped: rows.length, failed: [] };
 
     const lti = services();
-    const report = { contexts: contexts.length, published: 0, skipped: 0, failed: [] };
+    const report = { contexts: contexts.length, published: 0, skipped: 0, failed: /** @type {{ studentId: string, reason: string }[]} */ ([]) };
     for (const { ctx, platform } of contexts) {
         const lineItem = await lti.ensureLineItem(platform, ctx.ags_lineitems_url, { resourceId, label, scoreMaximum: 10, tag: resourceId.split(':')[0] });
         const scoreMaximum = Number(lineItem.scoreMaximum) || 10;
@@ -297,6 +297,9 @@ async function publishLtiGrades(payload, context) {
 /**
  * Publicación automática de una nota recién cargada. Nunca hace fallar la
  * calificación: sin vínculo LTI o sin clave configurada, no hace nada.
+ *
+ * @param {any} db
+ * @param {{ assignmentId?: string, assessmentId?: string, studentId: string, grade: unknown, feedback?: string }} item
  */
 async function publishSingleGrade(db, { assignmentId, assessmentId, studentId, grade, feedback }) {
     try {

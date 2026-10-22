@@ -55,6 +55,9 @@ function hasRoute(course) {
 /**
  * Ruta del dashboard para un curso. Devuelve null si el curso todavía no
  * tiene asignatura/año/cuatrimestre configurados (se usan los query params).
+ *
+ * @param {any} course
+ * @param {{ commission?: string | null, subTab?: string, studentPublicId?: string, practica?: string, asistencias?: boolean }} [opts]
  */
 function buildCoursePath(course, { commission, subTab, studentPublicId, practica, asistencias } = {}) {
     if (!hasRoute(course)) return null;
@@ -65,7 +68,7 @@ function buildCoursePath(course, { commission, subTab, studentPublicId, practica
         return asistencias ? `${student}/asistencias` : student;
     }
     if (subTab === 'settings') return `${base}/admin/configuracion`;
-    return `${base}/${SUBTAB_TO_VIEW[subTab] || 'resumen'}`;
+    return `${base}/${(subTab && SUBTAB_TO_VIEW[subTab]) || 'resumen'}`;
 }
 
 module.exports = {

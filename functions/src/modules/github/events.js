@@ -37,7 +37,10 @@ async function findSubmission(db, fullName) {
     return null;
 }
 
-/** Decide el cambio de estado para un evento; null si no aplica. Pura. */
+/**
+ * Decide el cambio de estado para un evento; null si no aplica. Pura.
+ * @returns {{ update: Record<string, any>, firstSubmission: boolean, label: string } | null}
+ */
 function transitionFor(event, body, submission, nowMs) {
     const status = submission.status || '';
     if (event === 'pull_request' && PR_SUBMIT_ACTIONS.has(body.action)) {
@@ -62,6 +65,11 @@ function transitionFor(event, body, submission, nowMs) {
     return null;
 }
 
+/**
+ * @param {any} req
+ * @param {any} res
+ * @param {{ secret?: string, db?: any, nowMs?: number }} [opts]
+ */
 async function handleGithubEvent(req, res, { secret, db = getFirestore(), nowMs = Date.now() } = {}) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
     const raw = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));

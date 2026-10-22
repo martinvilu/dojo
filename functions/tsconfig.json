@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": [
+      "node"
+    ],
+    "useUnknownInCatchVariables": false
+  },
+  "include": [
+    "src/**/*.js",
+    "index.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "index.js",
+    "src/modules/calendar/calendar.js",
+    "src/modules/course/admin.js",
+    "src/modules/course/export.js",
+    "src/modules/integrations/moodle.js",
+    "src/modules/github/webhook.js"
+  ]
+}

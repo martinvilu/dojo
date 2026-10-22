@@ -67,7 +67,7 @@ async function enforceRateLimit(db, uid, action, now = Date.now()) {
             });
             return next;
         });
-    } catch (e) {
+    } catch (/** @type {any} */ e) {
         logger.warn('[rateLimit] no se pudo registrar la llamada; se permite', { uid, action, error: e && e.message });
         return { allowed: true, count: null };
     }

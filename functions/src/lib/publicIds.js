@@ -20,7 +20,7 @@ async function ensureStudentPublicId(db, uid, existing) {
         const publicId = generatePublicId();
         try {
             await db.collection('student_public_ids').doc(publicId).create({ uid, created_at: new Date() });
-        } catch (e) {
+        } catch (/** @type {any} */ e) {
             if (e && (e.code === ALREADY_EXISTS || e.code === 'already-exists')) continue;
             throw e;
         }

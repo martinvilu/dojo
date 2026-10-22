@@ -30,15 +30,23 @@ const isSolution = (c) => Boolean(c && (c.is_solution || c.is_best_answer));
 /**
  * Eventos que suman XP para un alumno, en el orden de las fuentes.
  *
+ * Los documentos llegan tal como están en Firestore; solo se leen los campos
+ * nombrados en cada caso.
+ *
+ * @typedef {Record<string, any>} Doc
+ * @typedef {{ action: string, points: number, description: string, at: unknown, grade?: number }} XpEvent
+ *
  * @param {object} input
  * @param {string} input.studentId
- * @param {{ classNumber?: number, records?: Record<string, string>, updated_at?: unknown }[]} [input.attendance]  documentos `class_{n}` del curso
- * @param {{ assignment_id?: string, grade?: unknown, student_id?: string, created_at?: unknown }[]} [input.submissions]  entregas del alumno (una por TP)
- * @param {{ grade?: unknown, absent?: boolean, assessment_id?: string, label?: string }[]} [input.assessmentGrades]
- * @param {{ user_id?: string, is_solution?: boolean, is_best_answer?: boolean, classNumber?: number, created_at?: unknown }[]} [input.comments]
+ * @param {Doc[]} [input.attendance]        documentos `class_{n}` del curso ({ classNumber, records })
+ * @param {Doc[]} [input.submissions]       entregas del alumno, una por TP ({ assignment_id, grade })
+ * @param {Doc[]} [input.assessmentGrades]  notas de parciales ({ grade, absent, label })
+ * @param {Doc[]} [input.comments]          comentarios del foro ({ user_id, is_solution, classNumber })
  * @param {Record<string, string>} [input.assignmentTitles]  id → título, solo para las descripciones
+ * @returns {XpEvent[]}
  */
 function xpEvents({ studentId, attendance = [], submissions = [], assessmentGrades = [], comments = [], assignmentTitles = {} }) {
+    /** @type {XpEvent[]} */
     const events = [];
     for (const doc of attendance) {
         const status = doc && doc.records ? doc.records[studentId] : undefined;
@@ -77,13 +85,15 @@ function xpEvents({ studentId, attendance = [], submissions = [], assessmentGrad
  * Medallas: Maestro de Chakra (promedio ≥ 9), Asistencia Perfecta (≥ 3 clases
  * registradas, todas presente/tarde), Ninja Activo (≥ 3 comentarios) y
  * Solucionador (al menos una solución oficial).
+ *
+ * @param {Parameters<typeof xpEvents>[0]} input
  */
 function computeXp(input) {
     const events = xpEvents(input);
     const totalXp = Math.round(events.reduce((sum, e) => sum + e.points, 0));
     const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
 
-    const grades = events.filter((e) => e.action === 'nota').map((e) => e.grade);
+    const grades = events.filter((e) => e.action === 'nota').map((e) => Number(e.grade));
     const avgGrade = grades.length ? grades.reduce((a, b) => a + b, 0) / grades.length : null;
     const recorded = (input.attendance || []).filter((d) => d && d.records && d.records[input.studentId]).length;
     const present = events.filter((e) => e.action === 'asistencia').length;

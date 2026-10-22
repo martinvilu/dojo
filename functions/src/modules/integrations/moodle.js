@@ -1,4 +1,4 @@
-const fetch = global.fetch || require('node-fetch');
+const fetch = /** @type {typeof globalThis.fetch} */ (global.fetch || require('node-fetch'));
 const logger = require("firebase-functions/logger");
 const { isSafeExternalUrl } = require('../../lib/urls');
 const { gradeToOutcomeScore, MAX_GRADE } = require('../../lib/grades');

@@ -54,7 +54,7 @@ async function outOfScope(db, courseId, scope, studentIds) {
 
 async function assertStudentsInScope(db, courseId, uid, studentIds) {
     const scope = await staffCommissionScope(db, courseId, uid);
-    if ((await outOfScope(db, courseId, scope, studentIds)).length > 0) {
+    if (scope && (await outOfScope(db, courseId, scope, studentIds)).length > 0) {
         throw new HttpsError('permission-denied', `Como ayudante solo podés operar sobre estudiantes de ${scope.join(', ')}.`);
     }
 }
