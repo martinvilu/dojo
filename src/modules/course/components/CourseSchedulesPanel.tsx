@@ -1,11 +1,12 @@
 "use client";
 import React, { useState, useMemo } from 'react';
 import { useBeforeUnload } from '@/hooks/useBeforeUnload';
+import { ScheduleKanban } from './schedule/ScheduleKanban';
+import { ScheduleVersionsModal, SaveScheduleVersionModal } from './schedule/ScheduleVersionsModal';
 import { api } from '@/lib/api';
 import { renderMarkdown } from '@/lib/markdown';
 import ClassCommentsThread from '@/modules/course/components/comments/ClassCommentsThread';
 import AttendanceManager from '@/modules/attendance/components/AttendanceManager';
-import ModalShell from "@/components/dashboard/ui/ModalShell";
 import { confirmAction } from "@/components/dashboard/ui/ConfirmDialog";
 
 export interface ClassInstance {
@@ -62,9 +63,6 @@ export function CourseSchedulesPanel({
   const [comparisonCourses, setComparisonCourses] = useState<any[]>([]);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [isSaveVersionModalOpen, setIsSaveVersionModalOpen] = useState(false);
-  const [newVersionName, setNewVersionName] = useState("");
-  const [selectedVersionForDiff, setSelectedVersionForDiff] = useState<any | null>(null);
-  const [selectedCourseForComparison, setSelectedCourseForComparison] = useState<any | null>(null);
 
   // Pre-compute comment counts to avoid O(N * M) filtering in render
   const commentCountsByClass = useMemo(() => {
@@ -212,7 +210,7 @@ export function CourseSchedulesPanel({
     }
   };
 
-  const handleSaveVersion = async () => {
+  const handleSaveVersion = async (newVersionName: string) => {
     if (!newVersionName.trim()) return showToast("El nombre de la versión es obligatorio.", "success");
     const cid = selectedCourse?.id || selectedCourse?.course?.id;
     if (!cid) return;
@@ -224,7 +222,6 @@ export function CourseSchedulesPanel({
         classInstances: teacherClasses
       });
       showToast("Versión guardada correctamente.", "success");
-      setNewVersionName("");
       setIsSaveVersionModalOpen(false);
       handleLoadVersions();
     } catch (err: any) {
@@ -504,204 +501,7 @@ export function CourseSchedulesPanel({
                     </div>
                   ) : (
                     /* KANBAN BOARD VIEW */
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start select-none">
-                      {/* COLUMN 1: TEÓRICA */}
-                      {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.type === "Teórica" && c.special_status === "Normal");
-                        return (
-                          <div
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
-                              handleMoveClassKanban(classIdx, "Teórica");
-                            }}
-                            className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-4 space-y-4 min-h-[400px] flex flex-col"
-                          >
-                            <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
-                              <h4 className="font-bold text-xs text-white uppercase tracking-wider">📖 Teóricas</h4>
-                              <span className="font-mono text-[10px] bg-neutral-800 px-2 py-0.5 rounded text-gray-400 font-bold">
-                                {colClasses.length}
-                              </span>
-                            </div>
-                            <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                              {colClasses.map((item: any) => (
-                                <div
-                                  key={item.originalIndex}
-                                  draggable="true"
-                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", item.originalIndex.toString())}
-                                  className="bg-neutral-950 border border-neutral-855 p-4 rounded-xl space-y-2 cursor-grab active:cursor-grabbing hover:border-neutral-700 transition"
-                                >
-                                  <div className="flex justify-between items-center text-[10px]">
-                                    <span className="font-bold text-gray-550">Clase {item.originalIndex + 1}</span>
-                                    <span className="text-gray-550 font-sans">
-                                      {boardDateFormatter.format(new Date(item.date))}
-                                    </span>
-                                  </div>
-                                  <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema"}</h5>
-                                  {item.description && (
-                                    <p className="text-[10px] text-gray-450 truncate">{item.description}</p>
-                                  )}
-                                </div>
-                              ))}
-                              {colClasses.length === 0 && (
-                                <div className="text-center text-[10px] text-gray-550 italic py-8">
-                                  Arrastra clases aquí.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* COLUMN 2: PRÁCTICA */}
-                      {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.type === "Práctica" && c.special_status === "Normal");
-                        return (
-                          <div
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
-                              handleMoveClassKanban(classIdx, "Práctica");
-                            }}
-                            className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-4 space-y-4 min-h-[400px] flex flex-col"
-                          >
-                            <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
-                              <h4 className="font-bold text-xs text-white uppercase tracking-wider">🛠️ Prácticas</h4>
-                              <span className="font-mono text-[10px] bg-neutral-800 px-2 py-0.5 rounded text-gray-400 font-bold">
-                                {colClasses.length}
-                              </span>
-                            </div>
-                            <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                              {colClasses.map((item: any) => (
-                                <div
-                                  key={item.originalIndex}
-                                  draggable="true"
-                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", item.originalIndex.toString())}
-                                  className="bg-neutral-955 border border-neutral-855 p-4 rounded-xl space-y-2 cursor-grab active:cursor-grabbing hover:border-neutral-700 transition"
-                                >
-                                  <div className="flex justify-between items-center text-[10px]">
-                                    <span className="font-bold text-gray-550">Clase {item.originalIndex + 1}</span>
-                                    <span className="text-gray-550 font-sans">
-                                      {boardDateFormatter.format(new Date(item.date))}
-                                    </span>
-                                  </div>
-                                  <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema"}</h5>
-                                  {item.description && (
-                                    <p className="text-[10px] text-gray-455 truncate">{item.description}</p>
-                                  )}
-                                </div>
-                              ))}
-                              {colClasses.length === 0 && (
-                                <div className="text-center text-[10px] text-gray-550 italic py-8">
-                                  Arrastra clases aquí.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* COLUMN 3: FERIADOS */}
-                      {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.special_status === "Feriado");
-                        return (
-                          <div
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
-                              handleMoveClassKanban(classIdx, "Feriado");
-                            }}
-                            className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-4 space-y-4 min-h-[400px] flex flex-col"
-                          >
-                            <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
-                              <h4 className="font-bold text-xs text-white uppercase tracking-wider">🌴 Feriados</h4>
-                              <span className="font-mono text-[10px] bg-neutral-850 px-2 py-0.5 rounded text-amber-500 font-bold font-sans">
-                                {colClasses.length}
-                              </span>
-                            </div>
-                            <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                              {colClasses.map((item: any) => (
-                                <div
-                                  key={item.originalIndex}
-                                  draggable="true"
-                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", item.originalIndex.toString())}
-                                  className="bg-neutral-955/5 border border-amber-955/20 p-4 rounded-xl space-y-2 cursor-grab active:cursor-grabbing hover:border-neutral-700 transition opacity-80"
-                                >
-                                  <div className="flex justify-between items-center text-[10px]">
-                                    <span className="font-bold text-amber-550 font-sans">Clase {item.originalIndex + 1}</span>
-                                    <span className="text-gray-550 font-sans">
-                                      {boardDateFormatter.format(new Date(item.date))}
-                                    </span>
-                                  </div>
-                                  <h5 className="font-bold text-xs text-white truncate">{item.topic || "Sin Tema (Feriado)"}</h5>
-                                </div>
-                              ))}
-                              {colClasses.length === 0 && (
-                                <div className="text-center text-[10px] text-gray-555 italic py-8">
-                                  Arrastra feriados aquí.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* COLUMN 4: EXAMEN / EVALUACIONES */}
-                      {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.special_status === "Examen");
-                        return (
-                          <div
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              const classIdx = parseInt(e.dataTransfer.getData("text/plain"));
-                              handleMoveClassKanban(classIdx, "Examen");
-                            }}
-                            className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-4 space-y-4 min-h-[400px] flex flex-col"
-                          >
-                            <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
-                              <h4 className="font-bold text-xs text-white uppercase tracking-wider">🏆 Exámenes</h4>
-                              <span className="font-mono text-[10px] bg-red-955 border border-red-900/30 px-2 py-0.5 rounded text-red-400 font-bold font-sans">
-                                {colClasses.length}
-                              </span>
-                            </div>
-                            <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                              {colClasses.map((item: any) => (
-                                <div
-                                  key={item.originalIndex}
-                                  draggable="true"
-                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", item.originalIndex.toString())}
-                                  className="bg-red-955/10 border border-red-955/35 p-4 rounded-xl space-y-2 cursor-grab active:cursor-grabbing hover:border-red-900/30 transition"
-                                >
-                                  <div className="flex justify-between items-center text-[10px]">
-                                    <span className="font-bold text-red-450 font-sans">Clase {item.originalIndex + 1}</span>
-                                    <span className="text-gray-555 font-mono">
-                                      {boardDateFormatter.format(new Date(item.date))}
-                                    </span>
-                                  </div>
-                                  <h5 className="font-bold text-xs text-red-200 truncate">{item.topic || "Evaluación"}</h5>
-                                  <span className="px-1.5 py-0.5 rounded bg-red-955 border border-red-900/30 text-[9px] text-red-400 font-bold font-mono">
-                                    {item.special_status}
-                                  </span>
-                                </div>
-                              ))}
-                              {colClasses.length === 0 && (
-                                <div className="text-center text-[10px] text-gray-555 italic py-8">
-                                  Arrastra exámenes aquí.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
+                    <ScheduleKanban classes={teacherClasses} onMove={handleMoveClassKanban} formatDate={(d) => boardDateFormatter.format(d)} />
                   )}
                   </div>
                 ) : (
@@ -847,266 +647,18 @@ export function CourseSchedulesPanel({
                 )}
               </div>
       {isVersionModalOpen && (
-        <ModalShell onClose={() => { setIsVersionModalOpen(false); setSelectedVersionForDiff(null); setSelectedCourseForComparison(null); }} ariaLabel="Versiones de cronograma y comparación interanual"
-          overlayClassName="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-          className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-5xl w-full min-w-[280px] sm:min-w-[640px] shrink-0 mx-auto h-[85vh] flex flex-col justify-between shadow-2xl relative z-10">
-            <div className="flex justify-between items-center pb-4 border-b border-neutral-800">
-              <div>
-                <h3 className="text-lg font-bold text-white">Versiones de Cronograma & Comparación Interanual</h3>
-                <p className="text-xs text-gray-400">Compará versiones históricas de este curso o con otras cátedras.</p>
-              </div>
-              <button
-                onClick={() => {
-                  setIsVersionModalOpen(false);
-                  setSelectedVersionForDiff(null);
-                  setSelectedCourseForComparison(null);
-                }}
-                type="button"
-                aria-label="Cerrar comparativa"
-                className="text-gray-400 hover:text-white font-bold cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 rounded p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 my-4 overflow-hidden">
-              {/* Left Column: Versions List & Course List */}
-              <div className="md:col-span-1 space-y-4 overflow-y-auto pr-2 border-r border-neutral-850">
-                {/* Save Current as Version */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 font-sans">Versiones Guardadas</h4>
-                  <div className="space-y-2">
-                    {scheduleVersions.map((v) => (
-                      <div
-                        key={v.id}
-                        onClick={() => {
-                          setSelectedVersionForDiff(v);
-                          setSelectedCourseForComparison(null);
-                        }}
-                        className={`p-3 rounded-xl border transition cursor-pointer text-xs space-y-1 ${
-                          selectedVersionForDiff?.id === v.id ? "bg-blue-950/40 border-blue-500/50" : "bg-neutral-950/60 border-neutral-850 hover:border-neutral-700"
-                        }`}
-                      >
-                        <p className="font-bold text-white">{v.version_name}</p>
-                        <p className="text-[10px] text-gray-400">Por: {v.created_by_name}</p>
-                        <p className="text-[9px] text-gray-500">{new Date(v.created_at).toLocaleString()}</p>
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRestoreVersion(v.id);
-                            }}
-                            className="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[9px] font-bold transition cursor-pointer"
-                          >
-                            Restaurar
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {scheduleVersions.length === 0 && (
-                      <p className="text-xs text-gray-500 italic">No hay versiones guardadas.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Compare Interanual */}
-                <div className="space-y-3 pt-3 border-t border-neutral-850">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 font-sans">Comparación Interanual</h4>
-                  <p className="text-[10px] text-gray-400">Compará este cronograma con otra cursada del sistema.</p>
-                  <button
-                    onClick={() => {
-                      handleLoadComparisonCourses();
-                    }}
-                    className="w-full px-3 py-2 bg-neutral-950 border border-neutral-850 rounded-xl text-xs text-left text-blue-400 hover:border-blue-500 font-semibold transition"
-                  >
-                    📂 Cargar Otras Cátedras
-                  </button>
-
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {comparisonCourses.map((cc) => (
-                      <div
-                        key={cc.id}
-                        onClick={() => {
-                          setSelectedCourseForComparison(cc);
-                          setSelectedVersionForDiff(null);
-                        }}
-                        className={`p-3 rounded-xl border transition cursor-pointer text-xs ${
-                          selectedCourseForComparison?.id === cc.id ? "bg-amber-950/40 border-amber-500/50" : "bg-neutral-950/60 border-neutral-850 hover:border-neutral-700"
-                        }`}
-                      >
-                        <p className="font-bold text-white">{cc.name}</p>
-                        <p className="text-[10px] text-gray-400">{cc.class_instances?.length || 0} Clases</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Diff View */}
-              <div className="md:col-span-2 overflow-y-auto space-y-4 pl-2">
-                {selectedVersionForDiff || selectedCourseForComparison ? (
-                  <>
-                    <div className="flex justify-between items-center bg-neutral-950/60 p-3 rounded-xl border border-neutral-850">
-                      <span className="text-xs font-bold text-white">
-                        Comparando: {selectedVersionForDiff ? `Versión "${selectedVersionForDiff.version_name}"` : `Cátedra "${selectedCourseForComparison?.name}"`} con el cronograma actual
-                      </span>
-                      <span className="text-[10px] text-gray-400 font-sans">Diff de Clases</span>
-                    </div>
-
-                    <div className="space-y-3">
-                      {(() => {
-                        const targetClasses = selectedVersionForDiff?.class_instances || selectedCourseForComparison?.class_instances || [];
-                        const maxLen = Math.max(teacherClasses.length, targetClasses.length);
-                        const diffItems = [];
-
-                        for (let i = 0; i < maxLen; i++) {
-                          const current = teacherClasses[i];
-                          const target = targetClasses[i];
-
-                          if (current && target) {
-                            const isDifferent =
-                              current.topic !== target.topic ||
-                              current.type !== target.type ||
-                              current.special_status !== target.special_status;
-
-                            diffItems.push({
-                              idx: i + 1,
-                              status: isDifferent ? "modified" : "identical",
-                              current,
-                              target
-                            });
-                          } else if (current) {
-                            diffItems.push({
-                              idx: i + 1,
-                              status: "added",
-                              current,
-                              target: null
-                            });
-                          } else {
-                            diffItems.push({
-                              idx: i + 1,
-                              status: "removed",
-                              current: null,
-                              target
-                            });
-                          }
-                        }
-
-                        return diffItems.map((item: any) => (
-                          <div
-                            key={item.idx}
-                            className={`p-4 rounded-xl border text-xs space-y-2 ${
-                              item.status === "added" ? "bg-green-950/10 border-green-800/30" :
-                              item.status === "removed" ? "bg-red-950/10 border-red-800/30" :
-                              item.status === "modified" ? "bg-amber-950/10 border-amber-800/30" :
-                              "bg-neutral-950/30 border-neutral-850"
-                            }`}
-                          >
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold text-white">Clase {item.idx}</span>
-                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
-                                item.status === "added" ? "bg-green-900/30 text-green-400" :
-                                item.status === "removed" ? "bg-red-900/30 text-red-400" :
-                                item.status === "modified" ? "bg-amber-900/30 text-amber-400" :
-                                "bg-neutral-800 text-gray-400"
-                              }`}>
-                                {item.status === "added" ? "Agregada" :
-                                 item.status === "removed" ? "Eliminada" :
-                                 item.status === "modified" ? "Modificada" :
-                                 "Idéntica"}
-                              </span>
-                            </div>
-
-                            {item.status === "identical" && (
-                              <p className="text-gray-300">
-                                Tema: <span className="font-semibold text-white">{item.current?.topic}</span> ({item.current?.type} - {item.current?.special_status})
-                              </p>
-                            )}
-
-                            {item.status === "added" && (
-                              <p className="text-green-400">
-                                + Tema: <span className="font-semibold text-white">{item.current?.topic}</span> ({item.current?.type} - {item.current?.special_status})
-                              </p>
-                            )}
-
-                            {item.status === "removed" && (
-                              <p className="text-red-400">
-                                - Tema: <span className="font-semibold text-gray-500 line-through">{item.target?.topic}</span> ({item.target?.type} - {item.target?.special_status})
-                              </p>
-                            )}
-
-                            {item.status === "modified" && (
-                              <div className="space-y-1">
-                                <div className="text-amber-400">
-                                  ✎ Actual: <span className="font-semibold text-white">{item.current?.topic}</span> ({item.current?.type} - {item.current?.special_status})
-                                </div>
-                                <div className="text-gray-500">
-                                  ✎ Versión: <span className="font-semibold">{item.target?.topic}</span> ({item.target?.type} - {item.target?.special_status})
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  </>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500 text-xs italic">
-                    Seleccioná una versión o cátedra para ver la comparación detallada.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="border-t border-neutral-800 pt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsVersionModalOpen(false);
-                  setSelectedVersionForDiff(null);
-                  setSelectedCourseForComparison(null);
-                }}
-                className="px-5 py-2 bg-neutral-800 hover:bg-neutral-750 text-gray-300 text-xs font-bold rounded-xl transition border border-neutral-700 cursor-pointer"
-              >
-                Cerrar Historial
-              </button>
-            </div>
-        </ModalShell>
+        <ScheduleVersionsModal
+          teacherClasses={teacherClasses}
+          scheduleVersions={scheduleVersions}
+          comparisonCourses={comparisonCourses}
+          onRestore={handleRestoreVersion}
+          onLoadComparison={handleLoadComparisonCourses}
+          onClose={() => setIsVersionModalOpen(false)}
+        />
       )}
 
       {isSaveVersionModalOpen && (
-        <ModalShell onClose={() => setIsSaveVersionModalOpen(false)} ariaLabel="Guardar versión de cronograma"
-          overlayClassName="fixed inset-0 bg-black/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-          className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl max-w-sm w-full min-w-[280px] sm:min-w-[380px] shrink-0 mx-auto space-y-4 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-white">Guardar Versión de Cronograma</h3>
-            <p className="text-xs text-gray-400">Esto creará un snapshot del cronograma en su estado actual.</p>
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Nombre de la Versión</label>
-              <input
-                type="text"
-                placeholder="Ej: Planificación Inicial 2026"
-                value={newVersionName}
-                onChange={(e) => setNewVersionName(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-850 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsSaveVersionModalOpen(false)}
-                className="flex-1 px-4 py-2 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-gray-300 rounded-xl transition cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveVersion}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-              >
-                Guardar Versión
-              </button>
-            </div>
-        </ModalShell>
+        <SaveScheduleVersionModal onSave={handleSaveVersion} onClose={() => setIsSaveVersionModalOpen(false)} />
       )}
 
     </>
