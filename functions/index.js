@@ -15,6 +15,8 @@ const { validatePayload } = require('./src/lib/validation');
 const { enforceRateLimit } = require('./src/lib/rateLimit');
 const { KEY_ENV } = require('./src/lib/encryption');
 const { KEY_ENV: LTI_KEY_ENV } = require('./src/lib/lti/keys');
+const observability = require('./src/lib/observability');
+observability.init();
 
 // Clave maestra AES-256-GCM para credenciales en reposo (mejora 3.13).
 // Alta: `firebase functions:secrets:set DOJO_ENCRYPTION_KEY` (32 bytes hex).
@@ -202,6 +204,7 @@ exports.api = onCall({ secrets: [encryptionKey, ltiToolKey] }, async (request) =
         return result;
     } catch (e) {
         logger.error(`[API Error] Error en acción: ${action}`, { uid, error: e.message, stack: e.stack });
+        observability.reportError(e, { action, uid });
         if (e instanceof HttpsError) throw e;
         throw new HttpsError('internal', e.message);
     }
