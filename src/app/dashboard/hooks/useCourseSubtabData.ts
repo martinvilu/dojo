@@ -178,8 +178,10 @@ export function useCourseSubtabData({
           setTutors(tutorsList || []);
           const studentSessions = await api("getTutoringSessions", { courseId: cid, role: "student" }).catch(() => []);
           const tutorSessions = await api("getTutoringSessions", { courseId: cid, role: "tutor" }).catch(() => []);
-          const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-            .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+          // Use Map for O(N) deduplication instead of O(N^2) filter/findIndex
+          const uniqueSessions = Array.from(
+            new Map([...(studentSessions || []), ...(tutorSessions || [])].map((s: any) => [s.id, s])).values()
+          );
           setTutoringSessions(uniqueSessions);
         } else if (courseSubTab === "study_groups") {
           const groupsList = await api("getStudyGroups", { courseId: cid });
