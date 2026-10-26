@@ -23,7 +23,7 @@
     "nextjs-toast-notify": "^1.62.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "zod": "^4.6.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",
