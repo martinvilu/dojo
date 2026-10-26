@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2026-10-25 - O(N^2) Anti-Pattern in Risk Calculations
+**Learning:** Found an extreme O(N^2) bottleneck in `useStudentRisk.ts`. An array of students (N) was iterated over, and for *each* student, two separate `.filter()` passes were made over the entire `courseAttendance` and `courseSubmissions` arrays (each of length M). This effectively meant O(N * M) allocations and operations during every render cycle.
+**Action:** When mapping or iterating through rosters or large collections inside a `useMemo` block, strictly enforce O(1) Hash Map pre-computations (like `Map<StudentId, Set<AssignmentId>>`) created *outside* the nested loop. Then use simple `.get()` lookups inside the loop to drop time complexity from O(N^2) to O(N).
