@@ -25,24 +25,50 @@ export function useStudentRisk(
   const studentsRiskData = useMemo(() => {
     const data = new Map<string, StudentRiskData>();
 
+    // Pre-compute attendance stats for all students in O(A)
+    const attStats = new Map<string, { recordedCount: number; presentOrLate: number }>();
+    courseAttendance.forEach((c) => {
+      if (!c.records) return;
+      Object.entries(c.records).forEach(([studentId, status]) => {
+        if (!status) return;
+
+        let stats = attStats.get(studentId);
+        if (!stats) {
+          stats = { recordedCount: 0, presentOrLate: 0 };
+          attStats.set(studentId, stats);
+        }
+
+        stats.recordedCount++;
+        if (status === "present" || status === "late") {
+          stats.presentOrLate++;
+        }
+      });
+    });
+
+    // Pre-compute submissions for all students in O(S)
+    const studentSubmissionsMap = new Map<string, Set<string>>();
+    courseSubmissions.forEach((s) => {
+      let subs = studentSubmissionsMap.get(s.student_id);
+      if (!subs) {
+        subs = new Set();
+        studentSubmissionsMap.set(s.student_id, subs);
+      }
+      subs.add(s.assignment_id);
+    });
+
     roster.forEach((student) => {
       if (student.role !== "student") return;
 
-      const studentAtts = courseAttendance.filter(
-        (c) => c.records && Boolean(c.records[student.id])
-      );
-      const recordedCount = studentAtts.length;
-      const presentOrLate = studentAtts.filter((c) => {
-        const status = c.records?.[student.id];
-        return status === "present" || status === "late";
-      }).length;
+      const studentAttStats = attStats.get(student.id) || { recordedCount: 0, presentOrLate: 0 };
+      const recordedCount = studentAttStats.recordedCount;
+      const presentOrLate = studentAttStats.presentOrLate;
 
       const attendanceRate = recordedCount > 0 ? (presentOrLate / recordedCount) * 100 : 100;
       const hasCriticalAttendance = recordedCount >= 3 && attendanceRate < 75;
 
-      const studentSubmissions = courseSubmissions.filter((s) => s.student_id === student.id);
+      const studentSubs = studentSubmissionsMap.get(student.id);
       const hasMissingAssignments = assignments.some((a) => {
-        const hasSub = studentSubmissions.some((s) => s.assignment_id === a.id);
+        const hasSub = studentSubs?.has(a.id) ?? false;
         const isPastDue = pastDueAssignments.has(a.id);
         return !hasSub && isPastDue;
       });
