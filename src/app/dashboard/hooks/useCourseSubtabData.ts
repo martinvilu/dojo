@@ -181,7 +181,7 @@ export function useCourseSubtabData({
           const uniqueSessions = Array.from([...(studentSessions || []), ...(tutorSessions || [])].reduce((m, v) => {
             if (!m.has(v.id)) m.set(v.id, v);
             return m;
-          }, new Map()).values());
+          }, new Map()).values()) as any[];
           setTutoringSessions(uniqueSessions);
         } else if (courseSubTab === "study_groups") {
           const groupsList = await api("getStudyGroups", { courseId: cid });

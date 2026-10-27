@@ -107,7 +107,7 @@ export default function TutoringPanel({
       const uniqueSessions = Array.from([...(studentSessions || []), ...(tutorSessions || [])].reduce((m, v) => {
         if (!m.has(v.id)) m.set(v.id, v);
         return m;
-      }, new Map()).values());
+      }, new Map()).values()) as TutoringSession[];
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al reservar sesión: " + err.message, "error");
@@ -127,7 +127,7 @@ export default function TutoringPanel({
       const uniqueSessions = Array.from([...(studentSessions || []), ...(tutorSessions || [])].reduce((m, v) => {
         if (!m.has(v.id)) m.set(v.id, v);
         return m;
-      }, new Map()).values());
+      }, new Map()).values()) as TutoringSession[];
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al actualizar estado: " + err.message, "error");
