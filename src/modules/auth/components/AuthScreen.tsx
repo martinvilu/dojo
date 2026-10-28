@@ -240,11 +240,12 @@ function AuthScreenContent() {
                   </label>
                   <input
                     id="email"
+                    autoComplete="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="alumno@unrn.edu.ar"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:border-blue-500 transition text-white font-mono"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 transition text-white font-mono"
                     required
                   />
                 </div>
@@ -256,11 +257,12 @@ function AuthScreenContent() {
                   <div className="relative">
                     <input
                       id="password"
+                      autoComplete={isRegistering ? "new-password" : "current-password"}
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 pr-10 text-xs sm:text-sm focus:outline-none focus:border-blue-500 transition text-white font-mono"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 pr-10 text-xs sm:text-sm focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 transition text-white font-mono"
                       required
                     />
                     <button
