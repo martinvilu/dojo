@@ -76,6 +76,31 @@ export function CourseSchedulesPanel({
     return counts;
   }, [courseComments]);
 
+  // ⚡ Bolt Optimization: Group classes by kanban column using useMemo to avoid O(4*N) filtering on every render
+  const kanbanColumns = useMemo(() => {
+    const columns = {
+      teorica: [] as any[],
+      practica: [] as any[],
+      feriado: [] as any[],
+      examen: [] as any[]
+    };
+
+    teacherClasses.forEach((c: any, i: number) => {
+      const classWithIndex = { ...c, originalIndex: i };
+      if (c.special_status === "Feriado") {
+        columns.feriado.push(classWithIndex);
+      } else if (c.special_status === "Examen") {
+        columns.examen.push(classWithIndex);
+      } else if (c.type === "Teórica" && c.special_status === "Normal") {
+        columns.teorica.push(classWithIndex);
+      } else if (c.type === "Práctica" && c.special_status === "Normal") {
+        columns.practica.push(classWithIndex);
+      }
+    });
+    return columns;
+  }, [teacherClasses]);
+
+
   const handleGenerateClasses = async () => {
     if (!teacherStartDate || !teacherDuration || teacherSchedules.length === 0) {
       showToast("Primero configurá la fecha de inicio, duración en semanas y al menos un horario.", "success");
@@ -495,9 +520,7 @@ export function CourseSchedulesPanel({
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start select-none">
                       {/* COLUMN 1: TEÓRICA */}
                       {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.type === "Teórica" && c.special_status === "Normal");
+                        const colClasses = kanbanColumns.teorica;
                         return (
                           <div
                             onDragOver={(e) => e.preventDefault()}
@@ -545,9 +568,7 @@ export function CourseSchedulesPanel({
 
                       {/* COLUMN 2: PRÁCTICA */}
                       {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.type === "Práctica" && c.special_status === "Normal");
+                        const colClasses = kanbanColumns.practica;
                         return (
                           <div
                             onDragOver={(e) => e.preventDefault()}
@@ -595,9 +616,7 @@ export function CourseSchedulesPanel({
 
                       {/* COLUMN 3: FERIADOS */}
                       {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.special_status === "Feriado");
+                        const colClasses = kanbanColumns.feriado;
                         return (
                           <div
                             onDragOver={(e) => e.preventDefault()}
@@ -642,9 +661,7 @@ export function CourseSchedulesPanel({
 
                       {/* COLUMN 4: EXAMEN / EVALUACIONES */}
                       {(() => {
-                        const colClasses = teacherClasses
-                          .map((c: any, i: number) => ({ ...c, originalIndex: i }))
-                          .filter((c: any) => c.special_status === "Examen");
+                        const colClasses = kanbanColumns.examen;
                         return (
                           <div
                             onDragOver={(e) => e.preventDefault()}
