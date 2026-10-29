@@ -179,7 +179,17 @@ export function useCourseSubtabData({
           const studentSessions = await api("getTutoringSessions", { courseId: cid, role: "student" }).catch(() => []);
           const tutorSessions = await api("getTutoringSessions", { courseId: cid, role: "tutor" }).catch(() => []);
           const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-            .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+
+        .filter((() => {
+          const map = new Map();
+          return (v: any) => {
+            if (!map.has(v.id)) {
+              map.set(v.id, true);
+              return true;
+            }
+            return false;
+          };
+        })());
           setTutoringSessions(uniqueSessions);
         } else if (courseSubTab === "study_groups") {
           const groupsList = await api("getStudyGroups", { courseId: cid });
