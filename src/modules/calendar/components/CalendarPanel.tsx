@@ -751,14 +751,18 @@ export default function CalendarPanel({
 
                       {/* ADD BOOKMARK FORM */}
                       <form onSubmit={handleCreateBookmark} className="flex gap-2 pt-1">
+                        <label htmlFor="newBookmarkTime" className="sr-only">Minuto del marcador temporal</label>
                         <input
+                          id="newBookmarkTime"
                           type="text"
                           value={newBookmarkTime}
                           onChange={(e) => setNewBookmarkTime(e.target.value)}
                           placeholder="Minuto (Ej: 12:45)"
                           className="input-academic w-28 text-[11px] font-mono"
                         />
+                        <label htmlFor="newBookmarkLabel" className="sr-only">Tema o explicación del marcador temporal</label>
                         <input
+                          id="newBookmarkLabel"
                           type="text"
                           value={newBookmarkLabel}
                           onChange={(e) => setNewBookmarkLabel(e.target.value)}

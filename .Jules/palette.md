@@ -23,3 +23,6 @@
 ## 2024-05-24 - Accessibility bindings in configuration forms
 **Learning:** Configuration settings components (like those for external integrations) often have labels and inputs visually close together, but without proper `htmlFor` and `id` bindings. This creates poor accessibility for screen readers and breaks click-to-focus functionality, reducing usability significantly.
 **Action:** Always ensure that every `<label>` and its corresponding `<input>`, `<select>`, or `<textarea>` element are properly bound via `htmlFor` and `id` attributes when building or updating settings panels.
+## 2026-10-30 - Form Accessibility (Label Associations for Bookmark Inputs)
+**Learning:** Found that the inputs within the Add Bookmark form in `CalendarPanel.tsx` lacked explicitly bound labels, which impacts screen reader users by removing context for the inputs.
+**Action:** Always verify that input/textarea components are explicitly linked to descriptive labels. Use `className="sr-only"` for visually hidden labels if a design does not require visible ones, ensuring proper `<label>` with `htmlFor` matching the input's `id`.
