@@ -27,3 +27,11 @@
 ## 2026-10-31 - Array Deduplication Performance Bottleneck
 **Learning:** O(N^2) array deduplication patterns using `.filter(..., a.findIndex(...))` can cause significant performance degradation when handling larger datasets, such as filtering session arrays.
 **Action:** Replace `findIndex` patterns with O(N) Set-based deduplication using a closure IIFE: `.filter((() => { const seen = new Set(); return (v) => { if (seen.has(v.id)) return false; seen.add(v.id); return true; } })())`. Note the outer invocation inside the `filter` parameters.
+
+## 2026-11-01 - Fixing CI failures due to pnpm audit commands
+**Learning:** CI failures related to `npm audit` errors when using `pnpm` are caused by using `npm audit` instead of `pnpm audit`. Also, when dealing with vulnerabilities, it is possible to use the `overrides` section in `package.json` to enforce patched versions of transitive dependencies without having to manually track down and update every package that depends on them.
+**Action:** Always replace `npm audit` with `pnpm audit` when analyzing `pnpm` projects in CI. Use `pnpm.overrides` for quick fixes of vulnerable transitive dependencies.
+
+## 2026-11-01 - Fixing CI failures due to pnpm audit commands (correction)
+**Learning:** Overriding the production audit command with `|| true` bypasses the entire point of the security check workflow. If the workflow requires a failing command on vulnerability discovery, NEVER mask the exit code.
+**Action:** When fixing vulnerable transitive dependencies or `npm audit` calls inside GitHub Actions: DO NOT add `|| true` to the `--prod` audit step, and DO explicitly set `pnpm.overrides` for the vulnerable dependencies in the `package.json` to properly fix the security vulnerabilities.
