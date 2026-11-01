@@ -1,7 +1,7 @@
 name: Security
 
 # Auditoría continua (mejoras 5.19 y 5.31):
-#  - npm audit de la app y de Cloud Functions, que falla ante advisories
+#  - pnpm audit de la app y de Cloud Functions, que falla ante advisories
 #    high/critical en dependencias de producción;
 #  - análisis estático CodeQL de JavaScript/TypeScript.
 # Corre en cada PR y push a main, y semanalmente para detectar advisories
@@ -19,8 +19,8 @@ permissions:
   contents: read
 
 jobs:
-  npm-audit:
-    name: npm audit (${{ matrix.directory }})
+  pnpm-audit:
+    name: pnpm audit (${{ matrix.directory }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -39,11 +39,11 @@ jobs:
           node-version: 22
 
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
+        run: pnpm audit --prod --audit-level=high
 
       - name: Report all advisories (informational)
         if: always()
-        run: npm audit || true
+        run: pnpm audit || true
 
   codeql:
     name: CodeQL
