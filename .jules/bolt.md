@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2023-11-01 - Optimizing O(N^2) Array Deduplication Contextual Types
+**Learning:** When using IIFE patterns to encapsulate state like `Set`s for $O(N)$ operations within array methods (e.g. `.filter()`), the returned inner function loses TypeScript's contextual typing, implicitly inferring `any` for arguments and triggering strict mode compiler errors.
+**Action:** Always explicitly type the parameter (e.g., `(v: any) => { ... }`) when returning closures from within array iterations, or prefer declaring the external state variable immediately prior to the iteration block to maintain type inference and code readability.
