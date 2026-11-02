@@ -104,8 +104,16 @@ export default function TutoringPanel({
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
+      // ⚡ Optimize O(N^2) findIndex deduplication with O(N) Set lookup
       const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+        .filter((() => {
+          const seen = new Set();
+          return (v: any) => {
+            if (seen.has(v.id)) return false;
+            seen.add(v.id);
+            return true;
+          };
+        })());
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al reservar sesión: " + err.message, "error");
@@ -122,8 +130,16 @@ export default function TutoringPanel({
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
+      // ⚡ Optimize O(N^2) findIndex deduplication with O(N) Set lookup
       const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+        .filter((() => {
+          const seen = new Set();
+          return (v: any) => {
+            if (seen.has(v.id)) return false;
+            seen.add(v.id);
+            return true;
+          };
+        })());
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al actualizar estado: " + err.message, "error");
