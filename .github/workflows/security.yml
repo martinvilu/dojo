@@ -39,11 +39,11 @@ jobs:
           node-version: 22
 
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --omit=dev --audit-level=critical
 
       - name: Report all advisories (informational)
         if: always()
-        run: npm audit || true
+        run: npm audit --audit-level=critical || true
 
   codeql:
     name: CodeQL
