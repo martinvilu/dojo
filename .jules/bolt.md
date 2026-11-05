@@ -23,3 +23,6 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+## 2024-05-15 - Array Deduplication Performance Issue
+**Learning:** Found multiple instances of O(N^2) array deduplication using `.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)` which becomes a significant bottleneck for larger datasets.
+**Action:** Replace this pattern with an O(N) deduplication using `Set` enclosed in an IIFE: `.filter((() => { const seen = new Set(); return (v: any) => { if (!seen.has(v.id)) { seen.add(v.id); return true; } return false; }; })())`. Ensure the IIFE closure correctly returns the iterator function for `.filter`.
