@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2025-02-19 - O(N) array filtering within custom react hooks on every dependency change
+**Learning:** Found O(N*M) array filtering in custom hook `useStudentRisk.ts` where arrays `courseAttendance` and `courseSubmissions` were repeatedly `.filter()`'d and `.some()`'d for *each* student inside a `useMemo` block. This hook runs on any change to assignments, attendance, or submissions, and since it re-calculates the entire class roster each time, the complexity scales rapidly (O(Roster * (Attendance + Submissions))).
+**Action:** Always pre-compute relationships into an O(1) Map inside the `useMemo` before iterating over the main entity array. Use Maps and Sets to change nested iterations into quick lookups.
