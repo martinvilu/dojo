@@ -104,8 +104,13 @@ export default function TutoringPanel({
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
-      const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+      const allSessions = [...(studentSessions || []), ...(tutorSessions || [])];
+      const seen = new Set();
+      const uniqueSessions = allSessions.filter((v: any) => {
+        if (seen.has(v.id)) return false;
+        seen.add(v.id);
+        return true;
+      });
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al reservar sesión: " + err.message, "error");
@@ -122,8 +127,13 @@ export default function TutoringPanel({
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
-      const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+      const allSessions = [...(studentSessions || []), ...(tutorSessions || [])];
+      const seen = new Set();
+      const uniqueSessions = allSessions.filter((v: any) => {
+        if (seen.has(v.id)) return false;
+        seen.add(v.id);
+        return true;
+      });
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al actualizar estado: " + err.message, "error");
