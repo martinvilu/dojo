@@ -103,7 +103,9 @@ export function StudentAttendanceModals(props: any) {
               Ingresá el código de 6 caracteres que se muestra en la pantalla del profesor. Se requiere acceso a tu ubicación.
             </p>
             <div className="space-y-4">
+              <label htmlFor="student-qr-token" className="sr-only">Código de asistencia</label>
               <input
+                id="student-qr-token"
                 type="text"
                 placeholder="Ej: A1B2C3"
                 value={studentQrToken}
