@@ -104,8 +104,16 @@ export default function TutoringPanel({
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
+      // ⚡ Bolt: Replace O(N^2) array search with O(N) Set lookup for performance
+      const seen = new Set();
       const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+        .filter(v => {
+          if (!seen.has(v.id)) {
+            seen.add(v.id);
+            return true;
+          }
+          return false;
+        });
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al reservar sesión: " + err.message, "error");
@@ -122,8 +130,16 @@ export default function TutoringPanel({
 
       const studentSessions = await api("getTutoringSessions", { courseId, role: "student" }).catch(() => []);
       const tutorSessions = await api("getTutoringSessions", { courseId, role: "tutor" }).catch(() => []);
+      // ⚡ Bolt: Replace O(N^2) array search with O(N) Set lookup for performance
+      const seen = new Set();
       const uniqueSessions = [...(studentSessions || []), ...(tutorSessions || [])]
-        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+        .filter(v => {
+          if (!seen.has(v.id)) {
+            seen.add(v.id);
+            return true;
+          }
+          return false;
+        });
       setTutoringSessions(uniqueSessions);
     } catch (err: any) {
       showToast("Error al actualizar estado: " + err.message, "error");

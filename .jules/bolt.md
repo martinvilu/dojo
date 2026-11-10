@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2023-10-25 - Avoid committing pnpm-lock.yaml from local install
+**Learning:** Running `pnpm install` in the execution environment can sometimes generate large, unrequested updates to `pnpm-lock.yaml`. If not careful, this file gets accidentally staged and committed with other changes.
+**Action:** Always verify git status and selectively stage files (or specifically reset `pnpm-lock.yaml` and remove it) to avoid committing dependency file artifacts when performing routine environment setups.
