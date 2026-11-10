@@ -14,7 +14,7 @@
     "test:local": "./scripts/test-local.sh"
   },
   "dependencies": {
-    "@grpc/grpc-js": "1.13.6",
+    "@grpc/grpc-js": "^1.13.6",
     "@typesafe-ai/sdk": "^0.6.0",
     "firebase": "^12.19.0",
     "firebase-admin": "^14.5.0",

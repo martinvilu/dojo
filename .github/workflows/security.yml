@@ -45,7 +45,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Audit production dependencies
-        run: pnpm audit --prod --audit-level=high
+        run: pnpm install --frozen-lockfile && pnpm audit --prod --audit-level=high
 
       - name: Report all advisories (informational)
         if: always()

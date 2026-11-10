@@ -12,17 +12,22 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v7
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install Root Dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build Next.js (Verification)
-        run: npm run build
+        run: pnpm run build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -34,7 +39,7 @@ jobs:
       - name: Install Functions Dependencies
         run: |
           cd functions
-          npm ci
+          pnpm install --frozen-lockfile
 
       - name: Deploy to Firebase (Functions & Firestore Rules)
         uses: w9jds/firebase-action@master
