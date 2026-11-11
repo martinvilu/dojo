@@ -1,0 +1,3 @@
+## 2026-11-11 - Fixing npm audit CI failure
+**Learning:** Found CI failing on `npm audit --omit=dev --audit-level=high` due to high severity vulnerabilities in nested dependencies (specifically `google-gax` and `next` having critical vulnerabilities).
+**Action:** When `npm audit fix` isn't enough for sub-dependencies causing audit failures, explicitly add or bump the affected nested dependency as a direct dependency or override in `package.json`. In this case, adding `"google-gax": "^6.17.0"` and updating `next` to `^16.4.6` in `package.json` (and doing similar for `functions/package.json`) resolved the audit failures without breaking the application build or tests. Always run `npm audit --omit=dev --audit-level=high` locally to verify fixes before pushing.
