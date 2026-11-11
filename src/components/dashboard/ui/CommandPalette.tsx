@@ -198,7 +198,7 @@ export default function CommandPalette({ courses, classes, assignments, onNaviga
                   <button
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={() => pick(r)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
                       idx === activeIndex ? "bg-blue-600/15 ring-1 ring-blue-500/40" : "hover:bg-bg-primary"
                     }`}
                   >

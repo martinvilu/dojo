@@ -23,3 +23,6 @@
 ## 2024-05-24 - Accessibility bindings in configuration forms
 **Learning:** Configuration settings components (like those for external integrations) often have labels and inputs visually close together, but without proper `htmlFor` and `id` bindings. This creates poor accessibility for screen readers and breaks click-to-focus functionality, reducing usability significantly.
 **Action:** Always ensure that every `<label>` and its corresponding `<input>`, `<select>`, or `<textarea>` element are properly bound via `htmlFor` and `id` attributes when building or updating settings panels.
+## 2024-11-12 - Missing Focus States on Custom UI Elements
+**Learning:** Custom UI interactive elements (especially `<button>` components with `cursor-pointer` and layout utility classes) in the UI kit frequently missed explicit focus states (like `focus-visible`), breaking keyboard navigation visibility.
+**Action:** Added `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500` to interactive elements. Always verify standard interactive elements are fully visible when navigating using a keyboard.
