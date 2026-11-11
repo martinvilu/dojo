@@ -75,7 +75,7 @@ export default function MarkdownToolbar({ textareaRef, value, onChange }: Markdo
           title={a.title}
           aria-label={a.title}
           onClick={() => apply(a)}
-          className="min-w-[26px] min-h-[24px] px-1.5 rounded-md bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-[11px] font-bold text-gray-300 hover:text-white transition cursor-pointer"
+          className="min-w-[26px] min-h-[24px] px-1.5 rounded-md bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-[11px] font-bold text-gray-300 hover:text-white transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
           {a.label}
         </button>
