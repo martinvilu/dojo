@@ -23,3 +23,7 @@
 ## 2023-10-27 - O(N) Array Scans in Re-rendered Memo Hooks
 **Learning:** In heavily used components like CommandPalette (which manages global search), `Array.find()` operations inside heavily triggered `useMemo` blocks can compound to O(N * M) performance drops if called iteratively (e.g. searching a list of thousands of assignments against an array of courses). A seemingly innocuous lookup becomes a noticeable bottleneck during rapid typing.
 **Action:** When filtering or mapping large arrays inside `useMemo`, immediately look for nested `Array.find()` calls. Precompute a single `Map` of the target data structure at the start of the hook and swap the logic to O(1) `.get()` lookups. Also, double-check that scratchpad scripts and lockfiles are removed before submitting.
+
+## 2026-11-11 - Lockfile generation during routine linting
+**Learning:** Running `pnpm install` simply to enable `pnpm lint` or `pnpm test` in the execution environment can inadvertently generate a massive (e.g., 7,700+ line) `pnpm-lock.yaml` file if one was not present or if dependencies were resolving dynamically. Committing this file in a PR focused on a small source code change causes significant noise and violates the scope boundaries of targeted performance PRs.
+**Action:** When a generated `pnpm-lock.yaml` is created as a side effect of running necessary validation commands, always explicitly unstage and remove the lockfile (`git restore --staged pnpm-lock.yaml && rm pnpm-lock.yaml`) *before* requesting a code review or submitting the PR to keep the diff clean.
