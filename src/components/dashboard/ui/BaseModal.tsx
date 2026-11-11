@@ -72,7 +72,7 @@ export default function BaseModal({
             aria-label="Cerrar modal"
             type="button"
             onClick={onClose}
-            className="text-neutral-400 hover:text-white text-sm font-bold cursor-pointer transition-colors p-1 rounded-lg hover:bg-neutral-800 shrink-0"
+            className="text-neutral-400 hover:text-white text-sm font-bold cursor-pointer transition-colors p-1 rounded-lg hover:bg-neutral-800 shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           >
             ✕
           </button>

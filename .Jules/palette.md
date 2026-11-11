@@ -23,3 +23,6 @@
 ## 2024-05-24 - Accessibility bindings in configuration forms
 **Learning:** Configuration settings components (like those for external integrations) often have labels and inputs visually close together, but without proper `htmlFor` and `id` bindings. This creates poor accessibility for screen readers and breaks click-to-focus functionality, reducing usability significantly.
 **Action:** Always ensure that every `<label>` and its corresponding `<input>`, `<select>`, or `<textarea>` element are properly bound via `htmlFor` and `id` attributes when building or updating settings panels.
+## 2023-11-11 - Modal Close Button Keyboard Accessibility
+**Learning:** Found an accessibility issue pattern across `BaseModal.tsx`, `EmailManagementPanel.tsx`, and `MoodleIntegrationPanel.tsx` where the close buttons (✕) lacked clear focus indicators.
+**Action:** Always ensure interactive elements, especially standalone close buttons (✕), have explicit `focus-visible:outline` styles to remain keyboard-navigable. Applied `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500` uniformly to modal close buttons.
